@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brew & Brews Radio</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
+
+    header {
+      padding: 24px;
+      text-align: center;
+      background: #1b1b1b;
+    }
+
+    main {
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    button {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      background: #c97b36;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    #cover {
+      width: 280px;
+      max-width: 100%;
+      border-radius: 12px;
+    }
+
+    .track {
+      padding: 10px;
+      border-bottom: 1px solid #333;
+      cursor: pointer;
+    }
+
+    .track:hover {
+      background: #222;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Brew & Brews Radio</h1>
+    <p>Original music from Brew & Brews Coffee Company</p>
+  </header>
+
+  <main>
+    <img id="cover" src="" alt="Album cover">
+    <h2 id="title">Loading...</h2>
+    <p id="artist"></p>
+
+    <audio id="audio" controls style="width: 100%;"></audio>
+
+    <br><br>
+
+    <button id="prev">Previous</button>
+    <button id="play">Play / Pause</button>
+    <button id="next">Next</button>
+
+    <h3>Playlist</h3>
+    <div id="playlist"></div>
+  </main>
+
+  <script src="playlist.js"></script>
+
+  <script>
+    const tracks = window.BB_PLAYLIST || [];
+    let current = 0;
+
+    const audio = document.getElementById("audio");
+    const cover = document.getElementById("cover");
+    const title = document.getElementById("title");
+    const artist = document.getElementById("artist");
+    const list = document.getElementById("playlist");
+
+    function load(index) {
+      current = index;
+      const track = tracks[index];
+
+      if (!track) {
+        title.textContent = "Playlist could not be loaded";
+        return;
+      }
+
+      audio.src = track.audio;
+      cover.src = track.cover;
+      title.textContent = track.title;
+      artist.textContent = track.artist || "Brew & Brews";
+      renderPlaylist();
+    }
+
+    function renderPlaylist() {
+      list.innerHTML = "";
+
+      tracks.forEach(function (track, index) {
+        const item = document.createElement("div");
+        item.className = "track";
+        item.textContent =
+          (index === current ? "Playing: " : "") + track.title;
+
+        item.addEventListener("click", function () {
+          load(index);
+          audio.play();
+        });
+
+        list.appendChild(item);
+      });
+    }
+
+    document.getElementById("play").addEventListener("click", function () {
+      if (audio.paused) {
+        audio.play();
+      } else {
+        audio.pause();
+      }
+    });
+
+    document.getElementById("next").addEventListener("click", function () {
+      if (!tracks.length) return;
+      load((current + 1) % tracks.length);
+      audio.play();
+    });
+
+    document.getElementById("prev").addEventListener("click", function () {
+      if (!tracks.length) return;
+      load((current - 1 + tracks.length) % tracks.length);
+      audio.play();
+    });
+
+    audio.addEventListener("ended", function () {
+      document.getElementById("next").click();
+    });
+
+    if (tracks.length) {
+      load(0);
+    } else {
+      title.textContent = "No songs found in playlist.js";
+    }
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker
+          .register("./service-worker.js")
+          .catch(function (error) {
+            console.error("Service worker registration failed:", error);
+          });
+      });
+    }
+  </script>
+</body>
+</html>
