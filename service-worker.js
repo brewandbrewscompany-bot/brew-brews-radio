@@ -1,40 +1,27 @@
-const CACHE_NAME = "brew-brews-radio-v1";
-
-const APP_FILES = [
-  "./",
-  "./index.html",
-  "./manifest.json",
-  "./playlist.js",
-  "./icon-192.png",
-  "./icon-512.png"
+const CACHE = "brew-brews-radio-v3.0.0";
+const APP_SHELL = [
+  "./", "index.html", "style.css", "player.js", "playlist.js", "manifest.json",
+  "icon-192.png", "icon-512.png",
+  "love-in-every-brew.png", "one-cup-at-a-time.png", "heres-to-the-regulars.png",
+  "midnight-in-the-cafe.png", "brazilian-hangover.png"
 ];
 
-self.addEventListener("install", event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(APP_FILES))
-  );
-
-  self.skipWaiting();
+self.addEventListener("install", (event) => {
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
 });
-
-self.addEventListener("activate", event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(key => key !== CACHE_NAME)
-          .map(key => caches.delete(key))
-      )
-    )
-  );
-
-  self.clients.claim();
+self.addEventListener("activate", (event) => {
+  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)))).then(() => self.clients.claim()));
 });
-
-self.addEventListener("fetch", event => {
-  event.respondWith(
-    caches.match(event.request).then(cachedResponse => {
-      return cachedResponse || fetch(event.request);
-    })
-  );
+self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") return;
+  const url = new URL(event.request.url);
+  if (event.request.destination === "audio") {
+    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+    return;
+  }
+  if (url.origin === self.location.origin) {
+    event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => {
+      const copy = response.clone(); caches.open(CACHE).then((cache) => cache.put(event.request, copy)); return response;
+    })).catch(() => caches.match("index.html")));
+  }
 });
