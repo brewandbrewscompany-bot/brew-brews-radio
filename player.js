@@ -3,7 +3,7 @@ const tracks=window.BB_PLAYLIST||[],$=id=>document.getElementById(id),audio=$("a
 let current=Number(localStorage.getItem("bbCurrentTrack")||0);if(!tracks[current])current=0;
 let genre="All",shuffle=localStorage.getItem("bbShuffle")==="true",repeat=localStorage.getItem("bbRepeat")==="true",restore=Number(localStorage.getItem("bbPosition")||0);
 const favs=new Set(JSON.parse(localStorage.getItem("bbFavorites")||"[]"));
-const ids=["miniCover","miniTitle","miniArtist","miniFavorite","miniProgress","miniCurrent","miniDuration","playBtn","prevBtn","nextBtn","shuffleBtn","repeatBtn","fullPlayer","fullBackdrop","closeFullPlayer","fullCover","fullTitle","fullArtist","fullProgress","fullCurrent","fullDuration","fullPlay","fullPrev","fullNext","fullShuffle","fullRepeat","fullFavorite","volume","searchInput","genreFilters","trackGrid","openFullPlayer"];
+const ids=["miniCover","miniTitle","miniArtist","miniFavorite","miniProgress","miniCurrent","miniDuration","playBtn","prevBtn","nextBtn","shuffleBtn","repeatBtn","fullPlayer","fullBackdrop","closeFullPlayer","fullCover","fullTitle","fullArtist","fullProgress","fullCurrent","fullDuration","fullPlay","fullPrev","fullNext","fullShuffle","fullRepeat","fullFavorite","heroPlayBtn","searchInput","genreFilters","trackGrid","openFullPlayer"];
 const e={};ids.forEach(id=>e[id]=$(id));
 const fmt=s=>Number.isFinite(s)?`${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,"0")}`:"0:00";
 function saveFavs(){localStorage.setItem("bbFavorites",JSON.stringify([...favs]))}
@@ -17,16 +17,14 @@ function next(){let n;if(shuffle&&tracks.length>1){do{n=Math.floor(Math.random()
 function prev(){if(audio.currentTime>4){audio.currentTime=0;return}load((current-1+tracks.length)%tracks.length,0,true)}
 function fav(){const id=tracks[current].id;favs.has(id)?favs.delete(id):favs.add(id);saveFavs();state();if(genre==="Favorites")render()}
 function seek(input){if(audio.duration)audio.currentTime=Number(input.value)/100*audio.duration}
-e.playBtn.onclick=e.fullPlay.onclick=toggle;e.prevBtn.onclick=e.fullPrev.onclick=prev;e.nextBtn.onclick=e.fullNext.onclick=next;
+e.playBtn.onclick=e.fullPlay.onclick=e.heroPlayBtn.onclick=toggle;e.prevBtn.onclick=e.fullPrev.onclick=prev;e.nextBtn.onclick=e.fullNext.onclick=next;
 e.shuffleBtn.onclick=e.fullShuffle.onclick=()=>{shuffle=!shuffle;localStorage.setItem("bbShuffle",shuffle);state()};
 e.repeatBtn.onclick=e.fullRepeat.onclick=()=>{repeat=!repeat;audio.loop=repeat;localStorage.setItem("bbRepeat",repeat);state()};
 e.miniFavorite.onclick=e.fullFavorite.onclick=fav;e.openFullPlayer.onclick=()=>{e.fullPlayer.hidden=false;document.body.style.overflow="hidden"};e.closeFullPlayer.onclick=()=>{e.fullPlayer.hidden=true;document.body.style.overflow=""};
 e.miniProgress.oninput=()=>seek(e.miniProgress);e.fullProgress.oninput=()=>seek(e.fullProgress);e.searchInput.oninput=render;
-e.volume.oninput=()=>{audio.volume=Number(e.volume.value);localStorage.setItem("bbVolume",e.volume.value)};
 audio.onloadedmetadata=()=>{e.miniDuration.textContent=e.fullDuration.textContent=fmt(audio.duration);if(restore>0&&restore<audio.duration-2)audio.currentTime=restore;restore=0};
 audio.ontimeupdate=()=>{const p=audio.duration?audio.currentTime/audio.duration*100:0;e.miniProgress.value=e.fullProgress.value=p;e.miniCurrent.textContent=e.fullCurrent.textContent=fmt(audio.currentTime);e.miniDuration.textContent=e.fullDuration.textContent=fmt(audio.duration);localStorage.setItem("bbPosition",audio.currentTime)};
-audio.onplay=()=>{e.playBtn.textContent=e.fullPlay.textContent="❚❚";render()};audio.onpause=()=>{e.playBtn.textContent=e.fullPlay.textContent="▶";render()};audio.onended=()=>{localStorage.setItem("bbPosition","0");if(!repeat)next()};
-const v=Number(localStorage.getItem("bbVolume"));audio.volume=Number.isFinite(v)?v:.8;e.volume.value=audio.volume;
+audio.onplay=()=>{e.playBtn.textContent=e.fullPlay.textContent="❚❚";e.heroPlayBtn.textContent="❚❚ PAUSE RADIO";render()};audio.onpause=()=>{e.playBtn.textContent=e.fullPlay.textContent="▶";e.heroPlayBtn.textContent="▶ PLAY RADIO";render()};audio.onended=()=>{localStorage.setItem("bbPosition","0");if(!repeat)next()};
 if("mediaSession"in navigator){navigator.mediaSession.setActionHandler("play",play);navigator.mediaSession.setActionHandler("pause",pause);navigator.mediaSession.setActionHandler("previoustrack",prev);navigator.mediaSession.setActionHandler("nexttrack",next)}
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js"));
 genres();load(current,restore,false);

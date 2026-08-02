@@ -13,3 +13,7 @@ After committing:
 2. Refresh twice.
 3. If installed as an app, fully close and reopen it.
 4. Tap the album/title area at the top of the bottom mini-player to open the full-screen Now Playing view.
+
+Version 4.0.1 changes:
+- Restored Play Radio button in the hero.
+- Removed in-app volume slider; use phone volume buttons.
