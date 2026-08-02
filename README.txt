@@ -1,19 +1,19 @@
-Upload these six replacement files to the root of your GitHub repository:
-index.html
-style.css
-player.js
-playlist.js
-service-worker.js
-manifest.json
+Brew & Brews Radio v5.0.0
 
-Keep all existing MP3, PNG cover, icon-192.png, and icon-512.png files in the same folder.
+Replace these four files in your GitHub repository:
+- index.html
+- style.css
+- player.js
+- service-worker.js
 
-After committing:
-1. Wait 1-3 minutes.
-2. Refresh twice.
-3. If installed as an app, fully close and reopen it.
-4. Tap the album/title area at the top of the bottom mini-player to open the full-screen Now Playing view.
+Keep your existing playlist.js, MP3 files, PNG covers, manifest.json, and app icons.
 
-Version 4.0.1 changes:
-- Restored Play Radio button in the hero.
-- Removed in-app volume slider; use phone volume buttons.
+Main changes:
+- No duplicate large Now Playing section on the main page.
+- Compact quick-scroll song list.
+- Bottom player is always fixed and immediately accessible.
+- Bottom player has visible Previous, Play/Pause, and Next controls.
+- Tap the song artwork/title in the bottom player to open the full-screen Now Playing view.
+- Phone Back button closes the full-screen player first.
+- Shop Coffee button is included in the hero and full-screen player.
+- Cache version updated to v5.0.0.

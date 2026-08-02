@@ -1,5 +1,83 @@
-const CACHE="brew-brews-radio-v4.0.2";
-const APP_SHELL=["./","index.html","style.css","player.js","playlist.js","manifest.json","icon-192.png","icon-512.png"];
-self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP_SHELL)));self.skipWaiting()});
-self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});
-self.addEventListener("fetch",e=>{if(e.request.method!=="GET")return;const u=new URL(e.request.url),fresh=["playlist.js","player.js","style.css","index.html"];if(fresh.some(n=>u.pathname.endsWith(n))){e.respondWith(fetch(e.request).then(r=>{const x=r.clone();caches.open(CACHE).then(c=>c.put(e.request,x));return r}).catch(()=>caches.match(e.request)));return}if(e.request.destination==="audio"){e.respondWith(fetch(e.request));return}e.respondWith(caches.match(e.request).then(c=>c||fetch(e.request).then(r=>{if(r&&r.status===200&&r.type==="basic"){const x=r.clone();caches.open(CACHE).then(ca=>ca.put(e.request,x))}return r}))) });
+const CACHE="brew-brews-radio-v5.0.0";
+
+const APP_SHELL=[
+  "./",
+  "index.html",
+  "style.css",
+  "player.js",
+  "playlist.js",
+  "manifest.json",
+  "icon-192.png",
+  "icon-512.png"
+];
+
+self.addEventListener("install",event=>{
+  event.waitUntil(
+    caches.open(CACHE).then(cache=>
+      cache.addAll(APP_SHELL)
+    )
+  );
+
+  self.skipWaiting();
+});
+
+self.addEventListener("activate",event=>{
+  event.waitUntil(
+    caches.keys().then(keys=>
+      Promise.all(
+        keys
+          .filter(key=>key!==CACHE)
+          .map(key=>caches.delete(key))
+      )
+    )
+  );
+
+  self.clients.claim();
+});
+
+self.addEventListener("fetch",event=>{
+  if(event.request.method!=="GET")return;
+
+  const url=new URL(event.request.url);
+
+  const networkFirst=[
+    "index.html",
+    "style.css",
+    "player.js",
+    "playlist.js"
+  ];
+
+  if(
+    networkFirst.some(name=>
+      url.pathname.endsWith(name)
+    )
+  ){
+    event.respondWith(
+      fetch(event.request)
+        .then(response=>{
+          const copy=response.clone();
+
+          caches.open(CACHE).then(cache=>
+            cache.put(event.request,copy)
+          );
+
+          return response;
+        })
+        .catch(()=>caches.match(event.request))
+    );
+
+    return;
+  }
+
+  if(event.request.destination==="audio"){
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request).then(cached=>{
+      if(cached)return cached;
+      return fetch(event.request);
+    })
+  );
+});

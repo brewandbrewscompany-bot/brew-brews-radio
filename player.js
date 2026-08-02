@@ -4,10 +4,7 @@
   const audio = $("audio");
 
   let current = Number(localStorage.getItem("bbCurrentTrack") || 0);
-
-  if (!tracks[current]) {
-    current = 0;
-  }
+  if (!tracks[current]) current = 0;
 
   let genre = "All";
   let shuffle = localStorage.getItem("bbShuffle") === "true";
@@ -19,73 +16,45 @@
   );
 
   const ids = [
-    "miniCover",
-    "miniTitle",
-    "miniArtist",
-    "miniFavorite",
-    "miniProgress",
-    "miniCurrent",
-    "miniDuration",
-    "playBtn",
-    "prevBtn",
-    "nextBtn",
-    "shuffleBtn",
-    "repeatBtn",
-    "fullPlayer",
-    "fullBackdrop",
-    "closeFullPlayer",
-    "fullCover",
-    "fullTitle",
-    "fullArtist",
-    "fullProgress",
-    "fullCurrent",
-    "fullDuration",
-    "fullPlay",
-    "fullPrev",
-    "fullNext",
-    "fullShuffle",
-    "fullRepeat",
-    "fullFavorite",
-    "heroPlayBtn",
-    "searchInput",
-    "genreFilters",
-    "trackGrid",
+    "miniCover","miniTitle","miniArtist","miniFavorite",
+    "miniProgress","miniCurrent","miniDuration",
+    "playBtn","prevBtn","nextBtn",
+    "fullPlayer","fullBackdrop","closeFullPlayer",
+    "fullCover","fullTitle","fullArtist","fullProgress",
+    "fullCurrent","fullDuration","fullPlay","fullPrev",
+    "fullNext","fullShuffle","fullRepeat","fullFavorite",
+    "heroPlayBtn","searchInput","genreFilters","trackGrid",
     "openFullPlayer"
   ];
 
   const e = {};
+  ids.forEach(id => e[id] = $(id));
 
-  ids.forEach(id => {
-    e[id] = $(id);
-  });
-
-  function formatTime(seconds) {
-    if (!Number.isFinite(seconds)) {
-      return "0:00";
-    }
+  function formatTime(seconds){
+    if (!Number.isFinite(seconds)) return "0:00";
 
     const minutes = Math.floor(seconds / 60);
     const remaining = Math.floor(seconds % 60)
       .toString()
-      .padStart(2, "0");
+      .padStart(2,"0");
 
     return `${minutes}:${remaining}`;
   }
 
-  function saveFavorites() {
+  function saveFavorites(){
     localStorage.setItem(
       "bbFavorites",
       JSON.stringify([...favorites])
     );
   }
 
-  function updateControls() {
-    [e.shuffleBtn, e.fullShuffle].forEach(button => {
-      button.classList.toggle("active-control", shuffle);
+  function updateControls(){
+    [e.fullShuffle].forEach(button => {
+      button.classList.toggle("active-control",shuffle);
     });
 
-    [e.repeatBtn, e.fullRepeat].forEach(button => {
-      button.classList.toggle("active-control", repeat);
+    [e.fullRepeat].forEach(button => {
+      button.classList.toggle("active-control",repeat);
     });
 
     const isFavorite = favorites.has(tracks[current].id);
@@ -96,7 +65,7 @@
       : "♡ Favorite";
   }
 
-  function renderGenres() {
+  function renderGenres(){
     const genres = [
       "All",
       "Favorites",
@@ -127,19 +96,15 @@
     });
   }
 
-  function renderTracks() {
+  function renderTracks(){
     const query = e.searchInput.value.toLowerCase();
-
     e.trackGrid.innerHTML = "";
 
-    tracks.forEach((track, index) => {
+    tracks.forEach((track,index) => {
       const matchesGenre =
         genre === "All" ||
-        (genre === "Favorites" &&
-          favorites.has(track.id)) ||
-        track.genre
-          .toLowerCase()
-          .includes(genre.toLowerCase());
+        (genre === "Favorites" && favorites.has(track.id)) ||
+        track.genre.toLowerCase().includes(genre.toLowerCase());
 
       const matchesSearch =
         !query ||
@@ -147,27 +112,29 @@
           .toLowerCase()
           .includes(query);
 
-      if (!matchesGenre || !matchesSearch) {
-        return;
-      }
+      if (!matchesGenre || !matchesSearch) return;
 
       const button = document.createElement("button");
 
       button.className =
         "card" + (index === current ? " active" : "");
 
+      button.type = "button";
+
       button.innerHTML = `
-        <span class="badge">NOW PLAYING</span>
-        <img src="${track.cover}" alt="">
+        <img src="${track.cover}" alt="${track.title} cover">
         <h3>${track.title}</h3>
         <p>${track.genre}</p>
+        <span class="row-action">
+          ${index === current && !audio.paused ? "❚❚" : "▶"}
+        </span>
       `;
 
       button.onclick = () => {
         if (index === current) {
           togglePlayback();
         } else {
-          loadTrack(index, 0, true);
+          loadTrack(index,0,true);
         }
       };
 
@@ -175,7 +142,7 @@
     });
   }
 
-  function syncPlayer() {
+  function syncPlayer(){
     const track = tracks[current];
 
     e.miniCover.src = track.cover;
@@ -196,21 +163,21 @@
     if ("mediaSession" in navigator) {
       navigator.mediaSession.metadata =
         new MediaMetadata({
-          title: track.title,
-          artist: track.artist,
-          album: "Brew & Brews Radio",
-          artwork: [
+          title:track.title,
+          artist:track.artist,
+          album:"Brew & Brews Radio",
+          artwork:[
             {
-              src: track.cover,
-              sizes: "512x512",
-              type: "image/png"
+              src:track.cover,
+              sizes:"512x512",
+              type:"image/png"
             }
           ]
         });
     }
   }
 
-  function loadTrack(index, startAt = 0, autoplay = false) {
+  function loadTrack(index,startAt=0,autoplay=false){
     current = index;
 
     localStorage.setItem(
@@ -219,68 +186,57 @@
     );
 
     restore = startAt;
-
     audio.src = tracks[current].audio;
     audio.loop = repeat;
 
     syncPlayer();
 
-    if (autoplay) {
-      playAudio();
-    }
+    if (autoplay) playAudio();
   }
 
-  async function playAudio() {
-    try {
+  async function playAudio(){
+    try{
       await audio.play();
-    } catch (error) {
+    }catch(error){
       console.error(error);
     }
   }
 
-  function pauseAudio() {
+  function pauseAudio(){
     audio.pause();
   }
 
-  function togglePlayback() {
-    if (audio.paused) {
-      playAudio();
-    } else {
-      pauseAudio();
-    }
+  function togglePlayback(){
+    audio.paused ? playAudio() : pauseAudio();
   }
 
-  function nextTrack() {
+  function nextTrack(){
     let nextIndex;
 
     if (shuffle && tracks.length > 1) {
       do {
-        nextIndex = Math.floor(
-          Math.random() * tracks.length
-        );
+        nextIndex = Math.floor(Math.random() * tracks.length);
       } while (nextIndex === current);
     } else {
-      nextIndex =
-        (current + 1) % tracks.length;
+      nextIndex = (current + 1) % tracks.length;
     }
 
-    loadTrack(nextIndex, 0, true);
+    loadTrack(nextIndex,0,true);
   }
 
-  function previousTrack() {
+  function previousTrack(){
     if (audio.currentTime > 4) {
       audio.currentTime = 0;
       return;
     }
 
     const previousIndex =
-      (current - 1 + tracks.length) %
-      tracks.length;
+      (current - 1 + tracks.length) % tracks.length;
 
-    loadTrack(previousIndex, 0, true);
+    loadTrack(previousIndex,0,true);
   }
 
-  function toggleFavorite() {
+  function toggleFavorite(){
     const id = tracks[current].id;
 
     if (favorites.has(id)) {
@@ -292,40 +248,55 @@
     saveFavorites();
     updateControls();
 
-    if (genre === "Favorites") {
-      renderTracks();
-    }
+    if (genre === "Favorites") renderTracks();
   }
 
-  function seek(input) {
-    if (!audio.duration) {
-      return;
-    }
+  function toggleShuffle(){
+    shuffle = !shuffle;
+
+    localStorage.setItem(
+      "bbShuffle",
+      String(shuffle)
+    );
+
+    updateControls();
+  }
+
+  function toggleRepeat(){
+    repeat = !repeat;
+    audio.loop = repeat;
+
+    localStorage.setItem(
+      "bbRepeat",
+      String(repeat)
+    );
+
+    updateControls();
+  }
+
+  function seek(input){
+    if (!audio.duration) return;
 
     audio.currentTime =
       (Number(input.value) / 100) *
       audio.duration;
   }
 
-  function openFullPlayer() {
-    if (!e.fullPlayer.hidden) {
-      return;
-    }
+  function openFullPlayer(){
+    if (!e.fullPlayer.hidden) return;
 
     e.fullPlayer.hidden = false;
     document.body.style.overflow = "hidden";
 
     history.pushState(
-      { fullPlayerOpen: true },
+      {fullPlayerOpen:true},
       "",
       location.href
     );
   }
 
-  function closeFullPlayer() {
-    if (e.fullPlayer.hidden) {
-      return;
-    }
+  function closeFullPlayer(){
+    if (e.fullPlayer.hidden) return;
 
     e.fullPlayer.hidden = true;
     document.body.style.overflow = "";
@@ -344,39 +315,14 @@
     e.fullNext.onclick =
     nextTrack;
 
-  e.shuffleBtn.onclick =
-    e.fullShuffle.onclick =
-    () => {
-      shuffle = !shuffle;
-
-      localStorage.setItem(
-        "bbShuffle",
-        String(shuffle)
-      );
-
-      updateControls();
-    };
-
-  e.repeatBtn.onclick =
-    e.fullRepeat.onclick =
-    () => {
-      repeat = !repeat;
-      audio.loop = repeat;
-
-      localStorage.setItem(
-        "bbRepeat",
-        String(repeat)
-      );
-
-      updateControls();
-    };
+  e.fullShuffle.onclick = toggleShuffle;
+  e.fullRepeat.onclick = toggleRepeat;
 
   e.miniFavorite.onclick =
     e.fullFavorite.onclick =
     toggleFavorite;
 
-  e.openFullPlayer.onclick =
-    openFullPlayer;
+  e.openFullPlayer.onclick = openFullPlayer;
 
   e.closeFullPlayer.onclick = () => {
     if (
@@ -389,14 +335,11 @@
     }
   };
 
-  window.addEventListener(
-    "popstate",
-    () => {
-      if (!e.fullPlayer.hidden) {
-        closeFullPlayer();
-      }
+  window.addEventListener("popstate",() => {
+    if (!e.fullPlayer.hidden) {
+      closeFullPlayer();
     }
-  );
+  });
 
   e.miniProgress.oninput = () => {
     seek(e.miniProgress);
@@ -406,14 +349,11 @@
     seek(e.fullProgress);
   };
 
-  e.searchInput.oninput =
-    renderTracks;
+  e.searchInput.oninput = renderTracks;
 
   audio.onloadedmetadata = () => {
     e.miniDuration.textContent =
-      formatTime(audio.duration);
-
-    e.fullDuration.textContent =
+      e.fullDuration.textContent =
       formatTime(audio.duration);
 
     if (
@@ -428,24 +368,18 @@
 
   audio.ontimeupdate = () => {
     const progress = audio.duration
-      ? (audio.currentTime /
-          audio.duration) *
-        100
+      ? (audio.currentTime / audio.duration) * 100
       : 0;
 
     e.miniProgress.value = progress;
     e.fullProgress.value = progress;
 
     e.miniCurrent.textContent =
-      formatTime(audio.currentTime);
-
-    e.fullCurrent.textContent =
+      e.fullCurrent.textContent =
       formatTime(audio.currentTime);
 
     e.miniDuration.textContent =
-      formatTime(audio.duration);
-
-    e.fullDuration.textContent =
+      e.fullDuration.textContent =
       formatTime(audio.duration);
 
     localStorage.setItem(
@@ -478,9 +412,7 @@
       "0"
     );
 
-    if (!repeat) {
-      nextTrack();
-    }
+    if (!repeat) nextTrack();
   };
 
   if ("mediaSession" in navigator) {
@@ -506,7 +438,7 @@
   }
 
   if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
+    window.addEventListener("load",() => {
       navigator.serviceWorker.register(
         "service-worker.js"
       );
@@ -514,5 +446,5 @@
   }
 
   renderGenres();
-  loadTrack(current, restore, false);
+  loadTrack(current,restore,false);
 })();
