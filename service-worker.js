@@ -1,4 +1,4 @@
-const CACHE = "brew-brews-radio-v3.0.0";
+const CACHE = "brew-brews-radio-v3.0.1";
 const APP_SHELL = [
   "./", "index.html", "style.css", "player.js", "playlist.js", "manifest.json",
   "icon-192.png", "icon-512.png",
