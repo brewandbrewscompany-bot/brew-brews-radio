@@ -24,7 +24,7 @@
     "fullCurrent","fullDuration","fullPlay","fullPrev",
     "fullNext","fullShuffle","fullRepeat","fullFavorite",
     "heroPlayBtn","searchInput","genreFilters","trackGrid",
-    "openFullPlayer"
+    "openFullPlayer","songCount"
   ];
 
   const e = {};
@@ -32,30 +32,18 @@
 
   function formatTime(seconds){
     if (!Number.isFinite(seconds)) return "0:00";
-
     const minutes = Math.floor(seconds / 60);
-    const remaining = Math.floor(seconds % 60)
-      .toString()
-      .padStart(2,"0");
-
+    const remaining = Math.floor(seconds % 60).toString().padStart(2,"0");
     return `${minutes}:${remaining}`;
   }
 
   function saveFavorites(){
-    localStorage.setItem(
-      "bbFavorites",
-      JSON.stringify([...favorites])
-    );
+    localStorage.setItem("bbFavorites",JSON.stringify([...favorites]));
   }
 
   function updateControls(){
-    [e.fullShuffle].forEach(button => {
-      button.classList.toggle("active-control",shuffle);
-    });
-
-    [e.fullRepeat].forEach(button => {
-      button.classList.toggle("active-control",repeat);
-    });
+    e.fullShuffle.classList.toggle("active-control",shuffle);
+    e.fullRepeat.classList.toggle("active-control",repeat);
 
     const isFavorite = favorites.has(tracks[current].id);
 
@@ -100,6 +88,8 @@
     const query = e.searchInput.value.toLowerCase();
     e.trackGrid.innerHTML = "";
 
+    let visibleCount = 0;
+
     tracks.forEach((track,index) => {
       const matchesGenre =
         genre === "All" ||
@@ -113,6 +103,8 @@
           .includes(query);
 
       if (!matchesGenre || !matchesSearch) return;
+
+      visibleCount += 1;
 
       const button = document.createElement("button");
 
@@ -140,6 +132,8 @@
 
       e.trackGrid.appendChild(button);
     });
+
+    e.songCount.textContent = visibleCount;
   }
 
   function syncPlayer(){
@@ -253,24 +247,14 @@
 
   function toggleShuffle(){
     shuffle = !shuffle;
-
-    localStorage.setItem(
-      "bbShuffle",
-      String(shuffle)
-    );
-
+    localStorage.setItem("bbShuffle",String(shuffle));
     updateControls();
   }
 
   function toggleRepeat(){
     repeat = !repeat;
     audio.loop = repeat;
-
-    localStorage.setItem(
-      "bbRepeat",
-      String(repeat)
-    );
-
+    localStorage.setItem("bbRepeat",String(repeat));
     updateControls();
   }
 
@@ -391,57 +375,33 @@
   audio.onplay = () => {
     e.playBtn.textContent = "❚❚";
     e.fullPlay.textContent = "❚❚";
-    e.heroPlayBtn.textContent =
-      "❚❚ PAUSE RADIO";
-
+    e.heroPlayBtn.textContent = "❚❚ PAUSE RADIO";
     renderTracks();
   };
 
   audio.onpause = () => {
     e.playBtn.textContent = "▶";
     e.fullPlay.textContent = "▶";
-    e.heroPlayBtn.textContent =
-      "▶ PLAY RADIO";
-
+    e.heroPlayBtn.textContent = "▶ PLAY RADIO";
     renderTracks();
   };
 
   audio.onended = () => {
-    localStorage.setItem(
-      "bbPosition",
-      "0"
-    );
+    localStorage.setItem("bbPosition","0");
 
     if (!repeat) nextTrack();
   };
 
   if ("mediaSession" in navigator) {
-    navigator.mediaSession.setActionHandler(
-      "play",
-      playAudio
-    );
-
-    navigator.mediaSession.setActionHandler(
-      "pause",
-      pauseAudio
-    );
-
-    navigator.mediaSession.setActionHandler(
-      "previoustrack",
-      previousTrack
-    );
-
-    navigator.mediaSession.setActionHandler(
-      "nexttrack",
-      nextTrack
-    );
+    navigator.mediaSession.setActionHandler("play",playAudio);
+    navigator.mediaSession.setActionHandler("pause",pauseAudio);
+    navigator.mediaSession.setActionHandler("previoustrack",previousTrack);
+    navigator.mediaSession.setActionHandler("nexttrack",nextTrack);
   }
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load",() => {
-      navigator.serviceWorker.register(
-        "service-worker.js"
-      );
+      navigator.serviceWorker.register("service-worker.js");
     });
   }
 

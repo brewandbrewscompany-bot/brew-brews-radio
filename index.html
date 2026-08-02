@@ -16,12 +16,10 @@
       <div class="hero-copy">
         <div class="eyebrow">Brew & Brews Radio</div>
         <h1>Your coffeehouse soundtrack</h1>
-        <p>Original music for slow mornings, busy afternoons, and every cup in between.</p>
+        <p>Original music for every moment.</p>
 
         <div class="hero-actions">
-          <button id="heroPlayBtn" class="hero-play" type="button">
-            ▶ PLAY RADIO
-          </button>
+          <button id="heroPlayBtn" class="hero-play" type="button">▶ PLAY RADIO</button>
 
           <a
             class="shop-link"
@@ -36,6 +34,18 @@
     </header>
 
     <section class="library">
+
+      <div class="library-head">
+        <div>
+          <div class="library-kicker">BROWSE THE STATION</div>
+          <h2>Pick your next pour</h2>
+        </div>
+
+        <div class="library-count">
+          <strong id="songCount">0</strong>
+          <span>songs</span>
+        </div>
+      </div>
 
       <div class="search-wrap">
         <span>⌕</span>
@@ -71,6 +81,12 @@
       </span>
     </button>
 
+    <div class="mini-controls">
+      <button id="prevBtn" type="button" aria-label="Previous">◀</button>
+      <button id="playBtn" class="mini-main-play" type="button" aria-label="Play">▶</button>
+      <button id="nextBtn" type="button" aria-label="Next">▶</button>
+    </div>
+
     <button
       id="miniFavorite"
       class="mini-favorite"
@@ -79,12 +95,6 @@
     >
       ♡
     </button>
-
-    <div class="mini-controls">
-      <button id="prevBtn" type="button" aria-label="Previous">◀</button>
-      <button id="playBtn" class="mini-main-play" type="button" aria-label="Play">▶</button>
-      <button id="nextBtn" type="button" aria-label="Next">▶</button>
-    </div>
 
     <div class="mini-progress-row">
       <span id="miniCurrent">0:00</span>
@@ -136,9 +146,7 @@
         <button id="fullRepeat" type="button" aria-label="Repeat">↻</button>
       </div>
 
-      <button id="fullFavorite" class="full-favorite" type="button">
-        ♡ Favorite
-      </button>
+      <button id="fullFavorite" class="full-favorite" type="button">♡ Favorite</button>
 
       <a
         class="full-shop"
@@ -149,9 +157,7 @@
         ☕ SHOP BREW & BREWS COFFEE
       </a>
 
-      <p class="phone-volume-note">
-        Use your phone’s volume buttons to adjust sound.
-      </p>
+      <p class="phone-volume-note">Use your phone’s volume buttons to adjust sound.</p>
 
     </div>
 
