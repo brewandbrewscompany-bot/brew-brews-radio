@@ -1,89 +1,74 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0d0b0a">
-  <meta name="description" content="Original coffeehouse songs from Brew & Brews Radio.">
-  <title>Brew & Brews Radio</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon-192.png">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Playfair+Display:wght@700;800&amp;display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d0a08">
+<title>Brew & Brews Radio</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app-shell">
-    <header class="hero">
-      <div class="hero__shade"></div>
-      <div class="hero__content">
-        <p class="eyebrow">Freshly roasted sound</p>
-        <h1>Brew &amp; Brews <span>Radio</span></h1>
-        <p class="hero__copy">Songs for slow mornings, late nights, and every cup in between.</p>
-        <button class="button button--gold" id="heroPlay" type="button">
-          <span aria-hidden="true">▶</span> Start listening
-        </button>
-      </div>
-    </header>
+<main>
+  <header class="hero">
+    <div>
+      <span>Brew & Brews Radio</span>
+      <h1>Pick your next pour</h1>
+      <p>Original music for every moment.</p>
+    </div>
+  </header>
 
-    <main>
-      <section class="library" aria-labelledby="libraryTitle">
-        <div class="section-heading">
-          <div><p class="eyebrow">The house playlist</p><h2 id="libraryTitle">Pick your next pour</h2></div>
-          <button class="icon-button install-button" id="installButton" type="button" hidden>Install app</button>
-        </div>
+  <section class="library">
+    <input id="searchInput" class="search" type="search" placeholder="Search songs or moods">
+    <div id="genreFilters" class="filters"></div>
+    <div id="trackGrid" class="grid"></div>
+  </section>
+</main>
 
-        <div class="library-tools">
-          <label class="search">
-            <span aria-hidden="true">⌕</span>
-            <span class="sr-only">Search songs</span>
-            <input id="searchInput" type="search" placeholder="Search songs or moods" autocomplete="off">
-          </label>
-          <div class="filters" id="genreFilters" aria-label="Filter by genre"></div>
-        </div>
-
-        <div class="track-grid" id="trackList" aria-live="polite"></div>
-        <p class="empty-state" id="emptyState" hidden>No songs match that search.</p>
-      </section>
-
-      <section class="recent" id="recentSection" aria-labelledby="recentTitle" hidden>
-        <div class="section-heading"><div><p class="eyebrow">Back for another cup</p><h2 id="recentTitle">Recently played</h2></div></div>
-        <div class="recent-list" id="recentList"></div>
-      </section>
-    </main>
+<section id="miniPlayer" class="mini-player">
+  <button id="openFullPlayer" class="mini-info" type="button">
+    <img id="miniCover" src="love-in-every-brew.png" alt="">
+    <span><strong id="miniTitle">Love in Every Brew</strong><small id="miniArtist">Brew & Brews Radio</small></span>
+  </button>
+  <button id="miniFavorite" class="favorite" type="button">♡</button>
+  <div class="controls">
+    <button id="shuffleBtn" type="button">⤨</button>
+    <button id="prevBtn" type="button">◀</button>
+    <button id="playBtn" class="play" type="button">▶</button>
+    <button id="nextBtn" type="button">▶</button>
+    <button id="repeatBtn" type="button">↻</button>
   </div>
+  <div class="progress-row">
+    <span id="miniCurrent">0:00</span>
+    <input id="miniProgress" type="range" min="0" max="100" value="0">
+    <span id="miniDuration">0:00</span>
+  </div>
+</section>
 
-  <aside class="player" id="player" aria-label="Music player">
-    <audio id="audio" preload="metadata"></audio>
-    <div class="player__track">
-      <img id="playerCover" src="love-in-every-brew.png" alt="" width="64" height="64">
-      <div class="player__meta"><strong id="playerTitle">Love in Every Brew</strong><span id="playerArtist">Brew &amp; Brews Radio</span></div>
-      <button class="control favorite" id="favoriteButton" type="button" aria-label="Add to favorites" aria-pressed="false">♡</button>
+<section id="fullPlayer" class="full-player" hidden>
+  <div id="fullBackdrop" class="backdrop"></div>
+  <button id="closeFullPlayer" class="close" type="button">⌄</button>
+  <div class="full-inner">
+    <div class="now-label">NOW PLAYING</div>
+    <img id="fullCover" class="full-cover" src="love-in-every-brew.png" alt="">
+    <h2 id="fullTitle">Love in Every Brew</h2>
+    <p id="fullArtist">Brew & Brews Radio</p>
+    <input id="fullProgress" type="range" min="0" max="100" value="0">
+    <div class="full-times"><span id="fullCurrent">0:00</span><span id="fullDuration">0:00</span></div>
+    <div class="full-controls">
+      <button id="fullShuffle" type="button">⤨</button>
+      <button id="fullPrev" type="button">◀</button>
+      <button id="fullPlay" class="full-play" type="button">▶</button>
+      <button id="fullNext" type="button">▶</button>
+      <button id="fullRepeat" type="button">↻</button>
     </div>
-    <div class="player__center">
-      <div class="transport">
-        <button class="control" id="shuffleButton" type="button" aria-label="Shuffle" aria-pressed="false">⤨</button>
-        <button class="control" id="previousButton" type="button" aria-label="Previous song">◀</button>
-        <button class="play-button" id="playButton" type="button" aria-label="Play">▶</button>
-        <button class="control" id="nextButton" type="button" aria-label="Next song">▶</button>
-        <button class="control" id="repeatButton" type="button" aria-label="Repeat off" aria-pressed="false">↻</button>
-      </div>
-      <div class="timeline">
-        <span id="currentTime">0:00</span>
-        <input id="progress" type="range" min="0" max="100" value="0" step="0.1" aria-label="Song progress">
-        <span id="duration">0:00</span>
-      </div>
-    </div>
-    <div class="volume">
-      <button class="control" id="muteButton" type="button" aria-label="Mute">◕</button>
-      <input id="volume" type="range" min="0" max="1" value="0.85" step="0.01" aria-label="Volume">
-    </div>
-  </aside>
+    <button id="fullFavorite" class="full-favorite" type="button">♡ Favorite</button>
+    <label class="volume"><span>🔈</span><input id="volume" type="range" min="0" max="1" step=".01" value=".8"><span>🔊</span></label>
+  </div>
+</section>
 
-  <noscript>This radio needs JavaScript enabled to play music.</noscript>
-  <script src="playlist.js"></script>
-  <script src="player.js"></script>
+<audio id="audio" preload="metadata"></audio>
+<script src="playlist.js"></script>
+<script src="player.js"></script>
 </body>
 </html>
