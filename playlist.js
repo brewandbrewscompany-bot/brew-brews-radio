@@ -93,8 +93,8 @@ window.BB_PLAYLIST = [
     title: "Voodoo",
     artist: "Brew & Brews Radio",
     genre: "Swamp Blues",
-    audio: "voodoo.mp3",
-    cover: "voodoo.png"
+    audio: "VOODOO.mp3",
+    cover: "VOODOO.png"
   },
   {
     id: "no-label",
