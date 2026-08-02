@@ -16,6 +16,7 @@
   );
 
   const ids = [
+    "topCover","topSongTitle","topPlayBtn","topBrandOpen",
     "miniCover","miniTitle","miniArtist","miniFavorite",
     "miniProgress","miniCurrent","miniDuration",
     "playBtn","prevBtn","nextBtn",
@@ -23,7 +24,7 @@
     "fullCover","fullTitle","fullArtist","fullProgress",
     "fullCurrent","fullDuration","fullPlay","fullPrev",
     "fullNext","fullShuffle","fullRepeat","fullFavorite",
-    "heroPlayBtn","searchInput","genreFilters","trackGrid",
+    "searchInput","genreFilters","trackGrid",
     "openFullPlayer","songCount"
   ];
 
@@ -48,9 +49,7 @@
     const isFavorite = favorites.has(tracks[current].id);
 
     e.miniFavorite.textContent = isFavorite ? "♥" : "♡";
-    e.fullFavorite.textContent = isFavorite
-      ? "♥ Favorited"
-      : "♡ Favorite";
+    e.fullFavorite.textContent = isFavorite ? "♥ Favorited" : "♡ Favorite";
   }
 
   function renderGenres(){
@@ -139,6 +138,9 @@
   function syncPlayer(){
     const track = tracks[current];
 
+    e.topCover.src = track.cover;
+    e.topSongTitle.textContent = track.title;
+
     e.miniCover.src = track.cover;
     e.fullCover.src = track.cover;
 
@@ -174,10 +176,7 @@
   function loadTrack(index,startAt=0,autoplay=false){
     current = index;
 
-    localStorage.setItem(
-      "bbCurrentTrack",
-      String(current)
-    );
+    localStorage.setItem("bbCurrentTrack",String(current));
 
     restore = startAt;
     audio.src = tracks[current].audio;
@@ -286,9 +285,9 @@
     document.body.style.overflow = "";
   }
 
-  e.playBtn.onclick =
+  e.topPlayBtn.onclick =
+    e.playBtn.onclick =
     e.fullPlay.onclick =
-    e.heroPlayBtn.onclick =
     togglePlayback;
 
   e.prevBtn.onclick =
@@ -307,6 +306,7 @@
     toggleFavorite;
 
   e.openFullPlayer.onclick = openFullPlayer;
+  e.topBrandOpen.onclick = openFullPlayer;
 
   e.closeFullPlayer.onclick = () => {
     if (
@@ -366,23 +366,20 @@
       e.fullDuration.textContent =
       formatTime(audio.duration);
 
-    localStorage.setItem(
-      "bbPosition",
-      String(audio.currentTime)
-    );
+    localStorage.setItem("bbPosition",String(audio.currentTime));
   };
 
   audio.onplay = () => {
+    e.topPlayBtn.textContent = "❚❚ PAUSE";
     e.playBtn.textContent = "❚❚";
     e.fullPlay.textContent = "❚❚";
-    e.heroPlayBtn.textContent = "❚❚ PAUSE RADIO";
     renderTracks();
   };
 
   audio.onpause = () => {
+    e.topPlayBtn.textContent = "▶ PLAY";
     e.playBtn.textContent = "▶";
     e.fullPlay.textContent = "▶";
-    e.heroPlayBtn.textContent = "▶ PLAY RADIO";
     renderTracks();
   };
 

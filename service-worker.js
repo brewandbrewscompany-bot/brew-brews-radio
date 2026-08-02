@@ -1,4 +1,4 @@
-const CACHE="brew-brews-radio-v5.1.0";
+const CACHE="brew-brews-radio-v5.2.0";
 
 const APP_SHELL=[
   "./",
