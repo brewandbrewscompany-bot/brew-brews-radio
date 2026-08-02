@@ -1,22 +1,586 @@
-:root{--bg:#0d0a08;--panel:#18120f;--text:#f4efe8;--muted:#b9afa5;--line:#3a2b22;--accent:#e0aa67}
-*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}body{padding-bottom:190px}
-button,input{font:inherit}.hero{min-height:220px;padding:42px 24px;display:flex;align-items:flex-end;background:linear-gradient(180deg,rgba(13,10,8,.2),rgba(13,10,8,.95)),url("love-in-every-brew.png") center/cover}.hero span{color:var(--accent);text-transform:uppercase;letter-spacing:3px;font-size:12px;font-weight:800}.hero h1{font:700 clamp(38px,8vw,68px)/.95 Georgia,serif;margin:8px 0}.hero p{margin:0}.library{padding:22px}.search{width:100%;padding:17px;border:1px solid var(--line);border-radius:16px;background:#17110e;color:#fff}.filters{display:flex;gap:10px;overflow-x:auto;padding:18px 0}.chip{flex:0 0 auto;padding:10px 16px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted)}.chip.active{background:var(--text);color:var(--bg)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card{position:relative;padding:0 0 14px;border:1px solid transparent;border-radius:18px;overflow:hidden;background:var(--panel);color:#fff;text-align:left}.card.active{border-color:var(--accent)}.card img{width:100%;aspect-ratio:1;object-fit:cover}.card h3{margin:14px 12px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.card p{margin:0 12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.badge{display:none;position:absolute;top:10px;left:10px;padding:6px 9px;border-radius:999px;background:rgba(0,0,0,.75);color:var(--accent);font-size:10px}.card.active .badge{display:block}
-.mini-player{position:fixed;left:0;right:0;bottom:0;z-index:20;padding:14px 18px calc(14px + env(safe-area-inset-bottom));background:rgba(13,9,8,.97);border-top:1px solid var(--line)}.mini-info{width:calc(100% - 56px);display:flex;gap:12px;align-items:center;border:0;background:transparent;color:#fff;text-align:left}.mini-info img{width:58px;height:58px;border-radius:8px;object-fit:cover}.mini-info span{min-width:0;display:flex;flex-direction:column}.mini-info strong,.mini-info small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mini-info small{color:var(--muted);margin-top:4px}.favorite{position:absolute;right:18px;top:24px;border:0;background:transparent;color:#fff;font-size:30px}.controls,.full-controls{display:flex;justify-content:center;align-items:center;gap:24px;margin:12px 0}.controls button,.full-controls button{border:0;background:transparent;color:#fff;font-size:20px}.play,.full-play{border-radius:50%!important;background:var(--text)!important;color:var(--bg)!important}.play{width:58px;height:58px}.progress-row{display:grid;grid-template-columns:52px 1fr 52px;gap:9px;align-items:center;color:var(--muted);font-size:13px}input[type=range]{width:100%;accent-color:var(--accent)}
-.full-player{position:fixed;inset:0;z-index:50;background:#0b0908;overflow:auto}.full-player[hidden]{display:none}.backdrop{position:absolute;inset:0;background:center/cover;filter:blur(30px) brightness(.25);transform:scale(1.15)}.full-player:after{content:"";position:absolute;inset:0;background:linear-gradient(rgba(10,7,5,.1),rgba(10,7,5,.94))}.close{position:fixed;z-index:3;top:18px;left:18px;width:44px;height:44px;border:0;border-radius:50%;background:rgba(0,0,0,.4);color:#fff;font-size:28px}.full-inner{position:relative;z-index:2;max-width:600px;margin:auto;padding:72px 24px 34px;text-align:center}.now-label{color:var(--accent);letter-spacing:2px;font-size:12px}.full-cover{width:min(84vw,460px);aspect-ratio:1;object-fit:cover;border-radius:22px;margin:18px auto;box-shadow:0 24px 60px rgba(0,0,0,.5)}.full-inner h2{font-size:clamp(28px,7vw,44px);margin:20px 0 6px}.full-inner p{margin:0 0 24px;color:var(--muted)}.full-times{display:flex;justify-content:space-between;color:var(--muted);font-size:13px}.full-play{width:78px;height:78px;font-size:30px!important}.full-favorite{width:100%;padding:14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.04);color:#fff}.volume{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;margin-top:18px}.active-control{color:var(--accent)!important}
-@media(min-width:760px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.mini-player{left:50%;transform:translateX(-50%);max-width:1000px;border-radius:18px 18px 0 0}}
+:root{
+  --bg:#0d0a08;
+  --panel:#18120f;
+  --panel-soft:#211813;
+  --text:#f4efe8;
+  --muted:#b9afa5;
+  --line:#3a2b22;
+  --accent:#e0aa67;
+  --accent-dark:#b87535;
+  --shadow:0 24px 60px rgba(0,0,0,.48);
+}
+
+*{
+  box-sizing:border-box;
+}
+
+html,
+body{
+  margin:0;
+  min-height:100%;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Arial,Helvetica,sans-serif;
+}
+
+body{
+  padding-bottom:190px;
+}
+
+button,
+input{
+  font:inherit;
+}
+
+button{
+  -webkit-tap-highlight-color:transparent;
+}
+
+/* =========================
+   HERO
+========================= */
+
+.hero{
+  min-height:340px;
+  display:flex;
+  align-items:center;
+  padding:38px 28px;
+  position:relative;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0,0,0,.88) 0%,
+      rgba(0,0,0,.60) 48%,
+      rgba(0,0,0,.22) 100%
+    ),
+    url("love-in-every-brew.png") center/cover no-repeat;
+  border-bottom:1px solid var(--line);
+  overflow:hidden;
+}
+
+.hero::after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  height:90px;
+  background:linear-gradient(transparent,var(--bg));
+  pointer-events:none;
+}
+
+.hero > div{
+  position:relative;
+  z-index:1;
+  max-width:560px;
+}
+
+.hero span{
+  display:block;
+  color:var(--accent);
+  text-transform:uppercase;
+  letter-spacing:3px;
+  font-size:12px;
+  font-weight:800;
+}
+
+.hero h1{
+  margin:10px 0 12px;
+  font-family:Arial,Helvetica,sans-serif;
+  font-size:clamp(34px,6vw,58px);
+  line-height:1;
+  letter-spacing:1px;
+}
+
+.hero p{
+  margin:0 0 20px;
+  font-size:18px;
+  line-height:1.45;
+  color:#f4efe8;
+}
+
 .hero-play{
-  margin-top:18px;
-  padding:13px 20px;
+  margin-top:0;
+  padding:14px 22px;
   border:0;
-  border-radius:999px;
+  border-radius:7px;
   background:var(--accent);
   color:#17100c;
   font-weight:800;
   cursor:pointer;
-  box-shadow:0 10px 24px rgba(0,0,0,.28);
+  box-shadow:0 10px 26px rgba(0,0,0,.32);
 }
+
+.hero-play:active{
+  transform:scale(.98);
+}
+
+/* =========================
+   LIBRARY
+========================= */
+
+.library{
+  padding:24px 22px 42px;
+}
+
+.search{
+  width:100%;
+  padding:17px 18px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  outline:0;
+  background:#17110e;
+  color:#fff;
+  font-size:18px;
+}
+
+.search::placeholder{
+  color:#8f857b;
+}
+
+.filters{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding:18px 0 22px;
+  scrollbar-width:none;
+}
+
+.filters::-webkit-scrollbar{
+  display:none;
+}
+
+.chip{
+  flex:0 0 auto;
+  padding:11px 18px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:transparent;
+  color:var(--muted);
+  cursor:pointer;
+}
+
+.chip.active{
+  background:var(--text);
+  border-color:var(--text);
+  color:var(--bg);
+}
+
+/* =========================
+   SONG CARDS
+========================= */
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+}
+
+.card{
+  position:relative;
+  width:100%;
+  padding:0 0 14px;
+  border:1px solid transparent;
+  border-radius:18px;
+  overflow:hidden;
+  background:var(--panel);
+  color:#fff;
+  text-align:left;
+  cursor:pointer;
+  transition:
+    transform .2s ease,
+    border-color .2s ease,
+    box-shadow .2s ease;
+}
+
+.card:active{
+  transform:scale(.985);
+}
+
+.card.active{
+  border-color:var(--accent);
+  box-shadow:0 0 0 1px rgba(224,170,103,.18);
+}
+
+.card img{
+  display:block;
+  width:100%;
+  aspect-ratio:1/1;
+  object-fit:cover;
+  background:#261c16;
+}
+
+.card h3{
+  margin:14px 12px 5px;
+  font-size:17px;
+  line-height:1.2;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.card p{
+  margin:0 12px;
+  color:var(--muted);
+  font-size:14px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.badge{
+  display:none;
+  position:absolute;
+  top:10px;
+  left:10px;
+  z-index:2;
+  padding:6px 9px;
+  border-radius:999px;
+  background:rgba(0,0,0,.78);
+  color:var(--accent);
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:1px;
+}
+
+.card.active .badge{
+  display:block;
+}
+
+/* =========================
+   BOTTOM MINI PLAYER
+========================= */
+
+.mini-player{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  z-index:20;
+  padding:14px 18px calc(14px + env(safe-area-inset-bottom));
+  background:rgba(13,9,8,.97);
+  backdrop-filter:blur(18px);
+  border-top:1px solid var(--line);
+  box-shadow:0 -18px 42px rgba(0,0,0,.42);
+}
+
+.mini-info{
+  width:calc(100% - 56px);
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:#fff;
+  text-align:left;
+  cursor:pointer;
+}
+
+.mini-info img{
+  width:58px;
+  height:58px;
+  flex:0 0 58px;
+  border-radius:8px;
+  object-fit:cover;
+  background:#261c16;
+}
+
+.mini-info span{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+}
+
+.mini-info strong,
+.mini-info small{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.mini-info strong{
+  font-size:17px;
+}
+
+.mini-info small{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:14px;
+}
+
+.favorite{
+  position:absolute;
+  top:24px;
+  right:18px;
+  border:0;
+  background:transparent;
+  color:#fff;
+  font-size:30px;
+  cursor:pointer;
+}
+
+.controls,
+.full-controls{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:24px;
+  margin:12px 0;
+}
+
+.controls button,
+.full-controls button{
+  border:0;
+  background:transparent;
+  color:#fff;
+  font-size:20px;
+  cursor:pointer;
+}
+
+.play,
+.full-play{
+  display:grid;
+  place-items:center;
+  border-radius:50% !important;
+  background:var(--text) !important;
+  color:var(--bg) !important;
+}
+
+.play{
+  width:58px;
+  height:58px;
+  font-size:24px !important;
+}
+
+.progress-row{
+  display:grid;
+  grid-template-columns:52px 1fr 52px;
+  gap:9px;
+  align-items:center;
+  color:var(--muted);
+  font-size:13px;
+}
+
+input[type="range"]{
+  width:100%;
+  accent-color:var(--accent);
+}
+
+/* =========================
+   FULL-SCREEN PLAYER
+========================= */
+
+.full-player{
+  position:fixed;
+  inset:0;
+  z-index:50;
+  background:#0b0908;
+  overflow-y:auto;
+  color:#fff;
+}
+
+.full-player[hidden]{
+  display:none;
+}
+
+.backdrop{
+  position:absolute;
+  inset:0;
+  background-position:center;
+  background-size:cover;
+  filter:blur(30px) brightness(.25);
+  transform:scale(1.15);
+}
+
+.full-player::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(10,7,5,.08),
+      rgba(10,7,5,.95)
+    );
+}
+
+.close{
+  position:fixed;
+  top:calc(18px + env(safe-area-inset-top));
+  left:18px;
+  z-index:3;
+  width:44px;
+  height:44px;
+  border:0;
+  border-radius:50%;
+  background:rgba(0,0,0,.42);
+  color:#fff;
+  font-size:28px;
+  cursor:pointer;
+}
+
+.full-inner{
+  position:relative;
+  z-index:2;
+  min-height:100%;
+  max-width:600px;
+  margin:0 auto;
+  padding:
+    calc(72px + env(safe-area-inset-top))
+    24px
+    calc(34px + env(safe-area-inset-bottom));
+  text-align:center;
+}
+
+.now-label{
+  color:var(--accent);
+  letter-spacing:2px;
+  font-size:12px;
+  font-weight:800;
+}
+
+.full-cover{
+  display:block;
+  width:min(84vw,460px);
+  aspect-ratio:1/1;
+  object-fit:cover;
+  border-radius:22px;
+  margin:18px auto;
+  background:#261c16;
+  box-shadow:var(--shadow);
+}
+
+.full-inner h2{
+  margin:20px 0 6px;
+  font-size:clamp(28px,7vw,44px);
+  line-height:1.05;
+}
+
+.full-inner > p{
+  margin:0 0 24px;
+  color:var(--muted);
+  font-size:16px;
+}
+
+.full-times{
+  display:flex;
+  justify-content:space-between;
+  margin-top:7px;
+  color:var(--muted);
+  font-size:13px;
+}
+
+.full-play{
+  width:78px;
+  height:78px;
+  font-size:30px !important;
+}
+
+.full-favorite{
+  width:100%;
+  margin-top:4px;
+  padding:14px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:rgba(255,255,255,.04);
+  color:#fff;
+  cursor:pointer;
+}
+
 .phone-volume-note{
   margin:16px 0 0;
   color:var(--muted);
   font-size:13px;
+}
+
+.active-control{
+  color:var(--accent) !important;
+}
+
+/* =========================
+   TABLET / DESKTOP
+========================= */
+
+@media(min-width:760px){
+
+  .grid{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+
+  .mini-player{
+    left:50%;
+    transform:translateX(-50%);
+    width:min(100%,1000px);
+    border:1px solid var(--line);
+    border-bottom:0;
+    border-radius:18px 18px 0 0;
+  }
+}
+
+/* =========================
+   SMALL PHONES
+========================= */
+
+@media(max-width:520px){
+
+  body{
+    padding-bottom:188px;
+  }
+
+  .hero{
+    min-height:310px;
+    padding:34px 20px;
+    background:
+      linear-gradient(
+        90deg,
+        rgba(0,0,0,.90) 0%,
+        rgba(0,0,0,.64) 56%,
+        rgba(0,0,0,.28) 100%
+      ),
+      url("love-in-every-brew.png") center/cover no-repeat;
+  }
+
+  .hero h1{
+    font-size:clamp(32px,10vw,46px);
+    max-width:340px;
+  }
+
+  .hero p{
+    font-size:16px;
+    max-width:350px;
+  }
+
+  .hero-play{
+    padding:13px 19px;
+  }
+
+  .library{
+    padding:22px 18px 38px;
+  }
+
+  .grid{
+    gap:12px;
+  }
+
+  .card{
+    border-radius:15px;
+  }
+
+  .card h3{
+    font-size:16px;
+  }
+
+  .card p{
+    font-size:13px;
+  }
+
+  .controls,
+  .full-controls{
+    gap:21px;
+  }
+
+  .full-cover{
+    width:min(86vw,430px);
+  }
 }
