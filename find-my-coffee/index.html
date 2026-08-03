@@ -170,7 +170,7 @@ linear-gradient(180deg,#17120f,#0d0b09)}
     <div class="shell quiz-wrap">
       <div class="topbar">
         <div class="brand"><span class="flame"></span> FIND MY COFFEE</div>
-        <div class="nav-actions"><button class="btn" onclick="showStage('home')">Restart</button></div>
+        <div class="nav-actions"><button class="btn" onclick="resetEntireExperience()">Restart</button></div>
       </div>
       <div class="progress" id="progress"></div>
       <div class="quiz-grid">
@@ -227,7 +227,7 @@ linear-gradient(180deg,#17120f,#0d0b09)}
       <div class="topbar">
         <div class="brand"><span class="flame"></span> COFFEE ROULETTE</div>
         <div class="nav-actions">
-          <button class="btn" onclick="exitRoulette()">Exit Roulette</button>
+          <button class="btn" onclick="resetEntireExperience()">Exit Roulette</button>
         </div>
       </div>
       <div class="card roulette-card">
@@ -247,13 +247,13 @@ linear-gradient(180deg,#17120f,#0d0b09)}
           <div class="roulette-controls">
             <button class="btn primary" id="tryPickBtn" onclick="tryRoulettePick()">I’ll try it</button>
             <button class="btn" id="spinAgainBtn" onclick="spinWheel()">Spin again</button>
-            <button class="btn" onclick="exitRoulette()">Exit Roulette</button>
+            <button class="btn" onclick="resetEntireExperience()">Exit Roulette</button>
           </div>
         </div>
 
         <div class="roulette-controls" id="initialRouletteControls">
           <button class="btn primary" id="spinBtn" onclick="spinWheel()">Spin the wheel</button>
-          <button class="btn" onclick="exitRoulette()">Exit Roulette</button>
+          <button class="btn" onclick="resetEntireExperience()">Exit Roulette</button>
         </div>
 
         <div id="rouletteLimit" class="roulette-pick">
@@ -263,7 +263,7 @@ linear-gradient(180deg,#17120f,#0d0b09)}
           <div class="roulette-controls">
             <button class="btn primary" onclick="tryRoulettePick()">I’ll try the last pick</button>
             <button class="btn" onclick="restartRoulette()">Restart Roulette</button>
-            <button class="btn" onclick="exitRoulette()">Exit Roulette</button>
+            <button class="btn" onclick="resetEntireExperience()">Exit Roulette</button>
           </div>
         </div>
       </div>
@@ -359,7 +359,7 @@ function resetPageScroll(){
   document.documentElement.scrollTop=0;
   document.body.scrollTop=0;
   try{
-    window.parent.postMessage({type:'BNB_SCROLL_TO_FINDER_TOP'},'*');
+    window.parent.postMessage({type:'BNB_SCROLL_PAGE_TOP'},'*');
   }catch(error){}
 }
 
@@ -371,6 +371,33 @@ function showStage(id){
     setTimeout(resetPageScroll,80);
   });
 }
+
+function resetEntireExperience(){
+  step = 0;
+  answers = {};
+  resetRouletteState();
+
+  document.querySelectorAll('.stage').forEach(s=>s.classList.remove('active'));
+  const home = document.getElementById('home');
+  if(home) home.classList.add('active');
+
+  const resultList = document.getElementById('resultList');
+  if(resultList) resultList.innerHTML = '';
+
+  const liveMatches = document.getElementById('liveMatches');
+  if(liveMatches) liveMatches.innerHTML = '';
+
+  const roulettePickName = document.getElementById('roulettePickName');
+  if(roulettePickName) roulettePickName.textContent = 'Ready when you are.';
+
+  const roulettePickDesc = document.getElementById('roulettePickDesc');
+  if(roulettePickDesc) roulettePickDesc.textContent = '';
+
+  resetPageScroll();
+  setTimeout(resetPageScroll, 150);
+  setTimeout(resetPageScroll, 500);
+}
+
 function startQuiz(){step=0;answers={};showStage('quiz');renderQuestion()}
 function renderQuestion(){
  const q=questions[step];
@@ -553,6 +580,28 @@ for(let i=0;i<34;i++){
  const b=document.createElement('span');b.className='bean';
  b.style.left=Math.random()*100+'%';b.style.animationDuration=(7+Math.random()*8)+'s';b.style.animationDelay=(-Math.random()*12)+'s';b.style.opacity=.25+Math.random()*.45;field.appendChild(b);
 }
+
+window.addEventListener('pageshow', function(event){
+  resetEntireExperience();
+});
+
+window.addEventListener('pagehide', function(){
+  step = 0;
+  answers = {};
+  rouletteSpinsRemaining = 3;
+  rouletteCurrentPick = null;
+  rouletteBusy = false;
+});
+
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'visible'){
+    const navEntry = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+    if(navEntry && navEntry.type === 'back_forward'){
+      resetEntireExperience();
+    }
+  }
+});
+
 </script>
 </body>
 </html>
