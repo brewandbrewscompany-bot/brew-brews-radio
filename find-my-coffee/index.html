@@ -1,129 +1,324 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#090706">
-  <meta name="description" content="Find your Brew & Brews coffee match.">
-  <title>Find My Coffee | Brew & Brews</title>
-  <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Find My Coffee | Brew & Brews</title>
+<meta name="description" content="Find your Brew & Brews coffee match in a few quick questions." />
+<style>
+:root{
+  --bg:#080706;
+  --panel:#12100e;
+  --panel2:#191511;
+  --text:#f7efe3;
+  --muted:#bcae9a;
+  --line:#2d251e;
+  --orange:#f5782c;
+  --orange2:#ff9b4f;
+  --cream:#f4e7d2;
+  --green:#92b36e;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif;min-height:100%;overflow-x:hidden}
+body{background:
+radial-gradient(circle at 20% 10%,rgba(245,120,44,.14),transparent 30%),
+radial-gradient(circle at 80% 25%,rgba(255,155,79,.08),transparent 28%),
+#080706}
+button{font:inherit}
+.app{min-height:100vh;position:relative;isolation:isolate}
+.stage{min-height:100vh;display:none;position:relative}
+.stage.active{display:block}
+.shell{width:min(1320px,94vw);margin:auto}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:22px 0}
+.brand{display:flex;align-items:center;gap:12px;font-weight:900;letter-spacing:.08em}
+.flame{width:28px;height:38px;background:linear-gradient(180deg,var(--orange2),var(--orange));clip-path:polygon(50% 0,76% 30%,68% 52%,92% 70%,68% 100%,28% 100%,7% 75%,24% 48%);filter:drop-shadow(0 0 14px rgba(245,120,44,.35))}
+.nav-actions{display:flex;gap:10px}
+.btn{border:1px solid var(--line);background:#14110f;color:var(--text);padding:13px 18px;border-radius:999px;cursor:pointer;transition:.25s}
+.btn:hover{transform:translateY(-2px);border-color:#70452d}
+.btn.primary{background:linear-gradient(135deg,var(--orange),var(--orange2));color:#1b0d05;border:none;font-weight:800;box-shadow:0 12px 32px rgba(245,120,44,.25)}
+.btn.ghost{background:transparent}
+.hero{min-height:calc(100vh - 90px);display:grid;grid-template-columns:1.05fr .95fr;align-items:center;gap:40px;padding:25px 0 60px}
+.eyebrow{color:var(--orange2);font-weight:800;text-transform:uppercase;letter-spacing:.18em;font-size:.8rem}
+h1{font-size:clamp(3.5rem,8vw,7.5rem);line-height:.88;margin:20px 0 26px;letter-spacing:-.055em}
+h1 em{font-family:Georgia,serif;color:var(--cream)}
+.lead{font-size:1.18rem;line-height:1.7;color:var(--muted);max-width:620px}
+.cta-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:30px}
+.trust{display:flex;gap:28px;flex-wrap:wrap;margin-top:35px;color:#d9ccba;font-size:.9rem}
+.trust span{display:flex;gap:8px;align-items:center}
+.visual{position:relative;height:650px;overflow:hidden;border-radius:34px;border:1px solid var(--line);background:
+radial-gradient(circle at 50% 30%,rgba(245,120,44,.17),transparent 36%),
+linear-gradient(180deg,#17120f,#0d0b09)}
+.bean-field{position:absolute;inset:0;overflow:hidden}
+.bean{position:absolute;width:11px;height:18px;border-radius:70% 30% 65% 35%;background:#4d2a17;opacity:.55;animation:fall linear infinite}
+@keyframes fall{from{transform:translateY(-60px) rotate(0)}to{transform:translateY(760px) rotate(380deg)}}
+.bag{position:absolute;width:175px;height:310px;border-radius:12px 12px 18px 18px;background:linear-gradient(145deg,#26211c,#090807);border:1px solid #40352b;box-shadow:0 26px 50px rgba(0,0,0,.55);display:flex;flex-direction:column;justify-content:flex-end;padding:18px;text-align:center;animation:float 5s ease-in-out infinite}
+.bag:before{content:"";position:absolute;top:18px;left:16px;right:16px;height:7px;border-top:2px solid #5f5043}
+.bag .mini-flame{margin:auto auto 80px;width:30px;height:42px;background:var(--orange);clip-path:polygon(50% 0,76% 30%,68% 52%,92% 70%,68% 100%,28% 100%,7% 75%,24% 48%)}
+.bag strong{font-size:1.15rem}
+.bag small{color:#b8a994;margin-top:6px}
+.b1{left:5%;bottom:70px;transform:rotate(-8deg);animation-delay:0s}
+.b2{left:31%;bottom:120px;transform:scale(1.12);z-index:3;animation-delay:.7s}
+.b3{right:8%;bottom:85px;transform:rotate(7deg);animation-delay:1.4s}
+.b4{right:27%;top:50px;transform:scale(.82) rotate(8deg);opacity:.9;animation-delay:2.1s}
+@keyframes float{0%,100%{translate:0 0}50%{translate:0 -16px}}
+.glow{position:absolute;width:360px;height:360px;border-radius:50%;background:rgba(245,120,44,.13);filter:blur(55px);left:50%;top:45%;transform:translate(-50%,-50%)}
+.quiz-wrap{padding-bottom:70px}
+.progress{display:flex;gap:10px;align-items:center;margin:20px 0 30px}
+.progress .dot{width:12px;height:12px;border-radius:50%;background:#2a241f;border:1px solid #5b4a3b}
+.progress .dot.active{background:var(--orange);box-shadow:0 0 0 6px rgba(245,120,44,.12)}
+.quiz-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:24px}
+.card{background:linear-gradient(180deg,#15120f,#0e0c0a);border:1px solid var(--line);border-radius:28px;padding:28px;box-shadow:0 22px 70px rgba(0,0,0,.28)}
+.question h2{font-size:clamp(2rem,4vw,4rem);margin:8px 0 10px}
+.sub{color:var(--muted);margin-bottom:24px}
+.options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.option{padding:18px;border:1px solid #3a3028;border-radius:18px;background:#110f0d;color:var(--text);cursor:pointer;text-align:left;transition:.22s;min-height:78px}
+.option:hover{border-color:#8e5937;transform:translateY(-2px)}
+.option.selected{border-color:var(--orange);box-shadow:0 0 0 2px rgba(245,120,44,.15) inset;background:linear-gradient(180deg,#1c140f,#120d09)}
+.option b{display:block;font-size:1rem;margin-bottom:5px}
+.option span{color:#a99986;font-size:.87rem}
+.quiz-actions{display:flex;justify-content:space-between;gap:12px;margin-top:24px}
+.live h3{margin-top:0}
+.match-list{display:grid;gap:12px}
+.match{display:grid;grid-template-columns:54px 1fr auto;gap:14px;align-items:center;border:1px solid #332a23;border-radius:18px;padding:12px;background:#100e0c;transition:.28s}
+.match.highlight{border-color:#74472c;background:linear-gradient(90deg,rgba(245,120,44,.12),transparent)}
+.thumb{width:48px;height:74px;border-radius:7px;background:linear-gradient(150deg,#34291f,#090807);display:grid;place-items:center;color:var(--orange);font-weight:900}
+.score{color:var(--orange2);font-size:1.25rem;font-weight:900}
+.result-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:24px;padding-bottom:60px}
+.top3{display:grid;gap:16px}
+.result-card{display:grid;grid-template-columns:100px 1fr auto;gap:18px;align-items:center;padding:18px;border-radius:22px;background:#120f0d;border:1px solid #342b24}
+.result-card:first-child{border-color:#845235;box-shadow:0 14px 40px rgba(245,120,44,.09)}
+.result-bag{height:140px;border-radius:10px;background:linear-gradient(145deg,#2b241e,#080706);border:1px solid #463a30;display:grid;place-items:center;color:var(--orange)}
+.adventure{position:sticky;top:20px}
+.roulette-wheel{width:min(380px,80vw);aspect-ratio:1;border-radius:50%;margin:20px auto;position:relative;background:conic-gradient(#1b1714 0 45deg,#2c1d13 45deg 90deg,#16120f 90deg 135deg,#3a2416 135deg 180deg,#17130f 180deg 225deg,#2d1b11 225deg 270deg,#19140f 270deg 315deg,#3b2618 315deg 360deg);border:14px solid #201711;box-shadow:0 0 0 2px #7a4b2d,0 0 40px rgba(245,120,44,.15);transition:transform 2.8s cubic-bezier(.2,.7,.1,1)}
+.roulette-wheel:after{content:"🔥";position:absolute;inset:35%;border-radius:50%;display:grid;place-items:center;background:#0b0908;border:2px solid #7a4b2d;font-size:3rem}
+.pointer{width:0;height:0;border-left:18px solid transparent;border-right:18px solid transparent;border-top:38px solid var(--orange);margin:0 auto -12px;position:relative;z-index:3}
+.footer{padding:28px 0;border-top:1px solid var(--line);color:#a99b88;text-align:center}
+.hidden{display:none!important}
+@media(max-width:900px){
+  .hero,.quiz-grid,.result-grid{grid-template-columns:1fr}
+  .visual{height:480px}
+  .bag{width:130px;height:235px}
+  .b2{left:33%}.b4{right:22%;top:25px}
+  h1{font-size:4rem}
+  .adventure{position:static}
+}
+@media(max-width:600px){
+  .shell{width:min(94vw,720px)}
+  .topbar{padding:14px 0}
+  .brand{font-size:.85rem}
+  .nav-actions .btn:first-child{display:none}
+  .hero{padding-top:0}
+  .visual{height:400px}
+  .bag{width:104px;height:195px;padding:10px}
+  .bag .mini-flame{margin-bottom:46px;width:23px;height:32px}
+  .bag strong{font-size:.85rem}
+  .b1{left:2%}.b2{left:34%}.b3{right:2%}.b4{display:none}
+  .options{grid-template-columns:1fr}
+  .card{padding:20px}
+  .result-card{grid-template-columns:74px 1fr}
+  .result-card .score{grid-column:2}
+}
+</style>
 </head>
 <body>
-  <div class="atmosphere" aria-hidden="true">
-    <i></i><i></i><i></i><i></i><i></i><i></i>
-  </div>
-
-  <header class="site-header">
-    <button class="brand" data-action="home" aria-label="Return to the beginning">
-      <span class="brand-flame" aria-hidden="true"></span>
-      <span><strong>BREW &amp; BREWS</strong><small>FIND MY COFFEE</small></span>
-    </button>
-    <div class="header-actions">
-      <button class="button button-quiet" data-action="restart">Restart</button>
-      <a class="button button-quiet" data-shop-link href="https://brewandbrewsco.com/products">Shop Coffee</a>
+<div class="app">
+  <section id="home" class="stage active">
+    <div class="shell">
+      <div class="topbar">
+        <div class="brand"><span class="flame"></span> BREW & BREWS</div>
+        <div class="nav-actions">
+          <button class="btn ghost" onclick="showStage('roulette')">Coffee Roulette</button>
+          <a class="btn" href="https://brewandbrewsco.com/products" target="_top">Shop Coffee</a>
+        </div>
+      </div>
+      <div class="hero">
+        <div>
+          <div class="eyebrow">Your coffee, matched</div>
+          <h1>Find my <em>coffee.</em></h1>
+          <p class="lead">Answer five quick questions and we’ll recommend three coffees built around your taste—plus one adventurous pick that may become your next favorite.</p>
+          <div class="cta-row">
+            <button class="btn primary" onclick="startQuiz()">Start finding my coffee →</button>
+            <button class="btn" onclick="showStage('roulette')">Spin Coffee Roulette</button>
+          </div>
+          <div class="trust">
+            <span>🔥 Fresh roasted</span><span>☕ Small batches</span><span>🔒 No sign-in</span><span>⚡ Live recommendations</span>
+          </div>
+        </div>
+        <div class="visual">
+          <div class="glow"></div>
+          <div class="bean-field" id="beanField"></div>
+          <div class="bag b1"><div class="mini-flame"></div><strong>HOUSE BLEND</strong><small>Balanced · Smooth</small></div>
+          <div class="bag b2"><div class="mini-flame"></div><strong>BRAZIL</strong><small>Cocoa · Nutty</small></div>
+          <div class="bag b3"><div class="mini-flame"></div><strong>VOODOO</strong><small>Bold · Earthy</small></div>
+          <div class="bag b4"><div class="mini-flame"></div><strong>MORNING LIGHT</strong><small>Honey · Clean</small></div>
+        </div>
+      </div>
     </div>
-  </header>
+  </section>
 
-  <main id="application">
-    <section class="view view-start is-active" id="view-start">
-      <div class="hero-copy">
-        <p class="kicker">Your coffee, matched</p>
-        <h1>Find my <em>coffee.</em></h1>
-        <p class="hero-lead">Answer five quick questions and we’ll recommend three coffees built around your taste—plus one adventurous pick.</p>
-        <div class="hero-actions">
-          <button class="button button-primary button-large" data-action="start">Start finding my coffee <span>→</span></button>
-          <button class="button button-outline button-large" data-action="roulette">Coffee roulette</button>
+  <section id="quiz" class="stage">
+    <div class="shell quiz-wrap">
+      <div class="topbar">
+        <div class="brand"><span class="flame"></span> FIND MY COFFEE</div>
+        <div class="nav-actions"><button class="btn" onclick="showStage('home')">Restart</button></div>
+      </div>
+      <div class="progress" id="progress"></div>
+      <div class="quiz-grid">
+        <div class="card question">
+          <div class="eyebrow" id="stepLabel"></div>
+          <h2 id="questionTitle"></h2>
+          <p class="sub" id="questionSub"></p>
+          <div class="options" id="options"></div>
+          <div class="quiz-actions">
+            <button class="btn" id="backBtn" onclick="prevQuestion()">← Back</button>
+            <button class="btn primary" onclick="nextQuestion()">Next question →</button>
+          </div>
         </div>
-        <div class="hero-promises" aria-label="Brew and Brews promises">
-          <span><b>Fresh roasted</b><small>Small batches</small></span>
-          <span><b>No sign-in</b><small>Fast and private</small></span>
-          <span><b>Made for you</b><small>Live recommendations</small></span>
+        <div class="card live">
+          <div class="eyebrow">Updating live</div>
+          <h3>Your leading matches</h3>
+          <p class="sub">Your selections continuously change the order.</p>
+          <div class="match-list" id="liveMatches"></div>
         </div>
       </div>
+    </div>
+  </section>
 
-      <div class="coffee-display" aria-label="Featured coffees">
-        <div class="display-glow"></div>
-        <article class="display-bag bag-house"><span class="mini-flame"></span><small>BREW &amp; BREWS</small><strong>HOUSE<br>BLEND</strong><i>Balanced · Smooth</i></article>
-        <article class="display-bag bag-brazil"><span class="mini-flame"></span><small>BREW &amp; BREWS</small><strong>BRAZIL</strong><i>Cocoa · Nutty</i></article>
-        <article class="display-bag bag-morning"><span class="mini-flame"></span><small>BREW &amp; BREWS</small><strong>MORNING<br>LIGHT</strong><i>Honey · Clean</i></article>
-        <article class="display-bag bag-voodoo"><span class="mini-flame"></span><small>BREW &amp; BREWS</small><strong>VOODOO</strong><i>Bold · Earthy</i></article>
+  <section id="results" class="stage">
+    <div class="shell">
+      <div class="topbar">
+        <div class="brand"><span class="flame"></span> YOUR MATCHES</div>
+        <div class="nav-actions"><button class="btn" onclick="startQuiz()">Retake quiz</button></div>
       </div>
-    </section>
-
-    <section class="view" id="view-quiz">
-      <div class="quiz-layout">
-        <section class="question-panel">
-          <div class="question-topline">
-            <button class="text-button" data-action="back">← Back</button>
-            <span id="step-counter">Question 1 of 5</span>
+      <div class="result-grid">
+        <div class="card">
+          <div class="eyebrow">Your taste profile is ready</div>
+          <h2 style="font-size:clamp(2.4rem,5vw,5rem);margin:10px 0 8px">Your top coffee matches</h2>
+          <p class="sub">Based on your drink, flavors, roast, brewing method, and comfort zone.</p>
+          <div id="resultList" class="top3"></div>
+        </div>
+        <div>
+          <div class="card adventure">
+            <div class="eyebrow">Feeling adventurous?</div>
+            <h2 id="adventureName">Voodoo</h2>
+            <p class="sub" id="adventureText"></p>
+            <div class="result-bag" style="height:220px;margin:18px 0">🔥</div>
+            <button class="btn primary" style="width:100%">Try this coffee</button>
+            <button class="btn" style="width:100%;margin-top:10px" onclick="showStage('roulette')">Spin Coffee Roulette</button>
           </div>
-          <div class="progress-track" aria-hidden="true"><span id="progress-bar"></span></div>
-          <div class="question-heading">
-            <span class="question-icon" id="question-icon">☕</span>
-            <div><p class="kicker" id="question-kicker">Tell us about your cup</p><h2 id="question-title"></h2><p id="question-help"></p></div>
-          </div>
-          <div class="choice-grid" id="choice-grid"></div>
-          <div class="question-actions">
-            <button class="button button-quiet" data-action="skip">Skip this</button>
-            <button class="button button-primary" data-action="next"><span id="next-label">Next question</span> →</button>
-          </div>
-        </section>
-
-        <aside class="match-panel">
-          <div class="match-panel-heading">
-            <div><p class="kicker">Updating live</p><h3>Your leading matches</h3></div>
-            <span class="live-dot" aria-label="Recommendations are updating"></span>
-          </div>
-          <div class="match-stack" id="live-matches"></div>
-          <article class="adventure-preview" id="live-adventure"></article>
-        </aside>
+        </div>
       </div>
-    </section>
+      <div class="footer">Great coffee. Real connection. — Brew & Brews</div>
+    </div>
+  </section>
 
-    <section class="view" id="view-results">
-      <header class="results-header">
-        <p class="kicker">Your taste profile is ready</p>
-        <h2>Your top coffee matches</h2>
-        <p>These recommendations are based on your drink, flavors, roast, brewing method, and comfort zone.</p>
-      </header>
-      <div class="results-grid" id="results-grid"></div>
-      <section class="adventure-section" id="adventure-result"></section>
-      <section class="roulette-teaser">
-        <div><p class="kicker">Not feeling these?</p><h3>Let coffee roulette decide.</h3><p>Spin from the active Brew &amp; Brews lineup and let fate choose your next bag.</p></div>
-        <button class="button button-primary button-large" data-action="roulette">Spin coffee roulette →</button>
-      </section>
-      <div class="center-actions"><button class="button button-outline" data-action="restart">Change my answers</button><a class="button button-quiet" data-shop-link href="https://brewandbrewsco.com/products">Browse every coffee</a></div>
-    </section>
-
-    <section class="view" id="view-roulette">
-      <div class="roulette-layout">
-        <section class="roulette-copy">
-          <p class="kicker">Let fate—and flavor—decide</p>
-          <h2>Coffee roulette</h2>
-          <p>Every active coffee has a place on the wheel. Press spin and discover something you may not have chosen on your own.</p>
-          <button class="button button-primary button-large" data-action="spin">Spin the wheel</button>
-          <button class="button button-outline" data-action="home">Back to the finder</button>
-        </section>
-        <section class="wheel-stage" aria-label="Coffee roulette wheel">
-          <span class="wheel-pointer">▼</span>
-          <div class="roulette-wheel" id="roulette-wheel"><div class="wheel-center"><span class="brand-flame"></span><strong>BREW<br>&amp; BREWS</strong></div></div>
-        </section>
-        <article class="roulette-result" id="roulette-result">
-          <p class="kicker">Roulette is ready</p>
-          <h3>Press spin to choose.</h3>
-          <p>Your surprise coffee and the reason to try it will appear here.</p>
-        </article>
+  <section id="roulette" class="stage">
+    <div class="shell">
+      <div class="topbar">
+        <div class="brand"><span class="flame"></span> COFFEE ROULETTE</div>
+        <div class="nav-actions"><button class="btn" onclick="showStage('home')">Back home</button></div>
       </div>
-    </section>
-  </main>
+      <div class="card" style="text-align:center;max-width:900px;margin:30px auto">
+        <div class="eyebrow">Let flavor decide</div>
+        <h2 style="font-size:clamp(2.8rem,6vw,5.5rem);margin:10px 0">Spin for a surprise.</h2>
+        <p class="sub">One coffee. No overthinking. Just your next Brew & Brews adventure.</p>
+        <div class="pointer"></div>
+        <div class="roulette-wheel" id="wheel"></div>
+        <h3 id="rouletteResult" style="font-size:2rem">Ready when you are.</h3>
+        <button class="btn primary" onclick="spinWheel()">Spin the wheel</button>
+      </div>
+    </div>
+  </section>
+</div>
 
-  <footer class="site-footer">
-    <span><b>LOVE IT OR LET US KNOW</b><small>We’ll make it right.</small></span>
-    <span><b>ROASTED FRESH</b><small>Small batches, always.</small></span>
-    <span><b>LOUISBURG, KANSAS</b><small>Roasted with pride.</small></span>
-    <blockquote>“Great coffee. Real connection.”</blockquote>
-  </footer>
-
-  <script src="app.js" defer></script>
+<script>
+const coffees=[
+ {name:"House Blend",body:7,acid:4,sweet:7,choc:8,nut:7,fruit:3,roast:"medium",brew:["drip","espresso","french"],milk:8,comfort:10,desc:"Smooth, balanced, chocolatey, and easy to enjoy every day."},
+ {name:"Brazil Cerrado",body:8,acid:2,sweet:8,choc:9,nut:9,fruit:2,roast:"medium-dark",brew:["drip","espresso","french"],milk:9,comfort:9,desc:"Cocoa, roasted nuts, caramel sweetness, and low acidity."},
+ {name:"Morning Light",body:5,acid:5,sweet:8,choc:5,nut:4,fruit:6,roast:"medium-light",brew:["drip","pour","aeropress"],milk:5,comfort:7,desc:"Clean, bright, gently sweet, and easygoing."},
+ {name:"Voodoo",body:10,acid:2,sweet:5,choc:7,nut:4,fruit:3,roast:"dark",brew:["espresso","french","drip"],milk:9,comfort:4,desc:"Deep, bold, earthy, and built for adventurous drinkers."},
+ {name:"Tiffany's Blend",body:8,acid:3,sweet:7,choc:8,nut:6,fruit:3,roast:"medium-dark",brew:["drip","espresso"],milk:8,comfort:8,desc:"Rich and smooth with cocoa sweetness and a polished finish."},
+ {name:"Ethiopian",body:5,acid:8,sweet:8,choc:2,nut:2,fruit:10,roast:"light",brew:["pour","drip","aeropress"],milk:2,comfort:3,desc:"Fruit-forward, floral, lively, and unmistakably different."}
+];
+const questions=[
+ {key:"drink",title:"What do you usually drink?",sub:"Choose your go-to.",multi:false,opts:[["latte","Latte or cappuccino","Milk-based and smooth"],["black","Black coffee","Straight and familiar"],["espresso","Espresso","Concentrated and bold"],["cold","Cold brew","Smooth over ice"],["sweet","Sweet coffee drinks","Cream, sugar, or syrup"],["other","Something else","We’ll still guide you"]]},
+ {key:"flavor",title:"What flavors sound best?",sub:"Select all that appeal to you.",multi:true,opts:[["choc","Chocolate","Cocoa and brownie-like"],["caramel","Caramel","Sweet and rounded"],["nut","Nutty","Almond and roasted nuts"],["fruit","Fruity","Berry and stone fruit"],["earthy","Earthy","Deep and rustic"],["clean","Clean","Crisp and gentle"]]},
+ {key:"roast",title:"How do you like your roast?",sub:"This helps us match intensity.",multi:false,opts:[["light","Light","Bright and expressive"],["medium-light","Medium-light","Clean and sweet"],["medium","Medium","Balanced and smooth"],["medium-dark","Medium-dark","Rich and flavorful"],["dark","Dark","Bold and intense"]]},
+ {key:"adventure",title:"How adventurous are you?",sub:"Pick your comfort zone.",multi:false,opts:[["safe","Play it safe","Keep me close to familiar"],["some","A little adventurous","I’ll try something nearby"],["bold","Bring it on","Show me something different"]]},
+ {key:"brew",title:"How do you brew most often?",sub:"Select all that apply.",multi:true,opts:[["drip","Drip machine","Everyday brewing"],["espresso","Espresso machine","Shots and milk drinks"],["french","French press","Full-bodied cups"],["pour","Pour over","Clear and expressive"],["cold","Cold brew","Slow and smooth"],["other","Other","Still works"]]}
+];
+let step=0, answers={};
+function showStage(id){document.querySelectorAll('.stage').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo({top:0,behavior:'smooth'})}
+function startQuiz(){step=0;answers={};showStage('quiz');renderQuestion()}
+function renderQuestion(){
+ const q=questions[step];
+ document.getElementById('stepLabel').textContent=`Question ${step+1} of ${questions.length}`;
+ document.getElementById('questionTitle').textContent=q.title;
+ document.getElementById('questionSub').textContent=q.sub;
+ document.getElementById('backBtn').style.visibility=step===0?'hidden':'visible';
+ document.getElementById('progress').innerHTML=questions.map((_,i)=>`<span class="dot ${i<=step?'active':''}"></span>`).join('');
+ const current=answers[q.key]||[];
+ document.getElementById('options').innerHTML=q.opts.map(o=>`<button class="option ${current.includes(o[0])?'selected':''}" onclick="choose('${q.key}','${o[0]}',${q.multi})"><b>${o[1]}</b><span>${o[2]}</span></button>`).join('');
+ renderLive();
+}
+function choose(key,val,multi){
+ if(multi){let a=answers[key]||[];answers[key]=a.includes(val)?a.filter(x=>x!==val):[...a,val]}
+ else answers[key]=[val];
+ renderQuestion();
+}
+function prevQuestion(){if(step>0){step--;renderQuestion()}}
+function nextQuestion(){if(step<questions.length-1){step++;renderQuestion()}else renderResults()}
+function scoreCoffee(c){
+ let s=50;
+ const d=(answers.drink||[])[0], r=(answers.roast||[])[0], adv=(answers.adventure||[])[0];
+ const f=answers.flavor||[], b=answers.brew||[];
+ if(d==="latte"||d==="sweet") s+=c.milk*2;
+ if(d==="black") s+=c.comfort;
+ if(d==="espresso"&&c.brew.includes("espresso")) s+=16;
+ if(d==="cold"&&c.body>=7) s+=10;
+ if(r===c.roast) s+=20;
+ else if((r==="medium"&&c.roast==="medium-dark")||(r==="medium-dark"&&c.roast==="medium")) s+=10;
+ if(f.includes("choc")) s+=c.choc*2;
+ if(f.includes("nut")) s+=c.nut*2;
+ if(f.includes("fruit")) s+=c.fruit*2;
+ if(f.includes("caramel")) s+=c.sweet*1.5;
+ if(f.includes("earthy")) s+=c.body;
+ if(f.includes("clean")) s+=(10-c.body)+c.sweet;
+ b.forEach(x=>{if(c.brew.includes(x))s+=8});
+ if(adv==="safe") s+=c.comfort*1.5;
+ if(adv==="bold") s+=(11-c.comfort)*1.5;
+ return Math.round(s);
+}
+function ranked(){return coffees.map(c=>({...c,raw:scoreCoffee(c)})).sort((a,b)=>b.raw-a.raw)}
+function percentify(arr){
+ const top=arr[0].raw, low=arr[arr.length-1].raw;
+ return arr.map((c,i)=>({...c,pct:Math.max(72,Math.min(98,Math.round(72+(c.raw-low)/(top-low||1)*26)-i))}))
+}
+function renderLive(){
+ const arr=percentify(ranked()).slice(0,3);
+ document.getElementById('liveMatches').innerHTML=arr.map((c,i)=>`<div class="match ${i===0?'highlight':''}"><div class="thumb">${i+1}</div><div><b>${c.name}</b><div style="color:#9f907e;font-size:.85rem">${c.desc}</div></div><div class="score">${c.pct}%</div></div>`).join('');
+}
+function renderResults(){
+ const arr=percentify(ranked());
+ document.getElementById('resultList').innerHTML=arr.slice(0,3).map((c,i)=>`<div class="result-card"><div class="result-bag">🔥</div><div><div class="eyebrow">#${i+1} match</div><h3 style="font-size:1.6rem;margin:6px 0">${c.name}</h3><p class="sub" style="margin:0">${c.desc}</p></div><div class="score">${c.pct}%</div></div>`).join('');
+ const adventure=arr.slice().sort((a,b)=>a.comfort-b.comfort)[0];
+ document.getElementById('adventureName').textContent=adventure.name;
+ document.getElementById('adventureText').textContent=adventure.desc+" This one intentionally pushes beyond your usual comfort zone.";
+ showStage('results');
+}
+function spinWheel(){
+ const wheel=document.getElementById('wheel');
+ const turns=5+Math.floor(Math.random()*4);
+ const deg=turns*360+Math.floor(Math.random()*360);
+ wheel.style.transform=`rotate(${deg}deg)`;
+ document.getElementById('rouletteResult').textContent="Spinning...";
+ setTimeout(()=>{const pick=coffees[Math.floor(Math.random()*coffees.length)];document.getElementById('rouletteResult').textContent=`Roulette chose: ${pick.name}`},2900);
+}
+const field=document.getElementById('beanField');
+for(let i=0;i<34;i++){
+ const b=document.createElement('span');b.className='bean';
+ b.style.left=Math.random()*100+'%';b.style.animationDuration=(7+Math.random()*8)+'s';b.style.animationDelay=(-Math.random()*12)+'s';b.style.opacity=.25+Math.random()*.45;field.appendChild(b);
+}
+</script>
 </body>
 </html>

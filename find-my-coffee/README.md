@@ -1,22 +1,13 @@
-# Brew & Brews — Find My Coffee v2
+# Brew & Brews — Find My Coffee
 
-GitHub Pages-ready static coffee recommendation application.
+This build is intentionally self-contained in a single `index.html`.
 
-## Replace the earlier version
+## Upload
+Replace the existing `find-my-coffee/index.html` file in GitHub with this file.
 
-Upload these files into the existing `find-my-coffee` folder in the `brew-brews-radio` repository:
-
-- `index.html`
-- `styles.css`
-- `app.js`
-- `data/coffees.json`
-
-Choose **Replace files** when GitHub asks, then commit the changes.
-
-The public address remains:
-
-`https://brewandbrewscompany-bot.github.io/brew-brews-radio/find-my-coffee/`
-
-## Coffee data
-
-Edit `data/coffees.json` as the Coffee Knowledge Base is completed. Keep all product URLs public and never store private supplier, customer, or pricing data in this file.
+## Why this version is safer
+- CSS is embedded
+- JavaScript is embedded
+- No missing-path errors
+- Works from a GitHub Pages subfolder
+- No build process required
