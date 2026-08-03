@@ -138,7 +138,7 @@ linear-gradient(180deg,#17120f,#0d0b09)}
         <div class="brand"><span class="flame"></span> BREW & BREWS</div>
         <div class="nav-actions">
           <button class="btn ghost" onclick="openRoulette()">Coffee Roulette</button>
-          <a class="btn" href="https://brewandbrewsco.com/products" target="_top">Shop Coffee</a>
+          <button class="btn" onclick="goToShop()">Shop Coffee</button>
         </div>
       </div>
       <div class="hero">
@@ -158,7 +158,7 @@ linear-gradient(180deg,#17120f,#0d0b09)}
           <div class="glow"></div>
           <div class="bean-field" id="beanField"></div>
           <div class="bag b1"><div class="mini-flame"></div><strong>HOUSE BLEND</strong><small>Balanced · Smooth</small></div>
-          <div class="bag b2"><div class="mini-flame"></div><strong>BRAZIL HANGOVER</strong><small>Cocoa · Nutty</small></div>
+          <div class="bag b2"><div class="mini-flame"></div><strong>BRAZIL Hangover</strong><small>Cocoa · Nutty</small></div>
           <div class="bag b3"><div class="mini-flame"></div><strong>VOODOO</strong><small>Bold · Earthy</small></div>
           <div class="bag b4"><div class="mini-flame"></div><strong>MORNING LIGHT</strong><small>Honey · Clean</small></div>
         </div>
@@ -213,7 +213,7 @@ linear-gradient(180deg,#17120f,#0d0b09)}
             <h2 id="adventureName">Voodoo</h2>
             <p class="sub" id="adventureText"></p>
             <div class="result-bag" style="height:220px;margin:18px 0">🔥</div>
-            <button class="btn primary" style="width:100%">Try this coffee</button>
+            <button class="btn primary" style="width:100%" onclick="goToShop()">Try this coffee</button>
             <button class="btn" style="width:100%;margin-top:10px" onclick="openRoulette()">Spin Coffee Roulette</button>
           </div>
         </div>
@@ -354,7 +354,23 @@ const questions=[
  {key:"brew",title:"How do you brew most often?",sub:"Select all that apply.",multi:true,opts:[["drip","Drip machine","Everyday brewing"],["espresso","Espresso machine","Shots and milk drinks"],["french","French press","Full-bodied cups"],["pour","Pour over","Clear and expressive"],["cold","Cold brew","Slow and smooth"],["other","Other","Still works"]]}
 ];
 let step=0, answers={};
-function showStage(id){document.querySelectorAll('.stage').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo({top:0,behavior:'smooth'})}
+function resetPageScroll(){
+  window.scrollTo({top:0,left:0,behavior:'instant'});
+  document.documentElement.scrollTop=0;
+  document.body.scrollTop=0;
+  try{
+    window.parent.postMessage({type:'BNB_SCROLL_TO_FINDER_TOP'},'*');
+  }catch(error){}
+}
+
+function showStage(id){
+  document.querySelectorAll('.stage').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  requestAnimationFrame(()=>{
+    resetPageScroll();
+    setTimeout(resetPageScroll,80);
+  });
+}
 function startQuiz(){step=0;answers={};showStage('quiz');renderQuestion()}
 function renderQuestion(){
  const q=questions[step];
@@ -407,12 +423,23 @@ function renderLive(){
 }
 function renderResults(){
  const arr=percentify(ranked());
- document.getElementById('resultList').innerHTML=arr.slice(0,3).map((c,i)=>`<div class="result-card"><div class="result-bag">🔥</div><div><div class="eyebrow">#${i+1} match</div><h3 style="font-size:1.6rem;margin:6px 0">${c.name}</h3><p class="sub" style="margin:0">${c.desc}</p></div><div class="score">${c.pct}%</div></div>`).join('');
+ document.getElementById('resultList').innerHTML=arr.slice(0,3).map((c,i)=>`<div class="result-card"><div class="result-bag">🔥</div><div><div class="eyebrow">#${i+1} match</div><h3 style="font-size:1.6rem;margin:6px 0">${c.name}</h3><p class="sub" style="margin:0 0 12px">${c.desc}</p><button class="btn primary" onclick="goToShop()">Shop this coffee</button></div><div class="score">${c.pct}%</div></div>`).join('');
  const adventure=arr.slice().sort((a,b)=>a.comfort-b.comfort)[0];
  document.getElementById('adventureName').textContent=adventure.name;
  document.getElementById('adventureText').textContent=adventure.desc+" This one intentionally pushes beyond your usual comfort zone.";
  showStage('results');
 }
+
+const SHOP_URL = "https://brewandbrewsco.com/all-products-1";
+
+function goToShop(){
+  try {
+    window.top.location.assign(SHOP_URL);
+  } catch (error) {
+    window.location.assign(SHOP_URL);
+  }
+}
+
 let rouletteSpinsRemaining = 3;
 let rouletteCurrentPick = null;
 let rouletteRotation = 0;
@@ -513,13 +540,13 @@ function spinWheel(){
     }
 
     rouletteBusy = false;
+    resetPageScroll();
   }, 2900);
 }
 
 function tryRoulettePick(){
   if(!rouletteCurrentPick) return;
-  const destination = rouletteCurrentPick.url || 'https://brewandbrewsco.com/products';
-  window.open(destination, '_top');
+  goToShop();
 }
 const field=document.getElementById('beanField');
 for(let i=0;i<34;i++){
