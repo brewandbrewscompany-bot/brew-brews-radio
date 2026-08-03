@@ -148,7 +148,7 @@ linear-gradient(180deg,#17120f,#0d0b09)}
           <div class="glow"></div>
           <div class="bean-field" id="beanField"></div>
           <div class="bag b1"><div class="mini-flame"></div><strong>HOUSE BLEND</strong><small>Balanced · Smooth</small></div>
-          <div class="bag b2"><div class="mini-flame"></div><strong>BRAZIL</strong><small>Cocoa · Nutty</small></div>
+          <div class="bag b2"><div class="mini-flame"></div><strong>BRAZIL Hangover</strong><small>Cocoa · Nutty</small></div>
           <div class="bag b3"><div class="mini-flame"></div><strong>VOODOO</strong><small>Bold · Earthy</small></div>
           <div class="bag b4"><div class="mini-flame"></div><strong>MORNING LIGHT</strong><small>Honey · Clean</small></div>
         </div>
@@ -233,14 +233,78 @@ linear-gradient(180deg,#17120f,#0d0b09)}
 
 <script>
 const coffees=[
- {name:"House Blend",body:6,acid:6,sweet:6,choc:5,nut:4,fruit:6,roast:"medium",brew:["Milk-Chocolate","Caramel","Balanced","Bright","Light-Medium],milk:7,comfort:8,desc:"Smooth, balanced, chocolatey, bright and easy to enjoy every day."},
- {name:"Brazil Hangover",body:7,acid:2,sweet:8,choc:9,nut:9,fruit:2,roast:"medium-dark",brew:["Cocoa","Milk Chocolate","Nutty","Caramel","Creamy","medium-body"],milk:9,comfort:9,desc:"Cocoa, roasted nuts, caramel sweetness, and low acidity."},
- {name:"Morning Light",body:6,acid:7,sweet:8,choc:5,nut:4,fruit:7,roast:"light",brew:["drip","pour","aeropress","bright","light"],milk:5,comfort:7,desc:"Clean, bright, gently sweet, and easygoing."},
- {name:"Voodoo",body:10,acid:2,sweet:5,choc:7,nut:4,fruit:3,roast:"dark",brew:["espresso","french","drip"],milk:9,comfort:5,desc:"Deep, syrup, bold, earthy, and built for adventurous drinkers."},
- {name:"Tiffany's Blend",body:3,acid:3,sweet:7,choc:8,nut:6,fruit:3,roast:"medium-dark",brew:["drip","espresso","dark","medium-body"],milk:8,comfort:8,desc:"Rich and smooth with cocoa sweetness and a polished finish."},
- {name:"Hondorus",body:5,acid:4,sweet:8,choc:2,nut:2,fruit:10,roast:"medium-dark",brew:["pour","drip","aeropress"],milk:2,comfort:3,desc:"bold, earthy, and built for cold brew drinkers."}
- {name:"Espresso",body:5,acid:5,sweet:8,choc:2,nut:2,fruit:10,roast:"medium-dark",brew:["Dark Chocolate","Roast","Syrupy","Earthy","Brown Sugar","espresso"],milk:2,comfort:3,desc:"Deep, bold, earthy, built for espressos, lively, and unmistakably different."}
- {name:"No Label",body:5,acid:4,sweet:8,choc:2,nut:2,fruit:10,roast:"medium-dark",brew:["Milk Chocolate","Roast","Syrupy","Earthy","Brown Sugar"],milk:2,comfort:3,desc:"bold, Fruit-forward, lively, and unmistakably different."}
+ {
+  name:"House Blend",
+  body:6,acid:6,sweet:6,choc:5,nut:4,fruit:6,
+  roast:"medium",
+  brew:["drip","espresso","french"],
+  tags:["milk chocolate","caramel","balanced","bright","light-medium"],
+  milk:7,comfort:8,
+  desc:"Smooth, balanced, chocolatey, bright, and easy to enjoy every day."
+ },
+ {
+  name:"Brazil Hangover",
+  body:7,acid:2,sweet:8,choc:9,nut:9,fruit:2,
+  roast:"medium-dark",
+  brew:["drip","espresso","french","cold"],
+  tags:["cocoa","milk chocolate","nutty","caramel","creamy","medium body"],
+  milk:9,comfort:9,
+  desc:"Cocoa, roasted nuts, caramel sweetness, creamy body, and low acidity."
+ },
+ {
+  name:"Morning Light",
+  body:6,acid:7,sweet:8,choc:5,nut:4,fruit:7,
+  roast:"light",
+  brew:["drip","pour","aeropress"],
+  tags:["bright","clean","light","gently sweet"],
+  milk:5,comfort:7,
+  desc:"Clean, bright, gently sweet, and easygoing."
+ },
+ {
+  name:"Voodoo",
+  body:10,acid:2,sweet:5,choc:7,nut:4,fruit:3,
+  roast:"dark",
+  brew:["espresso","french","drip","cold"],
+  tags:["syrupy","bold","earthy","dark"],
+  milk:9,comfort:5,
+  desc:"Deep, syrupy, bold, earthy, and built for adventurous drinkers."
+ },
+ {
+  name:"Tiffany's Blend",
+  body:3,acid:3,sweet:7,choc:8,nut:6,fruit:3,
+  roast:"medium-dark",
+  brew:["drip","espresso"],
+  tags:["dark","medium body","cocoa","smooth"],
+  milk:8,comfort:8,
+  desc:"Rich and smooth with cocoa sweetness and a polished finish."
+ },
+ {
+  name:"Honduras",
+  body:5,acid:4,sweet:8,choc:2,nut:2,fruit:10,
+  roast:"medium-dark",
+  brew:["pour","drip","aeropress","cold"],
+  tags:["bold","earthy","fruit-forward","cold brew"],
+  milk:2,comfort:3,
+  desc:"Bold, earthy, fruit-forward, and well suited for cold brew drinkers."
+ },
+ {
+  name:"Espresso",
+  body:5,acid:5,sweet:8,choc:8,nut:4,fruit:3,
+  roast:"medium-dark",
+  brew:["espresso","drip"],
+  tags:["dark chocolate","roast","syrupy","earthy","brown sugar"],
+  milk:9,comfort:7,
+  desc:"Deep, bold, earthy, and syrupy with dark chocolate and brown sugar notes."
+ },
+ {
+  name:"No Label",
+  body:5,acid:4,sweet:8,choc:7,nut:3,fruit:7,
+  roast:"medium-dark",
+  brew:["drip","espresso","french"],
+  tags:["milk chocolate","roast","syrupy","earthy","brown sugar","fruit-forward"],
+  milk:7,comfort:6,
+  desc:"Bold and fruit-forward with milk chocolate, brown sugar, and an earthy finish."
+ }
 ];
 const questions=[
  {key:"drink",title:"What do you usually drink?",sub:"Choose your go-to.",multi:false,opts:[["latte","Latte or cappuccino","Milk-based and smooth"],["black","Black coffee","Straight and familiar"],["espresso","Espresso","Concentrated and bold"],["cold","Cold brew","Smooth over ice"],["sweet","Sweet coffee drinks","Cream, sugar, or syrup"],["other","Something else","We’ll still guide you"]]},
@@ -280,12 +344,13 @@ function scoreCoffee(c){
  if(d==="cold"&&c.body>=7) s+=10;
  if(r===c.roast) s+=20;
  else if((r==="medium"&&c.roast==="medium-dark")||(r==="medium-dark"&&c.roast==="medium")) s+=10;
- if(f.includes("choc")) s+=c.choc*2;
- if(f.includes("nut")) s+=c.nut*2;
- if(f.includes("fruit")) s+=c.fruit*2;
- if(f.includes("caramel")) s+=c.sweet*1.5;
- if(f.includes("earthy")) s+=c.body;
- if(f.includes("clean")) s+=(10-c.body)+c.sweet;
+ const tags=(c.tags||[]).map(x=>x.toLowerCase());
+ if(f.includes("choc")) s+=c.choc*2 + (tags.some(x=>x.includes("chocolate")||x.includes("cocoa"))?5:0);
+ if(f.includes("nut")) s+=c.nut*2 + (tags.some(x=>x.includes("nut"))?5:0);
+ if(f.includes("fruit")) s+=c.fruit*2 + (tags.some(x=>x.includes("fruit"))?5:0);
+ if(f.includes("caramel")) s+=c.sweet*1.5 + (tags.some(x=>x.includes("caramel")||x.includes("brown sugar"))?5:0);
+ if(f.includes("earthy")) s+=c.body + (tags.some(x=>x.includes("earthy"))?5:0);
+ if(f.includes("clean")) s+=(10-c.body)+c.sweet + (tags.some(x=>x.includes("clean")||x.includes("bright"))?4:0);
  b.forEach(x=>{if(c.brew.includes(x))s+=8});
  if(adv==="safe") s+=c.comfort*1.5;
  if(adv==="bold") s+=(11-c.comfort)*1.5;
