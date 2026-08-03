@@ -1,16 +1,22 @@
-# Brew & Brews — Find My Coffee
+# Brew & Brews — Find My Coffee v2
 
-Standalone static coffee recommendation application for GitHub Pages.
+GitHub Pages-ready static coffee recommendation application.
 
-## Deploy on GitHub Pages
-1. Create a public GitHub repository.
-2. Upload every file and folder in this package to the repository root.
-3. In GitHub: Settings → Pages → Deploy from a branch → `main` / root.
-4. Replace the `SHOP_URL` near the top of `app.js` if the shop address changes.
-5. Replace placeholder `url` values and approved coffee metrics inside `data/coffees.json`.
+## Replace the earlier version
 
-## GoDaddy connection
-Use the GoDaddy page called **Find My Coffee** as a native landing page or menu link. Point the main button directly to the GitHub Pages URL. Do not paste the whole application into a GoDaddy HTML section.
+Upload these files into the existing `find-my-coffee` folder in the `brew-brews-radio` repository:
 
-## Data status
-The included coffee profiles are starter demonstration profiles based on current planning discussions. Review every flavor, roast, body, acidity, sweetness, and product URL before public launch.
+- `index.html`
+- `styles.css`
+- `app.js`
+- `data/coffees.json`
+
+Choose **Replace files** when GitHub asks, then commit the changes.
+
+The public address remains:
+
+`https://brewandbrewscompany-bot.github.io/brew-brews-radio/find-my-coffee/`
+
+## Coffee data
+
+Edit `data/coffees.json` as the Coffee Knowledge Base is completed. Keep all product URLs public and never store private supplier, customer, or pricing data in this file.

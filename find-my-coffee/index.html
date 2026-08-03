@@ -1,110 +1,129 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0a09" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#090706">
+  <meta name="description" content="Find your Brew & Brews coffee match.">
   <title>Find My Coffee | Brew & Brews</title>
-  <meta name="description" content="Find the Brew & Brews coffee that fits how you drink, brew, and explore coffee." />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="ambient" aria-hidden="true"><span></span><span></span><span></span></div>
+  <div class="atmosphere" aria-hidden="true">
+    <i></i><i></i><i></i><i></i><i></i><i></i>
+  </div>
 
-  <header class="topbar">
-    <button class="brand" data-action="home" aria-label="Return to start">
-      <span class="flame" aria-hidden="true"></span>
-      <span><b>BREW & BREWS</b><small>FIND MY COFFEE</small></span>
+  <header class="site-header">
+    <button class="brand" data-action="home" aria-label="Return to the beginning">
+      <span class="brand-flame" aria-hidden="true"></span>
+      <span><strong>BREW &amp; BREWS</strong><small>FIND MY COFFEE</small></span>
     </button>
-    <nav>
-      <button class="ghost" data-action="restart">Restart</button>
-      <a class="ghost" data-shop-link href="#">Shop Coffee</a>
-    </nav>
+    <div class="header-actions">
+      <button class="button button-quiet" data-action="restart">Restart</button>
+      <a class="button button-quiet" data-shop-link href="https://brewandbrewsco.com/products">Shop Coffee</a>
+    </div>
   </header>
 
-  <main id="app" aria-live="polite">
-    <section class="screen active" id="screen-start">
+  <main id="application">
+    <section class="view view-start is-active" id="view-start">
       <div class="hero-copy">
-        <p class="eyebrow">Your coffee, matched</p>
-        <h1>Not sure what you’ll like?</h1>
-        <h2>Let us help.</h2>
-        <p>Tell us what you normally drink. We’ll recommend three coffees we think you’ll enjoy—and one that takes you somewhere new.</p>
-        <div class="actions">
-          <button class="primary" data-action="start">Start here <span>→</span></button>
-          <button class="secondary" data-action="roulette">Coffee roulette</button>
+        <p class="kicker">Your coffee, matched</p>
+        <h1>Find my <em>coffee.</em></h1>
+        <p class="hero-lead">Answer five quick questions and we’ll recommend three coffees built around your taste—plus one adventurous pick.</p>
+        <div class="hero-actions">
+          <button class="button button-primary button-large" data-action="start">Start finding my coffee <span>→</span></button>
+          <button class="button button-outline button-large" data-action="roulette">Coffee roulette</button>
         </div>
-        <div class="trust-row"><span>Fast</span><span>No sign-in</span><span>Made around your taste</span></div>
+        <div class="hero-promises" aria-label="Brew and Brews promises">
+          <span><b>Fresh roasted</b><small>Small batches</small></span>
+          <span><b>No sign-in</b><small>Fast and private</small></span>
+          <span><b>Made for you</b><small>Live recommendations</small></span>
+        </div>
       </div>
 
-      <div class="bag-stage" aria-label="Featured Brew & Brews coffees">
-        <div class="glow"></div>
-        <article class="hero-bag bag-one"><span class="bag-flame"></span><b>HOUSE<br>BLEND</b><small>Balanced</small></article>
-        <article class="hero-bag bag-two"><span class="bag-flame"></span><b>BRAZIL<br>CERRADO</b><small>Smooth</small></article>
-        <article class="hero-bag bag-three"><span class="bag-flame"></span><b>VOODOO</b><small>Bold</small></article>
-        <article class="hero-bag bag-four"><span class="bag-flame"></span><b>TIFFANY’S<br>BLEND</b><small>Rich</small></article>
+      <div class="coffee-display" aria-label="Featured coffees">
+        <div class="display-glow"></div>
+        <article class="display-bag bag-house"><span class="mini-flame"></span><small>BREW &amp; BREWS</small><strong>HOUSE<br>BLEND</strong><i>Balanced · Smooth</i></article>
+        <article class="display-bag bag-brazil"><span class="mini-flame"></span><small>BREW &amp; BREWS</small><strong>BRAZIL</strong><i>Cocoa · Nutty</i></article>
+        <article class="display-bag bag-morning"><span class="mini-flame"></span><small>BREW &amp; BREWS</small><strong>MORNING<br>LIGHT</strong><i>Honey · Clean</i></article>
+        <article class="display-bag bag-voodoo"><span class="mini-flame"></span><small>BREW &amp; BREWS</small><strong>VOODOO</strong><i>Bold · Earthy</i></article>
       </div>
     </section>
 
-    <section class="screen" id="screen-quiz">
-      <div class="quiz-shell">
-        <div class="quiz-main">
-          <button class="back" data-action="back">← Back</button>
-          <div class="progress"><span id="progress-fill"></span></div>
-          <p class="step-label" id="step-label"></p>
-          <h2 id="question-title"></h2>
-          <p class="question-help" id="question-help"></p>
-          <div class="choices" id="choices"></div>
-          <div class="quiz-actions">
-            <button class="secondary" data-action="skip">Skip</button>
-            <button class="primary" data-action="next">Next <span>→</span></button>
+    <section class="view" id="view-quiz">
+      <div class="quiz-layout">
+        <section class="question-panel">
+          <div class="question-topline">
+            <button class="text-button" data-action="back">← Back</button>
+            <span id="step-counter">Question 1 of 5</span>
           </div>
-        </div>
+          <div class="progress-track" aria-hidden="true"><span id="progress-bar"></span></div>
+          <div class="question-heading">
+            <span class="question-icon" id="question-icon">☕</span>
+            <div><p class="kicker" id="question-kicker">Tell us about your cup</p><h2 id="question-title"></h2><p id="question-help"></p></div>
+          </div>
+          <div class="choice-grid" id="choice-grid"></div>
+          <div class="question-actions">
+            <button class="button button-quiet" data-action="skip">Skip this</button>
+            <button class="button button-primary" data-action="next"><span id="next-label">Next question</span> →</button>
+          </div>
+        </section>
 
-        <aside class="live-matches">
-          <div class="live-head"><div><small>Updating as you answer</small><h3>Your leading matches</h3></div><span class="pulse"></span></div>
-          <div id="live-match-list"></div>
-          <div class="adventure-live" id="live-adventure"></div>
+        <aside class="match-panel">
+          <div class="match-panel-heading">
+            <div><p class="kicker">Updating live</p><h3>Your leading matches</h3></div>
+            <span class="live-dot" aria-label="Recommendations are updating"></span>
+          </div>
+          <div class="match-stack" id="live-matches"></div>
+          <article class="adventure-preview" id="live-adventure"></article>
         </aside>
       </div>
     </section>
 
-    <section class="screen" id="screen-results">
-      <div class="results-head">
-        <p class="eyebrow">Your Brew & Brews matches</p>
-        <h2>Here’s what we think you’ll enjoy.</h2>
-        <p>Built from how you drink it, how you brew it, and the flavors you selected.</p>
-      </div>
-      <div class="result-grid" id="result-grid"></div>
-      <section class="adventure-result" id="adventure-result"></section>
-      <div class="result-actions">
-        <button class="secondary" data-action="restart">Change my answers</button>
-        <button class="primary" data-action="roulette">Not feeling these? Spin roulette</button>
-      </div>
+    <section class="view" id="view-results">
+      <header class="results-header">
+        <p class="kicker">Your taste profile is ready</p>
+        <h2>Your top coffee matches</h2>
+        <p>These recommendations are based on your drink, flavors, roast, brewing method, and comfort zone.</p>
+      </header>
+      <div class="results-grid" id="results-grid"></div>
+      <section class="adventure-section" id="adventure-result"></section>
+      <section class="roulette-teaser">
+        <div><p class="kicker">Not feeling these?</p><h3>Let coffee roulette decide.</h3><p>Spin from the active Brew &amp; Brews lineup and let fate choose your next bag.</p></div>
+        <button class="button button-primary button-large" data-action="roulette">Spin coffee roulette →</button>
+      </section>
+      <div class="center-actions"><button class="button button-outline" data-action="restart">Change my answers</button><a class="button button-quiet" data-shop-link href="https://brewandbrewsco.com/products">Browse every coffee</a></div>
     </section>
 
-    <section class="screen" id="screen-roulette">
+    <section class="view" id="view-roulette">
       <div class="roulette-layout">
-        <div class="roulette-copy">
-          <p class="eyebrow">Let fate—and flavor—decide</p>
-          <h2>Coffee Roulette</h2>
-          <p>We’ll choose one active coffee at random. Sometimes the best cup is the one you didn’t plan.</p>
-          <button class="primary big" data-action="spin">Spin the wheel</button>
-          <button class="secondary" data-action="home">Back to finder</button>
-        </div>
-        <div class="wheel-wrap">
-          <div class="pointer">▼</div>
-          <div class="wheel" id="wheel"><div class="wheel-center"><span class="flame"></span><b>BREW<br>& BREWS</b></div></div>
-        </div>
-        <article class="roulette-card" id="roulette-card">
-          <p class="eyebrow">Roulette is ready</p>
+        <section class="roulette-copy">
+          <p class="kicker">Let fate—and flavor—decide</p>
+          <h2>Coffee roulette</h2>
+          <p>Every active coffee has a place on the wheel. Press spin and discover something you may not have chosen on your own.</p>
+          <button class="button button-primary button-large" data-action="spin">Spin the wheel</button>
+          <button class="button button-outline" data-action="home">Back to the finder</button>
+        </section>
+        <section class="wheel-stage" aria-label="Coffee roulette wheel">
+          <span class="wheel-pointer">▼</span>
+          <div class="roulette-wheel" id="roulette-wheel"><div class="wheel-center"><span class="brand-flame"></span><strong>BREW<br>&amp; BREWS</strong></div></div>
+        </section>
+        <article class="roulette-result" id="roulette-result">
+          <p class="kicker">Roulette is ready</p>
           <h3>Press spin to choose.</h3>
-          <p>Your coffee will land here with the reasons it might be worth trying.</p>
+          <p>Your surprise coffee and the reason to try it will appear here.</p>
         </article>
       </div>
     </section>
   </main>
 
-  <footer><span>© 2018 Brew & Brews</span><span>Freshly roasted in Louisburg, Kansas</span></footer>
+  <footer class="site-footer">
+    <span><b>LOVE IT OR LET US KNOW</b><small>We’ll make it right.</small></span>
+    <span><b>ROASTED FRESH</b><small>Small batches, always.</small></span>
+    <span><b>LOUISBURG, KANSAS</b><small>Roasted with pride.</small></span>
+    <blockquote>“Great coffee. Real connection.”</blockquote>
+  </footer>
+
   <script src="app.js" defer></script>
 </body>
 </html>
