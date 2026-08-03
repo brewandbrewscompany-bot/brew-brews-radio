@@ -460,10 +460,9 @@ function renderResults(){
 const SHOP_URL = "https://brewandbrewsco.com/all-products-1";
 
 function goToShop(){
-  try {
-    window.top.location.assign(SHOP_URL);
-  } catch (error) {
-    window.location.assign(SHOP_URL);
+  const shopWindow = window.open("https://brewandbrewsco.com/all-products-1", "_blank", "noopener,noreferrer");
+  if(!shopWindow){
+    alert("Please allow pop-ups for this page, then try again.");
   }
 }
 
