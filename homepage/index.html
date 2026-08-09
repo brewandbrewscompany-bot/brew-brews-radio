@@ -109,8 +109,9 @@ img{display:block;max-width:100%}
   color:#fff;
   overflow:hidden;
   background:
-    linear-gradient(90deg,rgba(8,9,10,.78) 0%,rgba(8,9,10,.58) 42%,rgba(8,9,10,.12) 70%,rgba(8,9,10,.06) 100%),
-    url("https://img1.wsimg.com/isteam/stock/98438/:/cr=t:0%25,l:0%25,w:100%25,h:100%25") center/cover no-repeat;
+    linear-gradient(90deg,rgba(8,9,10,.78) 0%,rgba(8,9,10,.48) 38%,rgba(8,9,10,.10) 68%,rgba(8,9,10,.03) 100%),
+    url("hero.png") center center / cover no-repeat,
+    #252422;
 }
 .hero-inner{
   width:min(1440px,92vw);
@@ -220,14 +221,24 @@ img{display:block;max-width:100%}
 .finder-button span{color:var(--orange);margin-left:12px}
 .finder-art{
   height:150px;
+  position:relative;
   background:
-    linear-gradient(90deg,rgba(255,255,255,.1),rgba(255,255,255,.08)),
-    radial-gradient(circle at 78% 50%,#22180e 0 12%,transparent 12.3%),
-    radial-gradient(circle at 50% 50%,#5c3a20 0 3px,transparent 4px),
-    radial-gradient(circle at 55% 42%,#684227 0 4px,transparent 5px),
-    radial-gradient(circle at 58% 67%,#5b371f 0 4px,transparent 5px),
-    radial-gradient(circle at 61% 49%,#4e2f1b 0 3px,transparent 4px),
-    #fafafa;
+    radial-gradient(ellipse at 74% 53%,#171310 0 47px,#f8f8f6 49px 61px,transparent 63px),
+    radial-gradient(circle at 51% 52%,#6b4226 0 4px,transparent 5px),
+    radial-gradient(circle at 56% 42%,#4f301d 0 4px,transparent 5px),
+    radial-gradient(circle at 59% 65%,#765037 0 4px,transparent 5px),
+    radial-gradient(circle at 63% 48%,#4d2d1b 0 3px,transparent 4px),
+    linear-gradient(90deg,#fff,#f7f7f5);
+}
+.finder-art:after{
+  content:"";
+  position:absolute;
+  width:28px;height:18px;
+  border:7px solid #f8f8f6;
+  border-left:0;
+  border-radius:0 20px 20px 0;
+  right:calc(26% - 68px);
+  top:62px;
 }
 
 /* FEATURED */
@@ -272,7 +283,7 @@ img{display:block;max-width:100%}
 }
 .product-card{
   background:#fff;
-  min-height:155px;
+  min-height:176px;
   border-radius:6px;
   display:grid;
   grid-template-columns:94px 1fr;
@@ -282,7 +293,7 @@ img{display:block;max-width:100%}
   border:1px solid #ecece9;
 }
 .product-img{
-  height:128px;
+  height:146px;
   display:grid;
   place-items:center;
   overflow:hidden;
@@ -359,14 +370,14 @@ img{display:block;max-width:100%}
   padding:9px 0 0;
 }
 .features-grid{
-  width:min(1180px,90vw);
+  width:min(1280px,92vw);
   margin:auto;
   display:grid;
-  grid-template-columns:repeat(3,1fr);
+  grid-template-columns:repeat(3,minmax(0,1fr));
   gap:14px;
 }
 .feature-card{
-  min-height:190px;
+  min-height:210px;
   position:relative;
   overflow:hidden;
   border-radius:4px 4px 0 0;
@@ -381,19 +392,48 @@ img{display:block;max-width:100%}
 }
 .feature-card.map{
   background:
-    linear-gradient(rgba(230,230,227,.22),rgba(230,230,227,.22)),
-    repeating-linear-gradient(30deg,#dededb 0 2px,#efefed 2px 17px);
+    radial-gradient(circle at 72% 42%,#111 0 6px,transparent 7px),
+    radial-gradient(circle at 84% 65%,#111 0 6px,transparent 7px),
+    radial-gradient(circle at 62% 69%,#111 0 6px,transparent 7px),
+    linear-gradient(32deg,transparent 0 48%,#c9c9c5 49% 50%,transparent 51%),
+    linear-gradient(145deg,transparent 0 42%,#d3d3cf 43% 44%,transparent 45%),
+    repeating-linear-gradient(18deg,#e8e8e5 0 2px,#f4f4f1 2px 24px);
 }
 .feature-card.wholesale{
   background:
-    url("https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/Hou.png/:/rs=w:1200,h:1200") 82% center/42% auto no-repeat,
-    #e8e5df;
+    radial-gradient(ellipse at 78% 47%,#6b4228 0 4px,transparent 5px),
+    radial-gradient(ellipse at 84% 55%,#4e2e1c 0 5px,transparent 6px),
+    radial-gradient(ellipse at 72% 61%,#765038 0 5px,transparent 6px),
+    radial-gradient(ellipse at 89% 38%,#56331f 0 4px,transparent 5px),
+    radial-gradient(circle at 82% 52%,#a47a5a 0 70px,transparent 72px),
+    linear-gradient(135deg,#eeeae4,#c9b39f);
 }
 .feature-card.radio{
-  background:
-    radial-gradient(circle at 78% 50%,#101112 0 20%,transparent 20.5%),
-    radial-gradient(circle at 78% 50%,#222 0 30%,transparent 31%),
-    #eee;
+  background:#eee;
+}
+.feature-card.radio:after{
+  content:"";
+  position:absolute;
+  right:6%;
+  top:28px;
+  width:126px;
+  height:126px;
+  border:20px solid #151617;
+  border-bottom-color:transparent;
+  border-radius:50%;
+  transform:rotate(-5deg);
+  box-sizing:border-box;
+}
+.feature-card.radio .headphone-ear{
+  position:absolute;
+  right:8%;
+  top:99px;
+  width:35px;
+  height:60px;
+  border-radius:13px;
+  background:#111214;
+  z-index:1;
+  box-shadow:-78px 0 0 #111214;
 }
 .feature-copy{
   position:relative;
@@ -458,6 +498,8 @@ img{display:block;max-width:100%}
   .why-grid{grid-template-columns:repeat(2,1fr)}
   .why-card:nth-child(2){border-right:0}
   .why-card:nth-child(-n+2){padding-bottom:18px;border-bottom:1px solid rgba(255,255,255,.12)}
+}
+@media(max-width:760px){
   .features-grid{grid-template-columns:1fr}
 }
 @media(max-width:640px){
@@ -502,8 +544,8 @@ img{display:block;max-width:100%}
     </a>
 
     <nav class="main-nav" id="mainNav">
-      <a href="#">HOME</a>
-      <a href="/about-us">ABOUT US</a>
+      <a href="https://brewandbrewsco.com/">HOME</a>
+      <a href="https://brewandbrewsco.com/about-us">ABOUT US</a>
       <a href="https://brewandbrewsco.com/all-products-1">SHOP COFFEE⌄</a>
       <a href="#wholesale">WHOLESALE</a>
       <a href="#find-us">FIND BREW &amp; BREWS</a>
@@ -650,6 +692,7 @@ img{display:block;max-width:100%}
       </article>
 
       <article class="feature-card radio">
+        <span class="headphone-ear" aria-hidden="true"></span>
         <div class="feature-copy">
           <h3>BREW &amp; BREWS<br>RADIO</h3>
           <p>Great music. Great coffee. Anytime.</p>
