@@ -213,7 +213,7 @@ linear-gradient(180deg,#17120f,#0d0b09)}
             <h2 id="adventureName">Voodoo</h2>
             <p class="sub" id="adventureText"></p>
             <div class="result-bag" style="height:220px;margin:18px 0">🔥</div>
-            <button class="btn primary" style="width:100%" onclick="openAdventureCoffee()">Try this coffee</button>
+            <a id="adventureShopLink" class="btn primary" style="width:100%;justify-content:center" href="#" target="_blank" rel="noopener noreferrer">Try this coffee</a>
             <button class="btn" style="width:100%;margin-top:10px" onclick="openRoulette()">Spin Coffee Roulette</button>
           </div>
         </div>
@@ -245,7 +245,7 @@ linear-gradient(180deg,#17120f,#0d0b09)}
           <h3 id="roulettePickName">Ready when you are.</h3>
           <p id="roulettePickDesc"></p>
           <div class="roulette-controls">
-            <button class="btn primary" id="tryPickBtn" onclick="tryRoulettePick()">I’ll try it</button>
+            <a class="btn primary" id="tryPickBtn" href="#" target="_blank" rel="noopener noreferrer">I’ll try it</a>
             <button class="btn" id="spinAgainBtn" onclick="spinWheel()">Spin again</button>
             <button class="btn" onclick="resetEntireExperience()">Exit Roulette</button>
           </div>
@@ -261,7 +261,7 @@ linear-gradient(180deg,#17120f,#0d0b09)}
           <h3>Time to choose or restart.</h3>
           <p>You’ve used all three Coffee Roulette spins. Pick the last coffee, return home, or restart Roulette.</p>
           <div class="roulette-controls">
-            <button class="btn primary" onclick="tryRoulettePick()">I’ll try the last pick</button>
+            <a class="btn primary" id="tryLastPickBtn" href="#" target="_blank" rel="noopener noreferrer">I’ll try the last pick</a>
             <button class="btn" onclick="restartRoulette()">Restart Roulette</button>
             <button class="btn" onclick="resetEntireExperience()">Exit Roulette</button>
           </div>
@@ -437,24 +437,41 @@ function renderLive(){
 function renderResults(){
  const arr=percentify(ranked());
 
- document.getElementById('resultList').innerHTML=arr.slice(0,3).map((c,i)=>`
+ document.getElementById('resultList').innerHTML=arr.slice(0,3).map((c,i)=>{
+   const url = safeCoffeeUrl(c.url);
+   const action = url
+     ? `<a class="btn primary" href="${url}" target="_blank" rel="noopener noreferrer">Shop this coffee</a>`
+     : `<span class="btn" style="opacity:.55;cursor:not-allowed">Product page unavailable</span>`;
+
+   return `
    <div class="result-card">
      <div class="result-bag">🔥</div>
      <div>
        <div class="eyebrow">#${i+1} match</div>
        <h3 style="font-size:1.6rem;margin:6px 0">${c.name}</h3>
        <p class="sub" style="margin:0 0 12px">${c.desc}</p>
-       <button class="btn primary" onclick="shopCoffeeById('${c.id}')">Shop this coffee</button>
+       ${action}
      </div>
      <div class="score">${c.pct}%</div>
-   </div>
- `).join('');
+   </div>`;
+ }).join('');
 
  const adventure=arr.slice().sort((a,b)=>a.comfort-b.comfort)[0];
  currentAdventureCoffee = adventure;
 
  document.getElementById('adventureName').textContent=adventure.name;
  document.getElementById('adventureText').textContent=adventure.desc+" This one intentionally pushes beyond your usual comfort zone.";
+
+ const advBtn = document.getElementById('adventureShopLink');
+ if(advBtn){
+   const url = safeCoffeeUrl(adventure.url);
+   if(url){
+     advBtn.href = url;
+     advBtn.style.display = 'inline-flex';
+   }else{
+     advBtn.style.display = 'none';
+   }
+ }
 
  showStage('results');
 }
@@ -469,6 +486,13 @@ function goToShop(){
 }
 
 
+
+
+function safeCoffeeUrl(url){
+  if(!url) return "";
+  const clean = String(url).trim();
+  return /^https:\/\/brewandbrewsco\.com\/all-products-1\/ols\/products\//i.test(clean) ? clean : "";
+}
 
 function getCoffeeById(id){
   return coffees.find(c => c.id === id) || null;
@@ -594,6 +618,30 @@ function spinWheel(){
     document.getElementById('roulettePickName').textContent = rouletteCurrentPick.name;
     document.getElementById('roulettePickDesc').textContent = rouletteCurrentPick.desc;
 
+    const rouletteUrl = safeCoffeeUrl(rouletteCurrentPick.url);
+    const tryBtn = document.getElementById('tryPickBtn');
+    const lastBtn = document.getElementById('tryLastPickBtn');
+
+    if(tryBtn){
+      if(rouletteUrl){
+        tryBtn.href = rouletteUrl;
+        tryBtn.style.display = 'inline-flex';
+      }else{
+        tryBtn.removeAttribute('href');
+        tryBtn.style.display = 'none';
+      }
+    }
+
+    if(lastBtn){
+      if(rouletteUrl){
+        lastBtn.href = rouletteUrl;
+        lastBtn.style.display = 'inline-flex';
+      }else{
+        lastBtn.removeAttribute('href');
+        lastBtn.style.display = 'none';
+      }
+    }
+
     if(pickBox) pickBox.classList.add('show');
 
     if(rouletteSpinsRemaining > 0){
@@ -617,8 +665,7 @@ function spinWheel(){
 }
 
 function tryRoulettePick(){
-  if(!rouletteCurrentPick || !rouletteCurrentPick.id) return;
-  shopCoffeeById(rouletteCurrentPick.id);
+  /* Direct roulette product links are now assigned to anchor hrefs. */
 }
 const field=document.getElementById('beanField');
 for(let i=0;i<34;i++){
