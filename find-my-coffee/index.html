@@ -178,6 +178,14 @@ linear-gradient(180deg,#17120f,#0d0b09)}
   padding-bottom:24px !important;
 }
 
+
+/* Clean embed sizing: app sections fit their real content. */
+.stage{min-height:0 !important;}
+.quiz-wrap{padding-bottom:28px !important;}
+.result-grid{padding-bottom:28px !important;}
+#results.stage.active,
+#roulette.stage.active{padding-bottom:32px !important;}
+
 </style>
 </head>
 <body>
@@ -377,22 +385,23 @@ const questions=[
 ];
 let step=0, answers={};
 function resetPageScroll(){
-  window.scrollTo({top:0,left:0,behavior:'instant'});
-  document.documentElement.scrollTop=0;
-  document.body.scrollTop=0;
   try{
-    window.parent.postMessage({type:'BNB_SCROLL_PAGE_TOP'},'*');
-  }catch(error){}
+    window.scrollTo({top:0,left:0,behavior:"instant"});
+  }catch(error){
+    window.scrollTo(0,0);
+  }
+  document.documentElement.scrollTop = 0;
+  if(document.body) document.body.scrollTop = 0;
 }
 
 function showStage(id){
   document.querySelectorAll('.stage').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  const target = document.getElementById(id);
+  if(target) target.classList.add('active');
+
   requestAnimationFrame(()=>{
     resetPageScroll();
     setTimeout(resetPageScroll,80);
-    setTimeout(reportFinderHeight,120);
-    setTimeout(reportFinderHeight,350);
   });
 }
 
@@ -486,10 +495,31 @@ function scoreCoffee(c){
  if(f.includes("caramel")) s+=c.sweet*1.5 + (tags.some(x=>x.includes("caramel")||x.includes("brown sugar"))?5:0);
  if(f.includes("earthy")) s+=c.body + (tags.some(x=>x.includes("earthy"))?5:0);
  if(f.includes("clean")) s+=(10-c.body)+c.sweet + (tags.some(x=>x.includes("clean")||x.includes("bright"))?4:0);
- b.forEach(x=>{
-    const key = x==="french" ? "french-press" : x==="pour" ? "pour-over" : x==="cold" ? "cold-brew" : x;
-    if(c.brew.includes(key)) s+=8;
-  });
+ if(b.length){
+   let brewMatches = 0;
+
+   b.forEach(x=>{
+     const key = x==="french" ? "french-press"
+               : x==="pour" ? "pour-over"
+               : x==="cold" ? "cold-brew"
+               : x;
+
+     if(key==="other"){
+       return;
+     }
+
+     if(c.brew.includes(key)){
+       s += 22;
+       brewMatches++;
+     }else{
+       s -= 12;
+     }
+   });
+
+   if(brewMatches===0 && !b.includes("other")){
+     s -= 18;
+   }
+ }
  if(adv==="safe") s+=c.comfort*1.5;
  if(adv==="bold") s+=(11-c.comfort)*1.5;
  return Math.round(s);
@@ -813,44 +843,6 @@ document.addEventListener('visibilitychange', function(){
 });
 
 
-function reportFinderHeight(){
-  const height = Math.max(
-    document.documentElement.scrollHeight,
-    document.body ? document.body.scrollHeight : 0,
-    document.documentElement.offsetHeight,
-    document.body ? document.body.offsetHeight : 0
-  );
-  try{
-    window.parent.postMessage({
-      type: 'BNB_FINDER_HEIGHT',
-      height: height + 40
-    }, '*');
-  }catch(error){}
-}
-
-window.addEventListener('load', function(){
-  reportFinderHeight();
-  setTimeout(reportFinderHeight, 100);
-  setTimeout(reportFinderHeight, 400);
-});
-
-window.addEventListener('resize', reportFinderHeight);
-
-if('ResizeObserver' in window){
-  const bnbHeightObserver = new ResizeObserver(function(){
-    reportFinderHeight();
-  });
-  bnbHeightObserver.observe(document.documentElement);
-  if(document.body) bnbHeightObserver.observe(document.body);
-}
-
-
-document.addEventListener('load', function(e){
-  if(e.target && e.target.tagName === 'IMG'){
-    setTimeout(reportFinderHeight, 50);
-    setTimeout(reportFinderHeight, 250);
-  }
-}, true);
 
 </script>
 </body>
