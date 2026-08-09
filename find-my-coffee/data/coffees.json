@@ -56,14 +56,14 @@
     "roast": "Medium-Dark",
     "body": 6,
     "acidity": 6,
-    "sweetness": 6,
+    "sweetness": 5,
     "chocolate": 4,
     "nutty": 5,
     "caramel": 4,
     "fruit": 7,
     "floral": 6,
     "earthy": 2,
-    "roastIntensity": 3,
+    "roastIntensity": 4,
     "flavors": [
       "Milk Chocolate",
       "Caramel",
@@ -73,7 +73,7 @@
     "brewMethods": [
       "Drip",
       "French Press",
-      "Espresso"
+      "Pour Over"
     ],
     "blackFriendly": true,
     "milkFriendly": true,
@@ -81,7 +81,7 @@
     "lowAcid": false,
     "strength": "Balanced",
     "comfort": 8,
-    "adventure": 4,
+    "adventure": 5,
     "wholeBean": true,
     "ground": true,
     "summary": "A familiar, balanced everyday coffee for customers who want smooth sweetness with chocolate and caramel.",
@@ -100,15 +100,15 @@
     ],
     "roast": "Medium-Dark",
     "body": 7,
-    "acidity": 2,
+    "acidity": 3,
     "sweetness": 8,
-    "chocolate": 3,
+    "chocolate": 4,
     "nutty": 9,
-    "caramel": 9,
-    "fruit": 8,
+    "caramel": 8,
+    "fruit": 6,
     "floral": 2,
     "earthy": 2,
-    "roastIntensity": 4,
+    "roastIntensity": 5,
     "flavors": [
       "Cocoa",
       "Milk Chocolate",
@@ -118,7 +118,7 @@
     ],
     "brewMethods": [
       "Drip",
-      "Espresso",
+      "Pour Over",
       "French Press",
       "Cold Brew"
     ],
@@ -127,8 +127,8 @@
     "syrupFriendly": true,
     "lowAcid": true,
     "strength": "Balanced",
-    "comfort": 9,
-    "adventure": 3,
+    "comfort": 10,
+    "adventure": 4,
     "wholeBean": true,
     "ground": true,
     "summary": "Ideal for customers who prefer low-acid, chocolatey, nutty coffee with caramel sweetness and a creamy body.",
@@ -192,16 +192,16 @@
     "body": 5,
     "acidity": 4,
     "sweetness": 8,
-    "chocolate": 3,
-    "nutty": 2,
+    "chocolate": 4,
+    "nutty": 3,
     "caramel": 2,
     "fruit": 5,
-    "floral": 10,
-    "earthy": 4,
+    "floral": 6,
+    "earthy": 5,
     "roastIntensity": 6,
     "flavors": [
       "Fruit-forward",
-      "Sweet",
+      "Semi-Sweet",
       "Earthy",
       "Bold Finish"
     ],
@@ -209,7 +209,8 @@
       "Pour Over",
       "Drip",
       "AeroPress",
-      "Cold Brew"
+      "Cold Brew",
+      "Espresso"
     ],
     "blackFriendly": true,
     "milkFriendly": false,
@@ -236,9 +237,9 @@
     ],
     "roast": "Medium-Dark",
     "body": 8,
-    "acidity": 4,
+    "acidity": 5,
     "sweetness": 6,
-    "chocolate": 5,
+    "chocolate": 6,
     "nutty": 8,
     "caramel": 5,
     "fruit": 5,
@@ -254,7 +255,8 @@
     "brewMethods": [
       "Drip",
       "French Press",
-      "Espresso"
+      "Espresso",
+      "Pour Over"
     ],
     "blackFriendly": true,
     "milkFriendly": true,
@@ -282,16 +284,16 @@
       "Guatemala"
     ],
     "roast": "Medium-Dark",
-    "body": 5,
+    "body": 7,
     "acidity": 5,
     "sweetness": 8,
-    "chocolate": 5,
+    "chocolate": 6,
     "nutty": 8,
     "caramel": 4,
-    "fruit": 7,
-    "floral": 3,
-    "earthy": 5,
-    "roastIntensity": 8,
+    "fruit": 6,
+    "floral": 2,
+    "earthy": 6,
+    "roastIntensity": 9,
     "flavors": [
       "Dark Chocolate",
       "Brown Sugar",
@@ -299,8 +301,7 @@
       "Earthy Roast Character"
     ],
     "brewMethods": [
-      "Espresso",
-      "Drip"
+      "Espresso"
     ],
     "blackFriendly": true,
     "milkFriendly": true,
@@ -333,7 +334,7 @@
     "caramel": 4,
     "fruit": 4,
     "floral": 3,
-    "earthy": 6,
+    "earthy": 7,
     "roastIntensity": 9,
     "flavors": [
       "Syrupy",
@@ -374,16 +375,16 @@
       "Brazil"
     ],
     "roast": "Medium-Dark",
-    "body": 3,
-    "acidity": 3,
+    "body": 6,
+    "acidity": 4,
     "sweetness": 7,
-    "chocolate": 4,
-    "nutty": 8,
+    "chocolate": 5,
+    "nutty": 7,
     "caramel": 6,
     "fruit": 7,
     "floral": 3,
     "earthy": 3,
-    "roastIntensity": 4,
+    "roastIntensity": 5,
     "flavors": [
       "Cocoa",
       "Caramel Sweetness",
@@ -392,7 +393,8 @@
     ],
     "brewMethods": [
       "Drip",
-      "Espresso"
+      "Espresso",
+      "Pour Over"
     ],
     "blackFriendly": true,
     "milkFriendly": true,
@@ -400,7 +402,7 @@
     "lowAcid": true,
     "strength": "Balanced",
     "comfort": 8,
-    "adventure": 4,
+    "adventure": 6,
     "wholeBean": true,
     "ground": true,
     "summary": "A smooth cocoa-forward coffee for customers who like sweetness, lower acidity, and a polished medium-dark profile.",
@@ -420,7 +422,7 @@
     ],
     "roast": "Medium-Dark",
     "body": 5,
-    "acidity": 4,
+    "acidity": 5,
     "sweetness": 8,
     "chocolate": 4,
     "nutty": 7,
@@ -439,14 +441,15 @@
     "brewMethods": [
       "Drip",
       "Espresso",
-      "French Press"
+      "French Press",
+      "Pour Over"
     ],
     "blackFriendly": true,
     "milkFriendly": true,
     "syrupFriendly": true,
     "lowAcid": false,
     "strength": "Bold",
-    "comfort": 6,
+    "comfort": 7,
     "adventure": 7,
     "wholeBean": true,
     "ground": true,
@@ -485,8 +488,6 @@
     "brewMethods": [
       "Drip",
       "French Press",
-      "Espresso",
-      "Cold Brew"
     ],
     "blackFriendly": true,
     "milkFriendly": true,
@@ -512,7 +513,7 @@
       "Guatemala"
     ],
     "roast": "Light",
-    "body": 6,
+    "body": 5,
     "acidity": 7,
     "sweetness": 8,
     "chocolate": 2,
