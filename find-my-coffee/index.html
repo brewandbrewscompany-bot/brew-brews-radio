@@ -436,11 +436,26 @@ function renderLive(){
 }
 function renderResults(){
  const arr=percentify(ranked());
- document.getElementById('resultList').innerHTML=arr.slice(0,3).map((c,i)=>`<div class="result-card"><div class="result-bag">🔥</div><div><div class="eyebrow">#${i+1} match</div><h3 style="font-size:1.6rem;margin:6px 0">${c.name}</h3><p class="sub" style="margin:0 0 12px">${c.desc}</p><button class="btn primary" onclick="openCoffeeUrl(c.url)">Shop this coffee</button></div><div class="score">${c.pct}%</div></div>`).join('');
+
+ document.getElementById('resultList').innerHTML=arr.slice(0,3).map((c,i)=>`
+   <div class="result-card">
+     <div class="result-bag">🔥</div>
+     <div>
+       <div class="eyebrow">#${i+1} match</div>
+       <h3 style="font-size:1.6rem;margin:6px 0">${c.name}</h3>
+       <p class="sub" style="margin:0 0 12px">${c.desc}</p>
+       <button class="btn primary" onclick="shopCoffeeById('${c.id}')">Shop this coffee</button>
+     </div>
+     <div class="score">${c.pct}%</div>
+   </div>
+ `).join('');
+
  const adventure=arr.slice().sort((a,b)=>a.comfort-b.comfort)[0];
  currentAdventureCoffee = adventure;
+
  document.getElementById('adventureName').textContent=adventure.name;
  document.getElementById('adventureText').textContent=adventure.desc+" This one intentionally pushes beyond your usual comfort zone.";
+
  showStage('results');
 }
 
@@ -454,19 +469,39 @@ function goToShop(){
 }
 
 
-let currentAdventureCoffee = null;
 
-function openCoffeeUrl(url){
-  if(!url) return;
+function getCoffeeById(id){
+  return coffees.find(c => c.id === id) || null;
+}
+
+function shopCoffeeById(id){
+  const coffee = getCoffeeById(id);
+  if(!coffee){
+    alert("We couldn't find that coffee in the coffee database.");
+    return;
+  }
+
+  const url = coffee.url || "";
+  const valid = /^https:\/\/brewandbrewsco\.com\/all-products-1\/ols\/products\//i.test(url);
+
+  if(!valid){
+    alert("This coffee does not have a valid product page yet.");
+    return;
+  }
+
   const w = window.open(url, "_blank", "noopener,noreferrer");
   if(!w){
     alert("Please allow pop-ups for this page, then try again.");
   }
 }
 
+let currentAdventureCoffee = null;
+
+
+
 function openAdventureCoffee(){
-  if(currentAdventureCoffee && currentAdventureCoffee.url){
-    openCoffeeUrl(currentAdventureCoffee.url);
+  if(currentAdventureCoffee && currentAdventureCoffee.id){
+    shopCoffeeById(currentAdventureCoffee.id);
   }
 }
 
@@ -582,8 +617,8 @@ function spinWheel(){
 }
 
 function tryRoulettePick(){
-  if(!rouletteCurrentPick || !rouletteCurrentPick.url) return;
-  openCoffeeUrl(rouletteCurrentPick.url);
+  if(!rouletteCurrentPick || !rouletteCurrentPick.id) return;
+  shopCoffeeById(rouletteCurrentPick.id);
 }
 const field=document.getElementById('beanField');
 for(let i=0;i<34;i++){
