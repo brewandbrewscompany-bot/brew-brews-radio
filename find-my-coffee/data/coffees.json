@@ -41,7 +41,8 @@
     "ground": true,
     "summary": "Best for drinkers who enjoy bright, fruit-forward, floral coffees with lively acidity.",
     "why": "A high-adventure choice for someone ready to move from chocolate-heavy coffee into bright fruit and floral character.",
-    "url": "https://brewandbrewsco.com/all-products-1/ols/products/ethiopian-medium-dark-roast"
+    "url": "https://brewandbrewsco.com/all-products-1/ols/products/ethiopian-medium-dark-roast",
+    "image": ""
   },
   {
     "id": "house-blend",
@@ -85,7 +86,8 @@
     "ground": true,
     "summary": "A familiar, balanced everyday coffee for customers who want smooth sweetness with chocolate and caramel.",
     "why": "A comfortable step toward a brighter cup without leaving behind the familiar chocolate-and-caramel profile.",
-    "url": "https://brewandbrewsco.com/all-products-1/ols/products/house-blend-medium-dark-roast"
+    "url": "https://brewandbrewsco.com/all-products-1/ols/products/house-blend-medium-dark-roast",
+    "image": "https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/Hou.png/:/rs=w:1200,h:1200"
   },
   {
     "id": "brazilian-hangover",
@@ -131,7 +133,8 @@
     "ground": true,
     "summary": "Ideal for customers who prefer low-acid, chocolatey, nutty coffee with caramel sweetness and a creamy body.",
     "why": "A safe-but-richer move for someone who wants deeper cocoa and roasted-nut character without sharp acidity.",
-    "url": "https://brewandbrewsco.com/all-products-1/ols/products/brazilian-hangover-medium-dark-roast"
+    "url": "https://brewandbrewsco.com/all-products-1/ols/products/brazilian-hangover-medium-dark-roast",
+    "image": "https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/BH.png/:/rs=w:1200,h:1200"
   },
   {
     "id": "decaf",
@@ -174,7 +177,8 @@
     "ground": true,
     "summary": "A smooth, familiar decaf profile built around chocolate, caramel, and roasted-nut flavors.",
     "why": "A low-risk choice when someone wants full coffee flavor without moving far outside familiar territory.",
-    "url": "https://brewandbrewsco.com/all-products-1/ols/products/decaf-medium-roast"
+    "url": "https://brewandbrewsco.com/all-products-1/ols/products/decaf-medium-roast",
+    "image": ""
   },
   {
     "id": "honduras",
@@ -218,7 +222,8 @@
     "ground": true,
     "summary": "For customers who want a sweeter, fruit-forward cup with an earthy backbone and more character than a classic chocolate profile.",
     "why": "A strong adventure pick for drinkers ready to explore fruit and earthiness instead of cocoa-first flavors.",
-    "url": "https://brewandbrewsco.com/all-products-1/ols/products/honduras-medium-dark-roast"
+    "url": "https://brewandbrewsco.com/all-products-1/ols/products/honduras-medium-dark-roast",
+    "image": "https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/1000062528.png/:/rs=w:1200,h:1200"
   },
   {
     "id": "classic-mocha-java",
@@ -262,7 +267,8 @@
     "ground": true,
     "summary": "A rich, full-bodied choice for customers who like dark chocolate and earthy depth with spice and some fruit complexity.",
     "why": "A bolder detour from smooth everyday coffee into deeper spice, earth, and dark-chocolate character.",
-    "url": "https://brewandbrewsco.com/all-products-1/ols/products/classic-mocha-java-medium-dark-roast"
+    "url": "https://brewandbrewsco.com/all-products-1/ols/products/classic-mocha-java-medium-dark-roast",
+    "image": "https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/CMJ.png/:/rs=w:1200,h:1200"
   },
   {
     "id": "signature-espresso-blend",
@@ -307,7 +313,8 @@
     "ground": false,
     "summary": "Designed for espresso drinkers who want syrupy sweetness, dark chocolate, brown sugar, and enough depth to hold up in milk.",
     "why": "A natural next step for someone who wants more intensity and syrupy body without jumping into the darkest roast.",
-    "url": "https://brewandbrewsco.com/all-products-1/ols/products/espresso-medium-dark-roast"
+    "url": "https://brewandbrewsco.com/all-products-1/ols/products/espresso-medium-dark-roast",
+    "image": "https://img1.wsimg.com/isteam/stock/3737/:/rs=w:1200,h:1200"
   },
   {
     "id": "voodoo",
@@ -353,7 +360,8 @@
     "ground": true,
     "summary": "For customers who want maximum body, low acidity, earthy depth, dark chocolate, and a strong dark-roast presence.",
     "why": "The full adventure: heavy body, earthy depth, spice, and a darker smoky finish for someone ready to leave the safe zone.",
-    "url": "https://brewandbrewsco.com/all-products-1/ols/products/voodoo-dark-roast"
+    "url": "https://brewandbrewsco.com/all-products-1/ols/products/voodoo-dark-roast",
+    "image": "https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/1000062529.png/:/rs=w:1200,h:1200"
   },
   {
     "id": "tiffany-s",
@@ -397,7 +405,8 @@
     "ground": true,
     "summary": "A smooth cocoa-forward coffee for customers who like sweetness, lower acidity, and a polished medium-dark profile.",
     "why": "A gentle step beyond a classic house coffee with richer cocoa and nutty sweetness while staying very approachable.",
-    "url": "https://brewandbrewsco.com/all-products-1/ols/products/tiffanys-medium-dark-roast"
+    "url": "https://brewandbrewsco.com/all-products-1/ols/products/tiffanys-medium-dark-roast",
+    "image": "https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/1000062524.png/:/rs=w:1200,h:1200"
   },
   {
     "id": "nolabel",
@@ -443,7 +452,8 @@
     "ground": true,
     "summary": "A bold sweet profile that combines milk chocolate and brown sugar with noticeable fruit and earthy depth.",
     "why": "A great bridge into more adventurous coffee: familiar chocolate sweetness with enough fruit and earthiness to feel different.",
-    "url": "https://brewandbrewsco.com/all-products-1/ols/products/no-label-medium-dark-roast"
+    "url": "https://brewandbrewsco.com/all-products-1/ols/products/no-label-medium-dark-roast",
+    "image": "https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/1784732416433.png/:/rs=w:1200,h:1200"
   },
   {
     "id": "ironclad",
@@ -489,7 +499,8 @@
     "ground": true,
     "summary": "A heavy, dark, low-acid coffee for drinkers who want intensity, earthiness, smoke, and strong roast character.",
     "why": "For the customer who wants to go darker and heavier—an intense step outside a smooth or bright everyday cup.",
-    "url": "https://brewandbrewsco.com/all-products-1/ols/products/ironclad-dark-roast"
+    "url": "https://brewandbrewsco.com/all-products-1/ols/products/ironclad-dark-roast",
+    "image": "https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/1000062526.png/:/rs=w:1200,h:1200"
   },
   {
     "id": "morning-light",
@@ -534,6 +545,7 @@
     "ground": true,
     "summary": "A lighter, brighter coffee for customers who enjoy clean sweetness, fruit, and more acidity without a heavy roast taste.",
     "why": "A bright adventure for chocolate-focused drinkers who want to discover a cleaner, fruitier, more expressive cup.",
-    "url": "https://brewandbrewsco.com/all-products-1/ols/products/morning-light-light-roast"
+    "url": "https://brewandbrewsco.com/all-products-1/ols/products/morning-light-light-roast",
+    "image": "https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/1000062527.png/:/rs=w:1200,h:1200"
   }
 ]
