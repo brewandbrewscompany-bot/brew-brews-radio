@@ -163,10 +163,19 @@ linear-gradient(180deg,#17120f,#0d0b09)}
 }
 
 
-/* GoDaddy embed stability */
+/* Keep each app screen only as tall as its actual content. */
+.stage{
+  min-height:0 !important;
+}
+.quiz-wrap{
+  padding-bottom:24px !important;
+}
+.result-grid{
+  padding-bottom:24px !important;
+}
 #results.stage.active,
 #roulette.stage.active{
-  padding-bottom:120px;
+  padding-bottom:24px !important;
 }
 
 </style>
@@ -376,16 +385,6 @@ function resetPageScroll(){
   }catch(error){}
 }
 
-
-function notifyParentPageTop(){
-  try{
-    window.scrollTo(0,0);
-    document.documentElement.scrollTop = 0;
-    if(document.body) document.body.scrollTop = 0;
-    window.parent.postMessage({type:"BNB_SCROLL_PAGE_TOP"},"*");
-  }catch(e){}
-}
-
 function showStage(id){
   document.querySelectorAll('.stage').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -452,21 +451,8 @@ function choose(key,val,multi){
  else answers[key]=[val];
  renderQuestion();
 }
-function prevQuestion(){
-  if(step>0){
-    step--;
-    renderQuestion();
-  }
-}
-function nextQuestion(){
-  if(step<questions.length-1){
-    step++;
-    renderQuestion();
-  }else{
-    renderResults();
-    setTimeout(notifyParentPageTop,80);
-  }
-}
+function prevQuestion(){if(step>0){step--;renderQuestion()}}
+function nextQuestion(){if(step<questions.length-1){step++;renderQuestion()}else renderResults()}
 
 const roastOrder = ["light","medium-light","medium","medium-dark","dark"];
 
@@ -517,16 +503,16 @@ function percentify(arr){
 function renderLive(){
  const arr=percentify(ranked()).slice(0,3);
  document.getElementById('liveMatches').innerHTML=arr.map((c,i)=>`
-   <div class="match ${i===0?'highlight':''}">
-     ${c.image
-       ? `<div class="thumb" style="overflow:hidden;padding:0"><img src="${c.image}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.parentElement.innerHTML='${i+1}'"></div>`
-       : `<div class="thumb">${i+1}</div>`}
-     <div>
-       <b>${c.name}</b>
-       <div style="color:#9f907e;font-size:.85rem">${c.desc}</div>
-     </div>
-     <div class="score">${c.pct}%</div>
-   </div>`).join('');
+  <div class="match ${i===0?'highlight':''}">
+    ${c.image
+      ? `<div class="thumb" style="overflow:hidden;padding:0"><img src="${c.image}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.parentElement.innerHTML='${i+1}'"></div>`
+      : `<div class="thumb">${i+1}</div>`}
+    <div>
+      <b>${c.name}</b>
+      <div style="color:#9f907e;font-size:.85rem">${c.desc}</div>
+    </div>
+    <div class="score">${c.pct}%</div>
+  </div>`).join('');
 }
 function renderResults(){
  const arr=percentify(ranked());
@@ -580,7 +566,6 @@ function renderResults(){
  }
 
  showStage('results');
- setTimeout(notifyParentPageTop,120);
 }
 
 const SHOP_URL = "https://brewandbrewsco.com/all-products-1";
