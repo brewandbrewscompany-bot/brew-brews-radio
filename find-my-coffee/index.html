@@ -192,7 +192,7 @@ linear-gradient(180deg,#17120f,#0d0b09)}
           <div class="glow"></div>
           <div class="bean-field" id="beanField"></div>
           <div class="bag b1"><div class="mini-flame"></div><strong>HOUSE BLEND</strong><small>Balanced · Smooth</small></div>
-          <div class="bag b2"><div class="mini-flame"></div><strong>BRAZIL HANGOVER</strong><small>Cocoa · Nutty</small></div>
+          <div class="bag b2"><div class="mini-flame"></div><strong>BRAZIL Hangover</strong><small>Cocoa · Nutty</small></div>
           <div class="bag b3"><div class="mini-flame"></div><strong>VOODOO</strong><small>Bold · Earthy</small></div>
           <div class="bag b4"><div class="mini-flame"></div><strong>MORNING LIGHT</strong><small>Honey · Clean</small></div>
         </div>
@@ -369,14 +369,49 @@ function resetPageScroll(){
   }catch(error){}
 }
 
+
+function forceFinderToTop(){
+  try{
+    window.scrollTo({top:0,left:0,behavior:"instant"});
+  }catch(e){
+    window.scrollTo(0,0);
+  }
+  document.documentElement.scrollTop = 0;
+  if(document.body) document.body.scrollTop = 0;
+
+  try{
+    window.parent.postMessage({type:"BNB_SCROLL_PAGE_TOP"},"*");
+  }catch(e){}
+
+  setTimeout(function(){
+    window.scrollTo(0,0);
+    document.documentElement.scrollTop = 0;
+    if(document.body) document.body.scrollTop = 0;
+    try{
+      window.parent.postMessage({type:"BNB_SCROLL_PAGE_TOP"},"*");
+    }catch(e){}
+  },80);
+
+  setTimeout(function(){
+    try{
+      window.parent.postMessage({type:"BNB_SCROLL_PAGE_TOP"},"*");
+    }catch(e){}
+  },300);
+}
+
 function showStage(id){
   document.querySelectorAll('.stage').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  requestAnimationFrame(()=>{
-    resetPageScroll();
-    setTimeout(resetPageScroll,80);
-    setTimeout(reportFinderHeight,120);
-    setTimeout(reportFinderHeight,350);
+  const target = document.getElementById(id);
+  if(target) target.classList.add('active');
+
+  requestAnimationFrame(function(){
+    forceFinderToTop();
+
+    if(typeof reportFinderHeight === "function"){
+      setTimeout(reportFinderHeight,120);
+      setTimeout(reportFinderHeight,350);
+      setTimeout(reportFinderHeight,700);
+    }
   });
 }
 
@@ -435,8 +470,14 @@ function choose(key,val,multi){
  else answers[key]=[val];
  renderQuestion();
 }
-function prevQuestion(){if(step>0){step--;renderQuestion()}}
-function nextQuestion(){if(step<questions.length-1){step++;renderQuestion()}else renderResults()}
+function prevQuestion(){
+  if(step>0){
+    step--;
+    renderQuestion();
+    forceFinderToTop();
+  }
+}
+
 function scoreCoffee(c){
  let s=50;
  const d=(answers.drink||[])[0], r=(answers.roast||[])[0], adv=(answers.adventure||[])[0];
@@ -445,8 +486,14 @@ function scoreCoffee(c){
  if(d==="black") s+=c.comfort;
  if(d==="espresso"&&c.brew.includes("espresso")) s+=16;
  if(d==="cold"&&(c.body>=7 || c.brew.includes("cold-brew"))) s+=10;
- if(r===c.roast) s+=20;
- else if((r==="medium"&&c.roast==="medium-dark")||(r==="medium-dark"&&c.roast==="medium")) s+=10;
+ if(r){
+   const dist = roastDistance(r,c.roast);
+   if(dist===0) s+=42;
+   else if(dist===1) s+=18;
+   else if(dist===2) s-=12;
+   else if(dist===3) s-=28;
+   else if(dist>=4) s-=40;
+ }
  const tags=(c.tags||[]).map(x=>x.toLowerCase());
  if(f.includes("choc")) s+=c.choc*2 + (tags.some(x=>x.includes("chocolate")||x.includes("cocoa"))?5:0);
  if(f.includes("nut")) s+=c.nut*2 + (tags.some(x=>x.includes("nut"))?5:0);
@@ -470,7 +517,17 @@ function percentify(arr){
 }
 function renderLive(){
  const arr=percentify(ranked()).slice(0,3);
- document.getElementById('liveMatches').innerHTML=arr.map((c,i)=>`<div class="match ${i===0?'highlight':''}"><div class="thumb">${i+1}</div><div><b>${c.name}</b><div style="color:#9f907e;font-size:.85rem">${c.desc}</div></div><div class="score">${c.pct}%</div></div>`).join('');
+ document.getElementById('liveMatches').innerHTML=arr.map((c,i)=>`
+   <div class="match ${i===0?'highlight':''}">
+     ${c.image
+       ? `<div class="thumb" style="overflow:hidden;padding:0"><img src="${c.image}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.parentElement.innerHTML='${i+1}'"></div>`
+       : `<div class="thumb">${i+1}</div>`}
+     <div>
+       <b>${c.name}</b>
+       <div style="color:#9f907e;font-size:.85rem">${c.desc}</div>
+     </div>
+     <div class="score">${c.pct}%</div>
+   </div>`).join('');
 }
 function renderResults(){
  const arr=percentify(ranked());
@@ -524,6 +581,8 @@ function renderResults(){
  }
 
  showStage('results');
+ setTimeout(forceFinderToTop,60);
+ setTimeout(forceFinderToTop,300);
 }
 
 const SHOP_URL = "https://brewandbrewsco.com/all-products-1";
