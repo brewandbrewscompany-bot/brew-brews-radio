@@ -332,6 +332,9 @@ linear-gradient(180deg,#17120f,#0d0b09)}
 
 <script>
 let coffees = [];
+
+const FALLBACK_COFFEES = [{"id":"ethiopian-yirgacheffe","name":"Ethiopian Yirgacheffe","type":"Single Origin","active":false,"origin":["Ethiopia"],"roast":"Medium-Dark","body":5,"acidity":8,"sweetness":8,"chocolate":3,"nutty":2,"caramel":2,"fruit":4,"floral":9,"earthy":3,"roastIntensity":2,"flavors":["Floral","Citrus","Berry","Tea-like","Bright"],"brewMethods":["Pour Over","Drip","AeroPress"],"blackFriendly":true,"milkFriendly":false,"syrupFriendly":false,"lowAcid":false,"strength":"Mild","comfort":4,"adventure":9,"wholeBean":true,"ground":true,"summary":"Best for drinkers who enjoy bright, fruit-forward, floral coffees with lively acidity.","why":"A high-adventure choice for someone ready to move from chocolate-heavy coffee into bright fruit and floral character.","url":"https://brewandbrewsco.com/all-products-1/ols/products/ethiopian-medium-dark-roast","image":""},{"id":"house-blend","name":"House Blend","type":"Blend","active":true,"origin":["Colombia","Guatemala"],"roast":"Medium-Dark","body":6,"acidity":6,"sweetness":6,"chocolate":4,"nutty":5,"caramel":4,"fruit":7,"floral":6,"earthy":2,"roastIntensity":3,"flavors":["Milk Chocolate","Caramel","Balanced Sweetness","Gentle Brightness"],"brewMethods":["Drip","French Press","Espresso"],"blackFriendly":true,"milkFriendly":true,"syrupFriendly":true,"lowAcid":false,"strength":"Balanced","comfort":8,"adventure":4,"wholeBean":true,"ground":true,"summary":"A familiar, balanced everyday coffee for customers who want smooth sweetness with chocolate and caramel.","why":"A comfortable step toward a brighter cup without leaving behind the familiar chocolate-and-caramel profile.","url":"https://brewandbrewsco.com/all-products-1/ols/products/house-blend-medium-dark-roast","image":"https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/Hou.png/:/rs=w:1200,h:1200"},{"id":"brazilian-hangover","name":"Brazilian Hangover","type":"Single Origin","active":true,"origin":["Brazil","Colombia"],"roast":"Medium-Dark","body":7,"acidity":2,"sweetness":8,"chocolate":3,"nutty":9,"caramel":9,"fruit":8,"floral":2,"earthy":2,"roastIntensity":4,"flavors":["Cocoa","Milk Chocolate","Roasted Nuts","Caramel","Creamy Body"],"brewMethods":["Drip","Espresso","French Press","Cold Brew"],"blackFriendly":true,"milkFriendly":true,"syrupFriendly":true,"lowAcid":true,"strength":"Balanced","comfort":9,"adventure":3,"wholeBean":true,"ground":true,"summary":"Ideal for customers who prefer low-acid, chocolatey, nutty coffee with caramel sweetness and a creamy body.","why":"A safe-but-richer move for someone who wants deeper cocoa and roasted-nut character without sharp acidity.","url":"https://brewandbrewsco.com/all-products-1/ols/products/brazilian-hangover-medium-dark-roast","image":"https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/BH.png/:/rs=w:1200,h:1200"},{"id":"decaf","name":"Decaf","type":"Single Origin","active":false,"origin":["Colombia"],"roast":"Medium-Dark","body":6,"acidity":3,"sweetness":7,"chocolate":3,"nutty":7,"caramel":6,"fruit":7,"floral":3,"earthy":2,"roastIntensity":3,"flavors":["Chocolate","Caramel","Roasted Nuts","Smooth Finish"],"brewMethods":["Drip","French Press","Espresso"],"blackFriendly":true,"milkFriendly":true,"syrupFriendly":true,"lowAcid":true,"strength":"Balanced","comfort":9,"adventure":2,"wholeBean":true,"ground":true,"summary":"A smooth, familiar decaf profile built around chocolate, caramel, and roasted-nut flavors.","why":"A low-risk choice when someone wants full coffee flavor without moving far outside familiar territory.","url":"https://brewandbrewsco.com/all-products-1/ols/products/decaf-medium-roast","image":""},{"id":"honduras","name":"Honduras","type":"Single Origin","active":true,"origin":["Honduras"],"roast":"Medium-Dark","body":5,"acidity":4,"sweetness":8,"chocolate":3,"nutty":2,"caramel":2,"fruit":5,"floral":10,"earthy":4,"roastIntensity":6,"flavors":["Fruit-forward","Sweet","Earthy","Bold Finish"],"brewMethods":["Pour Over","Drip","AeroPress","Cold Brew"],"blackFriendly":true,"milkFriendly":false,"syrupFriendly":false,"lowAcid":false,"strength":"Balanced","comfort":3,"adventure":8,"wholeBean":true,"ground":true,"summary":"For customers who want a sweeter, fruit-forward cup with an earthy backbone and more character than a classic chocolate profile.","why":"A strong adventure pick for drinkers ready to explore fruit and earthiness instead of cocoa-first flavors.","url":"https://brewandbrewsco.com/all-products-1/ols/products/honduras-medium-dark-roast","image":"https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/1000062528.png/:/rs=w:1200,h:1200"},{"id":"classic-mocha-java","name":"Classic Mocha Java","type":"Single Origin","active":false,"origin":["Ethiopia","Sumatra"],"roast":"Medium-Dark","body":8,"acidity":4,"sweetness":6,"chocolate":5,"nutty":8,"caramel":5,"fruit":5,"floral":2,"earthy":7,"roastIntensity":8,"flavors":["Dark Chocolate","Spice","Earthy Depth","Dried Fruit"],"brewMethods":["Drip","French Press","Espresso"],"blackFriendly":true,"milkFriendly":true,"syrupFriendly":true,"lowAcid":false,"strength":"Bold","comfort":6,"adventure":7,"wholeBean":true,"ground":true,"summary":"A rich, full-bodied choice for customers who like dark chocolate and earthy depth with spice and some fruit complexity.","why":"A bolder detour from smooth everyday coffee into deeper spice, earth, and dark-chocolate character.","url":"https://brewandbrewsco.com/all-products-1/ols/products/classic-mocha-java-medium-dark-roast","image":"https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/CMJ.png/:/rs=w:1200,h:1200"},{"id":"signature-espresso-blend","name":"Signature Espresso Blend","type":"Blend","active":true,"origin":["Brazil","Honduras","Sumatra","Guatemala"],"roast":"Medium-Dark","body":5,"acidity":5,"sweetness":8,"chocolate":5,"nutty":8,"caramel":4,"fruit":7,"floral":3,"earthy":5,"roastIntensity":8,"flavors":["Dark Chocolate","Brown Sugar","Syrupy Body","Earthy Roast Character"],"brewMethods":["Espresso","Drip"],"blackFriendly":true,"milkFriendly":true,"syrupFriendly":true,"lowAcid":false,"strength":"Bold","comfort":7,"adventure":5,"wholeBean":true,"ground":false,"summary":"Designed for espresso drinkers who want syrupy sweetness, dark chocolate, brown sugar, and enough depth to hold up in milk.","why":"A natural next step for someone who wants more intensity and syrupy body without jumping into the darkest roast.","url":"https://brewandbrewsco.com/all-products-1/ols/products/espresso-medium-dark-roast","image":"https://img1.wsimg.com/isteam/stock/3737/:/rs=w:1200,h:1200"},{"id":"voodoo","name":"VOODOO","type":"Blend","active":true,"origin":["Sumatra"],"roast":"Dark","body":10,"acidity":2,"sweetness":5,"chocolate":7,"nutty":7,"caramel":4,"fruit":4,"floral":3,"earthy":6,"roastIntensity":9,"flavors":["Syrupy","Bold","Earthy","Dark Chocolate","Spice","Smoky Finish"],"brewMethods":["Espresso","French Press","Drip","Cold Brew"],"blackFriendly":true,"milkFriendly":true,"syrupFriendly":true,"lowAcid":true,"strength":"Bold","comfort":5,"adventure":9,"wholeBean":true,"ground":true,"summary":"For customers who want maximum body, low acidity, earthy depth, dark chocolate, and a strong dark-roast presence.","why":"The full adventure: heavy body, earthy depth, spice, and a darker smoky finish for someone ready to leave the safe zone.","url":"https://brewandbrewsco.com/all-products-1/ols/products/voodoo-dark-roast","image":"https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/1000062529.png/:/rs=w:1200,h:1200"},{"id":"tiffany-s","name":"Tiffany's","type":"Blend","active":true,"origin":["Ethiopia","Sumatra","Brazil"],"roast":"Medium-Dark","body":3,"acidity":3,"sweetness":7,"chocolate":4,"nutty":8,"caramel":6,"fruit":7,"floral":3,"earthy":3,"roastIntensity":4,"flavors":["Cocoa","Caramel Sweetness","Roasted Nuts","Smooth Finish"],"brewMethods":["Drip","Espresso"],"blackFriendly":true,"milkFriendly":true,"syrupFriendly":true,"lowAcid":true,"strength":"Balanced","comfort":8,"adventure":4,"wholeBean":true,"ground":true,"summary":"A smooth cocoa-forward coffee for customers who like sweetness, lower acidity, and a polished medium-dark profile.","why":"A gentle step beyond a classic house coffee with richer cocoa and nutty sweetness while staying very approachable.","url":"https://brewandbrewsco.com/all-products-1/ols/products/tiffanys-medium-dark-roast","image":"https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/1000062524.png/:/rs=w:1200,h:1200"},{"id":"nolabel","name":"NoLabel","type":"Blend","active":true,"origin":["Colombia","Guatemala","Costa Rica"],"roast":"Medium-Dark","body":5,"acidity":4,"sweetness":8,"chocolate":4,"nutty":7,"caramel":3,"fruit":7,"floral":7,"earthy":4,"roastIntensity":7,"flavors":["Milk Chocolate","Brown Sugar","Fruit","Syrupy Sweetness","Earthy Finish"],"brewMethods":["Drip","Espresso","French Press"],"blackFriendly":true,"milkFriendly":true,"syrupFriendly":true,"lowAcid":false,"strength":"Bold","comfort":6,"adventure":7,"wholeBean":true,"ground":true,"summary":"A bold sweet profile that combines milk chocolate and brown sugar with noticeable fruit and earthy depth.","why":"A great bridge into more adventurous coffee: familiar chocolate sweetness with enough fruit and earthiness to feel different.","url":"https://brewandbrewsco.com/all-products-1/ols/products/no-label-medium-dark-roast","image":"https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/1784732416433.png/:/rs=w:1200,h:1200"},{"id":"ironclad","name":"Ironclad","type":"Blend","active":true,"origin":["Colombia","Guatemala"],"roast":"Dark","body":10,"acidity":2,"sweetness":4,"chocolate":8,"nutty":7,"caramel":3,"fruit":3,"floral":1,"earthy":5,"roastIntensity":9,"flavors":["Dark Chocolate","Heavy Body","Earthy","Smoky","Intense Roast Character"],"brewMethods":["Drip","French Press","Espresso","Cold Brew"],"blackFriendly":true,"milkFriendly":true,"syrupFriendly":true,"lowAcid":true,"strength":"Bold","comfort":5,"adventure":8,"wholeBean":true,"ground":true,"summary":"A heavy, dark, low-acid coffee for drinkers who want intensity, earthiness, smoke, and strong roast character.","why":"For the customer who wants to go darker and heavier—an intense step outside a smooth or bright everyday cup.","url":"https://brewandbrewsco.com/all-products-1/ols/products/ironclad-dark-roast","image":"https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/1000062526.png/:/rs=w:1200,h:1200"},{"id":"morning-light","name":"Morning Light","type":"Blend","active":true,"origin":["Colombia","Guatemala"],"roast":"Light","body":6,"acidity":7,"sweetness":8,"chocolate":2,"nutty":5,"caramel":4,"fruit":6,"floral":7,"earthy":2,"roastIntensity":2,"flavors":["Clean","Bright","Gently Sweet","Fruit-forward","Light Caramel"],"brewMethods":["Drip","Pour Over","AeroPress"],"blackFriendly":true,"milkFriendly":true,"syrupFriendly":true,"lowAcid":false,"strength":"Mild","comfort":7,"adventure":6,"wholeBean":true,"ground":true,"summary":"A lighter, brighter coffee for customers who enjoy clean sweetness, fruit, and more acidity without a heavy roast taste.","why":"A bright adventure for chocolate-focused drinkers who want to discover a cleaner, fruitier, more expressive cup.","url":"https://brewandbrewsco.com/all-products-1/ols/products/morning-light-light-roast","image":"https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/1000062527.png/:/rs=w:1200,h:1200"}];
+
 let coffeeDataLoaded = false;
 let coffeeDataError = null;
 
@@ -364,15 +367,25 @@ async function loadCoffeeData(){
     const response = await fetch("./data/coffees.json", {cache:"no-store"});
     if(!response.ok) throw new Error(`Coffee data HTTP ${response.status}`);
     const raw = await response.json();
+
+    if(!Array.isArray(raw) || raw.length===0){
+      throw new Error("Coffee database was empty.");
+    }
+
     coffees = raw.filter(c => c.active !== false).map(normalizeCoffee);
     coffeeDataLoaded = true;
     coffeeDataError = null;
     return true;
   }catch(error){
-    coffeeDataLoaded = false;
+    console.warn("Live coffees.json unavailable; using embedded backup.", error);
+
+    coffees = FALLBACK_COFFEES
+      .filter(c => c.active !== false)
+      .map(normalizeCoffee);
+
+    coffeeDataLoaded = coffees.length > 0;
     coffeeDataError = error;
-    console.error("Failed to load coffees.json", error);
-    return false;
+    return coffeeDataLoaded;
   }
 }
 
@@ -432,16 +445,29 @@ function resetEntireExperience(){
 }
 
 async function startQuiz(){
-  if(!coffeeDataLoaded){
-    const ok = await loadCoffeeData();
-    if(!ok){
-      alert("We couldn't load the coffee database. Please refresh and try again.");
-      return;
-    }
-  }
   step=0;
   answers={};
+
+  // Enter the quiz immediately so the button never feels dead.
   showStage('quiz');
+  document.getElementById('stepLabel').textContent = "Loading";
+  document.getElementById('questionTitle').textContent = "Finding your coffees…";
+  document.getElementById('questionSub').textContent = "Just a moment.";
+  document.getElementById('options').innerHTML = "";
+  document.getElementById('liveMatches').innerHTML = "";
+
+  if(!coffeeDataLoaded){
+    await loadCoffeeData();
+  }
+
+  if(!coffees.length){
+    document.getElementById('questionTitle').textContent = "Coffee data unavailable";
+    document.getElementById('questionSub').textContent = "Please refresh the page and try again.";
+    document.getElementById('options').innerHTML = "";
+    document.getElementById('liveMatches').innerHTML = "";
+    return;
+  }
+
   renderQuestion();
 }
 function renderQuestion(){
@@ -815,6 +841,10 @@ function spinWheel(){
 function tryRoulettePick(){
   /* Direct roulette product links are now assigned to anchor hrefs. */
 }
+
+// Preload coffee data, but never block the interface.
+loadCoffeeData();
+
 const field=document.getElementById('beanField');
 for(let i=0;i<34;i++){
  const b=document.createElement('span');b.className='bean';
