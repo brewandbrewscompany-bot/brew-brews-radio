@@ -224,7 +224,7 @@
     "id": "classic-mocha-java",
     "name": "Classic Mocha Java",
     "type": "Single Origin",
-    "active": true,
+    "active": false,
     "origin": [
       "Ethiopia",
       "Sumatra"
