@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brew & Brews | Fresh Roasted Coffee</title>
+<meta name="description" content="Fresh roasted coffee from Brew & Brews in Louisburg, Kansas.">
+<style>
+:root{
+  --black:#0c0d0e;
+  --black2:#141516;
+  --white:#ffffff;
+  --paper:#f7f7f5;
+  --soft:#efefec;
+  --line:#dfdfdb;
+  --text:#111214;
+  --muted:#666a6e;
+  --orange:#f27b31;
+  --orange2:#ff944f;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#f4f4f1;
+  color:var(--text);
+}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+
+/* HEADER */
+.site-header{
+  height:74px;
+  background:var(--black);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  position:sticky;
+  top:0;
+  z-index:100;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.header-inner{
+  width:min(1440px,92vw);
+  margin:auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:26px;
+}
+.logo-wrap{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-width:230px;
+}
+.logo-mark{
+  width:31px;height:42px;position:relative;
+}
+.logo-mark:before,
+.logo-mark:after{
+  content:"";
+  position:absolute;
+  border:3px solid var(--orange);
+  border-left-color:transparent;
+  border-bottom-color:transparent;
+  border-radius:50%;
+  transform:rotate(47deg);
+}
+.logo-mark:before{width:16px;height:26px;left:6px;top:0}
+.logo-mark:after{width:13px;height:20px;left:7px;top:15px}
+.logo-copy strong{
+  display:block;
+  font-size:1.2rem;
+  letter-spacing:.02em;
+}
+.logo-copy small{
+  display:block;
+  color:var(--orange);
+  font-size:.57rem;
+  letter-spacing:.12em;
+  margin-top:2px;
+  font-weight:700;
+}
+.main-nav{
+  display:flex;
+  align-items:center;
+  gap:31px;
+  font-weight:800;
+  font-size:.79rem;
+}
+.main-nav a{color:#f0f1f1}
+.main-nav a:hover{color:var(--orange)}
+.nav-icons{
+  display:flex;
+  gap:20px;
+  font-size:1.15rem;
+  color:#fff;
+}
+.menu-button{display:none;border:0;background:none;color:#fff;font-size:1.5rem}
+
+/* HERO */
+.hero{
+  min-height:420px;
+  display:flex;
+  align-items:center;
+  position:relative;
+  color:#fff;
+  overflow:hidden;
+  background:
+    linear-gradient(90deg,rgba(8,9,10,.78) 0%,rgba(8,9,10,.58) 42%,rgba(8,9,10,.12) 70%,rgba(8,9,10,.06) 100%),
+    url("https://img1.wsimg.com/isteam/stock/98438/:/cr=t:0%25,l:0%25,w:100%25,h:100%25") center/cover no-repeat;
+}
+.hero-inner{
+  width:min(1440px,92vw);
+  margin:auto;
+  padding:52px 0 48px;
+}
+.hero-copy{width:min(620px,90%)}
+.hero-kicker{
+  color:var(--orange);
+  font-weight:900;
+  font-size:.78rem;
+  letter-spacing:.05em;
+  line-height:1.35;
+  margin-bottom:14px;
+}
+.hero h1{
+  margin:0;
+  font-size:clamp(3.1rem,5vw,5.15rem);
+  letter-spacing:-.045em;
+  line-height:.98;
+  max-width:620px;
+}
+.hero-rule{
+  width:48px;height:2px;background:var(--orange);
+  margin:20px 0 17px;
+}
+.hero p{
+  margin:0;
+  color:#f0f0ed;
+  font-size:1.02rem;
+  line-height:1.5;
+}
+.hero-actions{
+  display:flex;
+  gap:12px;
+  margin-top:18px;
+  flex-wrap:wrap;
+}
+.hero-btn{
+  min-width:155px;
+  min-height:42px;
+  padding:0 22px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:4px;
+  font-size:.8rem;
+  font-weight:900;
+}
+.hero-btn.primary{
+  background:linear-gradient(135deg,var(--orange),var(--orange2));
+  color:#fff;
+}
+.hero-btn.secondary{
+  color:#fff;
+  border:1px solid rgba(255,255,255,.72);
+  background:rgba(0,0,0,.12);
+}
+
+/* FINDER STRIP */
+.finder-strip{
+  background:#fff;
+  min-height:150px;
+  border-bottom:1px solid #ececea;
+  display:flex;
+  align-items:center;
+  position:relative;
+  overflow:hidden;
+}
+.finder-inner{
+  width:min(1440px,92vw);
+  margin:auto;
+  display:grid;
+  grid-template-columns:95px 1fr 1px 260px 1fr;
+  gap:28px;
+  align-items:center;
+}
+.finder-circle{
+  width:88px;height:88px;border:1px solid #d5d7d5;border-radius:50%;
+  display:grid;place-items:center;
+  font-size:1.9rem;color:#555;
+}
+.finder-copy h2{
+  margin:0;
+  font-size:1.55rem;
+  line-height:.95;
+  letter-spacing:-.03em;
+}
+.finder-copy p{
+  margin:12px 0 0;
+  color:#65696c;
+  font-size:.83rem;
+  line-height:1.45;
+}
+.finder-divider{height:76px;background:#d9dad7}
+.finder-button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:42px;
+  background:#111214;
+  color:#fff;
+  font-weight:900;
+  font-size:.78rem;
+  border-radius:4px;
+}
+.finder-button span{color:var(--orange);margin-left:12px}
+.finder-art{
+  height:150px;
+  background:
+    linear-gradient(90deg,rgba(255,255,255,.1),rgba(255,255,255,.08)),
+    radial-gradient(circle at 78% 50%,#22180e 0 12%,transparent 12.3%),
+    radial-gradient(circle at 50% 50%,#5c3a20 0 3px,transparent 4px),
+    radial-gradient(circle at 55% 42%,#684227 0 4px,transparent 5px),
+    radial-gradient(circle at 58% 67%,#5b371f 0 4px,transparent 5px),
+    radial-gradient(circle at 61% 49%,#4e2f1b 0 3px,transparent 4px),
+    #fafafa;
+}
+
+/* FEATURED */
+.featured{
+  background:#f3f3f1;
+  padding:28px 0 34px;
+}
+.section-title{
+  text-align:center;
+  margin-bottom:20px;
+}
+.section-title small{
+  display:block;
+  color:var(--orange);
+  font-size:.63rem;
+  font-weight:900;
+  letter-spacing:.04em;
+}
+.section-title h2{
+  margin:3px 0 0;
+  font-size:1.72rem;
+  letter-spacing:.01em;
+}
+.section-title .tiny-line{
+  width:22px;height:1px;background:var(--orange);margin:6px auto 0;
+}
+.featured-inner{
+  width:min(1180px,90vw);
+  margin:auto;
+}
+.view-all{
+  float:right;
+  margin-top:-40px;
+  font-size:.62rem;
+  font-weight:800;
+  color:var(--orange);
+}
+.products{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+}
+.product-card{
+  background:#fff;
+  min-height:155px;
+  border-radius:6px;
+  display:grid;
+  grid-template-columns:94px 1fr;
+  gap:10px;
+  padding:12px;
+  align-items:center;
+  border:1px solid #ecece9;
+}
+.product-img{
+  height:128px;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+}
+.product-img img{
+  height:100%;
+  width:100%;
+  object-fit:contain;
+}
+.product-info h3{
+  margin:0 0 7px;
+  font-size:.88rem;
+  line-height:1;
+}
+.product-info p{
+  margin:0;
+  font-size:.68rem;
+  line-height:1.45;
+  color:#333;
+}
+.product-price{
+  color:var(--orange);
+  font-weight:900;
+  margin-top:8px;
+  font-size:.78rem;
+}
+.product-meta{
+  color:#222;
+  font-size:.66rem;
+  margin-top:3px;
+}
+
+/* WHY */
+.why{
+  background:linear-gradient(180deg,#151616,#0c0d0d);
+  color:#fff;
+  padding:23px 0 26px;
+}
+.why .section-title{margin-bottom:15px}
+.why .section-title h2{font-size:1.55rem}
+.why-grid{
+  width:min(1160px,90vw);
+  margin:auto;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  border-top:1px solid rgba(255,255,255,.12);
+}
+.why-card{
+  padding:17px 28px 0;
+  display:grid;
+  grid-template-columns:43px 1fr;
+  gap:15px;
+  border-right:1px solid rgba(255,255,255,.14);
+}
+.why-card:last-child{border-right:0}
+.why-icon{
+  width:39px;height:39px;border:2px solid var(--orange);border-radius:50%;
+  display:grid;place-items:center;color:var(--orange);font-size:1rem;
+}
+.why-card h3{
+  margin:0 0 5px;
+  font-size:.78rem;
+}
+.why-card p{
+  margin:0;
+  color:#d1d2d1;
+  font-size:.65rem;
+  line-height:1.45;
+}
+
+/* BOTTOM FEATURE CARDS */
+.features{
+  background:#f7f7f5;
+  padding:9px 0 0;
+}
+.features-grid{
+  width:min(1180px,90vw);
+  margin:auto;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:14px;
+}
+.feature-card{
+  min-height:190px;
+  position:relative;
+  overflow:hidden;
+  border-radius:4px 4px 0 0;
+  background:#ddd;
+  display:flex;
+  align-items:flex-end;
+}
+.feature-card:before{
+  content:"";
+  position:absolute;inset:0;
+  background:linear-gradient(90deg,rgba(255,255,255,.97) 0 38%,rgba(255,255,255,.40) 58%,transparent 80%);
+}
+.feature-card.map{
+  background:
+    linear-gradient(rgba(230,230,227,.22),rgba(230,230,227,.22)),
+    repeating-linear-gradient(30deg,#dededb 0 2px,#efefed 2px 17px);
+}
+.feature-card.wholesale{
+  background:
+    url("https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/Hou.png/:/rs=w:1200,h:1200") 82% center/42% auto no-repeat,
+    #e8e5df;
+}
+.feature-card.radio{
+  background:
+    radial-gradient(circle at 78% 50%,#101112 0 20%,transparent 20.5%),
+    radial-gradient(circle at 78% 50%,#222 0 30%,transparent 31%),
+    #eee;
+}
+.feature-copy{
+  position:relative;
+  z-index:2;
+  width:48%;
+  padding:20px;
+  align-self:stretch;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.feature-copy h3{
+  font-size:1rem;
+  line-height:1.05;
+  margin:0 0 11px;
+}
+.feature-copy p{
+  font-size:.68rem;
+  line-height:1.45;
+  color:#404346;
+  margin:0 0 12px;
+}
+.feature-copy a{
+  color:var(--orange);
+  font-weight:900;
+  font-size:.72rem;
+}
+
+/* FOOTER */
+.footer{
+  background:#0c0d0e;
+  color:#aaa;
+  padding:24px 0;
+  font-size:.72rem;
+}
+.footer-inner{
+  width:min(1180px,90vw);
+  margin:auto;
+  display:flex;
+  justify-content:space-between;
+  gap:24px;
+}
+
+/* MOBILE */
+@media(max-width:980px){
+  .main-nav,.nav-icons{display:none}
+  .menu-button{display:block}
+  .main-nav.open{
+    display:flex;
+    position:absolute;
+    top:74px;left:0;right:0;
+    background:#0c0d0e;
+    flex-direction:column;
+    align-items:flex-start;
+    padding:20px 5vw 28px;
+  }
+  .finder-inner{
+    grid-template-columns:80px 1fr 190px;
+  }
+  .finder-divider,.finder-art{display:none}
+  .products{grid-template-columns:repeat(2,1fr)}
+  .why-grid{grid-template-columns:repeat(2,1fr)}
+  .why-card:nth-child(2){border-right:0}
+  .why-card:nth-child(-n+2){padding-bottom:18px;border-bottom:1px solid rgba(255,255,255,.12)}
+  .features-grid{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .site-header{height:66px}
+  .header-inner{width:92vw}
+  .logo-wrap{min-width:0}
+  .hero{min-height:520px;background-position:64% center}
+  .hero-inner{padding:48px 0}
+  .hero h1{font-size:3.35rem}
+  .finder-strip{padding:23px 0}
+  .finder-inner{
+    grid-template-columns:1fr;
+    gap:15px;
+  }
+  .finder-circle{display:none}
+  .finder-button{width:100%}
+  .products{grid-template-columns:1fr}
+  .product-card{grid-template-columns:110px 1fr}
+  .why-grid{grid-template-columns:1fr}
+  .why-card{
+    border-right:0;
+    border-bottom:1px solid rgba(255,255,255,.12);
+    padding:18px 8px;
+  }
+  .why-card:last-child{border-bottom:0}
+  .view-all{float:none;margin:0 0 12px;text-align:right}
+  .feature-copy{width:62%}
+  .footer-inner{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="#" class="logo-wrap">
+      <span class="logo-mark"></span>
+      <span class="logo-copy">
+        <strong>BREW &amp; BREWS</strong>
+        <small>COFFEE ROASTING CO.</small>
+      </span>
+    </a>
+
+    <nav class="main-nav" id="mainNav">
+      <a href="#">HOME</a>
+      <a href="/about-us">ABOUT US</a>
+      <a href="https://brewandbrewsco.com/all-products-1">SHOP COFFEE⌄</a>
+      <a href="#wholesale">WHOLESALE</a>
+      <a href="#find-us">FIND BREW &amp; BREWS</a>
+      <a href="https://brewandbrewscompany-bot.github.io/brew-brews-radio/" target="_blank">BREW &amp; BREWS RADIO</a>
+    </nav>
+
+    <div class="nav-icons"><span>⌕</span><span>♙</span><span>🛒</span></div>
+    <button class="menu-button" id="menuButton">☰</button>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <div class="hero-kicker">FRESH ROASTED IN<br>LOUISBURG, KANSAS</div>
+        <h1>Better Coffee.<br>Brewed Local.</h1>
+        <div class="hero-rule"></div>
+        <p>Small batch. Hand crafted. Always fresh.<br>Coffee with purpose, not pretense.</p>
+        <div class="hero-actions">
+          <a class="hero-btn primary" href="https://brewandbrewsco.com/all-products-1">SHOP COFFEE</a>
+          <a class="hero-btn secondary" href="https://brewandbrewsco.com/find-my-coffee-1">FIND MY COFFEE</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="finder-strip">
+    <div class="finder-inner">
+      <div class="finder-circle">☕</div>
+      <div class="finder-copy">
+        <h2>NOT SURE WHAT<br>YOU’LL LOVE?</h2>
+        <p>Take our quick quiz and we’ll match<br>you with the perfect coffee.</p>
+      </div>
+      <div class="finder-divider"></div>
+      <a class="finder-button" href="https://brewandbrewsco.com/find-my-coffee-1">FIND MY COFFEE <span>→</span></a>
+      <div class="finder-art"></div>
+    </div>
+  </section>
+
+  <section class="featured">
+    <div class="featured-inner">
+      <div class="section-title">
+        <small>OUR</small>
+        <h2>FEATURED COFFEES</h2>
+        <div class="tiny-line"></div>
+      </div>
+      <a class="view-all" href="https://brewandbrewsco.com/all-products-1">VIEW ALL COFFEES →</a>
+
+      <div class="products">
+        <article class="product-card">
+          <a class="product-img" href="https://brewandbrewsco.com/all-products-1/ols/products/brazilian-hangover-medium-dark-roast">
+            <img src="https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/BH.png/:/rs=w:1200,h:1200" alt="Brazilian Hangover">
+          </a>
+          <div class="product-info">
+            <h3>BRAZILIAN<br>HANGOVER</h3>
+            <p>Low acidity with notes of caramel and chocolate.</p>
+            <div class="product-price">$14.50</div>
+            <div class="product-meta">12oz – Whole Bean</div>
+          </div>
+        </article>
+
+        <article class="product-card">
+          <a class="product-img" href="https://brewandbrewsco.com/all-products-1/ols/products/honduras-medium-dark-roast">
+            <img src="https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/1000062528.png/:/rs=w:1200,h:1200" alt="Honduras">
+          </a>
+          <div class="product-info">
+            <h3>HONDURAS</h3>
+            <p>Sweet, smooth and balanced with a chocolate finish.</p>
+            <div class="product-price">$14.50</div>
+            <div class="product-meta">12oz – Whole Bean</div>
+          </div>
+        </article>
+
+        <article class="product-card">
+          <a class="product-img" href="https://brewandbrewsco.com/all-products-1/ols/products/voodoo-dark-roast">
+            <img src="https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/1000062529.png/:/rs=w:1200,h:1200" alt="VOODOO">
+          </a>
+          <div class="product-info">
+            <h3>VOODOO</h3>
+            <p>Bold and earthy with deep chocolate and spice.</p>
+            <div class="product-price">$14.50</div>
+            <div class="product-meta">12oz – Whole Bean</div>
+          </div>
+        </article>
+
+        <article class="product-card">
+          <a class="product-img" href="https://brewandbrewsco.com/all-products-1/ols/products/espresso-medium-dark-roast">
+            <img src="https://img1.wsimg.com/isteam/stock/3737/:/rs=w:1200,h:1200" alt="Espresso">
+          </a>
+          <div class="product-info">
+            <h3>ESPRESSO</h3>
+            <p>Rich and full bodied with a smooth crema.</p>
+            <div class="product-price">$14.50</div>
+            <div class="product-meta">12oz – Whole Bean</div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="why">
+    <div class="section-title">
+      <small>WHY</small>
+      <h2>BREW &amp; BREWS</h2>
+      <div class="tiny-line"></div>
+    </div>
+    <div class="why-grid">
+      <div class="why-card">
+        <div class="why-icon">◉</div>
+        <div><h3>FRESH ROASTED</h3><p>Roasted in small batches for peak flavor.</p></div>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">♨</div>
+        <div><h3>SMALL BATCH</h3><p>Quality over quantity. Never mass produced.</p></div>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">⌖</div>
+        <div><h3>LOCAL &amp; PROUD</h3><p>Roasted in Louisburg, Kansas.</p></div>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">♡</div>
+        <div><h3>MADE WITH PURPOSE</h3><p>Great coffee. Strong values. Better community.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features" id="find-us">
+    <div class="features-grid">
+      <article class="feature-card map">
+        <div class="feature-copy">
+          <h3>FIND BREW<br>&amp; BREWS</h3>
+          <p>Visit our partners and stockists near you.</p>
+          <a href="#">→</a>
+        </div>
+      </article>
+
+      <article class="feature-card wholesale" id="wholesale">
+        <div class="feature-copy">
+          <h3>WHOLESALE<br>COFFEE</h3>
+          <p>Partner with us for your business.</p>
+          <a href="#">→</a>
+        </div>
+      </article>
+
+      <article class="feature-card radio">
+        <div class="feature-copy">
+          <h3>BREW &amp; BREWS<br>RADIO</h3>
+          <p>Great music. Great coffee. Anytime.</p>
+          <a href="https://brewandbrewscompany-bot.github.io/brew-brews-radio/" target="_blank">→</a>
+        </div>
+      </article>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div>© Brew &amp; Brews Co.</div>
+    <div>Louisburg, Kansas · Small Batch Coffee</div>
+  </div>
+</footer>
+
+<script>
+const menuButton = document.getElementById("menuButton");
+const mainNav = document.getElementById("mainNav");
+
+menuButton.addEventListener("click", ()=>{
+  mainNav.classList.toggle("open");
+});
+</script>
+</body>
+</html>
