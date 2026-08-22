@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Welcome Price Chopper Shoppers | Brew & Brews</title>
+<style>
+:root{
+  --ink:#f7f4ed;
+  --muted:#d8d1c4;
+  --dark:#0a0908;
+  --accent:#b36a38;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--dark);font-family:Arial,Helvetica,sans-serif}
+body{color:var(--ink)}
+.hero{
+  position:relative;
+  min-height:560px;
+  height:64vh;
+  max-height:720px;
+  overflow:hidden;
+  background:#080706;
+  display:flex;
+  align-items:center;
+}
+.hero video{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center center;
+}
+.hero::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(90deg,rgba(0,0,0,.78) 0%,rgba(0,0,0,.58) 35%,rgba(0,0,0,.22) 64%,rgba(0,0,0,.34) 100%),
+    linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.30));
+}
+.hero-content{
+  position:relative;
+  z-index:2;
+  width:min(1180px,100%);
+  margin:auto;
+  padding:72px 42px;
+}
+.kicker{
+  font-size:14px;
+  font-weight:800;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  margin-bottom:18px;
+}
+h1{
+  margin:0;
+  max-width:720px;
+  font-size:clamp(48px,7vw,88px);
+  line-height:.92;
+  letter-spacing:-.045em;
+}
+.sub{
+  max-width:580px;
+  margin:22px 0 28px;
+  font-size:20px;
+  line-height:1.5;
+  color:var(--muted);
+}
+.actions{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:50px;
+  padding:0 24px;
+  border-radius:999px;
+  text-decoration:none;
+  font-weight:800;
+  letter-spacing:.02em;
+}
+.btn-primary{background:#fff;color:#111}
+.btn-secondary{border:1px solid rgba(255,255,255,.55);color:#fff;background:rgba(0,0,0,.18)}
+.after{
+  background:#f4f1ea;
+  color:#171713;
+  padding:54px 24px;
+  text-align:center;
+}
+.after h2{font-size:38px;margin:0 0 12px}
+.after p{max-width:720px;margin:0 auto;color:#625d54;font-size:18px}
+@media(max-width:700px){
+  .hero{min-height:650px;height:76vh;max-height:760px}
+  .hero video{object-position:center center}
+  .hero::after{
+    background:linear-gradient(180deg,rgba(0,0,0,.34) 0%,rgba(0,0,0,.68) 54%,rgba(0,0,0,.78) 100%);
+  }
+  .hero-content{
+    padding:44px 20px 54px;
+    align-self:flex-end;
+  }
+  h1{font-size:50px;max-width:95%}
+  .sub{font-size:17px}
+}
+@media(prefers-reduced-motion:reduce){
+  .hero video{display:none}
+}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <video autoplay muted loop playsinline preload="metadata" poster="">
+    <source src="coffee-journey.mp4" type="video/mp4">
+  </video>
+
+  <div class="hero-content">
+    <div class="kicker">Welcome, Price Chopper shoppers</div>
+    <h1>Brew &amp; Brews</h1>
+    <p class="sub">From farm to cup, freshly roasted right here in Louisburg, Kansas.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="https://brewandbrewsco.com/all-products-1">Shop Coffee</a>
+      <a class="btn btn-secondary" href="https://brewandbrewsco.com/">Explore Brew &amp; Brews</a>
+    </div>
+  </div>
+</section>
+
+<section class="after">
+  <h2>Find your next coffee.</h2>
+  <p>This is the starter section. Next we’ll add featured coffees, the coffee finder, your local-roaster story, and a simple path back into the full Brew &amp; Brews site.</p>
+</section>
+
+</body>
+</html>
