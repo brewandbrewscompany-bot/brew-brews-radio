@@ -314,16 +314,20 @@ img{display:block;max-width:100%}
   line-height:1.45;
   color:#333;
 }
-.product-price{
-  color:var(--orange);
-  font-weight:900;
-  margin-top:8px;
-  font-size:.78rem;
+
+
+.clickable-product{
+  cursor:pointer;
+  transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
 }
-.product-meta{
-  color:#222;
-  font-size:.66rem;
-  margin-top:3px;
+.clickable-product:hover{
+  transform:translateY(-3px);
+  box-shadow:0 10px 24px rgba(0,0,0,.09);
+  border-color:#d4d4d0;
+}
+.clickable-product:focus-visible{
+  outline:3px solid var(--orange);
+  outline-offset:3px;
 }
 
 /* WHY */
@@ -385,6 +389,9 @@ img{display:block;max-width:100%}
   display:flex;
   align-items:flex-end;
 }
+.clickable-card{cursor:pointer;transition:transform .2s ease,box-shadow .2s ease;}
+.clickable-card:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(0,0,0,.12);}
+.clickable-card:focus-visible{outline:3px solid var(--orange);outline-offset:3px;}
 .feature-card:before{
   content:"";
   position:absolute;inset:0;
@@ -459,7 +466,17 @@ img{display:block;max-width:100%}
 .feature-copy a{
   color:var(--orange);
   font-weight:900;
-  font-size:.72rem;
+  font-size:1.65rem;
+  line-height:1;
+  display:inline-flex;
+  align-items:center;
+  width:44px;
+  height:34px;
+  transition:transform .2s ease,color .2s ease;
+}
+.feature-copy a:hover{
+  transform:translateX(5px);
+  color:var(--orange2);
 }
 
 /* FOOTER */
@@ -529,33 +546,14 @@ img{display:block;max-width:100%}
   .feature-copy{width:62%}
   .footer-inner{flex-direction:column}
 }
+
+/* GoDaddy owns the site header. Embedded homepage starts at the hero. */
+body{padding-top:0 !important;}
+.hero{margin-top:0 !important;}
+
 </style>
 </head>
 <body>
-
-<header class="site-header">
-  <div class="header-inner">
-    <a href="#" class="logo-wrap">
-      <span class="logo-mark"></span>
-      <span class="logo-copy">
-        <strong>BREW &amp; BREWS</strong>
-        <small>COFFEE ROASTING CO.</small>
-      </span>
-    </a>
-
-    <nav class="main-nav" id="mainNav">
-      <a href="https://brewandbrewsco.com/">HOME</a>
-      <a href="https://brewandbrewsco.com/about-us">ABOUT US</a>
-      <a href="https://brewandbrewsco.com/all-products-1">SHOP COFFEE⌄</a>
-      <a href="#wholesale">WHOLESALE</a>
-      <a href="#find-us">FIND BREW &amp; BREWS</a>
-      <a href="https://brewandbrewscompany-bot.github.io/brew-brews-radio/" target="_blank">BREW &amp; BREWS RADIO</a>
-    </nav>
-
-    <div class="nav-icons"><span>⌕</span><span>♙</span><span>🛒</span></div>
-    <button class="menu-button" id="menuButton">☰</button>
-  </div>
-</header>
 
 <main>
   <section class="hero">
@@ -596,51 +594,43 @@ img{display:block;max-width:100%}
       <a class="view-all" href="https://brewandbrewsco.com/all-products-1">VIEW ALL COFFEES →</a>
 
       <div class="products">
-        <article class="product-card">
+        <article class="product-card clickable-product" data-href="https://brewandbrewsco.com/all-products-1/ols/products/brazilian-hangover-medium-dark-roast" role="link" tabindex="0">
           <a class="product-img" href="https://brewandbrewsco.com/all-products-1/ols/products/brazilian-hangover-medium-dark-roast">
             <img src="https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/BH.png/:/rs=w:1200,h:1200" alt="Brazilian Hangover">
           </a>
           <div class="product-info">
             <h3>BRAZILIAN<br>HANGOVER</h3>
             <p>Low acidity with notes of caramel and chocolate.</p>
-            <div class="product-price">$14.50</div>
-            <div class="product-meta">12oz – Whole Bean</div>
           </div>
         </article>
 
-        <article class="product-card">
+        <article class="product-card clickable-product" data-href="https://brewandbrewsco.com/all-products-1/ols/products/honduras-medium-dark-roast" role="link" tabindex="0">
           <a class="product-img" href="https://brewandbrewsco.com/all-products-1/ols/products/honduras-medium-dark-roast">
             <img src="https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/1000062528.png/:/rs=w:1200,h:1200" alt="Honduras">
           </a>
           <div class="product-info">
             <h3>HONDURAS</h3>
             <p>Sweet, smooth and balanced with a chocolate finish.</p>
-            <div class="product-price">$14.50</div>
-            <div class="product-meta">12oz – Whole Bean</div>
           </div>
         </article>
 
-        <article class="product-card">
+        <article class="product-card clickable-product" data-href="https://brewandbrewsco.com/all-products-1/ols/products/voodoo-dark-roast" role="link" tabindex="0">
           <a class="product-img" href="https://brewandbrewsco.com/all-products-1/ols/products/voodoo-dark-roast">
             <img src="https://img1.wsimg.com/isteam/ip/4dd59e27-c603-49e6-b714-da0355d3161b/ols/1000062529.png/:/rs=w:1200,h:1200" alt="VOODOO">
           </a>
           <div class="product-info">
             <h3>VOODOO</h3>
             <p>Bold and earthy with deep chocolate and spice.</p>
-            <div class="product-price">$14.50</div>
-            <div class="product-meta">12oz – Whole Bean</div>
           </div>
         </article>
 
-        <article class="product-card">
+        <article class="product-card clickable-product" data-href="https://brewandbrewsco.com/all-products-1/ols/products/espresso-medium-dark-roast" role="link" tabindex="0">
           <a class="product-img" href="https://brewandbrewsco.com/all-products-1/ols/products/espresso-medium-dark-roast">
             <img src="https://img1.wsimg.com/isteam/stock/3737/:/rs=w:1200,h:1200" alt="Espresso">
           </a>
           <div class="product-info">
             <h3>ESPRESSO</h3>
             <p>Rich and full bodied with a smooth crema.</p>
-            <div class="product-price">$14.50</div>
-            <div class="product-meta">12oz – Whole Bean</div>
           </div>
         </article>
       </div>
@@ -675,23 +665,23 @@ img{display:block;max-width:100%}
 
   <section class="features" id="find-us">
     <div class="features-grid">
-      <article class="feature-card map">
+      <article class="feature-card map clickable-card" data-href="https://brewandbrewsco.com/find-brew-and-brews" role="link" tabindex="0" aria-label="Find Brew & Brews locations">
         <div class="feature-copy">
           <h3>FIND BREW<br>&amp; BREWS</h3>
           <p>Visit our partners and stockists near you.</p>
-          <a href="#">→</a>
+          <a href="https://brewandbrewsco.com/find-brew-and-brews" aria-label="View Brew & Brews locations">→</a>
         </div>
       </article>
 
-      <article class="feature-card wholesale" id="wholesale">
+      <article class="feature-card wholesale clickable-card" id="wholesale" data-href="https://brewandbrewsco.com/wholesale-site" role="link" tabindex="0" aria-label="Wholesale Coffee">
         <div class="feature-copy">
           <h3>WHOLESALE<br>COFFEE</h3>
           <p>Partner with us for your business.</p>
-          <a href="#">→</a>
+          <a href="https://brewandbrewsco.com/wholesale-site" aria-label="Wholesale information">→</a>
         </div>
       </article>
 
-      <article class="feature-card radio">
+      <article class="feature-card radio clickable-card" data-href="https://brewandbrewscompany-bot.github.io/brew-brews-radio/" role="link" tabindex="0" aria-label="Brew & Brews Radio">
         <span class="headphone-ear" aria-hidden="true"></span>
         <div class="feature-copy">
           <h3>BREW &amp; BREWS<br>RADIO</h3>
@@ -703,20 +693,51 @@ img{display:block;max-width:100%}
   </section>
 </main>
 
-<footer class="footer">
-  <div class="footer-inner">
-    <div>© Brew &amp; Brews Co.</div>
-    <div>Louisburg, Kansas · Small Batch Coffee</div>
-  </div>
-</footer>
-
 <script>
-const menuButton = document.getElementById("menuButton");
-const mainNav = document.getElementById("mainNav");
+document.querySelectorAll('.clickable-card').forEach(card=>{
+  const go = ()=>{
+    const href = card.dataset.href;
+    if(!href) return;
+    if(card.classList.contains('radio')){
+      window.open(href,'_blank','noopener');
+    }else{
+      window.top.location.href = href;
+    }
+  };
 
-menuButton.addEventListener("click", ()=>{
-  mainNav.classList.toggle("open");
+  card.addEventListener('click', e=>{
+    if(e.target.closest('a')) return;
+    go();
+  });
+
+  card.addEventListener('keydown', e=>{
+    if(e.key === 'Enter' || e.key === ' '){
+      e.preventDefault();
+      go();
+    }
+  });
 });
 </script>
+
+
+<script>
+document.querySelectorAll('.clickable-product').forEach(card=>{
+  const go = ()=>{
+    const href = card.dataset.href;
+    if(href) window.top.location.href = href;
+  };
+  card.addEventListener('click', e=>{
+    if(e.target.closest('a')) return;
+    go();
+  });
+  card.addEventListener('keydown', e=>{
+    if(e.key === 'Enter' || e.key === ' '){
+      e.preventDefault();
+      go();
+    }
+  });
+});
+</script>
+
 </body>
 </html>
