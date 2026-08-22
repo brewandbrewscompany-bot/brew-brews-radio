@@ -16,6 +16,7 @@ html{scroll-behavior:smooth}
 html,body{margin:0;padding:0;background:#0b0a08;font-family:Arial,Helvetica,sans-serif}
 body{color:#fff}
 a{color:inherit;text-decoration:none}
+button{font:inherit}
 
 .hero{
   position:relative;
@@ -59,9 +60,9 @@ a{color:inherit;text-decoration:none}
   height:500px;
   background:radial-gradient(
     ellipse at 28% 50%,
-    rgba(0,0,0,.50) 0%,
-    rgba(0,0,0,.33) 36%,
-    rgba(0,0,0,.12) 62%,
+    rgba(0,0,0,.46) 0%,
+    rgba(0,0,0,.30) 36%,
+    rgba(0,0,0,.10) 62%,
     rgba(0,0,0,0) 78%
   );
   pointer-events:none;
@@ -145,6 +146,52 @@ a{color:inherit;text-decoration:none}
   backdrop-filter:blur(3px);
 }
 
+/* Media controls */
+.media-controls{
+  position:absolute;
+  z-index:4;
+  right:22px;
+  bottom:20px;
+  display:flex;
+  gap:8px;
+}
+.media-btn{
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.45);
+  background:rgba(0,0,0,.42);
+  color:#fff;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  font-size:18px;
+  line-height:1;
+  backdrop-filter:blur(6px);
+  box-shadow:0 4px 18px rgba(0,0,0,.22);
+  transition:background .2s ease,transform .2s ease,border-color .2s ease;
+}
+.media-btn:hover{
+  background:rgba(0,0,0,.62);
+  border-color:rgba(255,255,255,.8);
+  transform:translateY(-1px);
+}
+.media-btn:focus-visible{
+  outline:2px solid #fff;
+  outline-offset:2px;
+}
+.media-label{
+  position:absolute;
+  width:1px;
+  height:1px;
+  padding:0;
+  margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;
+  border:0;
+}
+
 .intro{
   background:var(--paper);
   color:var(--ink);
@@ -205,7 +252,7 @@ a{color:inherit;text-decoration:none}
     object-position:center center;
     filter:brightness(1.06) contrast(1.02) saturate(1.03);
   }
-  .hero-inner{padding:40px 20px 46px}
+  .hero-inner{padding:40px 20px 70px}
   .hero-copy{padding:24px 0 0}
   .hero-copy::before{
     top:-80px;
@@ -215,19 +262,18 @@ a{color:inherit;text-decoration:none}
     background:linear-gradient(
       180deg,
       rgba(0,0,0,0) 0%,
-      rgba(0,0,0,.10) 23%,
-      rgba(0,0,0,.39) 58%,
-      rgba(0,0,0,.62) 100%
+      rgba(0,0,0,.08) 23%,
+      rgba(0,0,0,.34) 58%,
+      rgba(0,0,0,.58) 100%
     );
   }
-  .pricechopper-logo{
-    height:44px;
-    max-width:190px;
-  }
+  .pricechopper-logo{height:44px;max-width:190px}
   .welcome{font-size:11px;letter-spacing:.14em}
   .hero h1{font-size:48px;max-width:95%}
   .hero-sub{font-size:17px;max-width:95%}
   .btn{min-height:48px;padding:0 20px}
+  .media-controls{right:14px;bottom:14px}
+  .media-btn{width:42px;height:42px}
   .intro{padding:48px 20px 54px}
 }
 
@@ -242,9 +288,14 @@ a{color:inherit;text-decoration:none}
 <body>
 
 <section class="hero">
-  <video class="hero-video" autoplay muted loop playsinline preload="metadata">
+
+  <video id="heroVideo" class="hero-video" autoplay muted loop playsinline preload="metadata">
     <source src="coffee-journey.mp4" type="video/mp4">
   </video>
+
+  <audio id="heroAudio" preload="auto" muted>
+    <source src="Warm_Pulse.mp3" type="audio/mpeg">
+  </audio>
 
   <div class="hero-inner">
     <div class="hero-copy">
@@ -267,37 +318,172 @@ a{color:inherit;text-decoration:none}
       </p>
 
       <div class="hero-actions">
-        <a class="btn btn-primary" href="https://brewandbrewsco.com/all-products-1">
-          Shop Coffee
-        </a>
-        <a class="btn btn-secondary" href="https://brewandbrewsco.com/">
-          Explore Brew &amp; Brews
-        </a>
+        <a class="btn btn-primary" href="https://brewandbrewsco.com/all-products-1" target="_top">Shop Coffee</a>
+        <a class="btn btn-secondary" href="https://brewandbrewsco.com/" target="_top">Explore Brew &amp; Brews</a>
       </div>
 
     </div>
   </div>
-</section>
 
+  <div class="media-controls" aria-label="Video controls">
+    <button id="playPauseBtn" class="media-btn" type="button" aria-label="Pause video and music">
+      <span aria-hidden="true">⏸</span>
+      <span class="media-label">Pause</span>
+    </button>
+
+    <button id="soundBtn" class="media-btn" type="button" aria-label="Turn sound on">
+      <span aria-hidden="true">🔇</span>
+      <span class="media-label">Sound off</span>
+    </button>
+  </div>
+
+</section>
 <section class="intro">
   <div class="intro-inner">
-    <div class="intro-kicker">Fresh coffee starts here</div>
-    <h2>Find your next favorite coffee.</h2>
+    <div class="intro-kicker">Roasted local. Shared local.</div>
+    <h2>Welcome</h2>
     <p>
-      Explore freshly roasted coffees from Brew &amp; Brews, discover something new,
-      or start with one of our everyday favorites.
+      We’re a small-batch coffee roaster in Louisburg, Kansas, focused on making
+      fresh, approachable coffee without making coffee complicated. From smooth
+      everyday blends to bold dark roasts and distinctive single origins, we roast
+      coffees for the way real people actually drink them.
     </p>
-
-    <div class="intro-links">
-      <a class="btn btn-primary" href="https://brewandbrewsco.com/all-products-1">
-        Shop All Coffee
-      </a>
-      <a class="btn btn-secondary" href="https://brewandbrewsco.com/">
-        Visit Brew &amp; Brews
-      </a>
-    </div>
+    <p style="margin-top:14px">
+      Thanks for discovering Brew &amp; Brews at Price Chopper. We’re glad you found us.
+    </p>
   </div>
 </section>
+
+<script>
+(() => {
+  const video = document.getElementById('heroVideo');
+  const audio = document.getElementById('heroAudio');
+  const playPauseBtn = document.getElementById('playPauseBtn');
+  const soundBtn = document.getElementById('soundBtn');
+
+  let soundEnabled = false;
+  let manuallyPaused = false;
+
+  function updatePlayButton() {
+    const paused = video.paused;
+    playPauseBtn.querySelector('[aria-hidden="true"]').textContent = paused ? '▶' : '⏸';
+    playPauseBtn.setAttribute('aria-label', paused ? 'Play video and music' : 'Pause video and music');
+    playPauseBtn.querySelector('.media-label').textContent = paused ? 'Play' : 'Pause';
+  }
+
+  function updateSoundButton() {
+    soundBtn.querySelector('[aria-hidden="true"]').textContent = soundEnabled ? '🔊' : '🔇';
+    soundBtn.setAttribute('aria-label', soundEnabled ? 'Mute music' : 'Turn sound on');
+    soundBtn.querySelector('.media-label').textContent = soundEnabled ? 'Sound on' : 'Sound off';
+  }
+
+  function syncAudio(force = false) {
+    if (!soundEnabled || video.paused) return;
+
+    const videoTime = video.currentTime;
+    const audioDuration = audio.duration || 13.92;
+
+    // Warm_Pulse is shorter than the 15 sec video.
+    // Let the final ~1 sec stay intentionally quiet.
+    if (videoTime >= audioDuration) {
+      if (!audio.paused) audio.pause();
+      audio.currentTime = Math.min(audioDuration, Math.max(0, audioDuration - 0.05));
+      return;
+    }
+
+    if (force || Math.abs(audio.currentTime - videoTime) > 0.35) {
+      audio.currentTime = videoTime;
+    }
+
+    if (audio.paused) {
+      audio.play().catch(() => {});
+    }
+  }
+
+  // Starts muted by design.
+  video.muted = true;
+  audio.muted = true;
+  audio.volume = 0.5;
+
+  playPauseBtn.addEventListener('click', async () => {
+    if (video.paused) {
+      manuallyPaused = false;
+      try {
+        await video.play();
+      } catch(e) {}
+
+      if (soundEnabled) {
+        audio.muted = false;
+        syncAudio(true);
+      }
+    } else {
+      manuallyPaused = true;
+      video.pause();
+      audio.pause();
+    }
+    updatePlayButton();
+  });
+
+  soundBtn.addEventListener('click', async () => {
+    soundEnabled = !soundEnabled;
+    audio.muted = !soundEnabled;
+
+    if (soundEnabled) {
+      if (video.paused && !manuallyPaused) {
+        try { await video.play(); } catch(e) {}
+      }
+      syncAudio(true);
+    } else {
+      audio.pause();
+    }
+
+    updateSoundButton();
+  });
+
+  // Restart audio when the looping video restarts.
+  video.addEventListener('timeupdate', () => {
+    if (soundEnabled && !video.paused) {
+      syncAudio(false);
+    }
+  });
+
+  video.addEventListener('seeked', () => {
+    if (soundEnabled) syncAudio(true);
+  });
+
+  video.addEventListener('play', () => {
+    if (soundEnabled) syncAudio(true);
+    updatePlayButton();
+  });
+
+  video.addEventListener('pause', () => {
+    audio.pause();
+    updatePlayButton();
+  });
+
+  video.addEventListener('ended', () => {
+    audio.pause();
+    audio.currentTime = 0;
+  });
+
+  // Detect loop restart: video time jumps back close to zero.
+  let lastTime = 0;
+  video.addEventListener('timeupdate', () => {
+    if (video.currentTime < 0.35 && lastTime > 5) {
+      audio.pause();
+      audio.currentTime = 0;
+      if (soundEnabled && !video.paused) {
+        audio.muted = false;
+        audio.play().catch(() => {});
+      }
+    }
+    lastTime = video.currentTime;
+  });
+
+  updatePlayButton();
+  updateSoundButton();
+})();
+</script>
 
 </body>
 </html>
