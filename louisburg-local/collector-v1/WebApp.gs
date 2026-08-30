@@ -19,6 +19,14 @@ function doPost(e) {
       const result = recordSocialIntakeWebhook_(body);
       return jsonOutput_({ok:true,received:true,duplicate:!!result.duplicate,fingerprint:result.fingerprint||''});
     }
+    if (action === 'social_worker_manifest') {
+      if (typeof getSocialWorkerManifest_ !== 'function') throw new Error('Social worker manifest unavailable');
+      return jsonOutput_(getSocialWorkerManifest_(body));
+    }
+    if (action === 'social_worker_scan') {
+      if (typeof recordSocialWorkerScan_ !== 'function') throw new Error('Social worker status bridge unavailable');
+      return jsonOutput_(recordSocialWorkerScan_(body));
+    }
     return jsonOutput_({ok:false,error:'Unknown action'});
   } catch (err) {
     return jsonOutput_({ok:false,error:String(err).slice(0,300)});
