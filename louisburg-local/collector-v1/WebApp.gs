@@ -109,6 +109,8 @@ function buildPublicFeedPayload_() {
   const items = [];
   const now = new Date();
   const today = Utilities.formatDate(now, LL_CONFIG.TZ || 'America/Chicago', 'yyyy-MM-dd');
+  const designationIndex = (typeof buildRegistryDesignationIndex_ === 'function') ? buildRegistryDesignationIndex_(ss) : {};
+  const designationLabels = (typeof buildDesignationLabelMap_ === 'function') ? buildDesignationLabelMap_(ss) : {};
 
   data.forEach(function(row) {
     const eligibility = cell_(row, ix, 'Public Eligibility').toUpperCase();
@@ -116,6 +118,9 @@ function buildPublicFeedPayload_() {
     if (!isPublicFeedItemCurrent_(row, ix, now, today)) return;
 
     const sourceSet = cell_(row, ix, 'Source Set');
+    const tagBundle = (typeof deriveBackendTagBundle_ === 'function')
+      ? deriveBackendTagBundle_(row,ix,designationIndex,designationLabels)
+      : {tags:deriveTags_(row,ix),designations:[],designationLabels:[]};
     items.push({
       id: cell_(row, ix, 'Item ID'),
       organization: cell_(row, ix, 'Business / Organization'),
@@ -132,7 +137,9 @@ function buildPublicFeedPayload_() {
       sherlockStatus: cell_(row, ix, 'Sherlock Status'),
       likeCount: Number(cell_(row, ix, 'Like Count') || 0),
       heartCount: Number(cell_(row, ix, 'Heart Count') || 0),
-      tags: deriveTags_(row, ix),
+      tags: tagBundle.tags,
+      designations: tagBundle.designations,
+      designationLabels: tagBundle.designationLabels,
       sourceMediaUrl: extractSourceMediaUrl_(sourceSet),
       rankScore: Number(cell_(row, ix, 'Rank Score') || 0)
     });
