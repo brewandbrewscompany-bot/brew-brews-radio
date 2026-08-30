@@ -57,7 +57,8 @@ function buildPublicFeedPayload_() {
   });
 
   items.sort(function(a,b) { return b.rankScore - a.rankScore; });
-  return {ok:true,items:items,visitCount:getVisitCount_(),generatedAt:fmt_(now)};
+  const rotated = (typeof fairRotateFeed_ === 'function') ? fairRotateFeed_(items) : items;
+  return {ok:true,items:rotated,visitCount:getVisitCount_(),generatedAt:fmt_(now)};
 }
 
 function isPublicFeedItemCurrent_(row, ix, now, today) {
@@ -66,10 +67,8 @@ function isPublicFeedItemCurrent_(row, ix, now, today) {
   const date = normalizeFeedDate_(cell_(row, ix, 'Relevant / Event Date'));
   const expireRaw = cell_(row, ix, 'Expire At');
 
-  // Hard rule: anything labeled TODAY belongs to that Louisburg calendar date only.
   if ((section === 'TODAY' || lifecycle.indexOf('TODAY') !== -1) && date && date < today) return false;
 
-  // Explicit expiration wins whenever it can be parsed safely.
   if (expireRaw) {
     const expires = new Date(expireRaw);
     if (!isNaN(expires.getTime()) && expires.getTime() <= now.getTime()) return false;
@@ -89,8 +88,6 @@ function normalizeFeedDate_(value) {
 }
 
 function extractSourceMediaUrl_(sourceSet) {
-  // Content-level source beats business-level source.
-  // Only explicit originating-post/event media is allowed. No homepage screenshots or stock fallback.
   const raw = String(sourceSet || '').trim();
   if (!raw) return '';
   try {
