@@ -77,6 +77,7 @@ function lifecycleDecision_(item,now) {
   const nowMs=now.getTime();
   const today=Utilities.formatDate(now,tz,'yyyy-MM-dd');
   const type=String(item.activityType||'').toLowerCase();
+  const hasExplicitEventStart=!!String(item.eventStart||'').trim();
   const eventStart=parseLifecycleDate_(item.eventStart||item.relevantDate,false);
   const eventEnd=parseLifecycleDate_(item.eventEnd||'',true);
   const relevantDate=normalizeLifecycleDate_(item.relevantDate);
@@ -123,7 +124,7 @@ function lifecycleDecision_(item,now) {
     const days=lifecycleDayDiff_(today,eventDate);
     if(eventDate===today){
       section='TODAY';
-      if(eventStart.getTime()<=nowMs&&(!eventEnd||eventEnd.getTime()>=nowMs))state='RIGHT NOW';
+      if(hasExplicitEventStart&&eventStart.getTime()<=nowMs&&(!eventEnd||eventEnd.getTime()>=nowMs))state='RIGHT NOW';
       else state='TODAY';
     }else if(days>=0&&days<=7){
       section='NEXT';state='COMING UP';
