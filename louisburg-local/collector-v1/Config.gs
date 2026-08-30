@@ -2,15 +2,9 @@ const LL_CONFIG = Object.freeze({
   SPREADSHEET_ID: '1RTDm9bc53_KbttK2uxkW5kKwV3i0SMwMNSO0Tc8rfOo',
   TZ: 'America/Chicago',
   SHEETS: {
-    ENDPOINTS: 'Source Endpoints',
-    STATE: 'Collector State',
-    LOG: 'Collector Log',
-    VERIFY: 'Verification Queue',
-    FEED: 'Hub Feed',
-    SHERLOCK: 'Sherlock Notes'
+    ENDPOINTS: 'Source Endpoints', STATE: 'Collector State', LOG: 'Collector Log',
+    VERIFY: 'Verification Queue', FEED: 'Hub Feed', SHERLOCK: 'Sherlock Notes'
   },
-
-  // Normal scheduled runs stay conservative. Manual force scan can probe SURFACE sources too.
   ALLOWED_ACCESS_METHODS: ['DIRECT'],
   FORCE_SCAN_ACCESS_METHODS: ['DIRECT', 'SURFACE'],
   MAX_ENDPOINTS_PER_RUN: 20,
@@ -19,36 +13,35 @@ const LL_CONFIG = Object.freeze({
   RETRY_COUNT: 2,
   RETRY_BASE_MS: 750,
   MAX_BODY_CHARS: 250000,
-  USER_AGENT: 'LouisburgLocalCollector/1.3 (+public-activity-monitor)',
+  USER_AGENT: 'LouisburgLocalCollector/2.0 (+public-activity-monitor)',
 
+  // Strong activity language. Generic words such as event/menu/hours/music/coffee are deliberately excluded.
   KEYWORDS: [
-    'special', 'daily special', 'deal', 'sale', 'discount', 'coupon', 'promotion',
-    'today', 'tonight', 'tomorrow', 'this weekend', 'weekend', 'available now',
-    'live music', 'music', 'band', 'concert', 'event', 'register', 'registration',
-    'class', 'workshop', 'opening', 'grand opening', 'closing', 'closed', 'closure',
-    'hours', 'hiring', 'now hiring', 'fundraiser', 'festival', 'market', 'menu',
-    'new product', 'new coffee', 'new drink', 'new menu', 'launch', 'release',
-    'fresh roasted', 'freshly roasted', 'roastery', 'coffee', 'limited time',
-    'cancelled', 'canceled', 'postponed', 'delayed', 'moved', 'weather',
-    'sold out', 'rescheduled', 'tickets', 'signup', 'sign up'
+    'daily special','special today','today only','tonight','tomorrow','this weekend','limited time',
+    'deal','discount','coupon','promotion','on sale','sale ends','available now','sold out',
+    'live music','concert','register now','registration open','workshop','grand opening','now open',
+    'closing early','closed today','closure','now hiring','fundraiser','festival',
+    'new product','new coffee','new drink','new menu','launch','release','freshly roasted',
+    'cancelled','canceled','postponed','delayed','moved','rescheduled','tickets','sign up','signup'
   ],
-  LOUISBURG_TERMS: [
-    'louisburg', 'louisburg ks', 'louisburg, ks', 'louisburg kansas', '66053'
-  ],
+  LOUISBURG_TERMS: ['louisburg','louisburg ks','louisburg, ks','louisburg kansas','66053'],
+  BOILERPLATE_TERMS: ['privacy policy','all rights reserved','toggle navigation','skip to main content','pointer-events','font-size','background-color','artifactid','fingerprint','metasiteid','wixdevelopersanalytics','siteassetstestmoduleversion'],
+  EVERGREEN_TERMS: ['office hours','directions & hours','contact us','our menu','about us','services','privacy policy','all rights reserved'],
 
   HIGH_INTERVAL_HOURS: 6,
   MEDIUM_INTERVAL_HOURS: 24,
   LOW_INTERVAL_HOURS: 168,
   SOURCE_BOOST_DAYS: 7,
-  ACTIVITY_SNIPPET_BEFORE: 90,
-  ACTIVITY_SNIPPET_AFTER: 180,
-  ACTIVITY_MAX_SNIPPETS: 10,
+  ACTIVITY_SNIPPET_BEFORE: 120,
+  ACTIVITY_SNIPPET_AFTER: 260,
+  ACTIVITY_MAX_SNIPPETS: 8,
+  MIN_ACTIVITY_SCORE: 4,
+  MAX_PAST_DAYS: 2,
 
   SHERLOCK_RECHECK_LIMIT_PER_RUN: 10,
   SHERLOCK_TRUST_OWNER_ORGANIZER: 90,
   SHERLOCK_TRUST_VERIFIED_COMMUNITY: 65,
   SHERLOCK_TRUST_ANONYMOUS: 25,
-
   RETENTION_DAYS_REJECTED_SHERLOCK: 30,
   RETENTION_DAYS_VALID_SHERLOCK: 180,
   RETENTION_DAYS_REACTION_KEYS: 90
