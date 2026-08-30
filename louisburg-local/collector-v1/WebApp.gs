@@ -10,6 +10,10 @@ function doPost(e) {
     const action = String(body.action || '').toLowerCase();
     if (action === 'reaction') return jsonOutput_(recordReaction_(body));
     if (action === 'sherlock') return jsonOutput_(recordSherlockNote_(body));
+    if (action === 'visit') {
+      if (typeof recordVisit_ !== 'function') throw new Error('Visit counter unavailable');
+      return jsonOutput_(recordVisit_(body));
+    }
     if (action === 'social_intake') {
       if (typeof recordSocialIntakeWebhook_ !== 'function') throw new Error('Social intake bridge unavailable');
       const result = recordSocialIntakeWebhook_(body);
