@@ -10,9 +10,91 @@ function doPost(e) {
     const action = String(body.action || '').toLowerCase();
     if (action === 'reaction') return jsonOutput_(recordReaction_(body));
     if (action === 'sherlock') return jsonOutput_(recordSherlockNote_(body));
+    if (action === 'social_intake') {
+      if (typeof recordSocialIntakeWebhook_ !== 'function') throw new Error('Social intake bridge unavailable');
+      const result = recordSocialIntakeWebhook_(body);
+      return jsonOutput_({ok:true,received:true,duplicate:!!result.duplicate,fingerprint:result.fingerprint||''});
+    }
     return jsonOutput_({ok:false,error:'Unknown action'});
   } catch (err) {
     return jsonOutput_({ok:false,error:String(err).slice(0,300)});
+  }
+}
+
+function runSocialWebhookRouteSelfTest() {
+  const props=PropertiesService.getScriptProperties();
+  const previous=props.getProperty('LL_SOCIAL_INGEST_KEY');
+  const key='route-test-'+Utilities.getUuid();
+  const marker='LL_WEBHOOK_TEST_'+Utilities.getUuid().slice(0,8);
+  const org='Louisburg Local Webhook Test '+marker;
+  const postUrl='https://example.com/'+marker+'/post';
+  const ss=SpreadsheetApp.openById(LL_CONFIG.SPREADSHEET_ID);
+  const intake=ss.getSheetByName('Social Post Intake');
+  const verify=ss.getSheetByName(LL_CONFIG.SHEETS.VERIFY);
+  if(!intake||!verify)throw new Error('Social intake or verification sheet missing.');
+
+  try {
+    props.setProperty('LL_SOCIAL_INGEST_KEY',key);
+    const body={
+      action:'social_intake',
+      ingestKey:key,
+      organization:org,
+      platform:'TEST',
+      profileUrl:'https://example.com/'+marker+'/profile',
+      postUrl:postUrl,
+      postId:marker+'-post',
+      postDate:new Date().toISOString(),
+      postText:'Louisburg KS. Today only: webhook route test special until 8 PM.',
+      activityType:'',
+      louisburgMatch:'YES'
+    };
+
+    const accepted=JSON.parse(doPost({postData:{contents:JSON.stringify(body)}}).getContent());
+    if(!accepted.ok||!accepted.received)throw new Error('authorized route failed: '+JSON.stringify(accepted));
+
+    const rejected=JSON.parse(doPost({postData:{contents:JSON.stringify(Object.assign({},body,{postUrl:postUrl+'-bad',postId:marker+'-bad',ingestKey:'wrong-key'}))}}).getContent());
+    if(rejected.ok||String(rejected.error||'').toLowerCase().indexOf('unauthorized')===-1)throw new Error('unauthorized route was not blocked');
+
+    const summary=processSocialPostIntake();
+    let intakeQueued=false;
+    if(intake.getLastRow()>1){
+      const data=intake.getDataRange().getDisplayValues(),ix=headerMap_(data[0]);
+      for(let r=1;r<data.length;r++){
+        if(String(data[r][ix['Business / Organization']]||'')===org&&String(data[r][ix['Post URL']]||'')===postUrl){
+          intakeQueued=/^QUEUED FOR VERIFICATION/.test(String(data[r][ix['Worker Result']]||''));
+          break;
+        }
+      }
+    }
+    if(!intakeQueued)throw new Error('accepted webhook row was not queued by Social Intake');
+
+    let verifyHits=0;
+    if(verify.getLastRow()>1){
+      const v=verify.getDataRange().getDisplayValues();
+      for(let r=1;r<v.length;r++)if(String(v[r][0]||'')===org&&String(v[r][4]||'')===postUrl&&String(v[r][6]||'').toUpperCase()==='OPEN - SOCIAL')verifyHits++;
+    }
+    if(verifyHits!==1)throw new Error('expected exactly one verification candidate, found '+verifyHits);
+
+    Logger.log('Social webhook route self-test passed: 3/3; authorized=accepted unauthorized=blocked processor=queued; processor summary='+JSON.stringify(summary));
+  } finally {
+    cleanupSocialWebhookTest_(intake,verify,org,marker);
+    if(previous==null)props.deleteProperty('LL_SOCIAL_INGEST_KEY'); else props.setProperty('LL_SOCIAL_INGEST_KEY',previous);
+  }
+}
+
+function cleanupSocialWebhookTest_(intake,verify,org,marker){
+  if(verify&&verify.getLastRow()>1){
+    const data=verify.getDataRange().getDisplayValues();
+    for(let r=data.length-1;r>=1;r--){
+      if(String(data[r][0]||'')===org||String(data[r][4]||'').indexOf(marker)!==-1)verify.deleteRow(r+1);
+    }
+  }
+  if(intake&&intake.getLastRow()>1){
+    const data=intake.getDataRange().getDisplayValues(),ix=headerMap_(data[0]);
+    const orgCol=ix['Business / Organization'],urlCol=ix['Post URL'];
+    for(let r=data.length-1;r>=1;r--){
+      if(String(data[r][orgCol]||'')===org||String(data[r][urlCol]||'').indexOf(marker)!==-1)intake.deleteRow(r+1);
+    }
   }
 }
 
