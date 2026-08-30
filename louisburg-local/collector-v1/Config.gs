@@ -3,12 +3,15 @@ const LL_CONFIG = Object.freeze({
   TZ: 'America/Chicago',
   SHEETS: {
     ENDPOINTS: 'Source Endpoints', STATE: 'Collector State', LOG: 'Collector Log',
-    VERIFY: 'Verification Queue', FEED: 'Hub Feed', SHERLOCK: 'Sherlock Notes'
+    VERIFY: 'Verification Queue', FEED: 'Hub Feed', SHERLOCK: 'Sherlock Notes',
+    SOCIAL_WORKERS: 'Social Worker Queue', SOCIAL_INTAKE: 'Social Post Intake'
   },
   ALLOWED_ACCESS_METHODS: ['DIRECT'],
   FORCE_SCAN_ACCESS_METHODS: ['DIRECT', 'SURFACE'],
   MAX_ENDPOINTS_PER_RUN: 20,
   FORCE_SCAN_MAX_ENDPOINTS: 100,
+  SOCIAL_WORKER_MAX_PER_RUN: 20,
+  SOCIAL_LOOKBACK_DAYS: 45,
   LOCK_WAIT_MS: 5000,
   RETRY_COUNT: 2,
   RETRY_BASE_MS: 750,
