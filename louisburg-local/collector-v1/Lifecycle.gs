@@ -7,20 +7,22 @@ function runLifecycleSelfTest() {
   const cases=[
     {name:'today event',item:{eventStart:'2026-08-30 18:00',eventEnd:'2026-08-30 20:00',relevantDate:'2026-08-30',activityType:'Event',discoveryDate:'2026-08-29'},section:'TODAY',state:'TODAY',expired:false},
     {name:'live now',item:{eventStart:'2026-08-30 13:00',eventEnd:'2026-08-30 15:00',relevantDate:'2026-08-30',activityType:'Event',discoveryDate:'2026-08-29'},section:'TODAY',state:'RIGHT NOW',expired:false},
-    {name:'coming up',item:{eventStart:'2026-09-02 16:00',eventEnd:'2026-09-02 17:00',relevantDate:'2026-09-02',activityType:'Event',discoveryDate:'2026-08-30'},section:'NEXT',state:'COMING UP',expired:false},
-    {name:'whats next',item:{eventStart:'2026-10-10 09:00',eventEnd:'2026-10-10 14:00',relevantDate:'2026-10-10',activityType:'Event',discoveryDate:'2026-08-30'},section:'NOW',state:"WHAT'S NEXT",expired:false},
+    {name:'coming up label',item:{eventStart:'2026-09-02 16:00',eventEnd:'2026-09-02 17:00',relevantDate:'2026-09-02',activityType:'Event',discoveryDate:'2026-08-30'},section:'COMING UP',state:'COMING UP',expired:false},
+    {name:'whats next label',item:{eventStart:'2026-10-10 09:00',eventEnd:'2026-10-10 14:00',relevantDate:'2026-10-10',activityType:'Event',discoveryDate:'2026-08-30'},section:"WHAT'S NEXT",state:"WHAT'S NEXT",expired:false},
     {name:'ended event',item:{eventStart:'2026-08-29 09:00',eventEnd:'2026-08-29 11:00',relevantDate:'2026-08-29',activityType:'Event',discoveryDate:'2026-08-29'},section:'ARCHIVE',state:'EXPIRED',expired:true},
     {name:'same day deal',item:{relevantDate:'2026-08-30',activityType:'Deal / Special',discoveryDate:'2026-08-30',currentSection:'TODAY'},section:'TODAY',state:'TODAY',expired:false},
     {name:'old same day deal',item:{relevantDate:'2026-08-29',activityType:'Deal / Special',discoveryDate:'2026-08-29',currentSection:'TODAY'},section:'ARCHIVE',state:'EXPIRED',expired:true},
     {name:'new product five day life',item:{activityType:'New Product / Offering',discoveryDate:'2026-08-28'},section:'NOW',state:'NEW',expired:false},
     {name:'old new product expires',item:{activityType:'New Product / Offering',discoveryDate:'2026-08-20'},section:'ARCHIVE',state:'EXPIRED',expired:true},
-    {name:'registration explicit expiry preserved',item:{eventStart:'2026-09-16',eventEnd:'2026-10-28',relevantDate:'2026-09-10',activityType:'Registration',discoveryDate:'2026-08-29',expireAt:'2026-09-11 00:00'},section:'NOW',state:"WHAT'S NEXT",expired:false,expirePrefix:'2026-09-11'},
-    {name:'explicit event buffer preserved',item:{eventStart:'2026-09-05 09:00',eventEnd:'2026-09-05 11:00',relevantDate:'2026-09-05',activityType:'Event',discoveryDate:'2026-08-30',expireAt:'2026-09-05 11:30'},section:'NEXT',state:'COMING UP',expired:false,expirePrefix:'2026-09-05 11:30'}
+    {name:'registration uses deadline',item:{eventStart:'2026-09-16',eventEnd:'2026-10-28',relevantDate:'2026-09-10',activityType:'Registration',discoveryDate:'2026-08-29',expireAt:'2026-09-11 00:00'},section:"WHAT'S NEXT",state:"WHAT'S NEXT",expired:false,noExpireRewrite:true},
+    {name:'registration within seven days',item:{eventStart:'2026-09-20',eventEnd:'2026-10-11',relevantDate:'2026-09-06',activityType:'Registration',discoveryDate:'2026-08-29',expireAt:'2026-09-07 00:00'},section:'COMING UP',state:'COMING UP',expired:false,noExpireRewrite:true},
+    {name:'explicit event buffer preserved',item:{eventStart:'2026-09-05 09:00',eventEnd:'2026-09-05 11:00',relevantDate:'2026-09-05',activityType:'Event',discoveryDate:'2026-08-30',expireAt:'2026-09-05 11:30'},section:'COMING UP',state:'COMING UP',expired:false,noExpireRewrite:true},
+    {name:'undated update stays now',item:{activityType:'Business Update',discoveryDate:'2026-08-29'},section:'NOW',state:'NOW',expired:false}
   ];
   const failures=[];
   cases.forEach(function(tc){
     const got=lifecycleDecision_(tc.item,now);
-    if(got.section!==tc.section||got.state!==tc.state||got.expired!==tc.expired||(tc.expirePrefix&&String(got.expireAt||'').indexOf(tc.expirePrefix)!==0)){
+    if(got.section!==tc.section||got.state!==tc.state||got.expired!==tc.expired||(tc.noExpireRewrite&&got.expireAt)){
       failures.push(tc.name+': '+JSON.stringify(got));
     }
   });
@@ -67,23 +69,33 @@ function lifecyclePlan_(applyChanges) {
       discoveryDate:cell_(row,ix,'Discovery / Post Date'),
       activityType:cell_(row,ix,'Business Activity Type')||cell_(row,ix,'Category'),
       expireAt:cell_(row,ix,'Expire At'),
+      verificationStatus:cell_(row,ix,'Verification Status'),
       importanceBase:Number(cell_(row,ix,'Importance Base')||0),
+      freshnessBoost:Number(cell_(row,ix,'Freshness Boost')||0),
+      proximityBoost:Number(cell_(row,ix,'Proximity Boost')||0),
       sourceConfidence:Number(cell_(row,ix,'Source Confidence Score')||0),
-      fairnessPenalty:Number(cell_(row,ix,'Fairness Penalty')||0)
+      fairnessPenalty:Number(cell_(row,ix,'Fairness Penalty')||0),
+      rankScore:Number(cell_(row,ix,'Rank Score')||0)
     };
     processed++;
+
     const d=lifecycleDecision_(item,now);
     const preserveState=shouldPreserveLifecycleState_(item.lifecycleState);
+    const preserveRank=isEditorialEvergreen_(item);
     const stateToWrite=preserveState?item.lifecycleState:d.state;
-    const rank=item.importanceBase+d.freshnessBoost+d.proximityBoost+item.sourceConfidence-item.fairnessPenalty;
+    const freshnessToWrite=preserveRank?item.freshnessBoost:d.freshnessBoost;
+    const proximityToWrite=preserveRank?item.proximityBoost:d.proximityBoost;
+    const rank=preserveRank?item.rankScore:(item.importanceBase+freshnessToWrite+proximityToWrite+item.sourceConfidence-item.fairnessPenalty);
 
     const changes=[];
     addLifecyclePreviewChange_(changes,row,ix,'Current Section',d.section);
     if(!preserveState)addLifecyclePreviewChange_(changes,row,ix,'Lifecycle State',stateToWrite);
     if(d.expireAt)addLifecyclePreviewChange_(changes,row,ix,'Expire At',d.expireAt);
-    addLifecyclePreviewChange_(changes,row,ix,'Freshness Boost',d.freshnessBoost);
-    addLifecyclePreviewChange_(changes,row,ix,'Proximity Boost',d.proximityBoost);
-    addLifecyclePreviewChange_(changes,row,ix,'Rank Score',rank);
+    if(!preserveRank){
+      addLifecyclePreviewChange_(changes,row,ix,'Freshness Boost',freshnessToWrite);
+      addLifecyclePreviewChange_(changes,row,ix,'Proximity Boost',proximityToWrite);
+      addLifecyclePreviewChange_(changes,row,ix,'Rank Score',rank);
+    }
 
     if(changes.length){
       planned+=changes.length;
@@ -92,9 +104,11 @@ function lifecyclePlan_(applyChanges) {
         changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Current Section',row,d.section);
         if(!preserveState)changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Lifecycle State',row,stateToWrite);
         if(d.expireAt)changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Expire At',row,d.expireAt);
-        changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Freshness Boost',row,d.freshnessBoost);
-        changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Proximity Boost',row,d.proximityBoost);
-        changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Rank Score',row,rank);
+        if(!preserveRank){
+          changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Freshness Boost',row,freshnessToWrite);
+          changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Proximity Boost',row,proximityToWrite);
+          changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Rank Score',row,rank);
+        }
       }
     }
     if(d.expired)expired++;
@@ -111,68 +125,79 @@ function lifecycleDecision_(item,now) {
   const nowMs=now.getTime();
   const today=Utilities.formatDate(now,tz,'yyyy-MM-dd');
   const type=String(item.activityType||'').toLowerCase();
+  const registration=/registration|register|signup|sign-up/.test(type);
   const hasExplicitEventStart=!!String(item.eventStart||'').trim();
-  const eventStart=parseLifecycleDate_(item.eventStart||item.relevantDate,false);
+  const eventStart=parseLifecycleDate_(item.eventStart||'',false);
   const eventEnd=parseLifecycleDate_(item.eventEnd||'',true);
   const relevantDate=normalizeLifecycleDate_(item.relevantDate);
-  const discovery=parseLifecycleDate_(item.discoveryDate,false);
-  const explicitExpire=parseLifecycleDate_(item.expireAt,true);
+  const relevantDateObj=parseLifecycleDate_(item.relevantDate||'',false);
+  const discovery=parseLifecycleDate_(item.discoveryDate||'',false);
+  const explicitExpire=parseLifecycleDate_(item.expireAt||'',true);
 
-  // An explicit Expire At value is editorial/source truth and is never extended or shortened here.
+  // For registrations, the public clock is the registration deadline, not the later program start.
+  const anchorDate=registration?(relevantDateObj||eventStart):(eventStart||relevantDateObj);
+  const anchorDateString=registration?(relevantDate||normalizeLifecycleDate_(item.eventStart)):(normalizeLifecycleDate_(item.eventStart)||relevantDate);
+
+  // Existing Expire At is editorial/source truth. It can expire the item, but we do not rewrite its formatting/value.
   let expire=explicitExpire;
+  let generatedExpire=null;
   let expired=!!(explicitExpire&&nowMs>explicitExpire.getTime());
 
   if(!explicitExpire){
-    if(eventEnd){
-      expire=eventEnd;
+    if(registration&&relevantDate){
+      generatedExpire=endOfLifecycleDateString_(relevantDate);
+      expire=generatedExpire;
+      expired=nowMs>generatedExpire.getTime();
+    }else if(eventEnd){
+      generatedExpire=eventEnd;
+      expire=generatedExpire;
       expired=nowMs>eventEnd.getTime();
-    }else if(eventStart&&eventStart.getTime()<nowMs&&normalizeLifecycleDate_(item.eventStart||item.relevantDate)<today){
-      expire=endOfLifecycleDay_(eventStart);
-      expired=nowMs>expire.getTime();
+    }else if(anchorDate&&anchorDate.getTime()<nowMs&&anchorDateString<today){
+      generatedExpire=endOfLifecycleDay_(anchorDate);
+      expire=generatedExpire;
+      expired=nowMs>generatedExpire.getTime();
     }
   }
 
-  const sameDayDeal=/deal|special|promotion|sale|discount|coupon/.test(type)&&String(item.currentSection||'').toUpperCase().indexOf('TODAY')!==-1;
-  if(!explicitExpire&&sameDayDeal&&relevantDate){
-    const end=endOfLifecycleDateString_(relevantDate);
-    expire=end;
-    expired=nowMs>end.getTime();
+  const sameDayDeal=/deal|special|promotion|sale|discount|coupon/.test(type);
+  if(!explicitExpire&&!generatedExpire&&sameDayDeal&&relevantDate){
+    generatedExpire=endOfLifecycleDateString_(relevantDate);
+    expire=generatedExpire;
+    expired=nowMs>generatedExpire.getTime();
   }
 
   if(/new product|new offering|new product \/ offering/.test(type)&&discovery&&!explicitExpire){
     const fiveDays=new Date(discovery.getTime()+5*86400000);
     fiveDays.setHours(23,59,59,999);
+    generatedExpire=fiveDays;
     expire=fiveDays;
     if(nowMs>fiveDays.getTime())expired=true;
   }
 
   const freshnessBoost=lifecycleFreshnessBoost_(discovery,now);
-  const proximityBoost=lifecycleProximityBoost_(eventStart||parseLifecycleDate_(relevantDate,false),now,today);
+  const proximityBoost=lifecycleProximityBoost_(anchorDate,now,today);
 
   if(expired){
-    return {section:'ARCHIVE',state:'EXPIRED',expired:true,expireAt:formatLifecycleDateTime_(expire||now),freshnessBoost:0,proximityBoost:0};
+    return {section:'ARCHIVE',state:'EXPIRED',expired:true,expireAt:explicitExpire?'':formatLifecycleDateTime_(expire||now),freshnessBoost:0,proximityBoost:0};
   }
 
   let section='NOW',state='NOW';
-  if(eventStart){
-    const eventDate=normalizeLifecycleDate_(item.eventStart||item.relevantDate);
-    const days=lifecycleDayDiff_(today,eventDate);
-    if(eventDate===today){
+  if(anchorDate){
+    const days=lifecycleDayDiff_(today,anchorDateString);
+    if(anchorDateString===today){
       section='TODAY';
-      if(hasExplicitEventStart&&eventStart.getTime()<=nowMs&&(!eventEnd||eventEnd.getTime()>=nowMs))state='RIGHT NOW';
+      if(!registration&&hasExplicitEventStart&&eventStart&&eventStart.getTime()<=nowMs&&(!eventEnd||eventEnd.getTime()>=nowMs))state='RIGHT NOW';
       else state='TODAY';
     }else if(days>=0&&days<=7){
-      section='NEXT';state='COMING UP';
+      section='COMING UP';state='COMING UP';
     }else if(days>7){
-      section='NOW';state="WHAT'S NEXT";
+      section="WHAT'S NEXT";state="WHAT'S NEXT";
     }
-  }else if(sameDayDeal&&relevantDate===today){
-    section='TODAY';state='TODAY';
   }else if(/new product|new offering/.test(type)&&discovery){
     section='NOW';state='NEW';
   }
 
-  return {section:section,state:state,expired:false,expireAt:expire?formatLifecycleDateTime_(expire):'',freshnessBoost:freshnessBoost,proximityBoost:proximityBoost};
+  return {section:section,state:state,expired:false,expireAt:explicitExpire?'':(generatedExpire?formatLifecycleDateTime_(generatedExpire):''),freshnessBoost:freshnessBoost,proximityBoost:proximityBoost};
 }
 
 function shouldPreserveLifecycleState_(state){
@@ -180,6 +205,11 @@ function shouldPreserveLifecycleState_(state){
   if(!s)return false;
   if(s.indexOf('/')!==-1)return true;
   return /FEATURED|REVIEW|ROUTINE|SPLIT|SUPPRESS|VERIFY|HOLD/.test(s);
+}
+
+function isEditorialEvergreen_(item){
+  const s=(String(item.lifecycleState||'')+' '+String(item.verificationStatus||'')).toUpperCase();
+  return /EVERGREEN|ROUTINE|SUPPRESS/.test(s);
 }
 
 function addLifecyclePreviewChange_(changes,row,ix,header,value){
@@ -193,6 +223,7 @@ function addLifecyclePreviewChange_(changes,row,ix,header,value){
 function lifecycleFreshnessBoost_(discovery,now){
   if(!discovery)return 0;
   const days=Math.floor((now.getTime()-discovery.getTime())/86400000);
+  if(days<0)return 0;
   if(days<=2)return 20;
   if(days<=5)return 12;
   if(days<=14)return 5;
