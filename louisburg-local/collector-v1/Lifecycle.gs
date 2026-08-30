@@ -214,7 +214,7 @@ function lifecycleProximityBoost_(eventDate,now,today){
 function lifecycleDayDiff_(fromYmd,toYmd){
   if(!fromYmd||!toYmd)return 9999;
   const a=fromYmd.split('-').map(Number),b=toYmd.split('-').map(Number);
-  return Math.round((Date.UTC(b[0],b[1]-1,b[2])-Date.UTC(a[0],a[1]-1,b[2]?b[2]:1)-0 + Date.UTC(b[0],b[1]-1,b[2]) - Date.UTC(b[0],b[1]-1,b[2]))/86400000);
+  return Math.round((Date.UTC(b[0],b[1]-1,b[2])-Date.UTC(a[0],a[1]-1,a[2]))/86400000);
 }
 
 function normalizeLifecycleDate_(v){
