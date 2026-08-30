@@ -1,3 +1,7 @@
+// Louisburg Local social activity intake bridge.
+// Public social posts are normalized here before the mandatory Verification Queue review gate.
+// No business credentials, cookies, or private-session data belong in this file.
+
 function runSocialIntakeSelfTest() {
   const now = new Date(2026, 7, 30, 13, 30, 0);
   const cases = [
@@ -18,6 +22,73 @@ function runSocialIntakeSelfTest() {
   Logger.log('Social Intake self-test passed: '+cases.length+'/'+cases.length);
 }
 
+function runSocialIntakePipelineTest() {
+  const ss=SpreadsheetApp.openById(LL_CONFIG.SPREADSHEET_ID);
+  const intake=ss.getSheetByName('Social Post Intake');
+  const verify=ss.getSheetByName(LL_CONFIG.SHEETS.VERIFY);
+  if(!intake||!verify)throw new Error('Social intake or verification sheet missing.');
+
+  const marker='LL_PIPELINE_TEST_'+Utilities.getUuid().slice(0,8);
+  const org='Louisburg Local Pipeline Test '+marker;
+  const now=new Date();
+  const fresh=now.toISOString();
+  const stale=new Date(now.getTime()-30*86400000).toISOString();
+  const start=intake.getLastRow()+1;
+  const profile='https://example.com/'+marker+'/profile';
+  const post='https://example.com/'+marker+'/post-1';
+  const text='Louisburg KS. Today only: pipeline test burger basket special until 8 PM.';
+
+  const rows=[
+    [marker+'-1','',org,'TEST',profile,post,'same-post',fresh,fmt_(now),text,'','','','YES','','PENDING','','','','PIPELINE TEST '+marker],
+    [marker+'-2','',org,'TEST',profile,'https://example.com/'+marker+'/stale','stale-post',stale,fmt_(now),'Louisburg KS. Check out our menu and services.','','','','YES','','PENDING','','','','PIPELINE TEST '+marker],
+    [marker+'-3','',org,'TEST',profile,'https://example.com/'+marker+'/not-local','not-local',fresh,fmt_(now),'Join us tonight for live music in Overland Park.','','','','NO','','PENDING','','','','PIPELINE TEST '+marker],
+    [marker+'-4','',org,'TEST',profile,post,'same-post',fresh,fmt_(now),text,'','','','YES','','PENDING','','','','PIPELINE TEST '+marker]
+  ];
+
+  let summary=null;
+  try {
+    intake.getRange(start,1,rows.length,20).setValues(rows);
+    SpreadsheetApp.flush();
+    summary=processSocialPostIntake();
+    SpreadsheetApp.flush();
+
+    const out=intake.getRange(start,1,rows.length,20).getDisplayValues();
+    const failures=[];
+    if(!/^QUEUED FOR VERIFICATION/.test(String(out[0][15]||'')))failures.push('fresh activity was not queued');
+    if(String(out[1][15]||'')!=='REJECTED - STALE SOCIAL POST')failures.push('stale post was not rejected as stale');
+    if(String(out[2][15]||'')!=='REJECTED - NOT LOUISBURG')failures.push('non-Louisburg post was not rejected');
+    if(String(out[3][15]||'')!=='DUPLICATE')failures.push('same-run duplicate was not deduped');
+
+    let verificationHits=0;
+    if(verify.getLastRow()>1){
+      const v=verify.getDataRange().getDisplayValues();
+      for(let r=1;r<v.length;r++)if(String(v[r][0]||'')===org&&String(v[r][6]||'').toUpperCase()==='OPEN - SOCIAL')verificationHits++;
+    }
+    if(verificationHits!==1)failures.push('expected exactly 1 Verification Queue candidate, found '+verificationHits);
+    if(summary.queued!==1||summary.rejected!==2||summary.duplicates!==1)failures.push('processor summary mismatch: '+JSON.stringify(summary));
+
+    if(failures.length)throw new Error('Social Intake pipeline test failed: '+failures.join(' | '));
+    Logger.log('Social Intake pipeline test passed: 4/4; queued=1 rejected=2 duplicate=1; verification=1');
+  } finally {
+    cleanupSocialPipelineTest_(intake,verify,marker,org);
+  }
+}
+
+function cleanupSocialPipelineTest_(intake,verify,marker,org){
+  if(verify&&verify.getLastRow()>1){
+    const data=verify.getDataRange().getDisplayValues();
+    for(let r=data.length-1;r>=1;r--){
+      if(String(data[r][0]||'')===org||String(data[r][9]||'').indexOf(marker)!==-1)verify.deleteRow(r+1);
+    }
+  }
+  if(intake&&intake.getLastRow()>1){
+    const data=intake.getDataRange().getDisplayValues();
+    for(let r=data.length-1;r>=1;r--){
+      if(String(data[r][0]||'').indexOf(marker)===0||String(data[r][19]||'').indexOf(marker)!==-1)intake.deleteRow(r+1);
+    }
+  }
+}
+
 function processSocialPostIntake() {
   const ss=SpreadsheetApp.openById(LL_CONFIG.SPREADSHEET_ID);
   const sheet=ss.getSheetByName('Social Post Intake');
@@ -26,6 +97,7 @@ function processSocialPostIntake() {
   if(sheet.getLastRow()<2)return {processed:0,queued:0,rejected:0,duplicates:0};
   const data=sheet.getDataRange().getDisplayValues(),headers=data[0],ix=headerMap_(headers),now=new Date();
   let processed=0,queued=0,rejected=0,duplicates=0;
+  const seenThisRun={};
   for(let r=1;r<data.length;r++){
     const row=data[r],worker=cell_(row,ix,'Worker Result').toUpperCase();
     if(/^(QUEUED|REJECTED|DUPLICATE|PROMOTED|DONE)/.test(worker))continue;
@@ -36,13 +108,15 @@ function processSocialPostIntake() {
     processed++;
     const gate=socialPostGate_(payload,now),fingerprint=socialFingerprint_(payload);
     setSocialValue_(sheet,r+1,ix,'Activity Fingerprint',fingerprint);
-    if(socialFingerprintExistsElsewhere_(data,ix,r,fingerprint)){
+    if(seenThisRun[fingerprint]||socialFingerprintExistsElsewhere_(data,ix,r,fingerprint)){
       duplicates++;
+      seenThisRun[fingerprint]=true;
       setSocialValue_(sheet,r+1,ix,'Worker Result','DUPLICATE');
       setSocialValue_(sheet,r+1,ix,'Verification Status','DUPLICATE');
       setSocialValue_(sheet,r+1,ix,'Hub Eligibility','NO');
       continue;
     }
+    seenThisRun[fingerprint]=true;
     if(!gate.ok){
       rejected++;
       setSocialValue_(sheet,r+1,ix,'Worker Result','REJECTED - '+gate.reason);
