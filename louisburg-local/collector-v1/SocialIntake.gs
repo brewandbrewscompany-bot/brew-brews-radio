@@ -9,6 +9,7 @@ function runSocialIntakeSelfTest() {
     {name:'fresh live music', text:'Louisburg KS. Live music tomorrow at 7 PM.', postDate:'2026-08-30T10:00:00-05:00', want:true},
     {name:'fresh hiring', text:'Louisburg KS. We are now hiring part-time help. Apply today.', postDate:'2026-08-29T10:00:00-05:00', want:true},
     {name:'fresh new product', text:'Louisburg KS. New fall drink available now.', postDate:'2026-08-30T09:00:00-05:00', want:true},
+    {name:'fresh stock arrival', text:'Fresh apples have officially arrived at our Louisburg Country Store.', postDate:'2026-08-29T09:00:00-05:00', want:true},
     {name:'old generic post', text:'Louisburg KS. Check out our menu and services.', postDate:'2026-07-01T09:00:00-05:00', want:false},
     {name:'navigation boilerplate', text:'Louisburg KS. Home About Contact Follow us Privacy Policy.', postDate:'2026-08-30T09:00:00-05:00', want:false},
     {name:'not louisburg', text:'Join us tonight for live music in Overland Park.', postDate:'2026-08-30T09:00:00-05:00', want:false}
@@ -150,9 +151,7 @@ function processSocialPostIntake() {
 }
 
 function recordSocialIntakeWebhook_(body) {
-  const expected=PropertiesService.getScriptProperties().getProperty('LL_SOCIAL_INGEST_KEY');
-  if(!expected)throw new Error('Social intake key not configured.');
-  if(String(body.ingestKey||'')!==expected)throw new Error('Unauthorized social intake.');
+  requireSocialIngestKey_(body);
   const ss=SpreadsheetApp.openById(LL_CONFIG.SPREADSHEET_ID),sheet=ss.getSheetByName('Social Post Intake');
   if(!sheet)throw new Error('Social Post Intake sheet missing.');
   const platform=String(body.platform||'').trim().toUpperCase();
@@ -165,6 +164,70 @@ function recordSocialIntakeWebhook_(body) {
   sheet.appendRow([Utilities.getUuid(),String(body.queueId||''),org,platform,profileUrl,postUrl,payload.postId,payload.postDate,payload.capturedAt,text,payload.mediaUrl,payload.mediaType,payload.activityType,payload.louisburgMatch,fingerprint,'PENDING','','','','Webhook intake; review gate mandatory.']);
   return {ok:true,duplicate:false,fingerprint:fingerprint};
 }
+
+function getSocialWorkerManifest_(body) {
+  requireSocialIngestKey_(body);
+  const ss=SpreadsheetApp.openById(LL_CONFIG.SPREADSHEET_ID);
+  const sheet=ss.getSheetByName('Social Worker Queue');
+  if(!sheet)throw new Error('Social Worker Queue sheet missing.');
+  if(sheet.getLastRow()<2)return {ok:true,workers:[],generatedAt:fmt_(new Date())};
+  const data=sheet.getDataRange().getDisplayValues(),ix=headerMap_(data[0]),workers=[];
+  for(let r=1;r<data.length;r++){
+    const platform=cell_(data[r],ix,'Platform').toUpperCase();
+    const sourceStatus=cell_(data[r],ix,'Source Status').toUpperCase();
+    const publishGate=cell_(data[r],ix,'Publish Gate').toUpperCase();
+    const profileUrl=cell_(data[r],ix,'Verified Profile URL');
+    if(platform!=='FACEBOOK'||sourceStatus.indexOf('VERIFIED')!==0||!/^https:\/\/(?:www\.)?facebook\.com\//i.test(profileUrl))continue;
+    if(publishGate&&publishGate!=='REVIEW REQUIRED')continue;
+    workers.push({
+      queueId:cell_(data[r],ix,'Queue ID'),
+      organization:cell_(data[r],ix,'Business / Organization'),
+      platform:'FACEBOOK',
+      profileUrl:profileUrl,
+      priority:cell_(data[r],ix,'Priority')||'MEDIUM',
+      scanFrequency:cell_(data[r],ix,'Next Scan')||'DAILY',
+      scanMode:cell_(data[r],ix,'Scan Mode'),
+      lastScanAt:cell_(data[r],ix,'Last Scan At'),
+      lastScanAtIso:socialDisplayDateIso_(cell_(data[r],ix,'Last Scan At')),
+      notes:cell_(data[r],ix,'Notes')
+    });
+  }
+  workers.sort(function(a,b){return socialPriorityRank_(b.priority)-socialPriorityRank_(a.priority)||a.organization.localeCompare(b.organization);});
+  return {ok:true,workers:workers,generatedAt:fmt_(new Date())};
+}
+
+function recordSocialWorkerScan_(body) {
+  requireSocialIngestKey_(body);
+  const queueId=String(body.queueId||'').trim();
+  if(!queueId)throw new Error('Missing social worker queue ID.');
+  const ss=SpreadsheetApp.openById(LL_CONFIG.SPREADSHEET_ID);
+  const sheet=ss.getSheetByName('Social Worker Queue');
+  if(!sheet||sheet.getLastRow()<2)throw new Error('Social Worker Queue unavailable.');
+  const data=sheet.getDataRange().getDisplayValues(),ix=headerMap_(data[0]);
+  for(let r=1;r<data.length;r++){
+    if(cell_(data[r],ix,'Queue ID')!==queueId)continue;
+    if(cell_(data[r],ix,'Platform').toUpperCase()!=='FACEBOOK'||cell_(data[r],ix,'Source Status').toUpperCase().indexOf('VERIFIED')!==0)throw new Error('Worker is not an approved Facebook source.');
+    setSocialValue_(sheet,r+1,ix,'Scan Mode','BROWSER_PUBLIC_PREVIEW');
+    setSocialValue_(sheet,r+1,ix,'Last Scan At',fmt_(new Date()));
+    setSocialValue_(sheet,r+1,ix,'Last Result',String(body.result||'SCAN COMPLETE').replace(/\s+/g,' ').trim().slice(0,300));
+    if(body.lastPostUrl)setSocialValue_(sheet,r+1,ix,'Last Post URL',String(body.lastPostUrl).slice(0,500));
+    if(body.lastPostDate)setSocialValue_(sheet,r+1,ix,'Last Post Date',String(body.lastPostDate).slice(0,80));
+    if(body.lastPostText)setSocialValue_(sheet,r+1,ix,'Last Post Text',String(body.lastPostText).replace(/\s+/g,' ').trim().slice(0,500));
+    if(body.lastMediaUrl)setSocialValue_(sheet,r+1,ix,'Last Media URL',String(body.lastMediaUrl).slice(0,1000));
+    if(body.activityFingerprint)setSocialValue_(sheet,r+1,ix,'Activity Fingerprint',String(body.activityFingerprint).slice(0,128));
+    return {ok:true,queueId:queueId,recorded:true};
+  }
+  throw new Error('Social worker queue item not found.');
+}
+
+function requireSocialIngestKey_(body) {
+  const expected=PropertiesService.getScriptProperties().getProperty('LL_SOCIAL_INGEST_KEY');
+  if(!expected)throw new Error('Social intake key not configured.');
+  if(String((body&&body.ingestKey)||'')!==expected)throw new Error('Unauthorized social intake.');
+}
+
+function socialPriorityRank_(priority){return {HIGH:3,MEDIUM:2,LOW:1}[String(priority||'').toUpperCase()]||0;}
+function socialDisplayDateIso_(value){try{return Utilities.parseDate(String(value||''),LL_CONFIG.TZ||'America/Chicago','yyyy-MM-dd HH:mm:ss').toISOString();}catch(ignored){return '';}}
 
 function socialPostGate_(payload,now) {
   const text=String(payload.text||'').replace(/\s+/g,' ').trim(),lower=text.toLowerCase();
@@ -187,7 +250,7 @@ function classifySocialActivity_(t) {
   if(/closed today|closing early|closure|cancelled|canceled|postponed|rescheduled|delayed/.test(t))return 'Operational Update';
   if(/now hiring|hiring|apply today|job opening/.test(t))return 'Hiring';
   if(/daily special|special today|today only|deal|discount|coupon|promotion|on sale|sale ends/.test(t))return 'Deal / Special';
-  if(/new product|new coffee|new drink|new menu|launch|release|available now|freshly roasted/.test(t))return 'New Product / Offering';
+  if(/new product|new coffee|new drink|new menu|launch|release|available now|now available|freshly roasted|\bare here\b|\b(?:has|have) (?:officially )?arrived\b|\bnow in stock\b/.test(t))return 'New Product / Offering';
   if(/live music|concert|festival|workshop|fundraiser|open house|event|tickets|register now|registration open|sign up|signup/.test(t))return 'Event / Activity';
   if(/now open|grand opening|online ordering|new hours|hours changed/.test(t))return 'Business Update';
   return '';
