@@ -1,7 +1,6 @@
 function installLouisburgLocalCollectorTriggers() {
   removeLouisburgLocalCollectorTriggers();
   ScriptApp.newTrigger('runLouisburgLocalCollector').timeBased().everyHours(1).create();
-  ScriptApp.newTrigger('runLouisburgLocalSocialWorker').timeBased().everyHours(1).create();
   ScriptApp.newTrigger('processSocialPostIntake').timeBased().everyMinutes(5).create();
   ScriptApp.newTrigger('runLouisburgLocalLifecycle').timeBased().everyMinutes(15).create();
   ScriptApp.newTrigger('runLouisburgLocalMaintenance').timeBased().everyDays(1).atHour(3).create();
@@ -10,7 +9,7 @@ function installLouisburgLocalCollectorTriggers() {
 function removeLouisburgLocalCollectorTriggers() {
   ScriptApp.getProjectTriggers().forEach(function(t) {
     const fn = t.getHandlerFunction();
-    if (fn === 'runLouisburgLocalCollector' || fn === 'runLouisburgLocalSocialWorker' || fn === 'processSocialPostIntake' || fn === 'runLouisburgLocalLifecycle' || fn === 'runLouisburgLocalMaintenance') ScriptApp.deleteTrigger(t);
+    if (fn === 'runLouisburgLocalCollector' || fn === 'processSocialPostIntake' || fn === 'runLouisburgLocalLifecycle' || fn === 'runLouisburgLocalMaintenance') ScriptApp.deleteTrigger(t);
   });
 }
 
@@ -23,8 +22,8 @@ function provisionLouisburgLocalSocialIntake() {
     props.setProperty('LL_SOCIAL_INGEST_KEY',key);
   }
   installLouisburgLocalCollectorTriggers();
-  Logger.log('Louisburg Local provisioned: ingest-key='+(created?'created':'preserved')+'; social worker=hourly; social processor=every 5 minutes; lifecycle=every 15 minutes; collector=hourly; maintenance=daily.');
-  return {ok:true,keyCreated:created,triggersInstalled:true,socialWorkerInstalled:true};
+  Logger.log('Louisburg Local provisioned: ingest-key='+(created?'created':'preserved')+'; social processor=every 5 minutes; lifecycle=every 15 minutes; collector=hourly; maintenance=daily.');
+  return {ok:true,keyCreated:created,triggersInstalled:true};
 }
 
 function rotateLouisburgLocalSocialIngestKey() {
