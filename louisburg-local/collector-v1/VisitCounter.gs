@@ -70,18 +70,23 @@ function purgeOldVisitRows_(){
   return {deleted:deleted};
 }
 
+// Safety helper only. Because visit-key rows are retained for 35 days while the
+// public counter is lifetime, this function must never lower the lifetime count.
 function rebuildVisitCountFromSheet(){
   const ss=SpreadsheetApp.openById(LL_CONFIG.SPREADSHEET_ID);
   const sheet=ss.getSheetByName('Visits');
   if(!sheet)throw new Error('Visits sheet missing');
-  let total=0;
+  let retainedRows=0;
   if(sheet.getLastRow()>1){
     const vals=sheet.getRange(2,5,sheet.getLastRow()-1,1).getDisplayValues();
-    vals.forEach(function(r){if(/^yes$/i.test(String(r[0]||'')))total++;});
+    vals.forEach(function(r){if(/^yes$/i.test(String(r[0]||'')))retainedRows++;});
   }
-  PropertiesService.getScriptProperties().setProperty('LL_PUBLIC_VISITS',String(total));
-  Logger.log('Visit count rebuilt from Visits sheet: '+total);
-  return total;
+  const props=PropertiesService.getScriptProperties();
+  const existing=Number(props.getProperty('LL_PUBLIC_VISITS')||0);
+  const safeTotal=Math.max(existing,retainedRows);
+  props.setProperty('LL_PUBLIC_VISITS',String(safeTotal));
+  Logger.log('Visit count floor check: retainedRows='+retainedRows+' lifetime='+safeTotal);
+  return safeTotal;
 }
 
 function runVisitCounterSelfTest(){
@@ -117,7 +122,6 @@ function runVisitCounterSelfTest(){
     if(failures.length)throw new Error('Visit counter self-test failed: '+failures.join(' | '));
     Logger.log('Visit counter self-test passed: 5/5; first=counted duplicate=suppressed second=counted total=43');
   } finally {
-    // Remove controlled rows by the marker-derived day keys, without touching real visits.
     if(sheet.getLastRow()>beforeRows){
       const data=sheet.getRange(2,1,sheet.getLastRow()-1,8).getDisplayValues();
       const today=Utilities.formatDate(new Date(),(LL_CONFIG&&LL_CONFIG.TZ)||'America/Chicago','yyyy-MM-dd');
@@ -134,30 +138,48 @@ function runVisitCounterSelfTest(){
 function runLiveVisitEndpointSmokeTest(){
   const url='https://script.google.com/macros/s/AKfycbxw9gJBH50L_VZbgp6i_mHHnfPXAkraIqv63BA2XqWtb-XaaczXxdf89WveFkAOwV-azw/exec';
   const props=PropertiesService.getScriptProperties();
-  const before=Number(props.getProperty('LL_PUBLIC_VISITS')||0);
+  const previous=props.getProperty('LL_PUBLIC_VISITS');
+  const before=Number(previous||0);
   const sessionKey='LL_LIVE_VISIT_'+Utilities.getUuid();
-  const response=UrlFetchApp.fetch(url,{
-    method:'post',
-    contentType:'application/json',
-    payload:JSON.stringify({action:'visit',sessionKey:sessionKey,clientClass:'desktop'}),
-    muteHttpExceptions:true,
-    followRedirects:true
-  });
-  const code=response.getResponseCode();
-  const body=response.getContentText();
-  let parsed={};
-  try{parsed=JSON.parse(body);}catch(ignored){}
-  if(code<200||code>=300||!parsed.ok)throw new Error('Live visit endpoint rejected request: HTTP '+code+' '+body.slice(0,300));
-  if(parsed.visitCount!==before+1)throw new Error('Live visit endpoint returned unexpected count: before='+before+' after='+parsed.visitCount);
+  const tz=(LL_CONFIG&&LL_CONFIG.TZ)||'America/Chicago';
+  const today=Utilities.formatDate(new Date(),tz,'yyyy-MM-dd');
+  const testKey=digest_(['visit',today,sessionKey].join('|')).slice(0,40);
+  const ss=SpreadsheetApp.openById(LL_CONFIG.SPREADSHEET_ID);
+  const sheet=ss.getSheetByName('Visits');
+  if(!sheet)throw new Error('Visits sheet missing');
 
-  const duplicateResponse=UrlFetchApp.fetch(url,{
-    method:'post',
-    contentType:'application/json',
-    payload:JSON.stringify({action:'visit',sessionKey:sessionKey,clientClass:'desktop'}),
-    muteHttpExceptions:true,
-    followRedirects:true
-  });
-  const duplicate=JSON.parse(duplicateResponse.getContentText()||'{}');
-  if(!duplicate.ok||!duplicate.duplicate||duplicate.visitCount!==parsed.visitCount)throw new Error('Live visit duplicate suppression failed');
-  Logger.log('Live visit endpoint smoke test passed: first=counted duplicate=suppressed visitCount='+parsed.visitCount);
+  try{
+    const response=UrlFetchApp.fetch(url,{
+      method:'post',
+      contentType:'application/json',
+      payload:JSON.stringify({action:'visit',sessionKey:sessionKey,clientClass:'desktop'}),
+      muteHttpExceptions:true,
+      followRedirects:true
+    });
+    const code=response.getResponseCode();
+    const body=response.getContentText();
+    let parsed={};
+    try{parsed=JSON.parse(body);}catch(ignored){}
+    if(code<200||code>=300||!parsed.ok)throw new Error('Live visit endpoint rejected request: HTTP '+code+' '+body.slice(0,300));
+    if(parsed.visitCount!==before+1)throw new Error('Live visit endpoint returned unexpected count: before='+before+' after='+parsed.visitCount);
+
+    const duplicateResponse=UrlFetchApp.fetch(url,{
+      method:'post',
+      contentType:'application/json',
+      payload:JSON.stringify({action:'visit',sessionKey:sessionKey,clientClass:'desktop'}),
+      muteHttpExceptions:true,
+      followRedirects:true
+    });
+    const duplicate=JSON.parse(duplicateResponse.getContentText()||'{}');
+    if(!duplicate.ok||!duplicate.duplicate||duplicate.visitCount!==parsed.visitCount)throw new Error('Live visit duplicate suppression failed');
+    Logger.log('Live visit endpoint smoke test passed: first=counted duplicate=suppressed visitCount='+(before+1)+'; cleanup=restored');
+  } finally {
+    if(sheet.getLastRow()>1){
+      const keys=sheet.getRange(2,4,sheet.getLastRow()-1,1).getDisplayValues();
+      for(let r=keys.length-1;r>=0;r--){
+        if(String(keys[r][0]||'')===testKey)sheet.deleteRow(r+2);
+      }
+    }
+    if(previous==null)props.deleteProperty('LL_PUBLIC_VISITS'); else props.setProperty('LL_PUBLIC_VISITS',previous);
+  }
 }
