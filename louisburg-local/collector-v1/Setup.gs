@@ -118,8 +118,6 @@ function cleanupLiveSocialEndpointTest_(intake,verify,org,marker){
 }
 
 function seedLouisburgLocalCollector() {
-  // First pass establishes fingerprints. Existing source content is baseline,
-  // not treated as a newly discovered item merely because state was empty.
   PropertiesService.getScriptProperties().deleteProperty('LL_COLLECTOR_CURSOR');
   runLouisburgLocalCollector();
 }
@@ -127,11 +125,10 @@ function seedLouisburgLocalCollector() {
 function runLouisburgLocalMaintenance() {
   const ss = SpreadsheetApp.openById(LL_CONFIG.SPREADSHEET_ID);
   purgeOldSherlockAndReactionKeys_(ss);
+  if (typeof purgeOldVisitRows_ === 'function') purgeOldVisitRows_();
 }
 
 function purgeOldSherlockAndReactionKeys_(ss) {
-  // Retention is conservative. We clear pseudonymous submitter/session keys,
-  // not the factual correction or aggregate reaction counts.
   const now = new Date();
   const sherlock = ss.getSheetByName(LL_CONFIG.SHEETS.SHERLOCK);
   if (sherlock && sherlock.getLastRow() > 1) {
