@@ -1,4 +1,10 @@
-function runLouisburgLocalCollector() {
+function runLouisburgLocalCollector() { runCollector_(false); }
+
+// Manual test function: ignores Next Check and probes both DIRECT and SURFACE sources.
+// Use this when validating Facebook/Instagram/public social discoverability.
+function forceScanLouisburgLocal() { runCollector_(true); }
+
+function runCollector_(forceScan) {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(LL_CONFIG.LOCK_WAIT_MS)) {
     logSkippedRun_('Collector skipped: another run holds the script lock.');
@@ -21,14 +27,17 @@ function runLouisburgLocalCollector() {
     const ix = headerMap_(headers);
     const state = loadState_(stateSheet);
     const props = PropertiesService.getScriptProperties();
-    const startCursor = Math.max(0, Number(props.getProperty('LL_COLLECTOR_CURSOR') || 0));
+    const startCursor = forceScan ? 0 : Math.max(0, Number(props.getProperty('LL_COLLECTOR_CURSOR') || 0));
     const rows = raw;
+    const allowed = forceScan ? LL_CONFIG.FORCE_SCAN_ACCESS_METHODS : LL_CONFIG.ALLOWED_ACCESS_METHODS;
+    const maxEndpoints = forceScan ? LL_CONFIG.FORCE_SCAN_MAX_ENDPOINTS : LL_CONFIG.MAX_ENDPOINTS_PER_RUN;
 
     let checked = 0, changed = 0, candidates = 0, failures = 0, considered = 0;
+    let directChecked = 0, surfaceChecked = 0, surfaceReadable = 0, surfaceBlocked = 0;
     let cursor = startCursor;
     let visited = 0;
 
-    while (visited < rows.length && considered < LL_CONFIG.MAX_ENDPOINTS_PER_RUN) {
+    while (visited < rows.length && considered < maxEndpoints) {
       if (cursor >= rows.length) cursor = 0;
       const row = rows[cursor]; cursor++; visited++;
       const sourceUrl = cell_(row, ix, 'Source URL');
@@ -37,18 +46,23 @@ function runLouisburgLocalCollector() {
       const org = cell_(row, ix, 'Business / Organization');
       const priority = cell_(row, ix, 'Feed Priority').toUpperCase() || 'MEDIUM';
       if (!sourceUrl || !/^(yes|true|active)$/i.test(active)) continue;
-      if (LL_CONFIG.ALLOWED_ACCESS_METHODS.indexOf(access) === -1) continue;
+      if (allowed.indexOf(access) === -1) continue;
 
       const key = endpointKey_(org, sourceUrl);
       const old = state[key] || {};
-      if (!isDue_(old.nextCheck)) continue;
+      if (!forceScan && !isDue_(old.nextCheck)) continue;
       considered++; checked++;
+      if (access === 'SURFACE') surfaceChecked++; else directChecked++;
 
       try {
         const result = fetchPublicSource_(sourceUrl);
         const normalized = normalizeText_(result.body);
+        const social = inspectSocialSurface_(sourceUrl, normalized, result.body);
+        if (access === 'SURFACE') {
+          if (social.readable) surfaceReadable++; else surfaceBlocked++;
+        }
         const activity = extractActivity_(normalized);
-        const activityFingerprint = digest_(activity.canonical || 'no-activity');
+        const activityFingerprint = digest_(activity.canonical || ('no-activity|' + social.status));
         const didChange = !old.fingerprint || old.fingerprint !== activityFingerprint;
         const now = new Date();
         if (didChange) changed++;
@@ -66,10 +80,11 @@ function runLouisburgLocalCollector() {
           didChange ? fmt_(now) : (old.lastChange || ''), fmt_(now), fmt_(now),
           fmt_(nextCheck_(now, priority)), 0,
           didChange && candidateCount ? fmt_(addDays_(now, LL_CONFIG.SOURCE_BOOST_DAYS)) : (old.boostUntil || ''),
-          result.status, normalized.length, '', 'Yes'
+          result.status, normalized.length, social.status, 'Yes'
         ]);
       } catch (err) {
         failures++;
+        if (access === 'SURFACE') surfaceBlocked++;
         const now = new Date();
         const failCount = Number(old.failures || 0) + 1;
         upsertState_(stateSheet, old.row, [
@@ -80,11 +95,28 @@ function runLouisburgLocalCollector() {
       }
     }
 
-    props.setProperty('LL_COLLECTOR_CURSOR', String(cursor >= rows.length ? 0 : cursor));
+    if (!forceScan) props.setProperty('LL_COLLECTOR_CURSOR', String(cursor >= rows.length ? 0 : cursor));
     logSheet.appendRow([runId, fmt_(started), fmt_(new Date()), rows.length, checked, changed, candidates, failures,
-      'Collector V1.2: activity fingerprints; batch=' + considered + '/' + LL_CONFIG.MAX_ENDPOINTS_PER_RUN +
-      '; Sherlock rechecks=' + sherlockChecks + '; DIRECT only; review gate mandatory.']);
+      'Collector V1.3: ' + (forceScan ? 'FORCE SCAN; ignores schedule; DIRECT+SURFACE' : 'scheduled; DIRECT only') +
+      '; direct=' + directChecked + '; surface=' + surfaceChecked + '; surface-readable=' + surfaceReadable +
+      '; surface-blocked=' + surfaceBlocked + '; batch=' + considered + '/' + maxEndpoints +
+      '; Sherlock rechecks=' + sherlockChecks + '; review gate mandatory.']);
   } finally { lock.releaseLock(); }
+}
+
+function inspectSocialSurface_(url, text, html) {
+  const u = String(url || '').toLowerCase();
+  const isFacebook = /facebook\.com|fb\.com/.test(u);
+  const isInstagram = /instagram\.com/.test(u);
+  if (!isFacebook && !isInstagram) return {readable:true,status:'DIRECT READABLE'};
+  const h = String(text || '').toLowerCase();
+  const raw = String(html || '').toLowerCase();
+  const loginWall = /log in|login|create new account|sign up|accounts\/login|checkpoint/.test(h + ' ' + raw);
+  const hasPostSignals = /posted|photos|reel|followers|likes|comments|instagram|facebook/.test(h);
+  const meaningful = h.length > 500 && hasPostSignals && !loginWall;
+  if (meaningful) return {readable:true,status:(isFacebook?'FACEBOOK':'INSTAGRAM') + ' SURFACE READABLE'};
+  if (loginWall) return {readable:false,status:(isFacebook?'FACEBOOK':'INSTAGRAM') + ' LOGIN/INTERSTITIAL'};
+  return {readable:false,status:(isFacebook?'FACEBOOK':'INSTAGRAM') + ' SURFACE LIMITED'};
 }
 
 function extractActivity_(text) {
