@@ -43,8 +43,7 @@ function runLiveSocialIntakeEndpointSmokeTest() {
   const props=PropertiesService.getScriptProperties();
   const key=props.getProperty('LL_SOCIAL_INGEST_KEY');
   if(!key)throw new Error('Social ingest key is not configured. Run provisionLouisburgLocalSocialIntake first.');
-  const url=ScriptApp.getService().getUrl();
-  if(!url)throw new Error('No deployed web-app URL is available. Deploy the web app first, then run this test again.');
+  const url='https://script.google.com/macros/s/AKfycbxw9gJBH50L_VZbgp6i_mHHnfPXAkraIqv63BA2XqWtb-XaaczXxdf89WveFkAOwV-azw/exec';
 
   const ss=SpreadsheetApp.openById(LL_CONFIG.SPREADSHEET_ID);
   const intake=ss.getSheetByName('Social Post Intake');
