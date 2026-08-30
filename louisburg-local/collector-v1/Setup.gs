@@ -1,13 +1,14 @@
 function installLouisburgLocalCollectorTriggers() {
   removeLouisburgLocalCollectorTriggers();
   ScriptApp.newTrigger('runLouisburgLocalCollector').timeBased().everyHours(1).create();
+  ScriptApp.newTrigger('processSocialPostIntake').timeBased().everyMinutes(5).create();
   ScriptApp.newTrigger('runLouisburgLocalMaintenance').timeBased().everyDays(1).atHour(3).create();
 }
 
 function removeLouisburgLocalCollectorTriggers() {
   ScriptApp.getProjectTriggers().forEach(function(t) {
     const fn = t.getHandlerFunction();
-    if (fn === 'runLouisburgLocalCollector' || fn === 'runLouisburgLocalMaintenance') ScriptApp.deleteTrigger(t);
+    if (fn === 'runLouisburgLocalCollector' || fn === 'processSocialPostIntake' || fn === 'runLouisburgLocalMaintenance') ScriptApp.deleteTrigger(t);
   });
 }
 
