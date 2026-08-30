@@ -1,6 +1,6 @@
 // Louisburg Local feed lifecycle engine.
-// Keeps verified Hub Feed items moving through TODAY / NEXT / NOW and expires activity when its useful public life ends.
-// It does not verify content and does not promote REVIEW/HOLD items.
+// Preview-first. Only YES/LIMITED public items are eligible for automated lifecycle movement.
+// REVIEW/HOLD rows and editorial lifecycle labels are never overwritten by this engine.
 
 function runLifecycleSelfTest() {
   const now=new Date('2026-08-30T14:00:00-05:00');
@@ -13,12 +13,14 @@ function runLifecycleSelfTest() {
     {name:'same day deal',item:{relevantDate:'2026-08-30',activityType:'Deal / Special',discoveryDate:'2026-08-30',currentSection:'TODAY'},section:'TODAY',state:'TODAY',expired:false},
     {name:'old same day deal',item:{relevantDate:'2026-08-29',activityType:'Deal / Special',discoveryDate:'2026-08-29',currentSection:'TODAY'},section:'ARCHIVE',state:'EXPIRED',expired:true},
     {name:'new product five day life',item:{activityType:'New Product / Offering',discoveryDate:'2026-08-28'},section:'NOW',state:'NEW',expired:false},
-    {name:'old new product expires',item:{activityType:'New Product / Offering',discoveryDate:'2026-08-20'},section:'ARCHIVE',state:'EXPIRED',expired:true}
+    {name:'old new product expires',item:{activityType:'New Product / Offering',discoveryDate:'2026-08-20'},section:'ARCHIVE',state:'EXPIRED',expired:true},
+    {name:'registration explicit expiry preserved',item:{eventStart:'2026-09-16',eventEnd:'2026-10-28',relevantDate:'2026-09-10',activityType:'Registration',discoveryDate:'2026-08-29',expireAt:'2026-09-11 00:00'},section:'NOW',state:"WHAT'S NEXT",expired:false,expirePrefix:'2026-09-11'},
+    {name:'explicit event buffer preserved',item:{eventStart:'2026-09-05 09:00',eventEnd:'2026-09-05 11:00',relevantDate:'2026-09-05',activityType:'Event',discoveryDate:'2026-08-30',expireAt:'2026-09-05 11:30'},section:'NEXT',state:'COMING UP',expired:false,expirePrefix:'2026-09-05 11:30'}
   ];
   const failures=[];
   cases.forEach(function(tc){
     const got=lifecycleDecision_(tc.item,now);
-    if(got.section!==tc.section||got.state!==tc.state||got.expired!==tc.expired){
+    if(got.section!==tc.section||got.state!==tc.state||got.expired!==tc.expired||(tc.expirePrefix&&String(got.expireAt||'').indexOf(tc.expirePrefix)!==0)){
       failures.push(tc.name+': '+JSON.stringify(got));
     }
   });
@@ -26,22 +28,37 @@ function runLifecycleSelfTest() {
   Logger.log('Lifecycle self-test passed: '+cases.length+'/'+cases.length);
 }
 
+function previewLouisburgLocalLifecycle() {
+  return lifecyclePlan_(false);
+}
+
 function runLouisburgLocalLifecycle() {
+  return lifecyclePlan_(true);
+}
+
+function lifecyclePlan_(applyChanges) {
   const ss=SpreadsheetApp.openById(LL_CONFIG.SPREADSHEET_ID);
   const sheet=ss.getSheetByName(LL_CONFIG.SHEETS.FEED);
-  if(!sheet||sheet.getLastRow()<2)return {processed:0,changed:0,expired:0};
+  if(!sheet||sheet.getLastRow()<2)return {processed:0,planned:0,changed:0,expired:0,skippedReviewHold:0};
 
   const data=sheet.getDataRange().getDisplayValues();
   const ix=headerMap_(data[0]);
   const now=new Date();
-  let processed=0,changed=0,expired=0;
+  let processed=0,planned=0,changed=0,expired=0,skippedReviewHold=0;
+  const preview=[];
 
   for(let r=1;r<data.length;r++){
     const row=data[r];
     const eligibility=cell_(row,ix,'Public Eligibility').toUpperCase();
-    if(['YES','LIMITED','REVIEW','HOLD'].indexOf(eligibility)===-1)continue;
+    if(eligibility==='REVIEW'||eligibility==='HOLD'){
+      skippedReviewHold++;
+      continue;
+    }
+    if(['YES','LIMITED'].indexOf(eligibility)===-1)continue;
 
     const item={
+      itemId:cell_(row,ix,'Item ID'),
+      organization:cell_(row,ix,'Business / Organization'),
       currentSection:cell_(row,ix,'Current Section'),
       lifecycleState:cell_(row,ix,'Lifecycle State'),
       relevantDate:cell_(row,ix,'Relevant / Event Date'),
@@ -56,20 +73,37 @@ function runLouisburgLocalLifecycle() {
     };
     processed++;
     const d=lifecycleDecision_(item,now);
-
-    changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Current Section',row,d.section);
-    changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Lifecycle State',row,d.state);
-    if(d.expireAt)changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Expire At',row,d.expireAt);
-    changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Freshness Boost',row,d.freshnessBoost);
-    changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Proximity Boost',row,d.proximityBoost);
+    const preserveState=shouldPreserveLifecycleState_(item.lifecycleState);
+    const stateToWrite=preserveState?item.lifecycleState:d.state;
     const rank=item.importanceBase+d.freshnessBoost+d.proximityBoost+item.sourceConfidence-item.fairnessPenalty;
-    changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Rank Score',row,rank);
+
+    const changes=[];
+    addLifecyclePreviewChange_(changes,row,ix,'Current Section',d.section);
+    if(!preserveState)addLifecyclePreviewChange_(changes,row,ix,'Lifecycle State',stateToWrite);
+    if(d.expireAt)addLifecyclePreviewChange_(changes,row,ix,'Expire At',d.expireAt);
+    addLifecyclePreviewChange_(changes,row,ix,'Freshness Boost',d.freshnessBoost);
+    addLifecyclePreviewChange_(changes,row,ix,'Proximity Boost',d.proximityBoost);
+    addLifecyclePreviewChange_(changes,row,ix,'Rank Score',rank);
+
+    if(changes.length){
+      planned+=changes.length;
+      if(preview.length<30)preview.push({itemId:item.itemId,organization:item.organization,changes:changes});
+      if(applyChanges){
+        changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Current Section',row,d.section);
+        if(!preserveState)changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Lifecycle State',row,stateToWrite);
+        if(d.expireAt)changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Expire At',row,d.expireAt);
+        changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Freshness Boost',row,d.freshnessBoost);
+        changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Proximity Boost',row,d.proximityBoost);
+        changed+=setLifecycleIfChanged_(sheet,r+1,ix,'Rank Score',row,rank);
+      }
+    }
     if(d.expired)expired++;
   }
 
-  SpreadsheetApp.flush();
-  Logger.log('Louisburg Local lifecycle: processed='+processed+' changed='+changed+' expired='+expired);
-  return {processed:processed,changed:changed,expired:expired};
+  if(applyChanges)SpreadsheetApp.flush();
+  Logger.log((applyChanges?'Lifecycle APPLY':'Lifecycle PREVIEW')+': processed='+processed+' planned='+planned+' changed='+changed+' expired='+expired+' skipped-review-hold='+skippedReviewHold);
+  if(preview.length)Logger.log(JSON.stringify(preview));
+  return {processed:processed,planned:planned,changed:changed,expired:expired,skippedReviewHold:skippedReviewHold,preview:preview};
 }
 
 function lifecycleDecision_(item,now) {
@@ -84,32 +118,33 @@ function lifecycleDecision_(item,now) {
   const discovery=parseLifecycleDate_(item.discoveryDate,false);
   const explicitExpire=parseLifecycleDate_(item.expireAt,true);
 
+  // An explicit Expire At value is editorial/source truth and is never extended or shortened here.
   let expire=explicitExpire;
-  let expired=false;
+  let expired=!!(explicitExpire&&nowMs>explicitExpire.getTime());
 
-  if(eventEnd){
-    expire=eventEnd;
-    expired=nowMs>eventEnd.getTime();
-  }else if(eventStart&&eventStart.getTime()<nowMs&&normalizeLifecycleDate_(item.eventStart||item.relevantDate)<today){
-    expire=endOfLifecycleDay_(eventStart);
-    expired=nowMs>expire.getTime();
+  if(!explicitExpire){
+    if(eventEnd){
+      expire=eventEnd;
+      expired=nowMs>eventEnd.getTime();
+    }else if(eventStart&&eventStart.getTime()<nowMs&&normalizeLifecycleDate_(item.eventStart||item.relevantDate)<today){
+      expire=endOfLifecycleDay_(eventStart);
+      expired=nowMs>expire.getTime();
+    }
   }
 
   const sameDayDeal=/deal|special|promotion|sale|discount|coupon/.test(type)&&String(item.currentSection||'').toUpperCase().indexOf('TODAY')!==-1;
-  if(sameDayDeal&&relevantDate){
+  if(!explicitExpire&&sameDayDeal&&relevantDate){
     const end=endOfLifecycleDateString_(relevantDate);
     expire=end;
     expired=nowMs>end.getTime();
   }
 
-  if(/new product|new offering|new product \/ offering/.test(type)&&discovery){
+  if(/new product|new offering|new product \/ offering/.test(type)&&discovery&&!explicitExpire){
     const fiveDays=new Date(discovery.getTime()+5*86400000);
     fiveDays.setHours(23,59,59,999);
-    if(!expire||fiveDays.getTime()<expire.getTime())expire=fiveDays;
+    expire=fiveDays;
     if(nowMs>fiveDays.getTime())expired=true;
   }
-
-  if(explicitExpire&&nowMs>explicitExpire.getTime())expired=true;
 
   const freshnessBoost=lifecycleFreshnessBoost_(discovery,now);
   const proximityBoost=lifecycleProximityBoost_(eventStart||parseLifecycleDate_(relevantDate,false),now,today);
@@ -135,11 +170,24 @@ function lifecycleDecision_(item,now) {
     section='TODAY';state='TODAY';
   }else if(/new product|new offering/.test(type)&&discovery){
     section='NOW';state='NEW';
-  }else{
-    section='NOW';state='NOW';
   }
 
   return {section:section,state:state,expired:false,expireAt:expire?formatLifecycleDateTime_(expire):'',freshnessBoost:freshnessBoost,proximityBoost:proximityBoost};
+}
+
+function shouldPreserveLifecycleState_(state){
+  const s=String(state||'').toUpperCase();
+  if(!s)return false;
+  if(s.indexOf('/')!==-1)return true;
+  return /FEATURED|REVIEW|ROUTINE|SPLIT|SUPPRESS|VERIFY|HOLD/.test(s);
+}
+
+function addLifecyclePreviewChange_(changes,row,ix,header,value){
+  const c=ix[header];
+  if(c==null)return;
+  const old=String(row[c]==null?'':row[c]).trim();
+  const next=String(value==null?'':value).trim();
+  if(old!==next)changes.push({field:header,from:old,to:next});
 }
 
 function lifecycleFreshnessBoost_(discovery,now){
@@ -166,7 +214,7 @@ function lifecycleProximityBoost_(eventDate,now,today){
 function lifecycleDayDiff_(fromYmd,toYmd){
   if(!fromYmd||!toYmd)return 9999;
   const a=fromYmd.split('-').map(Number),b=toYmd.split('-').map(Number);
-  return Math.round((Date.UTC(b[0],b[1]-1,b[2])-Date.UTC(a[0],a[1]-1,a[2]))/86400000);
+  return Math.round((Date.UTC(b[0],b[1]-1,b[2])-Date.UTC(a[0],a[1]-1,b[2]?b[2]:1)-0 + Date.UTC(b[0],b[1]-1,b[2]) - Date.UTC(b[0],b[1]-1,b[2]))/86400000);
 }
 
 function normalizeLifecycleDate_(v){
