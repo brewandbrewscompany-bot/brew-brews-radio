@@ -13,7 +13,7 @@ const LL_CONFIG = Object.freeze({
   RETRY_COUNT: 2,
   RETRY_BASE_MS: 750,
   MAX_BODY_CHARS: 250000,
-  USER_AGENT: 'LouisburgLocalCollector/2.1 (+public-activity-monitor)',
+  USER_AGENT: 'LouisburgLocalCollector/2.3 (+public-activity-monitor)',
 
   KEYWORDS: [
     'daily special','special today','today only','tonight','tomorrow','this weekend','limited time',
@@ -24,7 +24,10 @@ const LL_CONFIG = Object.freeze({
     'cancelled','canceled','postponed','delayed','moved','rescheduled','tickets','sign up','signup'
   ],
   LOUISBURG_TERMS: ['louisburg','louisburg ks','louisburg, ks','louisburg kansas','66053'],
-  BOILERPLATE_TERMS: ['privacy policy','all rights reserved','toggle navigation','skip to main content','pointer-events','font-size','background-color','artifactid','fingerprint','metasiteid','wixdevelopersanalytics','siteassetstestmoduleversion'],
+  BOILERPLATE_TERMS: [
+    'privacy policy','all rights reserved','toggle navigation','skip to main content','pointer-events','font-size','background-color','artifactid','fingerprint','metasiteid','wixdevelopersanalytics','siteassetstestmoduleversion',
+    'paramsbylocale','navigationitems','widgetdata','pagesearchuri','widgetsearchserviceuri','accountid','siteid','pagealias'
+  ],
   EVERGREEN_TERMS: ['office hours','directions & hours','contact us','our menu','about us','services','privacy policy','all rights reserved','we cater any event','fund raisers, open houses','weddings, birthdays, fundraisers','upcoming events for event announcements'],
   TESTIMONIAL_TERMS: ['testimonial','verified client','got married','our planner','everything was absolutely perfect','cancelled the rest after','canceled the rest after','five star','5 star','review'],
   NAVIGATION_TERMS: ['menu welcome','events promotions vendors','public calendar astronomical events','sign up for updates','follow us','view events','click here to begin','contact menu'],
