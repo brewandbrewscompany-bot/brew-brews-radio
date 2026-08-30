@@ -14,7 +14,10 @@ function runBackendTagsSelfTest() {
     {name:'hiring',text:'Hiring now hiring local job',want:'hiring'},
     {name:'community',text:'Community fundraiser public meeting',want:'community'},
     {name:'roastery designation',text:'Coffee Roastery new coffee release',designations:['LOCAL_ROASTERY'],want:'local-roastery'},
-    {name:'no inferred original',text:'Distinctive local attraction',designations:[],notWant:'louisburg-original'}
+    {name:'no inferred original',text:'Distinctive local attraction',designations:[],notWant:'louisburg-original'},
+    {name:'music at market not shopping',text:'Community / Live Music Music at the Market returns September 5',want:'music',notWant:'shopping'},
+    {name:'sports hiring not what to do',text:'Sports Hiring LRC is hiring sports officials',want:'hiring',notWant:'what-to-do'},
+    {name:'actual games are what to do',text:'Sports Youth soccer and football games are underway today',want:'what-to-do'}
   ];
   const failures=[];
   cases.forEach(function(tc){
@@ -74,11 +77,11 @@ function buildBackendTagBundleFromText_(text,designations,labelMap) {
   if(/deal|special|promotion|sale|discount|coupon|giveaway|contest/.test(s))add('promotions');
   if(/family|kid|child|youth|homeschool/.test(s)){add('family');add('kids');}
   if(/sport|soccer|football|athletic|wildcat|kickball|fishing club|golf/.test(s))add('sports');
-  if(/shopping|vendor|market|boutique|retail|flea market|open house/.test(s))add('shopping');
+  if(/shopping|vendor(?:\s+\/\s+|\s+)market|flea market|market street|boutique|retail|open house/.test(s))add('shopping');
   if(/community|fundraiser|public notice|meeting|library|church|city/.test(s))add('community');
   if(/registration|register|booking|sign-up|signup|class|camp|reservation/.test(s))add('registration');
   if(/hiring|now hiring|job opening|employment/.test(s))add('hiring');
-  if(/event|festival|ciderfest|market|registration|music|sport|meeting|class|open house/.test(s))add('what-to-do');
+  if(/event|festival|ciderfest|vendor(?:\s+\/\s+|\s+)market|flea market|registration|register|music|concert|band|\bgames?\b|match|tournament|meeting|class|open house/.test(s))add('what-to-do');
   if(/hours update|closing early|cancelled|canceled|sold out|weather change|relocation|important update/.test(s))add('right-now');
 
   const cleanDesignations=[];
