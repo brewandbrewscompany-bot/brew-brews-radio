@@ -10,22 +10,26 @@ const LL_CONFIG = Object.freeze({
     SHERLOCK: 'Sherlock Notes'
   },
 
-  // V1 remains conservative: DIRECT public sources only.
+  // V1.2 remains conservative: DIRECT public sources only.
   ALLOWED_ACCESS_METHODS: ['DIRECT'],
   MAX_ENDPOINTS_PER_RUN: 20,
   LOCK_WAIT_MS: 5000,
   RETRY_COUNT: 2,
   RETRY_BASE_MS: 750,
   MAX_BODY_CHARS: 250000,
-  USER_AGENT: 'LouisburgLocalCollector/1.1 (+public-source-monitor)',
+  USER_AGENT: 'LouisburgLocalCollector/1.2 (+public-activity-monitor)',
 
+  // These terms represent things residents can act on, consume, attend or need to know.
   KEYWORDS: [
-    'special', 'deal', 'sale', 'discount', 'today', 'tonight', 'tomorrow',
-    'live music', 'music', 'event', 'register', 'registration', 'class',
-    'opening', 'grand opening', 'closing', 'closed', 'closure', 'hours',
-    'hiring', 'now hiring', 'fundraiser', 'festival', 'market', 'menu',
-    'new product', 'launch', 'cancelled', 'canceled', 'postponed', 'delayed',
-    'moved', 'weather', 'sold out', 'rescheduled'
+    'special', 'daily special', 'deal', 'sale', 'discount', 'coupon', 'promotion',
+    'today', 'tonight', 'tomorrow', 'this weekend', 'weekend', 'available now',
+    'live music', 'music', 'band', 'concert', 'event', 'register', 'registration',
+    'class', 'workshop', 'opening', 'grand opening', 'closing', 'closed', 'closure',
+    'hours', 'hiring', 'now hiring', 'fundraiser', 'festival', 'market', 'menu',
+    'new product', 'new coffee', 'new drink', 'new menu', 'launch', 'release',
+    'fresh roasted', 'freshly roasted', 'roastery', 'coffee', 'limited time',
+    'cancelled', 'canceled', 'postponed', 'delayed', 'moved', 'weather',
+    'sold out', 'rescheduled', 'tickets', 'signup', 'sign up'
   ],
   LOUISBURG_TERMS: [
     'louisburg', 'louisburg ks', 'louisburg, ks', 'louisburg kansas', '66053'
@@ -35,6 +39,9 @@ const LL_CONFIG = Object.freeze({
   MEDIUM_INTERVAL_HOURS: 24,
   LOW_INTERVAL_HOURS: 168,
   SOURCE_BOOST_DAYS: 7,
+  ACTIVITY_SNIPPET_BEFORE: 90,
+  ACTIVITY_SNIPPET_AFTER: 180,
+  ACTIVITY_MAX_SNIPPETS: 10,
 
   // Sherlock-triggered rechecks are intentionally faster than normal scans.
   SHERLOCK_RECHECK_LIMIT_PER_RUN: 10,
