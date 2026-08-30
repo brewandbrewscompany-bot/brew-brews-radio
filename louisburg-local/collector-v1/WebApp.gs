@@ -122,6 +122,7 @@ function buildPublicFeedPayload_() {
     if (!isPublicFeedItemCurrent_(row, ix, now, today)) return;
 
     const sourceSet = cell_(row, ix, 'Source Set');
+    const originalUrl = cell_(row, ix, 'Original URL');
     const tagBundle = (typeof deriveBackendTagBundle_ === 'function')
       ? deriveBackendTagBundle_(row,ix,designationIndex,designationLabels)
       : {tags:deriveTags_(row,ix),designations:[],designationLabels:[]};
@@ -135,8 +136,10 @@ function buildPublicFeedPayload_() {
       date: cell_(row, ix, 'Relevant / Event Date'),
       time: cell_(row, ix, 'Time / Window'),
       location: cell_(row, ix, 'Location'),
-      originalUrl: cell_(row, ix, 'Original URL'),
+      originalUrl: originalUrl,
       lifecycleState: cell_(row, ix, 'Lifecycle State'),
+      expireAt: cell_(row, ix, 'Expire At'),
+      discoveryDate: cell_(row, ix, 'Discovery / Post Date'),
       activityType: cell_(row, ix, 'Business Activity Type'),
       sherlockStatus: cell_(row, ix, 'Sherlock Status'),
       likeCount: Number(cell_(row, ix, 'Like Count') || 0),
@@ -160,7 +163,8 @@ function isPublicFeedItemCurrent_(row, ix, now, today) {
   const date = normalizeFeedDate_(cell_(row, ix, 'Relevant / Event Date'));
   const expireRaw = cell_(row, ix, 'Expire At');
 
-  if ((section === 'TODAY' || lifecycle.indexOf('TODAY') !== -1) && date && date < today) return false;
+  if (section === 'ARCHIVE' || lifecycle.indexOf('EXPIRED') !== -1) return false;
+  if ((section === 'TODAY' || lifecycle.indexOf('TODAY') !== -1 || lifecycle === 'RIGHT NOW') && date && date < today) return false;
 
   if (expireRaw) {
     const expires = new Date(expireRaw);
@@ -185,11 +189,13 @@ function extractSourceMediaUrl_(sourceSet) {
   if (!raw) return '';
   try {
     const parsed = JSON.parse(raw);
-    const u = parsed.sourceMediaUrl || parsed.mediaUrl || parsed.imageUrl || '';
+    // Only explicit content-level media fields are public. Generic image URLs
+    // and free-text URL scraping can accidentally turn a homepage screenshot
+    // or unrelated stock image into post media.
+    const u = parsed.sourceMediaUrl || parsed.mediaUrl || '';
     return /^https?:\/\//i.test(String(u)) ? String(u) : '';
   } catch (ignored) {
-    const match = raw.match(/https?:\/\/[^\s,;]+\.(?:jpg|jpeg|png|webp)(?:\?[^\s,;]*)?/i);
-    return match ? match[0] : '';
+    return '';
   }
 }
 
@@ -244,15 +250,49 @@ function recordSherlockNote_(body) {
   const supportingUrl = String(body.supportingUrl || '').trim();
   const submitterKey = String(body.submitterKey || '').trim();
   if (!itemId || !noteType || !noteText || !submitterKey) throw new Error('Missing Sherlock Note fields');
-  const ss = SpreadsheetApp.openById(LL_CONFIG.SPREADSHEET_ID);
-  const feed = ss.getSheetByName(LL_CONFIG.SHEETS.FEED);
-  const sherlock = ss.getSheetByName(LL_CONFIG.SHEETS.SHERLOCK);
-  if (!feed || !sherlock) throw new Error('Sherlock storage unavailable');
-  const item = findFeedItem_(feed,itemId);
-  if (!item) throw new Error('Item not found');
-  sherlock.appendRow([Utilities.getUuid(),itemId,item.organization,noteType,noteText,fmt_(new Date()),submitterKey,/^https?:\/\//i.test(supportingUrl)?supportingUrl:'','', 'PENDING','','RELEVANT','PENDING',1,LL_CONFIG.SHERLOCK_TRUST_ANONYMOUS,'YES','','Community correction pending verification','','','','Web submission']);
-  markFeedSherlockPending_(feed,itemId);
-  return {ok:true,status:'PENDING'};
+  const duplicateKey = sherlockDuplicateKey_(itemId,noteType,submitterKey);
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) throw new Error('Sherlock is busy; try again');
+  try {
+    const ss = SpreadsheetApp.openById(LL_CONFIG.SPREADSHEET_ID);
+    const feed = ss.getSheetByName(LL_CONFIG.SHEETS.FEED);
+    const sherlock = ss.getSheetByName(LL_CONFIG.SHEETS.SHERLOCK);
+    if (!feed || !sherlock) throw new Error('Sherlock storage unavailable');
+    const item = findFeedItem_(feed,itemId);
+    if (!item) throw new Error('Item not found');
+    if (hasSherlockDuplicate_(sherlock,itemId,noteType,submitterKey,duplicateKey)) {
+      return {ok:true,duplicate:true,status:'PENDING'};
+    }
+    sherlock.appendRow([Utilities.getUuid(),itemId,item.organization,noteType,noteText,fmt_(new Date()),submitterKey,/^https?:\/\//i.test(supportingUrl)?supportingUrl:'','', 'PENDING','','RELEVANT','PENDING',1,LL_CONFIG.SHERLOCK_TRUST_ANONYMOUS,'YES','','Community correction pending verification','','','','Web submission; duplicateKey='+duplicateKey]);
+    markFeedSherlockPending_(feed,itemId);
+    return {ok:true,duplicate:false,status:'PENDING'};
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function sherlockDuplicateKey_(itemId,noteType,submitterKey) {
+  return digest_([
+    String(itemId || '').trim(),
+    String(noteType || '').trim().toLowerCase().replace(/\s+/g,' '),
+    String(submitterKey || '').trim()
+  ].join('|')).slice(0,32);
+}
+
+function hasSherlockDuplicate_(sheet,itemId,noteType,submitterKey,duplicateKey) {
+  if (!sheet || sheet.getLastRow() < 2) return false;
+  const data = sheet.getDataRange().getDisplayValues();
+  const ix = headerMap_(data[0]);
+  const wantedType = String(noteType || '').trim().toLowerCase().replace(/\s+/g,' ');
+  for (let r=1;r<data.length;r++) {
+    const admin = ix['Admin Notes'] == null ? '' : String(data[r][ix['Admin Notes']] || '');
+    if (admin.indexOf('duplicateKey='+duplicateKey) !== -1) return true;
+    if (String(data[r][ix['Item ID']] || '').trim() !== itemId) continue;
+    if (String(data[r][ix['Submitter Key']] || '').trim() !== submitterKey) continue;
+    const existingType = String(data[r][ix['Note Type']] || '').trim().toLowerCase().replace(/\s+/g,' ');
+    if (existingType === wantedType) return true;
+  }
+  return false;
 }
 
 function findFeedItem_(sheet,itemId) {
