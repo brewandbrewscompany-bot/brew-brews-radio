@@ -1,0 +1,12 @@
+{
+  "name": "louisburg-local-social-browser-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node worker.mjs",
+    "test": "node --test worker.test.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.55.0"
+  }
+}
