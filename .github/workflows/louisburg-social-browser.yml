@@ -40,10 +40,18 @@ jobs:
         working-directory: louisburg-local/social-browser-worker
         run: npx playwright install --with-deps chromium
 
-      - name: Test extraction rules
+      - name: Test Facebook extraction rules
         working-directory: louisburg-local/social-browser-worker
         run: npm test
+
+      - name: Test first-party fallback rules
+        working-directory: louisburg-local/social-browser-worker
+        run: node --test first-party-fallback.test.mjs
 
       - name: Scan public Facebook Pages
         working-directory: louisburg-local/social-browser-worker
         run: npm start
+
+      - name: Scan verified first-party fallbacks
+        working-directory: louisburg-local/social-browser-worker
+        run: node first-party-fallback.mjs
