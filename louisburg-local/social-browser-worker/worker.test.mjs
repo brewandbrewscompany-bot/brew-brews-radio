@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {canonicalPostUrl,cleanPostText,isPostFresh,parseFacebookDateLabel,shouldScanWorker} from './worker.mjs';
+import {canonicalPostUrl,cleanPostText,isPostFresh,parseFacebookDateLabel,publicFacebookPageCandidates,shouldScanWorker} from './worker.mjs';
 
 test('canonicalPostUrl keeps the public permalink and removes tracking',()=>{
   assert.equal(canonicalPostUrl('https://www.facebook.com/louisburgcidermill/posts/pfbid123?__cft__=tracking'),'https://www.facebook.com/louisburgcidermill/posts/pfbid123');
@@ -32,4 +32,11 @@ test('worker cadence respects hourly and daily queue settings',()=>{
   assert.equal(shouldScanWorker({scanMode:'META_API_PUBLIC_PAGE',lastScanAtIso:'2026-08-30T22:50:00.000Z',scanFrequency:'HOURLY'},now),true);
   assert.equal(shouldScanWorker({scanMode:'BROWSER_PUBLIC_PREVIEW',lastScanAtIso:'2026-08-30T22:30:00.000Z',scanFrequency:'HOURLY'},now),false);
   assert.equal(shouldScanWorker({scanMode:'BROWSER_PUBLIC_PREVIEW',lastScanAtIso:'2026-08-29T23:00:00.000Z',scanFrequency:'DAILY'},now),true);
+});
+
+test('numeric Facebook Pages get normal logged-out fallback surfaces',()=>{
+  const candidates=publicFacebookPageCandidates('https://www.facebook.com/450736031663124');
+  assert.ok(candidates.includes('https://www.facebook.com/450736031663124/posts'));
+  assert.ok(candidates.includes('https://m.facebook.com/450736031663124'));
+  assert.ok(candidates.includes('https://www.facebook.com/profile.php?id=450736031663124&sk=posts'));
 });
