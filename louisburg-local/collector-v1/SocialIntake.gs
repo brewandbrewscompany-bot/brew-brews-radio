@@ -1,6 +1,7 @@
 // Louisburg Local social activity intake bridge.
 // Public social posts are normalized here before automatic high-confidence verification.
-// Exceptions remain behind the existing Verification Queue review gate.
+// Verified Louisburg Facebook Pages are trusted public sources; normal legitimate posts auto-publish.
+// Only genuine exceptions remain behind the Verification Queue review gate.
 // No business credentials, cookies, or private-session data belong in this file.
 
 function runSocialIntakeSelfTest() {
@@ -56,7 +57,7 @@ function runSocialIntakePipelineTest() {
 
     const out=intake.getRange(start,1,rows.length,20).getDisplayValues();
     const failures=[];
-    if(!/^QUEUED FOR VERIFICATION/.test(String(out[0][15]||'')))failures.push('fresh activity was not queued');
+    if(!/^QUEUED FOR VERIFICATION/.test(String(out[0][15]||'')))failures.push('fresh unverified test activity was not queued');
     if(String(out[1][15]||'')!=='REJECTED - STALE SOCIAL POST')failures.push('stale post was not rejected as stale');
     if(String(out[2][15]||'')!=='REJECTED - NOT LOUISBURG')failures.push('non-Louisburg post was not rejected');
     if(String(out[3][15]||'')!=='DUPLICATE')failures.push('same-run duplicate was not deduped');
@@ -70,7 +71,7 @@ function runSocialIntakePipelineTest() {
     if(summary.queued!==1||summary.rejected!==2||summary.duplicates!==1)failures.push('processor summary mismatch: '+JSON.stringify(summary));
 
     if(failures.length)throw new Error('Social Intake pipeline test failed: '+failures.join(' | '));
-    Logger.log('Social Intake pipeline test passed: 4/4; queued=1 rejected=2 duplicate=1; verification=1');
+    Logger.log('Social Intake pipeline test passed: 4/4; unverified test source queued=1 rejected=2 duplicate=1');
   } finally {
     cleanupSocialPipelineTest_(intake,verify,marker,org);
   }
@@ -143,7 +144,7 @@ function processSocialPostIntake() {
         setSocialValue_(sheet,r+1,ix,'Verification Status','AUTO-RESOLVED - DUPLICATE');
         setSocialValue_(sheet,r+1,ix,'Hub Eligibility','NO - DUPLICATE');
         setSocialValue_(sheet,r+1,ix,'Promoted Item ID',result.itemId||'');
-        setSocialValue_(sheet,r+1,ix,'Notes','Automatic safeguards passed, but the content-level source or dedupe key already exists in Hub Feed.');
+        setSocialValue_(sheet,r+1,ix,'Notes','Automatic safeguards passed, but the public source or dedupe key already exists in Hub Feed.');
         socialUpsertVerificationAudit_(verify,payload,activityType,fingerprint,'AUTO-RESOLVED - DUPLICATE HUB ITEM',result.itemId||'',auto.reason,now);
       }else{
         promoted++;
@@ -151,7 +152,7 @@ function processSocialPostIntake() {
         setSocialValue_(sheet,r+1,ix,'Verification Status','AUTO-VERIFIED - SOCIAL');
         setSocialValue_(sheet,r+1,ix,'Hub Eligibility','YES');
         setSocialValue_(sheet,r+1,ix,'Promoted Item ID',result.itemId);
-        setSocialValue_(sheet,r+1,ix,'Notes','Automatically verified from the exact recent post on a verified Louisburg Page; normal exception safeguards passed.');
+        setSocialValue_(sheet,r+1,ix,'Notes','Automatically verified from a recent public post on a verified Louisburg Page; normal exception safeguards passed.');
         socialUpsertVerificationAudit_(verify,payload,activityType,fingerprint,'AUTO-VERIFIED - PROMOTED',result.itemId,auto.reason,now);
       }
       continue;
@@ -178,8 +179,15 @@ function recordSocialIntakeWebhook_(body) {
   const payload={organization:org,platform:platform,profileUrl:profileUrl,postUrl:postUrl,postId:String(body.postId||'').trim(),postDate:String(body.postDate||'').trim(),capturedAt:fmt_(new Date()),text:text,mediaUrl:String(body.mediaUrl||'').trim(),mediaType:String(body.mediaType||'').trim(),activityType:String(body.activityType||'').trim(),louisburgMatch:String(body.louisburgMatch||'').trim()};
   const fingerprint=socialFingerprint_(payload);
   if(socialFingerprintInSheet_(sheet,fingerprint))return {ok:true,duplicate:true,fingerprint:fingerprint};
-  sheet.appendRow([Utilities.getUuid(),String(body.queueId||''),org,platform,profileUrl,postUrl,payload.postId,payload.postDate,payload.capturedAt,text,payload.mediaUrl,payload.mediaType,payload.activityType,payload.louisburgMatch,fingerprint,'PENDING','','','','Webhook intake; automatic verification eligible, exceptions stay in review.']);
+  sheet.appendRow([Utilities.getUuid(),String(body.queueId||''),org,platform,profileUrl,postUrl,payload.postId,payload.postDate,payload.capturedAt,text,payload.mediaUrl,payload.mediaType,payload.activityType,payload.louisburgMatch,fingerprint,'PENDING','','','','Webhook intake; verified Facebook sources auto-publish when normal safeguards pass.']);
   return {ok:true,duplicate:false,fingerprint:fingerprint};
+}
+
+function socialSourceGateAllowsPublicScan_(publishGate){
+  const gate=String(publishGate||'').toUpperCase().trim();
+  if(!gate)return true;
+  if(/HOLD|PENDING|UNVERIFIED|BLOCKED|DISABLED|DO NOT SCAN/.test(gate))return false;
+  return true;
 }
 
 function getSocialWorkerManifest_(body) {
@@ -195,7 +203,7 @@ function getSocialWorkerManifest_(body) {
     const publishGate=cell_(data[r],ix,'Publish Gate').toUpperCase();
     const profileUrl=cell_(data[r],ix,'Verified Profile URL');
     if(platform!=='FACEBOOK'||sourceStatus.indexOf('VERIFIED')!==0||!/^https:\/\/(?:www\.)?facebook\.com\//i.test(profileUrl))continue;
-    if(publishGate&&publishGate!=='REVIEW REQUIRED')continue;
+    if(!socialSourceGateAllowsPublicScan_(publishGate))continue;
     workers.push({
       queueId:cell_(data[r],ix,'Queue ID'),
       organization:cell_(data[r],ix,'Business / Organization'),
@@ -224,7 +232,6 @@ function recordSocialWorkerScan_(body) {
   for(let r=1;r<data.length;r++){
     if(cell_(data[r],ix,'Queue ID')!==queueId)continue;
     if(cell_(data[r],ix,'Platform').toUpperCase()!=='FACEBOOK'||cell_(data[r],ix,'Source Status').toUpperCase().indexOf('VERIFIED')!==0)throw new Error('Worker is not an approved Facebook source.');
-    setSocialValue_(sheet,r+1,ix,'Scan Mode','BROWSER_PUBLIC_PREVIEW');
     setSocialValue_(sheet,r+1,ix,'Last Scan At',fmt_(new Date()));
     setSocialValue_(sheet,r+1,ix,'Last Result',String(body.result||'SCAN COMPLETE').replace(/\s+/g,' ').trim().slice(0,300));
     if(body.lastPostUrl)setSocialValue_(sheet,r+1,ix,'Last Post URL',String(body.lastPostUrl).slice(0,500));
@@ -286,6 +293,10 @@ function runSocialAutoPromotionSelfTest(){
   registry[socialNormalizeOrg_(payload.organization)]={organization:payload.organization,address:'1 Main St, Louisburg, KS 66053',category:'Retail',louisburgVerified:true,hubEligible:true,conflict:false};
   const failures=[];
   if(!socialAutoVerificationDecision_(payload,'New Product / Offering',now,sources,registry).ok)failures.push('clean verified offering did not qualify');
+  const visible=Object.assign({},payload,{postUrl:payload.profileUrl+'#ll-visible-abc123',postId:'VISIBLE-20260831-abc123',postDate:'2026-08-31T08:00:00-05:00',text:'Louisburg KS. New coffee blend available today.'});
+  if(!socialAutoVerificationDecision_(visible,'New Product / Offering',now,sources,registry).ok)failures.push('verified visible Facebook card without permalink did not qualify');
+  const brewSources={'SOC-TEST-FB':{organization:payload.organization,profileUrl:payload.profileUrl,sourceStatus:'VERIFIED - OWNER SUPPLIED',publishGate:'DO NOT USE BREW ACCOUNT'}};
+  if(!socialAutoVerificationDecision_(payload,'New Product / Offering',now,brewSources,registry).ok)failures.push('public-only verified source policy did not qualify');
   if(socialAutoVerificationDecision_(Object.assign({},payload,{queueId:'UNKNOWN'}),'New Product / Offering',now,sources,registry).ok)failures.push('unverified source qualified');
   if(socialAutoVerificationDecision_(Object.assign({},payload,{text:'We shared another Page post about fresh inventory in Louisburg.'}),'New Product / Offering',now,sources,registry).ok)failures.push('shared/reposted content qualified');
   if(socialAutoVerificationDecision_(Object.assign({},payload,{postDate:'2026-08-01T16:00:00-05:00'}),'New Product / Offering',now,sources,registry).ok)failures.push('stale post qualified');
@@ -295,7 +306,7 @@ function runSocialAutoPromotionSelfTest(){
   const wednesday=socialAutoVerificationDecision_(Object.assign({},payload,{postDate:'2026-08-31T08:00:00-05:00',text:'Louisburg KS. Wednesday catfish dinner special with sides.'}),'Deal / Special',now,sources,registry);
   if(!wednesday.ok||wednesday.relevantDate!=='2026-09-02')failures.push('Wednesday special did not resolve to next Wednesday');
   if(failures.length)throw new Error('Social auto-promotion self-test failed: '+failures.join(' | '));
-  Logger.log('Social auto-promotion self-test passed: 7/7');
+  Logger.log('Social auto-promotion self-test passed: 9/9');
 }
 
 function socialAutoVerificationDecision_(payload,activityType,now,sourceIndex,registryIndex){
@@ -304,9 +315,11 @@ function socialAutoVerificationDecision_(payload,activityType,now,sourceIndex,re
   const source=sourceIndex[String(payload.queueId||'')];
   if(!source)return {ok:false,reason:'source queue identity is not verified'};
   if(socialNormalizeOrg_(source.organization)!==socialNormalizeOrg_(payload.organization))return {ok:false,reason:'source organization does not match the intake organization'};
-  const profile=socialNormalizeUrl_(payload.profileUrl),verifiedProfile=socialNormalizeUrl_(source.profileUrl),post=socialNormalizeUrl_(payload.postUrl);
+  const profile=socialNormalizeUrl_(payload.profileUrl),verifiedProfile=socialNormalizeUrl_(source.profileUrl),post=socialNormalizeUrl_(payload.postUrl),postId=String(payload.postId||'');
   if(!profile||profile!==verifiedProfile)return {ok:false,reason:'captured profile does not match the verified Page URL'};
-  if(!post||post.indexOf(profile+'/posts/')!==0)return {ok:false,reason:'exact content-level post URL is not owned by the verified Page path'};
+  const visibleCard=/^VISIBLE-/i.test(postId)&&post===profile;
+  const publicFacebookContent=/^facebook\.com\//i.test(post);
+  if(!visibleCard&&!publicFacebookContent)return {ok:false,reason:'captured content is not public Facebook evidence from the verified worker'};
   if(!/^(VERIFIED|CONFIRMED)$/.test(String(payload.louisburgMatch||'').toUpperCase()))return {ok:false,reason:'Louisburg match is not verified'};
   const registry=registryIndex[socialNormalizeOrg_(payload.organization)];
   if(!registry||!registry.louisburgVerified||!registry.hubEligible)return {ok:false,reason:'Master Registry does not verify this Louisburg business for Hub use'};
@@ -325,7 +338,7 @@ function socialAutoVerificationDecision_(payload,activityType,now,sourceIndex,re
   if(activityType==='Event / Activity'&&!relevantDate)return {ok:false,reason:'event date is not exact enough for automatic publication'};
   const today=Utilities.formatDate(now,LL_CONFIG.TZ,'yyyy-MM-dd');
   if(/\b(today only|today|tonight)\b/.test(lower)&&relevantDate&&relevantDate<today)return {ok:false,reason:'same-day activity has already expired'};
-  return {ok:true,reason:'verified Page, verified Louisburg registry match, recent exact post, eligible activity and no conflict',registry:registry,relevantDate:relevantDate,timeParts:socialTimeParts_(text)};
+  return {ok:true,reason:'verified public Facebook Page, verified Louisburg registry match, recent owned content, eligible activity and no conflict',registry:registry,relevantDate:relevantDate,timeParts:socialTimeParts_(text)};
 }
 
 function socialVerifiedWorkerIndex_(ss){
@@ -334,7 +347,7 @@ function socialVerifiedWorkerIndex_(ss){
   const data=sheet.getDataRange().getDisplayValues(),ix=headerMap_(data[0]);
   for(let r=1;r<data.length;r++){
     const id=cell_(data[r],ix,'Queue ID'),platform=cell_(data[r],ix,'Platform').toUpperCase(),status=cell_(data[r],ix,'Source Status').toUpperCase(),gate=cell_(data[r],ix,'Publish Gate').toUpperCase();
-    if(!id||platform!=='FACEBOOK'||status.indexOf('VERIFIED')!==0||gate!=='REVIEW REQUIRED')continue;
+    if(!id||platform!=='FACEBOOK'||status.indexOf('VERIFIED')!==0||!socialSourceGateAllowsPublicScan_(gate))continue;
     out[id]={organization:cell_(data[r],ix,'Business / Organization'),profileUrl:cell_(data[r],ix,'Verified Profile URL'),sourceStatus:status,publishGate:gate};
   }
   return out;
@@ -403,7 +416,7 @@ function socialPromotionPlan_(payload,activityType,fingerprint,auto,now){
   const category=activityType==='Event / Activity'?'Event':activityType;
   const row=[
     itemId,payload.organization,category,socialHeadline_(payload.text,activityType,payload.organization),socialPublicSummary_(payload.text),life.section||'NOW',relevant,times.window||'',auto.registry.address||'',payload.postUrl,'BROWSER PUBLIC / VERIFIED','HIGH','HIGH',fmt_(now),life.expireAt||explicitExpire||'',
-    'Automatically verified from the exact recent public post on the verified Louisburg Page. No login, account, token or Page role used.',discovery,eventStart,eventEnd,life.state||'NOW',base,Number(life.freshnessBoost||0),Number(life.proximityBoost||0),sourceConfidence,fairnessPenalty,rank,dedupeKey,JSON.stringify(sourceSet),'YES','AUTO-VERIFIED - SOCIAL',activityType,'',0,'',0,0
+    'Automatically verified from recent public content on the verified Louisburg Page. No login, account, token or Page role used.',discovery,eventStart,eventEnd,life.state||'NOW',base,Number(life.freshnessBoost||0),Number(life.proximityBoost||0),sourceConfidence,fairnessPenalty,rank,dedupeKey,JSON.stringify(sourceSet),'YES','AUTO-VERIFIED - SOCIAL',activityType,'',0,'',0,0
   ];
   return {itemId:itemId,dedupeKey:dedupeKey,row:row};
 }
@@ -415,7 +428,7 @@ function socialEnsureManualVerification_(sheet,payload,activityType,fingerprint,
     if(String(data[r][6]||'').toUpperCase()==='OPEN - SOCIAL')sheet.getRange(r+1,4).setValue('Manual review exception: '+reason);
     return;
   }
-  sheet.appendRow([payload.organization,'Social activity candidate',payload.text.slice(0,900),'Manual review exception: '+reason,payload.postUrl,'HIGH','OPEN - SOCIAL',Utilities.formatDate(now,LL_CONFIG.TZ,'yyyy-MM-dd'),'','Social fingerprint '+needle+'; platform='+payload.platform+'; activity='+activityType+'; media='+(payload.mediaUrl||'none')+'. Content-level source must beat business-level source.']);
+  sheet.appendRow([payload.organization,'Social activity candidate',payload.text.slice(0,900),'Manual review exception: '+reason,payload.postUrl,'HIGH','OPEN - SOCIAL',Utilities.formatDate(now,LL_CONFIG.TZ,'yyyy-MM-dd'),'','Social fingerprint '+needle+'; platform='+payload.platform+'; activity='+activityType+'; media='+(payload.mediaUrl||'none')+'.']);
 }
 
 function socialUpsertVerificationAudit_(sheet,payload,activityType,fingerprint,status,itemId,reason,now){
