@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {canonicalPostUrl,cleanPostText,isPostFresh,parseFacebookDateLabel,publicFacebookPageCandidates,shouldScanWorker} from './worker.mjs';
+import {canonicalPostUrl,cleanPostText,findFacebookDateLabel,isPostFresh,parseFacebookDateLabel,publicFacebookPageCandidates,shouldScanWorker} from './worker.mjs';
 
 test('canonicalPostUrl keeps the public permalink and removes tracking',()=>{
   assert.equal(canonicalPostUrl('https://www.facebook.com/louisburgcidermill/posts/pfbid123?__cft__=tracking'),'https://www.facebook.com/louisburgcidermill/posts/pfbid123');
@@ -12,6 +12,18 @@ test('relative Facebook age becomes a fresh ISO-capable date',()=>{
   const date=parseFacebookDateLabel('1d',now);
   assert.equal(now.getTime()-date.getTime(),86400000);
   assert.equal(isPostFresh(date,now),true);
+});
+
+test('human Facebook relative labels parse too',()=>{
+  const now=new Date('2026-08-31T08:00:00-05:00');
+  assert.equal(now.getTime()-parseFacebookDateLabel('2 hrs',now).getTime(),7200000);
+  assert.equal(parseFacebookDateLabel('Just now',now).getTime(),now.getTime());
+});
+
+test('visible post text can reveal a timestamp without a permalink',()=>{
+  const now=new Date('2026-08-31T08:00:00-05:00');
+  const raw='Timber Creek Bar & Grill\n2 hrs\nMonday special: Chicken Tenders with a Side $2 off\nLike\nComment';
+  assert.equal(findFacebookDateLabel(raw,now),'2 hrs');
 });
 
 test('dated public label is parsed in the current year',()=>{
