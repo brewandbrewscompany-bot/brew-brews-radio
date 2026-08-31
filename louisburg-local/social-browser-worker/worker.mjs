@@ -74,6 +74,45 @@ export function shouldScanWorker(worker,now=new Date(),force=false){
   return now.getTime()-parsed.getTime()>=interval;
 }
 
+export function publicFacebookPageCandidates(profileUrl){
+  const raw=String(profileUrl||'').trim();
+  if(!raw)return [];
+  try{
+    const url=new URL(raw);
+    if(!/(^|\.)facebook\.com$/i.test(url.hostname))return [raw];
+    const id=String(url.searchParams.get('id')||'').trim();
+    const path=url.pathname.replace(/\/+$/,'')||'/';
+    const pathId=/^\/(\d+)$/.exec(path)?.[1]||'';
+    const candidates=[];
+    const add=value=>{if(value&&!candidates.includes(value))candidates.push(value);};
+    add(raw);
+    if(id){
+      add(`https://www.facebook.com/profile.php?id=${encodeURIComponent(id)}`);
+      add(`https://www.facebook.com/profile.php?id=${encodeURIComponent(id)}&sk=posts`);
+      add(`https://m.facebook.com/profile.php?id=${encodeURIComponent(id)}`);
+      add(`https://m.facebook.com/profile.php?id=${encodeURIComponent(id)}&sk=posts`);
+      return candidates;
+    }
+    const desktop=`https://www.facebook.com${path}`;
+    const mobile=`https://m.facebook.com${path}`;
+    add(desktop);
+    add(`${desktop}/posts`);
+    add(`${desktop}?sk=posts`);
+    add(mobile);
+    add(`${mobile}/posts`);
+    add(`${mobile}?sk=posts`);
+    if(pathId){
+      add(`https://www.facebook.com/profile.php?id=${pathId}`);
+      add(`https://www.facebook.com/profile.php?id=${pathId}&sk=posts`);
+      add(`https://m.facebook.com/profile.php?id=${pathId}`);
+      add(`https://m.facebook.com/profile.php?id=${pathId}&sk=posts`);
+    }
+    return candidates;
+  }catch{
+    return [raw];
+  }
+}
+
 function priorityRank(priority){return {HIGH:3,MEDIUM:2,LOW:1}[String(priority||'').toUpperCase()]||0;}
 
 async function postJson(endpoint,ingestKey,action,payload={}){
@@ -166,21 +205,50 @@ async function extractPost(browserContext,postUrl,worker,now){
 async function scanWorker(browserContext,worker,settings){
   const page=await browserContext.newPage();
   const now=new Date();
+  const candidates=publicFacebookPageCandidates(worker.profileUrl);
+  let sawLogin=false,sawAgeGate=false,sawReadable=false,pageIdentity='',links=[],surface='';
   try{
-    await page.goto(worker.profileUrl,{waitUntil:'domcontentloaded',timeout:45000});
-    await page.waitForTimeout(3500);
-    const finalUrl=page.url(),bodyText=await getBodyText(page);
-    const pageIdentity=(await page.locator('h1').first().innerText({timeout:5000}).catch(()=>'' )).trim();
-    if(/\/login\//i.test(finalUrl)||/^Log into Facebook/i.test(bodyText))return {result:'LOGIN ONLY - PUBLIC POSTS NOT EXPOSED',posts:[]};
-    if(/Log in to view this 18\+ content/i.test(bodyText))return {result:'AGE-GATED - PUBLIC POSTS NOT EXPOSED',posts:[]};
-    const links=(await collectPostLinks(page)).slice(0,settings.maxPostsPerPage);
-    if(!links.length)return {result:`PUBLIC PAGE READABLE; NO POST PERMALINKS EXPOSED${pageIdentity?'; identity='+pageIdentity:''}`,posts:[]};
+    for(const candidate of candidates){
+      try{
+        await page.goto(candidate,{waitUntil:'domcontentloaded',timeout:45000});
+        await page.waitForTimeout(2500);
+      }catch{
+        continue;
+      }
+      const finalUrl=page.url(),bodyText=await getBodyText(page);
+      const identity=(await page.locator('h1').first().innerText({timeout:4000}).catch(()=>'' )).trim();
+      if(identity&&!pageIdentity)pageIdentity=identity;
+      if(/Log in to view this 18\+ content/i.test(bodyText)){
+        sawAgeGate=true;
+        continue;
+      }
+      if(/\/login\//i.test(finalUrl)||/^Log into Facebook/i.test(bodyText)){
+        sawLogin=true;
+        continue;
+      }
+      sawReadable=true;
+      const found=(await collectPostLinks(page)).slice(0,settings.maxPostsPerPage);
+      if(found.length){
+        links=found;
+        surface=candidate;
+        if(identity)pageIdentity=identity;
+        break;
+      }
+    }
+    if(!links.length){
+      if(sawReadable)return {result:`PUBLIC PAGE READABLE AFTER FALLBACKS; NO POST PERMALINKS EXPOSED${pageIdentity?'; identity='+pageIdentity:''}`,posts:[]};
+      if(sawAgeGate)return {result:'AGE-GATED - PUBLIC POSTS NOT EXPOSED AFTER PUBLIC FALLBACKS',posts:[]};
+      if(sawLogin)return {result:'LOGIN ONLY - PUBLIC POSTS NOT EXPOSED AFTER PUBLIC FALLBACKS',posts:[]};
+      return {result:'PUBLIC FACEBOOK PAGE UNAVAILABLE AFTER PUBLIC FALLBACKS',posts:[]};
+    }
     const posts=[];
     for(const postUrl of links){
       const captured=await extractPost(browserContext,postUrl,worker,now);
       if(!captured.skip)posts.push(captured);
     }
-    return {result:`PUBLIC PREVIEW READABLE; permalinks=${links.length}; recent posts=${posts.length}${pageIdentity?'; identity='+pageIdentity:''}`,posts};
+    let surfaceLabel='';
+    try{surfaceLabel=new URL(surface).hostname;}catch{}
+    return {result:`PUBLIC PREVIEW READABLE; permalinks=${links.length}; recent posts=${posts.length}${surfaceLabel?'; surface='+surfaceLabel:''}${pageIdentity?'; identity='+pageIdentity:''}`,posts};
   }finally{
     await page.close();
   }
