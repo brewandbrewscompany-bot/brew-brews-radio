@@ -75,8 +75,12 @@ function runCollector_(forceScan) {
           else rejectedWeak++;
         }
         let candidateCount=0;
-        if (didChange && old.fingerprint && gate.ok && !verificationCandidateExists_(ss,org,sourceUrl,activityFingerprint)) {
-          appendVerificationCandidate_(ss,org,sourceUrl,activity,activityFingerprint,now); candidateCount=1; candidates++;
+        if (didChange && gate.ok) {
+          if(access==='DIRECT'){
+            if(appendCollectorFirstPartyIntake_(ss,org,sourceUrl,activity,activityFingerprint,now)){candidateCount=1;candidates++;}
+          }else if(old.fingerprint && !verificationCandidateExists_(ss,org,sourceUrl,activityFingerprint)){
+            appendVerificationCandidate_(ss,org,sourceUrl,activity,activityFingerprint,now);candidateCount=1;candidates++;
+          }
         }
         upsertState_(stateSheet,old.row,[key,org,sourceUrl,access,activityFingerprint,activity.contentDate||'',didChange?fmt_(now):(old.lastChange||''),fmt_(now),fmt_(now),fmt_(nextCheck_(now,priority)),0,didChange&&candidateCount?fmt_(addDays_(now,LL_CONFIG.SOURCE_BOOST_DAYS)):(old.boostUntil||''),result.status,normalized.length,social.status+'; '+gate.label,'Yes']);
       } catch (err) {
@@ -86,7 +90,8 @@ function runCollector_(forceScan) {
       }
     }
     if (!forceScan) props.setProperty('LL_COLLECTOR_CURSOR',String(cursor>=rows.length?0:cursor));
-    logSheet.appendRow([runId,fmt_(started),fmt_(new Date()),rows.length,checked,changed,candidates,failures,'Collector V2.2: '+(forceScan?'FORCE SCAN; DIRECT+SURFACE':'scheduled; DIRECT only')+'; direct='+directChecked+'; surface='+surfaceChecked+'; surface-readable='+surfaceReadable+'; surface-blocked='+surfaceBlocked+'; filtered-noise='+rejectedNoise+'; filtered-stale='+rejectedStale+'; filtered-context='+rejectedContext+'; filtered-weak='+rejectedWeak+'; batch='+considered+'/'+maxEndpoints+'; Sherlock rechecks='+sherlockChecks+'; review gate mandatory.']);
+    const intakeSummary=(typeof processSocialPostIntake==='function')?processSocialPostIntake():null;
+    logSheet.appendRow([runId,fmt_(started),fmt_(new Date()),rows.length,checked,changed,candidates,failures,'Collector V2.3: '+(forceScan?'FORCE SCAN; DIRECT+SURFACE':'scheduled; DIRECT only')+'; direct='+directChecked+'; surface='+surfaceChecked+'; surface-readable='+surfaceReadable+'; surface-blocked='+surfaceBlocked+'; filtered-noise='+rejectedNoise+'; filtered-stale='+rejectedStale+'; filtered-context='+rejectedContext+'; filtered-weak='+rejectedWeak+'; batch='+considered+'/'+maxEndpoints+'; Sherlock rechecks='+sherlockChecks+'; clean DIRECT activity routes to automatic intake; exception review only; intake='+(intakeSummary?JSON.stringify(intakeSummary):'unavailable')+'.']);
   } finally { lock.releaseLock(); }
 }
 
@@ -295,6 +300,18 @@ function normalizeText_(html){
 }
 function extractSignals_(text){const t=String(text||'');return LL_CONFIG.KEYWORDS.filter(function(k){return t.indexOf(k)!==-1;}).slice(0,20);}
 function isLouisburgRelevant_(text,org){const h=(String(text||'')+' '+String(org||'')).toLowerCase();return LL_CONFIG.LOUISBURG_TERMS.some(function(t){return h.indexOf(t)!==-1;});}
+function appendCollectorFirstPartyIntake_(ss,org,url,activity,fingerprint,now){
+  const sheet=ss.getSheetByName('Social Post Intake');
+  if(!sheet||!activity||!activity.canonical)return false;
+  const activityType=(typeof classifySocialActivity_==='function')?classifySocialActivity_(String(activity.canonical).toLowerCase()):'';
+  if(!activityType)return false;
+  const payload={organization:org,platform:'WEBSITE',profileUrl:url,postUrl:url,postId:'FIRSTPARTY-'+String(fingerprint||'').slice(0,24),postDate:now.toISOString(),text:activity.canonical,mediaUrl:'',mediaType:'',activityType:activityType,louisburgMatch:'VERIFIED'};
+  const socialFp=(typeof socialFingerprint_==='function')?socialFingerprint_(payload):digest_([org,url,fingerprint].join('|'));
+  if(typeof socialFingerprintInSheet_==='function'&&socialFingerprintInSheet_(sheet,socialFp))return false;
+  sheet.appendRow([Utilities.getUuid(),'COLLECTOR-DIRECT',org,'WEBSITE',url,url,payload.postId,payload.postDate,fmt_(now),payload.text,'','',activityType,'VERIFIED',socialFp,'PENDING','','','','Direct collector intake from active verified Source Endpoint; automatic first-party verification applies only after registry, endpoint, date, activity and conflict safeguards pass.']);
+  return true;
+}
+
 function appendVerificationCandidate_(ss,org,url,activity,fingerprint,now){
   const sheet=ss.getSheetByName(LL_CONFIG.SHEETS.VERIFY);
   if(!sheet)return;

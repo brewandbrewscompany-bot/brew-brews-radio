@@ -17,7 +17,7 @@ const LL_CONFIG = Object.freeze({
 
   KEYWORDS: [
     'daily special','special today','today only','tonight','tomorrow','this weekend','limited time',
-    'deal','discount','coupon','promotion','on sale','sale ends','available now','sold out',
+    'deal','discount','coupon','promotion','promo code','% off','open enrollment','on sale','sale ends','available now','sold out',
     'live music','concert','register now','registration open','workshop','grand opening','now open',
     'closing early','closed today','closure','now hiring','fundraiser','festival',
     'new product','new coffee','new drink','new menu','launch','release','freshly roasted',

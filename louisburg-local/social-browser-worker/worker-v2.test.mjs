@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {canonicalPostUrl,findFacebookDateLabel,parseFacebookDateLabel,publicFacebookPageCandidates} from './worker-v2.mjs';
+import {canonicalPostUrl,facebookPostBelongsToProfile,findFacebookDateLabel,parseFacebookDateLabel,publicFacebookPageCandidates} from './worker-v2.mjs';
 
 test('modern Facebook content URLs canonicalize',()=>{
   assert.equal(canonicalPostUrl('https://m.facebook.com/test/posts/pfbid123?__cft__=x'),'https://www.facebook.com/test/posts/pfbid123');
@@ -19,4 +19,11 @@ test('recent relative labels remain discoverable',()=>{
   const now=new Date('2026-08-31T10:00:00-05:00');
   assert.equal(findFacebookDateLabel('Brew and Brews Company\n2 hrs\nNew coffee blend - try it today!',now),'2 hrs');
   assert.equal(now-parseFacebookDateLabel('2 hrs',now),7200000);
+});
+
+
+test('post ownership must match the verified Facebook Page',()=>{
+  assert.equal(facebookPostBelongsToProfile('https://www.facebook.com/LouisburgKSChamber/posts/pfbid123','https://www.facebook.com/LouisburgKSChamber'),true);
+  assert.equal(facebookPostBelongsToProfile('https://www.facebook.com/louisburgsportszone/posts/pfbid123','https://www.facebook.com/LouisburgKSChamber'),false);
+  assert.equal(facebookPostBelongsToProfile('https://www.facebook.com/450736031663124/posts/pfbid123','https://www.facebook.com/450736031663124'),true);
 });

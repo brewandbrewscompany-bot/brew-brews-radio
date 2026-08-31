@@ -86,6 +86,20 @@ export function publicFacebookPageCandidates(profileUrl){
   }catch{return [raw];}
 }
 
+export function facebookOwnerKey(url){
+  try{
+    const u=new URL(String(url||''));
+    if(!/(^|\.)facebook\.com$/i.test(u.hostname))return '';
+    const id=String(u.searchParams.get('id')||'').trim();if(id)return `id:${id}`;
+    const first=u.pathname.split('/').filter(Boolean)[0]||'';
+    if(!first)return '';
+    if(/^\d+$/.test(first))return `id:${first}`;
+    if(/^(permalink\.php|story\.php|photo\.php|watch|reel|videos|profile\.php)$/i.test(first))return '';
+    return `slug:${first.toLowerCase()}`;
+  }catch{return '';}
+}
+export function facebookPostBelongsToProfile(postUrl,profileUrl){const a=facebookOwnerKey(postUrl),b=facebookOwnerKey(profileUrl);return !!a&&!!b&&a===b;}
+
 function identityKey(v){return String(v||'').toLowerCase().replace(/\b(llc|inc|company|co|kansas|ks)\b/g,' ').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
 function identityMatches(a,b){a=identityKey(a);b=identityKey(b);if(!a||!b)return true;return a===b||a.includes(b)||b.includes(a);}
 function hash12(v){return createHash('sha256').update(String(v||'')).digest('hex').slice(0,12);}
@@ -110,7 +124,7 @@ async function extractVisiblePagePosts(page,worker,now,maxPosts){
   const scopes=page.locator('article,[role="article"],[data-pagelet*="FeedUnit"],div[data-ft]');const count=Math.min(await scopes.count().catch(()=>0),30);const posts=[],seen=new Set();
   for(let i=0;i<count&&posts.length<maxPosts;i++){
     const scope=scopes.nth(i);const raw=await scope.innerText({timeout:4000}).catch(()=>'' );if(raw.length<30)continue;
-    const hrefs=await scope.locator('a[href]').evaluateAll(nodes=>nodes.map(n=>n.href)).catch(()=>[]);let exact='';for(const href of hrefs){exact=canonicalPostUrl(href);if(exact)break;}
+    const hrefs=await scope.locator('a[href]').evaluateAll(nodes=>nodes.map(n=>n.href)).catch(()=>[]);let exact='';for(const href of hrefs){exact=canonicalPostUrl(href);if(exact)break;}if(exact&&!facebookPostBelongsToProfile(exact,worker.profileUrl))continue;
     let dateLabel=findFacebookDateLabel(raw,now);if(!dateLabel){const attrs=await scope.locator('a').evaluateAll(nodes=>nodes.flatMap(n=>[n.getAttribute('aria-label'),n.getAttribute('title')]).filter(Boolean)).catch(()=>[]);for(const a of attrs){const candidate=findFacebookDateLabel(a,now)||String(a).trim();if(isPostFresh(parseFacebookDateLabel(candidate,now),now)){dateLabel=candidate;break;}}}
     const parsedDate=parseFacebookDateLabel(dateLabel,now);if(!isPostFresh(parsedDate,now))continue;
     const author=(await scope.locator('h2 a,h3 a,strong a').first().innerText({timeout:1800}).catch(()=>worker.organization)).trim()||worker.organization;if(!identityMatches(author,worker.organization))continue;
