@@ -1,6 +1,12 @@
 name: Louisburg Local public social browser
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'louisburg-local/social-browser-worker/**'
+      - '.github/workflows/louisburg-social-browser.yml'
   workflow_dispatch:
   schedule:
     - cron: '27 * * * *'
@@ -20,8 +26,8 @@ jobs:
       LL_SOCIAL_ENDPOINT: https://script.google.com/macros/s/AKfycbxw9gJBH50L_VZbgp6i_mHHnfPXAkraIqv63BA2XqWtb-XaaczXxdf89WveFkAOwV-azw/exec
       LL_SOCIAL_INGEST_KEY: ${{ secrets.LL_SOCIAL_INGEST_KEY }}
       LL_MAX_WORKERS: '25'
-      LL_FORCE_SCAN: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
-      LL_MAX_POSTS_PER_PAGE: ${{ github.event_name == 'workflow_dispatch' && '5' || '2' }}
+      LL_FORCE_SCAN: ${{ github.event_name != 'schedule' && 'true' || 'false' }}
+      LL_MAX_POSTS_PER_PAGE: ${{ github.event_name != 'schedule' && '5' || '2' }}
       TZ: America/Chicago
     steps:
       - name: Check out the existing project
@@ -40,18 +46,14 @@ jobs:
         working-directory: louisburg-local/social-browser-worker
         run: npx playwright install --with-deps chromium
 
-      - name: Test Facebook extraction rules
+      - name: Test extraction rules
         working-directory: louisburg-local/social-browser-worker
         run: npm test
-
-      - name: Test first-party fallback rules
-        working-directory: louisburg-local/social-browser-worker
-        run: node --test first-party-fallback.test.mjs
 
       - name: Scan public Facebook Pages
         working-directory: louisburg-local/social-browser-worker
         run: npm start
 
-      - name: Scan verified first-party fallbacks
+      - name: Run verified first-party fallbacks
         working-directory: louisburg-local/social-browser-worker
         run: node first-party-fallback.mjs
