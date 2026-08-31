@@ -1,0 +1,331 @@
+name: Louisburg Local routing hotfix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/louisburg-local-routing-hotfix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch collector, verification, and public Facebook ownership rules
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f'Missing patch target: {label}')
+              return text.replace(old, new, 1)
+
+          def replace_between(text, start, end, replacement, label):
+              a=text.find(start)
+              if a<0: raise SystemExit(f'Missing start target: {label}')
+              b=text.find(end,a)
+              if b<0: raise SystemExit(f'Missing end target: {label}')
+              return text[:a]+replacement+text[b:]
+
+          social_path=Path('louisburg-local/collector-v1/SocialIntake.gs')
+          s=social_path.read_text()
+          s=replace_once(s,
+              "  const sourceIndex=socialVerifiedWorkerIndex_(ss);\n  const registryIndex=socialRegistryAutoIndex_(ss);\n  const hubIndex=socialHubIndex_(feed);",
+              "  const sourceIndex=socialVerifiedWorkerIndex_(ss);\n  const registryIndex=socialRegistryAutoIndex_(ss);\n  const endpointIndex=socialFirstPartyEndpointIndex_(ss);\n  const hubIndex=socialHubIndex_(feed);",
+              'endpoint index')
+          s=replace_once(s,
+              "    const auto=socialAutoVerificationDecision_(payload,activityType,now,sourceIndex,registryIndex);",
+              "    const auto=socialAutoVerificationDecision_(payload,activityType,now,sourceIndex,registryIndex,endpointIndex);",
+              'auto decision args')
+          s=replace_once(s,
+              "  const type=classifySocialActivity_(lower);\n  if(!type)return {ok:false,reason:'NO ACTIONABLE ACTIVITY'};",
+              "  const type=String(payload.activityType||'').trim()||classifySocialActivity_(lower);\n  if(!type)return {ok:false,reason:'NO ACTIONABLE ACTIVITY'};",
+              'respect supplied activity type')
+          s=s.replace("setSocialValue_(sheet,r+1,ix,'Verification Status','AUTO-VERIFIED - SOCIAL');",
+                      "setSocialValue_(sheet,r+1,ix,'Verification Status',auto.sourceType==='FIRST_PARTY'?'AUTO-VERIFIED - FIRST PARTY':'AUTO-VERIFIED - SOCIAL');")
+          s=s.replace("setSocialValue_(sheet,r+1,ix,'Notes','Automatically verified from a recent public post on a verified Louisburg Page; normal exception safeguards passed.');",
+                      "setSocialValue_(sheet,r+1,ix,'Notes',auto.sourceType==='FIRST_PARTY'?'Automatically verified from a verified Louisburg first-party source; normal exception safeguards passed.':'Automatically verified from a recent public post on a verified Louisburg Page; normal exception safeguards passed.');")
+
+          classify_new=r'''function classifySocialActivity_(t) {
+  if(/closed today|closing early|closure|cancelled|canceled|postponed|rescheduled|delayed|sold out|hours? changed|change(?:d)? (?:our )?hours/.test(t))return 'Operational Update';
+  if(/now hiring|hiring|apply today|job opening|applications? (?:close|closing|due)/.test(t))return 'Hiring';
+  if(/daily special|special today|today only|\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+special|\bspecials?\b|\bdeal\b|discount|coupon|promo(?:tion)? code|\b\d{1,3}\s*%\s*off\b|\bsave\s+\d{1,3}\s*%\b|promotion|on sale|sale ends|buy one|get one|\bbogo\b/.test(t))return 'Deal / Special';
+  if(/new product|new coffee|new drink|new menu|launch|release|available now|now available|freshly roasted|fresh inventory|\bare here\b|\b(?:has|have) (?:officially )?arrived\b|\bjust arrived\b|\bnow in stock\b/.test(t))return 'New Product / Offering';
+  if(/live music|concert|festival|workshop|fundraiser|open house|\bevent\b|tickets|register now|registration open|open enrollment|sign up|signup|\bclass(?:es)?\b/.test(t))return 'Event / Activity';
+  if(/now open|grand opening|online ordering|new hours|extended hours/.test(t))return 'Business Update';
+  return '';
+}
+
+'''
+          s=replace_between(s,'function classifySocialActivity_(t) {','function socialFingerprint_',classify_new,'activity classifier')
+
+          auto_new=r'''function socialAutoVerificationDecision_(payload,activityType,now,sourceIndex,registryIndex,endpointIndex){
+  const platform=String(payload.platform||'').toUpperCase();
+  if(platform==='WEBSITE'||platform==='FIRST_PARTY'||platform==='DIRECT')return socialFirstPartyVerificationDecision_(payload,activityType,now,registryIndex,endpointIndex);
+  if(platform!=='FACEBOOK')return {ok:false,reason:'platform is not a supported public social or first-party source'};
+  const source=sourceIndex[String(payload.queueId||'')];
+  if(!source)return {ok:false,reason:'source queue identity is not verified'};
+  if(socialNormalizeOrg_(source.organization)!==socialNormalizeOrg_(payload.organization))return {ok:false,reason:'source organization does not match the intake organization'};
+  const profile=socialNormalizeUrl_(payload.profileUrl),verifiedProfile=socialNormalizeUrl_(source.profileUrl),post=socialNormalizeUrl_(payload.postUrl),postId=String(payload.postId||'');
+  if(!profile||profile!==verifiedProfile)return {ok:false,reason:'captured profile does not match the verified Page URL'};
+  const rawPost=String(payload.postUrl||'');
+  const visibleCard=(/^VISIBLE-/i.test(postId)||/#ll-visible-/i.test(rawPost))&&post===profile;
+  const publicFacebookContent=/^facebook\.com\//i.test(post);
+  if(!visibleCard&&!publicFacebookContent)return {ok:false,reason:'captured content is not public Facebook evidence from the verified worker'};
+  if(!visibleCard&&!socialFacebookPostBelongsToProfile_(rawPost,source.profileUrl))return {ok:false,reason:'Facebook post owner does not match the verified Page'};
+  if(!/^(VERIFIED|CONFIRMED)$/.test(String(payload.louisburgMatch||'').toUpperCase()))return {ok:false,reason:'Louisburg match is not verified'};
+  const registry=socialRegistryLookup_(registryIndex,payload.organization);
+  if(!registry||!registry.louisburgVerified||!registry.hubEligible)return {ok:false,reason:'Master Registry does not verify this Louisburg business for Hub use'};
+  if(registry.conflict)return {ok:false,reason:'Master Registry contains a conflict flag'};
+  const postDate=new Date(String(payload.postDate||''));
+  if(isNaN(postDate.getTime()))return {ok:false,reason:'post date is missing or ambiguous'};
+  const ageDays=(now.getTime()-postDate.getTime())/86400000;
+  if(ageDays<(-2/24)||ageDays>7)return {ok:false,reason:'post is outside the seven-day automatic verification window'};
+  const text=String(payload.text||'').replace(/\s+/g,' ').trim(),lower=text.toLowerCase();
+  if(/\b(shared|reposted|re-posted)\b.{0,35}\b(post|from|by)\b|\boriginally posted by\b|\bshared from\b/.test(lower))return {ok:false,reason:'shared or reposted ownership is uncertain'};
+  const allowed=['Deal / Special','New Product / Offering','Event / Activity','Business Update','Hiring','Operational Update'];
+  if(allowed.indexOf(activityType)===-1)return {ok:false,reason:'activity type is not eligible for automatic promotion'};
+  const dates=(typeof analyzeActivityDates_==='function')?analyzeActivityDates_(lower,now):{explicitPastOnly:false,pastOnly:false};
+  if(dates.explicitPastOnly||dates.pastOnly)return {ok:false,reason:'post contains only stale dates'};
+  const relevantDate=socialRelevantDate_(payload,activityType,now,dates)||socialThroughMonthDate_(lower,now);
+  if(activityType==='Event / Activity'&&!relevantDate)return {ok:false,reason:'event date is not exact enough for automatic publication'};
+  const today=Utilities.formatDate(now,LL_CONFIG.TZ,'yyyy-MM-dd');
+  if(/\b(today only|today|tonight)\b/.test(lower)&&relevantDate&&relevantDate<today)return {ok:false,reason:'same-day activity has already expired'};
+  return {ok:true,sourceType:'SOCIAL',reason:'verified public Facebook Page, verified Louisburg registry match, recent owned content, eligible activity and no conflict',registry:registry,relevantDate:relevantDate,timeParts:socialTimeParts_(text),visibleCard:visibleCard};
+}
+
+function socialFirstPartyVerificationDecision_(payload,activityType,now,registryIndex,endpointIndex){
+  const registry=socialRegistryLookup_(registryIndex,payload.organization);
+  if(!registry||!registry.louisburgVerified||!registry.hubEligible)return {ok:false,reason:'Master Registry does not verify this Louisburg business for Hub use'};
+  if(registry.conflict)return {ok:false,reason:'Master Registry contains a conflict flag'};
+  if(!/^(VERIFIED|CONFIRMED)$/.test(String(payload.louisburgMatch||'').toUpperCase()))return {ok:false,reason:'Louisburg match is not verified'};
+  if(!socialFirstPartyUrlAllowed_(payload.organization,payload.postUrl||payload.profileUrl,endpointIndex))return {ok:false,reason:'first-party URL is not an active verified DIRECT Source Endpoint'};
+  const allowed=['Deal / Special','New Product / Offering','Event / Activity','Business Update','Hiring','Operational Update'];
+  if(allowed.indexOf(activityType)===-1)return {ok:false,reason:'activity type is not eligible for automatic first-party promotion'};
+  const text=String(payload.text||'').replace(/\s+/g,' ').trim(),lower=text.toLowerCase();
+  if(text.length<20)return {ok:false,reason:'first-party activity text is too short'};
+  const dates=(typeof analyzeActivityDates_==='function')?analyzeActivityDates_(lower,now):{explicitPastOnly:false,pastOnly:false};
+  if(dates.explicitPastOnly||dates.pastOnly)return {ok:false,reason:'first-party content contains only stale dates'};
+  const relevantDate=socialRelevantDate_(payload,activityType,now,dates)||socialThroughMonthDate_(lower,now);
+  if(activityType==='Event / Activity'&&!relevantDate)return {ok:false,reason:'event date is not exact enough for automatic publication'};
+  const today=Utilities.formatDate(now,LL_CONFIG.TZ,'yyyy-MM-dd');
+  if(/\b(today only|today|tonight)\b/.test(lower)&&relevantDate&&relevantDate<today)return {ok:false,reason:'same-day activity has already expired'};
+  return {ok:true,sourceType:'FIRST_PARTY',reason:'verified DIRECT first-party endpoint, verified Louisburg registry match, current eligible activity and no conflict',registry:registry,relevantDate:relevantDate,timeParts:socialTimeParts_(text),visibleCard:false};
+}
+
+function socialRegistryLookup_(index,organization){
+  const key=socialNormalizeOrg_(organization),exact=index[key];
+  if(exact)return exact;
+  return index[key.replace(/\s+louisburg$/,'')]||null;
+}
+
+function socialFirstPartyEndpointIndex_(ss){
+  const out={},sheet=ss.getSheetByName(LL_CONFIG.SHEETS.ENDPOINTS||'Source Endpoints');
+  if(!sheet||sheet.getLastRow()<2)return out;
+  const data=sheet.getDataRange().getDisplayValues(),ix=headerMap_(data[0]);
+  for(let r=1;r<data.length;r++){
+    const org=cell_(data[r],ix,'Business / Organization'),access=cell_(data[r],ix,'Access Method').toUpperCase(),active=cell_(data[r],ix,'Active').toUpperCase(),url=cell_(data[r],ix,'Source URL');
+    if(!org||access!=='DIRECT'||!/^YES|TRUE|ACTIVE$/.test(active)||!/^https?:\/\//i.test(url))continue;
+    const keys=[socialNormalizeOrg_(org),socialNormalizeOrg_(org).replace(/\s+louisburg$/,'')];
+    keys.forEach(function(k){if(!k)return;if(!out[k])out[k]=[];out[k].push(url);});
+  }
+  return out;
+}
+
+function socialFirstPartyUrlAllowed_(organization,url,index){
+  const key=socialNormalizeOrg_(organization),list=(index[key]||index[key.replace(/\s+louisburg$/,'')]||[]),candidate=String(url||'').trim();
+  if(!candidate)return false;
+  const candNorm=socialNormalizeUrl_(candidate),candHost=socialUrlHost_(candidate);
+  for(let i=0;i<list.length;i++){
+    const endpoint=String(list[i]||'');
+    if(candNorm===socialNormalizeUrl_(endpoint))return true;
+    const endpointHost=socialUrlHost_(endpoint);
+    if(candHost&&endpointHost&&candHost===endpointHost)return true;
+  }
+  return false;
+}
+
+function socialUrlHost_(url){
+  const m=String(url||'').toLowerCase().match(/^https?:\/\/(?:www\.)?([^\/?#]+)/);
+  return m?m[1]:'';
+}
+
+function socialFacebookOwnerKey_(url){
+  const raw=String(url||'').trim().toLowerCase(),id=(raw.match(/[?&]id=(\d+)/)||[])[1]||'';
+  if(id)return 'id:'+id;
+  const m=raw.match(/^https?:\/\/(?:www\.|m\.|mbasic\.)?facebook\.com\/([^\/?#]+)/);
+  if(!m)return '';
+  const first=m[1];
+  if(/^\d+$/.test(first))return 'id:'+first;
+  if(/^(permalink\.php|story\.php|photo\.php|watch|reel|videos|profile\.php)$/.test(first))return '';
+  return 'slug:'+first;
+}
+
+function socialFacebookPostBelongsToProfile_(postUrl,profileUrl){
+  const postKey=socialFacebookOwnerKey_(postUrl),profileKey=socialFacebookOwnerKey_(profileUrl);
+  return !!postKey&&!!profileKey&&postKey===profileKey;
+}
+
+function socialThroughMonthDate_(text,now){
+  const months={january:0,february:1,march:2,april:3,may:4,june:5,july:6,august:7,september:8,october:9,november:10,december:11};
+  const m=String(text||'').toLowerCase().match(/\b(?:through|thru|until|ends? (?:in|at the end of)?|end of)\s+(january|february|march|april|may|june|july|august|september|october|november|december)(?:\s+(20\d{2}))?/);
+  if(!m)return '';
+  const year=Number(m[2]||Utilities.formatDate(now,LL_CONFIG.TZ,'yyyy')),month=months[m[1]],d=new Date(Date.UTC(year,month+1,0,12,0,0));
+  return Utilities.formatDate(d,'UTC','yyyy-MM-dd');
+}
+
+'''
+          s=replace_between(s,'function socialAutoVerificationDecision_(','function socialVerifiedWorkerIndex_',auto_new,'auto verification')
+
+          promote_new=r'''function socialPromoteToHub_(sheet,index,payload,activityType,fingerprint,auto,now){
+  const plan=socialPromotionPlan_(payload,activityType,fingerprint,auto,now);
+  const normalizedUrl=socialNormalizeUrl_(auto.visibleCard?payload.profileUrl:payload.postUrl);
+  const existing=index.byDedupe[plan.dedupeKey]||(!auto.visibleCard?index.byUrl[normalizedUrl]:'')||'';
+  if(existing)return {duplicate:true,itemId:existing};
+  const target=sheet.getLastRow()+1;
+  if(target>2)sheet.getRange(target-1,1,1,plan.row.length).copyTo(sheet.getRange(target,1,1,plan.row.length),SpreadsheetApp.CopyPasteType.PASTE_FORMAT,false);
+  sheet.getRange(target,1,1,plan.row.length).setValues([plan.row]);
+  if(normalizedUrl&&!auto.visibleCard)index.byUrl[normalizedUrl]=plan.itemId;
+  index.byDedupe[plan.dedupeKey]=plan.itemId;
+  return {duplicate:false,itemId:plan.itemId};
+}
+
+'''
+          s=replace_between(s,'function socialPromoteToHub_(','function socialPromotionPlan_',promote_new,'hub dedupe')
+
+          plan_new=r'''function socialPromotionPlan_(payload,activityType,fingerprint,auto,now){
+  const discovery=socialPostLocalDate_(payload.postDate)||Utilities.formatDate(now,LL_CONFIG.TZ,'yyyy-MM-dd'),relevant=auto.relevantDate||'',times=auto.timeParts||{window:'',start:'',end:''};
+  const eventStart=relevant&&times.start?relevant+' '+times.start:(relevant&&activityType==='Event / Activity'?relevant:'');
+  const eventEnd=relevant&&times.end?relevant+' '+times.end:'';
+  let explicitExpire='';
+  if(activityType==='Deal / Special')explicitExpire=relevant?relevant+' 23:59':socialEndOfAddedDay_(discovery,5);
+  if(activityType==='Hiring'||activityType==='Business Update')explicitExpire=relevant?relevant+' 23:59':socialEndOfAddedDay_(discovery,14);
+  if(activityType==='Operational Update')explicitExpire=relevant?relevant+' 23:59':socialEndOfAddedDay_(discovery,3);
+  const item={currentSection:'NOW',relevantDate:relevant,eventStart:eventStart,eventEnd:eventEnd,activityType:activityType,discoveryDate:discovery,expireAt:explicitExpire};
+  const life=(typeof lifecycleDecision_==='function')?lifecycleDecision_(item,now):{section:relevant?'COMING UP':'NOW',state:'NOW',expireAt:explicitExpire,freshnessBoost:20,proximityBoost:0};
+  const base=socialImportanceBase_(activityType),sourceConfidence=15,fairnessPenalty=0;
+  const rank=base+Number(life.freshnessBoost||0)+Number(life.proximityBoost||0)+sourceConfidence-fairnessPenalty;
+  const itemId='SOC-'+String(fingerprint||'').slice(0,16).toUpperCase();
+  const dedupeKey=socialActivityDedupeKey_(payload,activityType,auto);
+  const sourceUrl=auto.visibleCard?payload.profileUrl:payload.postUrl;
+  const sourceSet={sourceType:auto.sourceType==='FIRST_PARTY'?'FIRST_PARTY_WEBSITE':(auto.visibleCard?'FACEBOOK_PUBLIC_PAGE_VISIBLE':'FACEBOOK_PUBLIC_POST'),profileUrl:payload.profileUrl,sourcePostUrl:sourceUrl};
+  if(/^https?:\/\//i.test(String(payload.mediaUrl||'')))sourceSet.sourceMediaUrl=payload.mediaUrl;
+  const category=activityType==='Event / Activity'?'Event':activityType;
+  const access=auto.sourceType==='FIRST_PARTY'?'DIRECT / FIRST-PARTY VERIFIED':'BROWSER PUBLIC / VERIFIED';
+  const verification=auto.sourceType==='FIRST_PARTY'?'AUTO-VERIFIED - FIRST PARTY':'AUTO-VERIFIED - SOCIAL';
+  const note=auto.sourceType==='FIRST_PARTY'?'Automatically verified from an active verified Louisburg DIRECT first-party endpoint.':'Automatically verified from recent public content on the verified Louisburg Page. No login, account, token or Page role used.';
+  const row=[
+    itemId,payload.organization,category,socialHeadline_(payload.text,activityType,payload.organization),socialPublicSummary_(payload.text),life.section||'NOW',relevant,times.window||'',auto.registry.address||'',sourceUrl,access,'HIGH','HIGH',fmt_(now),life.expireAt||explicitExpire||'',
+    note,discovery,eventStart,eventEnd,life.state||'NOW',base,Number(life.freshnessBoost||0),Number(life.proximityBoost||0),sourceConfidence,fairnessPenalty,rank,dedupeKey,JSON.stringify(sourceSet),'YES',verification,activityType,'',0,'',0,0
+  ];
+  return {itemId:itemId,dedupeKey:dedupeKey,row:row};
+}
+
+function socialActivityDedupeKey_(payload,activityType,auto){
+  const text=String(payload.text||'').toLowerCase().replace(/https?:\/\/\S+/g,' ').replace(/#[a-z0-9_]+/g,' ').replace(/[^a-z0-9%$]+/g,' ').replace(/\s+/g,' ').trim();
+  const date=String(auto.relevantDate||socialPostLocalDate_(payload.postDate)||''),window=String((auto.timeParts||{}).window||'');
+  return 'activity|'+digest_([socialNormalizeOrg_(payload.organization),String(activityType||'').toLowerCase(),text,date,window].join('|')).slice(0,40);
+}
+
+'''
+          s=replace_between(s,'function socialPromotionPlan_(','function socialEnsureManualVerification_',plan_new,'promotion plan')
+          social_path.write_text(s)
+
+          collector_path=Path('louisburg-local/collector-v1/Collector.gs')
+          c=collector_path.read_text()
+          old_block="""        let candidateCount=0;\n        if (didChange && old.fingerprint && gate.ok && !verificationCandidateExists_(ss,org,sourceUrl,activityFingerprint)) {\n          appendVerificationCandidate_(ss,org,sourceUrl,activity,activityFingerprint,now); candidateCount=1; candidates++;\n        }"""
+          new_block="""        let candidateCount=0;\n        if (didChange && gate.ok) {\n          if(access==='DIRECT'){\n            if(appendCollectorFirstPartyIntake_(ss,org,sourceUrl,activity,activityFingerprint,now)){candidateCount=1;candidates++;}\n          }else if(old.fingerprint && !verificationCandidateExists_(ss,org,sourceUrl,activityFingerprint)){\n            appendVerificationCandidate_(ss,org,sourceUrl,activity,activityFingerprint,now);candidateCount=1;candidates++;\n          }\n        }"""
+          c=replace_once(c,old_block,new_block,'collector candidate routing')
+          c=replace_once(c,
+              "    if (!forceScan) props.setProperty('LL_COLLECTOR_CURSOR',String(cursor>=rows.length?0:cursor));\n    logSheet.appendRow([runId,fmt_(started),fmt_(new Date()),rows.length,checked,changed,candidates,failures,'Collector V2.2: '",
+              "    if (!forceScan) props.setProperty('LL_COLLECTOR_CURSOR',String(cursor>=rows.length?0:cursor));\n    const intakeSummary=(typeof processSocialPostIntake==='function')?processSocialPostIntake():null;\n    logSheet.appendRow([runId,fmt_(started),fmt_(new Date()),rows.length,checked,changed,candidates,failures,'Collector V2.3: '",
+              'collector processes intake')
+          c=c.replace("+'; review gate mandatory.']);", "+'; clean DIRECT activity routes to automatic intake; exception review only; intake='+(intakeSummary?JSON.stringify(intakeSummary):'unavailable')+'.']);")
+          helper=r'''function appendCollectorFirstPartyIntake_(ss,org,url,activity,fingerprint,now){
+  const sheet=ss.getSheetByName('Social Post Intake');
+  if(!sheet||!activity||!activity.canonical)return false;
+  const activityType=(typeof classifySocialActivity_==='function')?classifySocialActivity_(String(activity.canonical).toLowerCase()):'';
+  if(!activityType)return false;
+  const payload={organization:org,platform:'WEBSITE',profileUrl:url,postUrl:url,postId:'FIRSTPARTY-'+String(fingerprint||'').slice(0,24),postDate:now.toISOString(),text:activity.canonical,mediaUrl:'',mediaType:'',activityType:activityType,louisburgMatch:'VERIFIED'};
+  const socialFp=(typeof socialFingerprint_==='function')?socialFingerprint_(payload):digest_([org,url,fingerprint].join('|'));
+  if(typeof socialFingerprintInSheet_==='function'&&socialFingerprintInSheet_(sheet,socialFp))return false;
+  sheet.appendRow([Utilities.getUuid(),'COLLECTOR-DIRECT',org,'WEBSITE',url,url,payload.postId,payload.postDate,fmt_(now),payload.text,'','',activityType,'VERIFIED',socialFp,'PENDING','','','','Direct collector intake from active verified Source Endpoint; automatic first-party verification applies only after registry, endpoint, date, activity and conflict safeguards pass.']);
+  return true;
+}
+
+'''
+          c=replace_once(c,'function appendVerificationCandidate_(ss,org,url,activity,fingerprint,now){',helper+'function appendVerificationCandidate_(ss,org,url,activity,fingerprint,now){','collector intake helper')
+          collector_path.write_text(c)
+
+          config_path=Path('louisburg-local/collector-v1/Config.gs')
+          cfg=config_path.read_text()
+          cfg=replace_once(cfg,
+              "    'deal','discount','coupon','promotion','on sale','sale ends','available now','sold out',",
+              "    'deal','discount','coupon','promotion','promo code','% off','open enrollment','on sale','sale ends','available now','sold out',",
+              'collector keyword coverage')
+          config_path.write_text(cfg)
+
+          worker_path=Path('louisburg-local/social-browser-worker/worker-v2.mjs')
+          w=worker_path.read_text()
+          owner_helper=r'''export function facebookOwnerKey(url){
+  try{
+    const u=new URL(String(url||''));
+    if(!/(^|\.)facebook\.com$/i.test(u.hostname))return '';
+    const id=String(u.searchParams.get('id')||'').trim();if(id)return `id:${id}`;
+    const first=u.pathname.split('/').filter(Boolean)[0]||'';
+    if(!first)return '';
+    if(/^\d+$/.test(first))return `id:${first}`;
+    if(/^(permalink\.php|story\.php|photo\.php|watch|reel|videos|profile\.php)$/i.test(first))return '';
+    return `slug:${first.toLowerCase()}`;
+  }catch{return '';}
+}
+export function facebookPostBelongsToProfile(postUrl,profileUrl){const a=facebookOwnerKey(postUrl),b=facebookOwnerKey(profileUrl);return !!a&&!!b&&a===b;}
+
+'''
+          w=replace_once(w,'function identityKey(v){',owner_helper+'function identityKey(v){','facebook ownership helper')
+          old="let exact='';for(const href of hrefs){exact=canonicalPostUrl(href);if(exact)break;}"
+          new="let exact='';for(const href of hrefs){exact=canonicalPostUrl(href);if(exact)break;}if(exact&&!facebookPostBelongsToProfile(exact,worker.profileUrl))continue;"
+          w=replace_once(w,old,new,'reject wrong-page post owner')
+          worker_path.write_text(w)
+
+          test_path=Path('louisburg-local/social-browser-worker/worker-v2.test.mjs')
+          t=test_path.read_text()
+          t=replace_once(t,
+              "import {canonicalPostUrl,findFacebookDateLabel,parseFacebookDateLabel,publicFacebookPageCandidates} from './worker-v2.mjs';",
+              "import {canonicalPostUrl,facebookPostBelongsToProfile,findFacebookDateLabel,parseFacebookDateLabel,publicFacebookPageCandidates} from './worker-v2.mjs';",
+              'test import')
+          t += """\n\ntest('post ownership must match the verified Facebook Page',()=>{\n  assert.equal(facebookPostBelongsToProfile('https://www.facebook.com/LouisburgKSChamber/posts/pfbid123','https://www.facebook.com/LouisburgKSChamber'),true);\n  assert.equal(facebookPostBelongsToProfile('https://www.facebook.com/louisburgsportszone/posts/pfbid123','https://www.facebook.com/LouisburgKSChamber'),false);\n  assert.equal(facebookPostBelongsToProfile('https://www.facebook.com/450736031663124/posts/pfbid123','https://www.facebook.com/450736031663124'),true);\n});\n"""
+          test_path.write_text(t)
+          PY
+
+      - name: Syntax check Apps Script source
+        run: |
+          cp louisburg-local/collector-v1/SocialIntake.gs /tmp/SocialIntake.js
+          cp louisburg-local/collector-v1/Collector.gs /tmp/Collector.js
+          cp louisburg-local/collector-v1/Config.gs /tmp/Config.js
+          node --check /tmp/SocialIntake.js
+          node --check /tmp/Collector.js
+          node --check /tmp/Config.js
+
+      - name: Run browser worker tests
+        working-directory: louisburg-local/social-browser-worker
+        run: |
+          npm install --no-audit --no-fund
+          npm test
+
+      - name: Commit verified hotfix and remove one-time workflow
+        run: |
+          rm .github/workflows/louisburg-local-routing-hotfix.yml
+          git config user.name 'brewandbrewscompany-bot'
+          git config user.email 'brewandbrewscompany-bot@users.noreply.github.com'
+          git add louisburg-local/collector-v1/SocialIntake.gs louisburg-local/collector-v1/Collector.gs louisburg-local/collector-v1/Config.gs louisburg-local/social-browser-worker/worker-v2.mjs louisburg-local/social-browser-worker/worker-v2.test.mjs .github/workflows/louisburg-local-routing-hotfix.yml
+          git commit -m 'Fix Louisburg Local auto-verification routing and source ownership'
+          git push origin HEAD:main
