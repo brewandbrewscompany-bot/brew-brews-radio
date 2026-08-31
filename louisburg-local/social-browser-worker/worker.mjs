@@ -111,6 +111,14 @@ async function extractMedia(article){
   return images.length?{mediaUrl:images[0].src,mediaType:'IMAGE'}:{mediaUrl:'',mediaType:''};
 }
 
+async function findPostScope(page){
+  for(const selector of ['[role="dialog"] article','main article','article','[role="dialog"]','main']){
+    const candidate=page.locator(selector).first();
+    if(await candidate.count())return candidate;
+  }
+  return page.locator('body');
+}
+
 async function extractPost(browserContext,postUrl,worker,now){
   const page=await browserContext.newPage();
   try{
@@ -118,9 +126,10 @@ async function extractPost(browserContext,postUrl,worker,now){
     await page.waitForTimeout(2500);
     const finalUrl=page.url();
     if(/\/login\//i.test(finalUrl))return {skip:'LOGIN REQUIRED'};
-    const article=page.locator('[role="dialog"] article, main article, article').first();
-    await article.waitFor({state:'attached',timeout:15000});
-    const timestampLink=article.locator('a[href*="/posts/"]').first();
+    const article=await findPostScope(page);
+    let timestampLink=article.locator('a[href*="/posts/"]').first();
+    if(!await timestampLink.count())timestampLink=page.locator('a[href*="/posts/"]').first();
+    if(!await timestampLink.count())return {skip:'PUBLIC POST PERMALINK DID NOT RENDER'};
     const dateLabel=(await timestampLink.innerText({timeout:8000}).catch(()=>'' )).replace(/\s+/g,' ').trim();
     const parsedDate=parseFacebookDateLabel(dateLabel,now);
     if(!isPostFresh(parsedDate,now))return {skip:`STALE OR UNKNOWN DATE (${dateLabel||'none'})`};
