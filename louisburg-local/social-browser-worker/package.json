@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node worker.mjs",
-    "test": "node --test worker.test.mjs"
+    "start": "node worker-v2.mjs",
+    "test": "node --test worker.test.mjs worker-v2.test.mjs"
   },
   "dependencies": {
     "playwright": "1.55.0"
