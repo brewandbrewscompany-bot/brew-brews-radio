@@ -40,15 +40,14 @@ jobs:
               raise SystemExit('Expected render block not found; refusing broad rewrite')
           s=s.replace(old_render,new_render,1)
           p.write_text(s)
-          PY
-          node --check <(python - <<'PY'
-          from pathlib import Path
+
           import re
-          s=Path('louisburg-local/web-v3/index.html').read_text()
           m=re.search(r'<script>\s*(.*?)\s*</script>',s,re.S)
-          print(m.group(1))
+          if not m:
+              raise SystemExit('Frontend script block not found')
+          Path('/tmp/louisburg-frontend-check.js').write_text(m.group(1))
           PY
-          )
+          node --check /tmp/louisburg-frontend-check.js
           git diff --check
           if git diff --quiet; then
             echo 'No changes required.'
