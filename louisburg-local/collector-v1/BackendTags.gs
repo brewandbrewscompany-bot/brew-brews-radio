@@ -5,9 +5,14 @@
 function runBackendTagsSelfTest() {
   const cases=[
     {name:'food',text:'Food / Special featured dish dinner',want:'food'},
-    {name:'timber creek chicken special',text:'Monday chicken tender and domestic bottle specials at Timber Creek',want:'food'},
-    {name:'wednesday catfish deal',text:'Wednesday catfish dinner special with fries and a side',want:'food'},
-    {name:'food deal keeps promotion',text:'Wednesday catfish deal special',want:'promotions'},
+    {name:'timber creek chicken special',text:'Deal / Special Monday chicken tender and domestic bottle specials at Timber Creek. $2 off Chicken Tenders with a Side, plus domestic bottles for $3.75.',want:'food'},
+    {name:'wednesday catfish deal',text:'Deal / Special Wednesday special fried catfish with curly fries or regular fries and a small side of coleslaw for $13.99!',want:'food'},
+    {name:'food deal keeps promotion',text:'Deal / Special Wednesday catfish dinner special for $13.99',want:'promotions'},
+    {name:'ciderfest pancake incidental',text:'Event Ciderfest returns for two fall weekends with the Lions Club pancake breakfast, crafts, vendors and family activities. Admission and parking are free.',notWant:'food'},
+    {name:'music at restaurant is not food',text:'Event Live music Friday night at Timber Creek Bar & Grill. Band starts at 8 PM.',notWant:'food'},
+    {name:'bakery registration is not food',text:'Registration Sign up for our fall business workshop hosted at the bakery.',notWant:'food'},
+    {name:'coffee product is food',text:'New Product / Offering New seasonal coffee is available now in 12 oz bags for $14.',want:'food'},
+    {name:'restaurant meal offer is food',text:'Deal / Special Burger basket with fries is $9.99 today from 11 AM to 2 PM.',want:'food'},
     {name:'music',text:'Live Music band concert',want:'music'},
     {name:'promotion',text:'Deal / Special discount promotion',want:'promotions'},
     {name:'kids',text:'Kids youth family event',want:'kids'},
@@ -27,7 +32,7 @@ function runBackendTagsSelfTest() {
     const got=buildBackendTagBundleFromText_(tc.text,tc.designations||[],designationLabelDefaults_());
     const tags=(' '+got.tags+' ');
     if(tc.want&&tags.indexOf(' '+tc.want+' ')===-1)failures.push(tc.name+': missing '+tc.want+' in '+got.tags);
-    if(tc.notWant&&tags.indexOf(' '+tc.notWant+' ')!==-1)failures.push(tc.name+': unexpectedly contained '+tc.notWant);
+    if(tc.notWant&&tags.indexOf(' '+tc.notWant+' ')!==-1)failures.push(tc.name+': unexpectedly contained '+tc.notWant+'; food='+JSON.stringify(got.foodContext||{}));
   });
   if(failures.length)throw new Error('Backend tags self-test failed: '+failures.join(' | '));
   Logger.log('Backend tags self-test passed: '+cases.length+'/'+cases.length);
@@ -50,7 +55,7 @@ function previewBackendTagCoverage() {
     const bundle=deriveBackendTagBundle_(row,ix,registry,labels);
     items++;
     if(bundle.designations.length)designated++;
-    if(preview.length<30)preview.push({id:cell_(row,ix,'Item ID'),organization:cell_(row,ix,'Business / Organization'),tags:bundle.tags,designations:bundle.designations,designationLabels:bundle.designationLabels});
+    if(preview.length<30)preview.push({id:cell_(row,ix,'Item ID'),organization:cell_(row,ix,'Business / Organization'),tags:bundle.tags,foodContext:bundle.foodContext,designations:bundle.designations,designationLabels:bundle.designationLabels});
   }
   Logger.log('Backend tag preview: items='+items+' designated='+designated);
   Logger.log(JSON.stringify(preview));
@@ -70,15 +75,17 @@ function deriveBackendTagBundle_(row,ix,registryIndex,labelMap) {
 }
 
 function buildBackendTagBundleFromText_(text,designations,labelMap) {
-  const s=String(text||'').toLowerCase();
+  const s=String(text||'').toLowerCase().replace(/\s+/g,' ').trim();
   const tags=[];
   function add(tag){if(tags.indexOf(tag)===-1)tags.push(tag);}
 
-  // Food is a secondary/navigation category, independent of the primary activity type.
-  // Keep this vocabulary broad enough that specials such as chicken tenders or catfish
-  // remain Food even when their primary type is Deal / Special.
-  if(/food|drink|coffee|restaurant|cafe|steak|menu|dining|barbecue|ice cream|cider|burger|chicken|tender|catfish|\bfish\b|pizza|taco|sandwich|breakfast|brunch|lunch|dinner|meal|entree|wings|fries|bottle special|beer|wine/.test(s)){add('food');add('food-drink');}
-  if(/coffee|espresso|roast|roastery/.test(s))add('coffee');
+  // Food is classified from the meaning of the whole post, not from a single trigger word.
+  // A food/drink noun is evidence only. The post also needs offering/menu/price/availability
+  // context unless the primary activity itself is explicitly food-related.
+  const foodContext=classifyFoodContext_(s);
+  if(foodContext.classification==='FOOD_OFFERING'){add('food');add('food-drink');}
+
+  if(/coffee|espresso|roast|roastery/.test(s)&&foodContext.classification==='FOOD_OFFERING')add('coffee');
   if(/music|concert|band|dj|karaoke|trivia|live entertainment/.test(s))add('music');
   if(/deal|special|promotion|sale|discount|coupon|giveaway|contest/.test(s))add('promotions');
   if(/family|kid|child|youth|homeschool/.test(s)){add('family');add('kids');}
@@ -103,7 +110,67 @@ function buildBackendTagBundleFromText_(text,designations,labelMap) {
     designationLabels.push((labelMap&&labelMap[c])||designationLabelDefaults_()[c]);
   });
 
-  return {tags:tags.join(' '),designations:cleanDesignations,designationLabels:designationLabels};
+  return {tags:tags.join(' '),foodContext:foodContext,designations:cleanDesignations,designationLabels:designationLabels};
+}
+
+function classifyFoodContext_(text){
+  const s=String(text||'').toLowerCase().replace(/\s+/g,' ').trim();
+  if(!s)return {classification:'NON_FOOD',score:0,reason:'empty'};
+
+  // Evidence families. These are deliberately used together instead of as standalone tags.
+  const foodNoun=/\b(food|meal|dish|entree|breakfast|brunch|lunch|dinner|burger|hamburger|chicken|tenders?|catfish|fish|steak|ribeye|filet|pizza|tacos?|sandwich|wings|fries|coleslaw|barbecue|bbq|ice cream|coffee|espresso|latte|cappuccino|cider|beer|wine|cocktail|mimosa|bloody mary|bottle|drink|beverage)\b/g;
+  const directOffer=/\b(special|deal|menu|served|serving|order|available|offering|featured|comes with|with a side|choice of|your choice|plate|basket|combo|freshly roasted|fresh inventory|in stock)\b/g;
+  const commerce=/\$\s?\d|\b\d+(?:\.\d{2})?\s*(?:dollars?|off)\b|\bbuy one\b|\bbogo\b|\bpercent off\b|\bdiscount\b/g;
+  const immediacy=/\b(today|tonight|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|daily|this week|available now|now available|until \d|from \d|starts? at \d)\b/g;
+  const eventFrame=/\b(event|festival|ciderfest|concert|music|band|crafts?|vendors?|family activities|parade|fair|meeting|fundraiser|registration|register|workshop|class|open house|tournament|games?)\b/g;
+  const nonFoodPurpose=/\b(hiring|job opening|apply now|registration|register|workshop|class|meeting|concert|live music|band|parade|crafts?|vendors?|family activities)\b/g;
+
+  const foodHits=countRegexHits_(s,foodNoun);
+  const offerHits=countRegexHits_(s,directOffer);
+  const commerceHits=countRegexHits_(s,commerce);
+  const timeHits=countRegexHits_(s,immediacy);
+  const eventHits=countRegexHits_(s,eventFrame);
+  const nonFoodHits=countRegexHits_(s,nonFoodPurpose);
+
+  // Strong structural clues that the actual thing being promoted is food/drink.
+  const explicitFoodPrimary=/\b(food\s*\/|food special|drink special|meal special|dinner special|lunch special|breakfast special|menu special|new coffee|new drink|new menu|coffee release|freshly roasted)\b/.test(s);
+  const pricedFood=foodHits>0&&commerceHits>0;
+  const offeredFood=foodHits>0&&offerHits>0;
+  const timedFood=foodHits>0&&timeHits>0&&(offerHits>0||commerceHits>0);
+
+  let score=0;
+  score+=Math.min(foodHits,4)*2;
+  score+=Math.min(offerHits,3)*2;
+  score+=Math.min(commerceHits,2)*3;
+  score+=Math.min(timeHits,2);
+  if(explicitFoodPrimary)score+=5;
+  if(pricedFood)score+=4;
+  if(offeredFood)score+=3;
+  if(timedFood)score+=2;
+
+  // Incidental-food protection: events/classes/etc. can mention pancakes, drinks, a venue,
+  // or a restaurant without making the post a Food destination.
+  if(eventHits>=2&&foodHits===1&&commerceHits===0&&offerHits===0)score-=8;
+  if(nonFoodHits>=1&&foodHits===1&&commerceHits===0&&offerHits===0)score-=6;
+  if(/\b(hosted at|located at|at the)\s+(?:restaurant|bar|cafe|coffee shop|bakery)\b/.test(s)&&commerceHits===0&&offerHits===0)score-=5;
+  if(/\bwith (?:a|the) (?:pancake breakfast|meal|refreshments?|snacks?)\b/.test(s)&&eventHits>=1&&commerceHits===0)score-=4;
+
+  let classification='NON_FOOD';
+  if(score>=8&&(foodHits>=1)&&(explicitFoodPrimary||pricedFood||offeredFood||timedFood))classification='FOOD_OFFERING';
+  else if(foodHits>0)classification='FOOD_INCIDENTAL';
+
+  return {
+    classification:classification,
+    score:score,
+    reason:'food='+foodHits+', offer='+offerHits+', price='+commerceHits+', time='+timeHits+', event='+eventHits+', nonFoodPurpose='+nonFoodHits
+  };
+}
+
+function countRegexHits_(text,re){
+  const flags=re.flags.indexOf('g')===-1?re.flags+'g':re.flags;
+  const copy=new RegExp(re.source,flags);
+  const m=String(text||'').match(copy);
+  return m?m.length:0;
 }
 
 function buildRegistryDesignationIndex_(ss) {
