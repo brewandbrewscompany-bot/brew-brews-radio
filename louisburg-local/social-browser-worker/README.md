@@ -20,3 +20,5 @@ Required environment:
 - `LL_FORCE_SCAN`: optional manual-test override. Normal scheduled runs respect each queue row's hourly/daily cadence.
 
 The verification gate remains mandatory. A browser capture is discovery evidence, not automatic publication approval.
+
+<!-- manual full-pipeline scan trigger: 2026-08-31 -->
