@@ -26,7 +26,7 @@ jobs:
       LL_SOCIAL_ENDPOINT: https://script.google.com/macros/s/AKfycbxw9gJBH50L_VZbgp6i_mHHnfPXAkraIqv63BA2XqWtb-XaaczXxdf89WveFkAOwV-azw/exec
       LL_SOCIAL_INGEST_KEY: ${{ secrets.LL_SOCIAL_INGEST_KEY }}
       LL_MAX_WORKERS: '25'
-      LL_FORCE_SCAN: ${{ github.event_name != 'schedule' && 'true' || 'false' }}
+      LL_FORCE_SCAN: 'true'
       LL_MAX_POSTS_PER_PAGE: '8'
       TZ: America/Chicago
     steps:
