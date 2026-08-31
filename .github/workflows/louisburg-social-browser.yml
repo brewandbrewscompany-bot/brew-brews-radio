@@ -27,7 +27,7 @@ jobs:
       LL_SOCIAL_INGEST_KEY: ${{ secrets.LL_SOCIAL_INGEST_KEY }}
       LL_MAX_WORKERS: '25'
       LL_FORCE_SCAN: ${{ github.event_name != 'schedule' && 'true' || 'false' }}
-      LL_MAX_POSTS_PER_PAGE: ${{ github.event_name != 'schedule' && '5' || '2' }}
+      LL_MAX_POSTS_PER_PAGE: '8'
       TZ: America/Chicago
     steps:
       - name: Check out the existing project
