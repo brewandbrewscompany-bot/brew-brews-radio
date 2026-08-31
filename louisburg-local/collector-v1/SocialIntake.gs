@@ -279,7 +279,7 @@ function socialFingerprintInSheet_(sheet,fingerprint){if(sheet.getLastRow()<2)re
 function socialVerificationExists_(sheet,url,fingerprint){if(!sheet||sheet.getLastRow()<2)return false;const data=sheet.getDataRange().getDisplayValues(),needle=String(fingerprint||'').slice(0,16);for(let r=1;r<data.length;r++){if(String(data[r][4]||'').trim()===url&&String(data[r][9]||'').indexOf(needle)!==-1)return true;}return false;}
 
 function runSocialAutoPromotionSelfTest(){
-  const now=new Date('2026-08-31T01:00:00-05:00');
+  const now=new Date('2026-08-31T10:00:00-05:00');
   const payload={queueId:'SOC-TEST-FB',organization:'Test Louisburg Business',platform:'FACEBOOK',profileUrl:'https://www.facebook.com/testlouisburg',postUrl:'https://www.facebook.com/testlouisburg/posts/pfbid123',postId:'pfbid123',postDate:'2026-08-30T16:00:00-05:00',text:'Apples are here at the Louisburg store! Fresh inventory is now available.',mediaUrl:'https://example.com/post.jpg',mediaType:'IMAGE',louisburgMatch:'VERIFIED'};
   const sources={'SOC-TEST-FB':{organization:payload.organization,profileUrl:payload.profileUrl,sourceStatus:'VERIFIED',publishGate:'REVIEW REQUIRED'}};
   const registry={};
