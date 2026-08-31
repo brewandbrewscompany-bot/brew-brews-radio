@@ -16,7 +16,7 @@ permissions:
 
 concurrency:
   group: louisburg-local-public-social-browser
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   scan-public-facebook-pages:
