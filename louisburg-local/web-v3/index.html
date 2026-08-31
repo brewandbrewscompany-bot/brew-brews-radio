@@ -146,6 +146,7 @@
     <div class="quickMenu" id="quickMenu" hidden>
       <div class="quickMenuIn">
         <button type="button" data-quick-section="TODAY">☀️ Today</button>
+        <button type="button" data-quick-cat="BUSINESS">🏪 Local Businesses</button>
         <button type="button" data-quick-cat="DEALS">🔥 Deals</button>
         <button type="button" data-quick-cat="EVENTS">📅 Events</button>
         <button type="button" data-quick-cat="FOOD">🍽 Food</button>
@@ -180,6 +181,7 @@
     <button class="what" id="what" type="button">✨ What should I do in Louisburg?</button>
 
     <div class="tags" id="tags" aria-label="Activity filters">
+      <button class="tag" type="button" data-filter-cat="BUSINESS">🏪 Local Businesses</button>
       <button class="tag" type="button" data-filter-cat="DEALS">🔥 Deals & Specials</button>
       <button class="tag" type="button" data-filter-cat="EVENTS">📅 Events</button>
       <button class="tag" type="button" data-filter-cat="FOOD">🍽 Food & Drink</button>
@@ -262,6 +264,7 @@
     };
     const cats=[
       ['RIGHT NOW','Right Now','Active updates and things happening today.','RIGHT_NOW'],
+      ['LOCAL BUSINESS','Local Businesses','Current specials, products, hiring and updates from Louisburg businesses.','BUSINESS'],
       ['EAT LOCAL','Eat Local','Specials, coffee, featured dishes and local releases.','FOOD'],
       ['LOCAL ROASTERY','Local Roastery','Fresh roasting, new coffees and releases from Louisburg’s verified local roasting operation.','ROASTERY'],
       ['LOUISBURG ORIGINALS','Louisburg Originals','Distinctive verified places and experiences that help make Louisburg Louisburg.','ORIGINALS'],
@@ -297,6 +300,11 @@
     function hasDesignation(i,d){return Array.isArray(i.designations)&&i.designations.includes(d)}
     function activityText(i){return [i.activityType,i.category,i.tags,i.organization,i.headline,i.summary,(i.designationLabels||[]).join(' ')].join(' ').toLowerCase()}
     function activityType(i){return String(i.activityType||'').trim().toLowerCase()}
+    function isBusinessSource(i){
+      const org=String(i.organization||'').toLowerCase();
+      const nonBusiness=/city of louisburg|louisburg recreation commission|louisburg library|usd 416|chamber of commerce|aquatic center|senior citizens|united methodist|first christian church|faith chapel|first baptist church|thechurch louisburg|american legion|lions club|rotary club|powell observatory|astronomical society|sports zone/;
+      return !nonBusiness.test(org);
+    }
     function sectionMatches(i,wanted){
       if(wanted==='ALL')return true;
       const sec=String(i.section||'').toUpperCase();
@@ -309,6 +317,7 @@
       if(cat==='ALL')return true;
       const tags=tagset(i),type=activityType(i),text=activityText(i);
       if(cat==='RIGHT_NOW')return sectionMatches(i,'TODAY');
+      if(cat==='BUSINESS')return isBusinessSource(i);
       if(cat==='DEALS')return type==='deal / special'||/\bdeal\b|\bspecial\b|\bdiscount\b|\bcoupon\b|\bpromotion\b|\bon sale\b|\bhalf[- ]price\b|\bbogo\b/.test(text);
       if(cat==='EVENTS')return type==='event / activity'||/\bevent\b|\bfestival\b|\bpublic hearing\b|\bopen house\b|\bfundraiser\b|\bworkshop\b|\bmeeting\b/.test(text);
       if(cat==='FOOD')return tags.has('food')||tags.has('food-drink')||/\bfood\b|\bdrink\b|\bcoffee\b|\brestaurant\b|\bmenu\b|\bshake\b|\bcider\b/.test(text);
@@ -462,10 +471,25 @@
       const liked=reacted(i.id,'LIKE'),hearted=reacted(i.id,'HEART');
       return `<article class="card ${isJustIn(i)?'justIn':''}" data-item="${esc(i.id)}">${media}<div class="body"><div class="row"><div class="org">${esc(i.organization)}</div><span class="badge ${sectionMatches(i,'TODAY')?'today':''}">${esc(badge(i))}</span></div>${designationChips(i)}<div class="title">${esc(i.headline)}</div><div class="meta">${esc([i.date,i.time,i.location].filter(Boolean).join(' · '))}</div>${source?`<span class="sourceMark">↗ ${esc(source)}</span>`:''}${i.summary?`<div class="summary">${esc(i.summary)}</div>`:''}${i.sherlockStatus?`<div class="meta" style="margin-top:8px">🔎 ${esc(i.sherlockStatus)}</div>`:''}</div><div class="actions"><button type="button" data-action="reaction" data-reaction="LIKE" class="${liked?'selected':''}" ${liked?'disabled':''}>👍 <span>${Number(i.likeCount||0)}</span></button><button type="button" data-action="reaction" data-reaction="HEART" class="${hearted?'selected':''}" ${hearted?'disabled':''}>❤️ <span>${Number(i.heartCount||0)}</span></button>${link}<button type="button" class="sh" data-action="sherlock">🔎 Sherlock</button></div></article>`;
     }
+    function ensureBusinessVisibility(items){
+      if(S.section!=='ALL'||S.cat!=='ALL'||S.q||items.length<3)return items;
+      const out=items.slice();
+      let first=out.findIndex(isBusinessSource);
+      if(first>2){const [b]=out.splice(first,1);out.splice(1,0,b)}
+      const topSix=out.slice(0,6).filter(isBusinessSource).length;
+      if(topSix<2){
+        const second=out.findIndex((i,idx)=>idx>=3&&isBusinessSource(i));
+        if(second>5){const [b]=out.splice(second,1);out.splice(Math.min(4,out.length),0,b)}
+      }
+      return out;
+    }
     function render(){
-      const items=S.items.filter(match);
+      const filtered=S.items.filter(match);
+      const items=ensureBusinessVisibility(filtered);
       ui.feed.innerHTML=items.length?items.map(card).join(''):'<div class="empty">Nothing current matches that view right now.</div>';
-      ui.status.textContent='live · '+S.items.filter(isFresh).length+' current items';
+      const fresh=S.items.filter(isFresh);
+      const businesses=fresh.filter(isBusinessSource).length;
+      ui.status.textContent='live · '+fresh.length+' current · '+businesses+' business';
     }
 
     async function api(data,post=false){
