@@ -220,7 +220,7 @@
     <div class="bottomin">
       <button type="button" data-bottom="TODAY"><b>☀️</b>Today</button>
       <button type="button" data-bottom="WHAT"><b>✨</b>What to do</button>
-      <button type="button" data-bottom="FOOD"><b>🍽️</b>Food</button>
+      <button type="button" data-bottom="FOOD"><b>🍽️</b>Food + Drink</button>
       <button type="button" data-bottom="HOME" class="active"><b>⌂</b>Home</button>
     </div>
   </nav>
@@ -320,7 +320,15 @@
       if(cat==='BUSINESS')return isBusinessSource(i);
       if(cat==='DEALS')return type==='deal / special'||/\bdeal\b|\bspecial\b|\bdiscount\b|\bcoupon\b|\bpromotion\b|\bon sale\b|\bhalf[- ]price\b|\bbogo\b/.test(text);
       if(cat==='EVENTS')return type==='event / activity'||/\bevent\b|\bfestival\b|\bpublic hearing\b|\bopen house\b|\bfundraiser\b|\bworkshop\b|\bmeeting\b/.test(text);
-      if(cat==='FOOD')return tags.has('food')||tags.has('food-drink')||/\bfood\b|\bdrink\b|\bcoffee\b|\brestaurant\b|\bmenu\b|\bshake\b|\bcider\b/.test(text);
+      if(cat==='FOOD'){
+      const category=String(i.category||'').toLowerCase();
+      const explicitFood=tags.has('food')||tags.has('food-drink')||/\bfood\b|\bdrink\b|\bcoffee\b|\bcafe\b|\bcafé\b|\brestaurant\b|\bmenu\b|\bshake\b/.test(category);
+      const eventLike=type==='event / activity'||/\bevent\b|\bfestival\b|\brun\b|\bmeeting\b|\bregistration\b|\bcommunity\b/.test(category);
+      if(explicitFood)return true;
+      if(eventLike)return false;
+      const foodSignal=/\bfood\b|\bdrink\b|\bcoffee\b|\bcafe\b|\bcafé\b|\brestaurant\b|\bmenu\b|\bshake\b|\bmeal\b|\bchicken\b|\bsteak\b|\bburger\b|\bcider\b/.test(text);
+      return foodSignal&&(type==='deal / special'||type==='new product / offering'||isBusinessSource(i));
+    }
       if(cat==='MUSIC')return tags.has('music')||/\blive music\b|\bconcert\b|\bband\b|\bperformance\b/.test(text);
       if(cat==='FAMILY')return tags.has('family')||tags.has('kids')||/\bfamily\b|\bkid\b|\bchild\b|\byouth\b|\bstroller\b/.test(text);
       if(cat==='SPORTS')return tags.has('sports')||/\bsport\b|\bsoccer\b|\bfootball\b|\bathletic\b|\bwildcat\b|\bwalking club\b/.test(text);
