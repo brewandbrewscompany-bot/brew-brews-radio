@@ -20,7 +20,8 @@ jobs:
       LL_SOCIAL_ENDPOINT: https://script.google.com/macros/s/AKfycbxw9gJBH50L_VZbgp6i_mHHnfPXAkraIqv63BA2XqWtb-XaaczXxdf89WveFkAOwV-azw/exec
       LL_SOCIAL_INGEST_KEY: ${{ secrets.LL_SOCIAL_INGEST_KEY }}
       LL_MAX_WORKERS: '25'
-      LL_MAX_POSTS_PER_PAGE: '2'
+      LL_FORCE_SCAN: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
+      LL_MAX_POSTS_PER_PAGE: ${{ github.event_name == 'workflow_dispatch' && '5' || '2' }}
       TZ: America/Chicago
     steps:
       - name: Check out the existing project
