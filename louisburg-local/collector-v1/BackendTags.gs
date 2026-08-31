@@ -5,6 +5,9 @@
 function runBackendTagsSelfTest() {
   const cases=[
     {name:'food',text:'Food / Special featured dish dinner',want:'food'},
+    {name:'timber creek chicken special',text:'Monday chicken tender and domestic bottle specials at Timber Creek',want:'food'},
+    {name:'wednesday catfish deal',text:'Wednesday catfish dinner special with fries and a side',want:'food'},
+    {name:'food deal keeps promotion',text:'Wednesday catfish deal special',want:'promotions'},
     {name:'music',text:'Live Music band concert',want:'music'},
     {name:'promotion',text:'Deal / Special discount promotion',want:'promotions'},
     {name:'kids',text:'Kids youth family event',want:'kids'},
@@ -71,7 +74,10 @@ function buildBackendTagBundleFromText_(text,designations,labelMap) {
   const tags=[];
   function add(tag){if(tags.indexOf(tag)===-1)tags.push(tag);}
 
-  if(/food|drink|coffee|restaurant|cafe|steak|menu|dining|barbecue|ice cream|cider/.test(s)){add('food');add('food-drink');}
+  // Food is a secondary/navigation category, independent of the primary activity type.
+  // Keep this vocabulary broad enough that specials such as chicken tenders or catfish
+  // remain Food even when their primary type is Deal / Special.
+  if(/food|drink|coffee|restaurant|cafe|steak|menu|dining|barbecue|ice cream|cider|burger|chicken|tender|catfish|\bfish\b|pizza|taco|sandwich|breakfast|brunch|lunch|dinner|meal|entree|wings|fries|bottle special|beer|wine/.test(s)){add('food');add('food-drink');}
   if(/coffee|espresso|roast|roastery/.test(s))add('coffee');
   if(/music|concert|band|dj|karaoke|trivia|live entertainment/.test(s))add('music');
   if(/deal|special|promotion|sale|discount|coupon|giveaway|contest/.test(s))add('promotions');
