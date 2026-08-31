@@ -1,0 +1,1 @@
+Trigger Louisburg Local public social/activity discovery pass for due verified sources. Public-only; no authenticated Meta access.
