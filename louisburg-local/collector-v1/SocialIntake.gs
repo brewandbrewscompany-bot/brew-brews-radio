@@ -290,8 +290,12 @@ function runSocialAutoPromotionSelfTest(){
   if(socialAutoVerificationDecision_(Object.assign({},payload,{text:'We shared another Page post about fresh inventory in Louisburg.'}),'New Product / Offering',now,sources,registry).ok)failures.push('shared/reposted content qualified');
   if(socialAutoVerificationDecision_(Object.assign({},payload,{postDate:'2026-08-01T16:00:00-05:00'}),'New Product / Offering',now,sources,registry).ok)failures.push('stale post qualified');
   if(socialAutoVerificationDecision_(Object.assign({},payload,{text:'Live music is coming soon in Louisburg.'}),'Event / Activity',now,sources,registry).ok)failures.push('undated event qualified');
+  const monday=socialAutoVerificationDecision_(Object.assign({},payload,{postDate:'2026-08-31T08:00:00-05:00',text:'Louisburg KS. Monday chicken tender special with a side.'}),'Deal / Special',now,sources,registry);
+  if(!monday.ok||monday.relevantDate!=='2026-08-31')failures.push('Monday special did not resolve to Monday/Today');
+  const wednesday=socialAutoVerificationDecision_(Object.assign({},payload,{postDate:'2026-08-31T08:00:00-05:00',text:'Louisburg KS. Wednesday catfish dinner special with sides.'}),'Deal / Special',now,sources,registry);
+  if(!wednesday.ok||wednesday.relevantDate!=='2026-09-02')failures.push('Wednesday special did not resolve to next Wednesday');
   if(failures.length)throw new Error('Social auto-promotion self-test failed: '+failures.join(' | '));
-  Logger.log('Social auto-promotion self-test passed: 5/5');
+  Logger.log('Social auto-promotion self-test passed: 7/7');
 }
 
 function socialAutoVerificationDecision_(payload,activityType,now,sourceIndex,registryIndex){
@@ -435,6 +439,10 @@ function socialRelevantDate_(payload,activityType,now,dates){
   if(/\b(today only|today|tonight)\b/.test(text))return postDate;
   if(/\btomorrow\b/.test(text))return socialAddDaysIso_(postDate,1);
   if(dates&&dates.hasCurrentOrFuture&&dates.bestIso)return dates.bestIso;
+  if(/^(Deal \/ Special|Event \/ Activity|Operational Update)$/.test(String(activityType||''))){
+    const weekday=socialWeekdayDate_(text,postDate);
+    if(weekday)return weekday;
+  }
   return '';
 }
 
@@ -472,5 +480,15 @@ function socialNormalizeOrg_(value){return String(value||'').toLowerCase().repla
 function socialNormalizeUrl_(value){return String(value||'').trim().toLowerCase().replace(/^https?:\/\/(?:www\.)?/,'').replace(/[?#].*$/,'').replace(/\/+$/,'');}
 function socialPostLocalDate_(value){const d=new Date(String(value||''));return isNaN(d.getTime())?'':Utilities.formatDate(d,LL_CONFIG.TZ,'yyyy-MM-dd');}
 function socialAddDaysIso_(iso,days){try{const d=Utilities.parseDate(String(iso||''),LL_CONFIG.TZ,'yyyy-MM-dd');d.setTime(d.getTime()+Number(days||0)*86400000);return Utilities.formatDate(d,LL_CONFIG.TZ,'yyyy-MM-dd');}catch(ignored){return '';}}
+function socialWeekdayDate_(text,anchorIso){
+  const m=String(text||'').toLowerCase().match(/\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/);
+  if(!m||!/^\d{4}-\d{2}-\d{2}$/.test(String(anchorIso||'')))return '';
+  const target={sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6}[m[1]];
+  const p=String(anchorIso).split('-').map(Number),d=new Date(Date.UTC(p[0],p[1]-1,p[2],12,0,0));
+  if(isNaN(d.getTime()))return '';
+  const delta=(target-d.getUTCDay()+7)%7;
+  d.setUTCDate(d.getUTCDate()+delta);
+  return Utilities.formatDate(d,'UTC','yyyy-MM-dd');
+}
 function socialEndOfAddedDay_(iso,days){const d=socialAddDaysIso_(iso,days);return d?d+' 23:59':'';}
 function setSocialValue_(sheet,row,ix,header,value){const c=ix[header];if(c!=null)sheet.getRange(row,c+1).setValue(value);}
