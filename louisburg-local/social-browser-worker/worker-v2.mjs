@@ -120,6 +120,26 @@ async function getBodyText(page){return (await page.locator('body').innerText({t
 async function collectPostLinks(page){const hrefs=await page.locator('a[href]').evaluateAll(nodes=>nodes.map(n=>n.href)).catch(()=>[]);return [...new Set(hrefs.map(canonicalPostUrl).filter(Boolean))];}
 async function extractMedia(scope){const videos=await scope.locator('video').evaluateAll(nodes=>nodes.map(v=>v.currentSrc||v.src||v.poster||'').filter(Boolean)).catch(()=>[]);if(videos.length)return {mediaUrl:videos[0],mediaType:'VIDEO'};const imgs=await scope.locator('img').evaluateAll(nodes=>nodes.map(i=>({src:i.currentSrc||i.src||'',w:i.naturalWidth||i.width||0,h:i.naturalHeight||i.height||0})).filter(i=>/fbcdn\.net/i.test(i.src)&&i.w>=220&&i.h>=160).sort((a,b)=>b.w*b.h-a.w*a.h)).catch(()=>[]);return imgs.length?{mediaUrl:imgs[0].src,mediaType:'IMAGE'}:{mediaUrl:'',mediaType:''};}
 
+async function extractContentLink(context,postUrl,worker,now){
+  const page=await context.newPage();
+  try{
+    await page.goto(postUrl,{waitUntil:'domcontentloaded',timeout:30000});await settlePage(page);
+    const canonical=canonicalPostUrl(page.url())||canonicalPostUrl(postUrl);if(!canonical)return {skip:'CONTENT URL DID NOT REMAIN PUBLIC'};
+    const postOwner=facebookOwnerKey(canonical),profileOwner=facebookOwnerKey(worker.profileUrl);if(postOwner&&profileOwner&&postOwner!==profileOwner)return {skip:'CONTENT OWNER DOES NOT MATCH VERIFIED PAGE'};
+    const scope=page.locator('article,[role="article"],[role="dialog"],main').first();
+    const raw=await (await scope.count()?scope:page.locator('body')).innerText({timeout:8000}).catch(()=>'' );if(raw.length<30)return {skip:'TOO LITTLE PUBLIC CONTENT'};
+    let dateLabel=findFacebookDateLabel(raw,now);
+    if(!dateLabel){const attrs=await page.locator('a').evaluateAll(nodes=>nodes.flatMap(n=>[n.innerText,n.getAttribute('aria-label'),n.getAttribute('title')]).filter(Boolean)).catch(()=>[]);for(const a of attrs){const candidate=findFacebookDateLabel(a,now)||String(a).trim();if(isPostFresh(parseFacebookDateLabel(candidate,now),now)){dateLabel=candidate;break;}}}
+    const parsedDate=parseFacebookDateLabel(dateLabel,now);if(!isPostFresh(parsedDate,now))return {skip:`STALE OR UNKNOWN CONTENT DATE (${dateLabel||'none'})`};
+    const contentScope=await scope.count()?scope:page.locator('body');
+    const author=(await contentScope.locator('h2 a,h3 a,strong a').first().innerText({timeout:1800}).catch(()=>worker.organization)).trim()||worker.organization;if(!identityMatches(author,worker.organization))return {skip:`CONTENT AUTHOR DOES NOT MATCH VERIFIED PAGE (${author})`};
+    const messages=[...new Set((await contentScope.locator('[data-ad-comet-preview="message"],[data-ad-preview="message"]').allTextContents().catch(()=>[])).map(v=>v.replace(/\s+/g,' ').trim()).filter(v=>v.length>10))];const postText=(messages.join('\n')||cleanPostText(raw,author,dateLabel)).trim();if(postText.length<20)return {skip:'TOO LITTLE PUBLIC POST TEXT'};
+    const media=await extractMedia(contentScope);
+    return {organization:worker.organization,platform:'FACEBOOK',profileUrl:worker.profileUrl,postUrl:canonical,postId:canonical,postDate:parsedDate.toISOString(),postText:postText.slice(0,5000),mediaUrl:media.mediaUrl,mediaType:media.mediaType,activityType:'',louisburgMatch:'VERIFIED',queueId:worker.queueId,pageIdentity:author,publicDateLabel:dateLabel,sourceMode:'PUBLIC_CONTENT_LINK_OPENED'};
+  }catch(error){return {skip:`CONTENT LINK OPEN FAILED: ${String(error.message||error).slice(0,120)}`};}
+  finally{await page.close();}
+}
+
 async function extractVisiblePagePosts(page,worker,now,maxPosts){
   const scopes=page.locator('article,[role="article"],[data-pagelet*="FeedUnit"],div[data-ft]');const count=Math.min(await scopes.count().catch(()=>0),30);const posts=[],seen=new Set();
   for(let i=0;i<count&&posts.length<maxPosts;i++){
@@ -145,10 +165,15 @@ async function scanWorker(context,worker,settings){
       const finalUrl=page.url();const body=await getBodyText(page);const identity=(await page.locator('h1').first().innerText({timeout:2500}).catch(()=>'' )).trim();if(identity&&!pageIdentity)pageIdentity=identity;
       if(/Log in to view this 18\+ content/i.test(body)){sawAgeGate=true;continue;}
       const visible=await extractVisiblePagePosts(page,worker,now,settings.maxPostsPerPage);if(visible.length)return {result:`PUBLIC PAGE POST CARDS VISIBLE; captured=${visible.length}; surface=${new URL(candidate).hostname}${pageIdentity?'; identity='+pageIdentity:''}`,posts:visible};
-      const links=(await collectPostLinks(page)).slice(0,settings.maxPostsPerPage);if(links.length)return {result:`PUBLIC CONTENT LINKS VISIBLE; links=${links.length}; surface=${new URL(candidate).hostname}${pageIdentity?'; identity='+pageIdentity:''}`,posts:[]};
+      const links=(await collectPostLinks(page)).slice(0,settings.maxPostsPerPage);
+      if(links.length){
+        const posts=[];for(const link of links){const captured=await extractContentLink(context,link,worker,now);if(!captured.skip)posts.push(captured);}
+        if(posts.length)return {result:`PUBLIC CONTENT LINKS OPENED; links=${links.length}; captured=${posts.length}; surface=${new URL(candidate).hostname}${pageIdentity?'; identity='+pageIdentity:''}`,posts};
+        sawReadable=true;
+      }
       if(/\/login\//i.test(finalUrl)||/^Log into Facebook/i.test(body)){sawLogin=true;continue;}if(body.length>80)sawReadable=true;
     }
-    if(sawReadable)return {result:`PUBLIC PAGE READABLE AFTER MOBILE/DESKTOP FALLBACKS; NO USABLE CURRENT POST CARDS${pageIdentity?'; identity='+pageIdentity:''}`,posts:[]};
+    if(sawReadable)return {result:`PUBLIC PAGE READABLE AFTER MOBILE/DESKTOP FALLBACKS; NO USABLE CURRENT POST CARDS OR CONTENT LINKS${pageIdentity?'; identity='+pageIdentity:''}`,posts:[]};
     if(sawAgeGate)return {result:'AGE-GATED - PUBLIC POSTS NOT EXPOSED AFTER MOBILE/DESKTOP FALLBACKS',posts:[]};
     if(sawLogin)return {result:'LOGIN ONLY - NO VISIBLE CURRENT POST CARDS AFTER MOBILE/DESKTOP FALLBACKS',posts:[]};
     return {result:'PUBLIC FACEBOOK PAGE UNAVAILABLE AFTER MOBILE/DESKTOP FALLBACKS',posts:[]};
