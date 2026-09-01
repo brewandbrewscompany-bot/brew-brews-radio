@@ -2,3 +2,4 @@ Manual public-social scan trigger
 2026-08-31: verify El Potro stable Facebook Page ID 61555865610404 and Timber Creek candidate Facebook owner ID 100047763378218 from exact public posts.
 2026-08-31 targeted exact-post recovery pass: run exact recovery hints before broad Page sweep.
 2026-08-31: verify Cedar Cove stable Facebook Page ID 100064725339064 from exact public post and official Cedar Cove website/events sources.
+2026-08-31: verify Louisburg Aquatic Center stable Facebook Page ID 100090464593937 from exact public post and official City Aquatic Center source.
