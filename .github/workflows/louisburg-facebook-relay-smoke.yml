@@ -50,42 +50,44 @@ jobs:
             profileUrl:'https://www.facebook.com/100063452718081',
             notes:'FACEBOOK_VANITY_ALIAS=https://www.facebook.com/BB.Coffee.Tea',
           };
-          const urls=[
-            'https://www.facebook.com/100063452718081',
-            'https://www.facebook.com/BB.Coffee.Tea',
-            'https://www.facebook.com/BB.Coffee.Tea?sk=posts',
-            'https://www.facebook.com/profile.php?id=100063452718081&sk=posts',
-          ];
+          const url='https://www.facebook.com/BB.Coffee.Tea?sk=posts';
+          const findAll=(root,key,limit=12)=>{
+            const out=[];const seen=new Set();
+            const walk=(v,depth=0)=>{
+              if(depth>18||v==null||out.length>=limit)return;
+              if(typeof v==='object'){
+                if(seen.has(v))return;seen.add(v);
+                if(!Array.isArray(v)&&Object.prototype.hasOwnProperty.call(v,key))out.push(v[key]);
+                for(const child of (Array.isArray(v)?v:Object.values(v)))walk(child,depth+1);
+              }
+            };
+            walk(root);return out;
+          };
+          const brief=v=>typeof v==='string'?v.slice(0,260):JSON.stringify(v)?.slice(0,260);
+
           const browser=await chromium.launch({headless:true});
           const context=await browser.newContext({
-            locale:'en-US',
-            timezoneId:'America/Chicago',
-            viewport:{width:1365,height:900},
+            locale:'en-US',timezoneId:'America/Chicago',viewport:{width:1365,height:900},
             userAgent:'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
           });
           const page=await context.newPage();
-          let found=[];
-          for(const url of urls){
-            try{
-              const response=await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
-              if(!response)continue;
-              let html='';
-              try{html=await response.text();}catch{html=await page.content();}
-              const blocks=dataSjsBlocksFromHtml(html);
-              const docs=relayDocumentsFromDataSjsBlocks(blocks);
-              const posts=relayPostsFromDataSjsBlocks(blocks,worker,new Date(),8);
-              console.log(`BREW RELAY surface=${url} final=${page.url()} blocks=${blocks.length} operations=${[...docs.keys()].join(',')||'none'} posts=${posts.length}`);
-              if(posts.length){found=posts;break;}
-            }catch(error){console.log(`BREW RELAY surface error ${url}: ${error.message}`);}
+          const response=await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
+          let html='';try{html=await response.text();}catch{html=await page.content();}
+          const blocks=dataSjsBlocksFromHtml(html);
+          const docs=relayDocumentsFromDataSjsBlocks(blocks);
+          const timeline=docs.get('ProfileCometTimelineFeedQuery');
+          console.log(`BREW RELAY final=${page.url()} blocks=${blocks.length} operations=${[...docs.keys()].join(',')}`);
+          if(timeline){
+            console.log(`TIMELINE top=${Object.keys(timeline).join(',')}`);
+            console.log(`TIMELINE users=${findAll(timeline,'id',8).map(brief).join(' | ')}`);
+            console.log(`TIMELINE feed_units=${findAll(timeline,'timeline_list_feed_units',3).map(v=>brief({keys:Object.keys(v||{}),edges:Array.isArray(v?.edges)?v.edges.length:null,nodes:Array.isArray(v?.nodes)?v.nodes.length:null})).join(' | ')}`);
+            for(const key of ['post_id','legacy_story_hideable_id','creation_time','permalink_url','url','message','actors']){
+              console.log(`TIMELINE ${key}=${findAll(timeline,key,12).map(brief).join(' | ')}`);
+            }
           }
-          await context.close();
-          await browser.close();
-          if(!found.length){
-            console.error('BREW RELAY RESULT: no current public post recovered');
-            process.exit(2);
-          }
-          for(const post of found){
-            console.log(`BREW RELAY POST ${post.postDate} ${post.postUrl}`);
-            console.log(`BREW RELAY TEXT ${post.postText.slice(0,700)}`);
-          }
+          const posts=relayPostsFromDataSjsBlocks(blocks,worker,new Date(),8);
+          console.log(`BREW RELAY parsed_posts=${posts.length}`);
+          for(const post of posts){console.log(`BREW RELAY POST ${post.postDate} ${post.postUrl}`);console.log(`BREW RELAY TEXT ${post.postText.slice(0,700)}`);}
+          await context.close();await browser.close();
+          if(!posts.length)process.exit(2);
           NODE
