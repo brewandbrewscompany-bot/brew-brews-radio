@@ -18,7 +18,8 @@ test('signed-out data-sjs Relay timeline yields a verified current Brew & Brews 
     post_id:'100063452718081_999999999',
     creation_time:Math.floor((now.getTime()-10*60*1000)/1000),
     permalink_url:'https://www.facebook.com/BB.Coffee.Tea/posts/pfbidToday',
-    actors:[{id:'100063452718081',name:'Brew & Brews Coffee Co.'}],
+    // Facebook's public Page display name currently differs from the registry name.
+    actors:[{id:'100063452718081',name:'Brew and Brews Company'}],
     attachments:[{style_list:['photo'],media:{image:{uri:'https://scontent.example.fbcdn.net/current-post.jpg'}}}],
   };
   const block=relayBlock(story);
