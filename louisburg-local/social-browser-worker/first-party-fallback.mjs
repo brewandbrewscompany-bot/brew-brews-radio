@@ -10,9 +10,13 @@ const EVENT_HEADING_RE=/(?:^|\b)(?:upcoming|community|public)\s+events?(?:\s+(?:
 
 export function parseFallbackMetadata(notes){
   const text=String(notes||'');
-  const url=(text.match(/(?:^|\s)FIRST_PARTY_FALLBACK=(https?:\/\/\S+)/i)||[])[1]||'';
+  const entries=[...text.matchAll(/(?:^|\s)FIRST_PARTY_FALLBACK(?:_(\d+))?=(https?:\/\/\S+)/gi)]
+    .map((match,index)=>({order:match[1]?Number(match[1]):0,index,url:String(match[2]||'').replace(/[),.;]+$/,'')}))
+    .filter(item=>item.url)
+    .sort((a,b)=>a.order-b.order||a.index-b.index);
+  const urls=[...new Set(entries.map(item=>item.url))];
   const mode=(text.match(/(?:^|\s)FIRST_PARTY_MODE=([A-Z0-9_-]+)/i)||[])[1]||'';
-  return {url:url.replace(/[),.;]+$/,''),mode:mode.toUpperCase()};
+  return {url:urls[0]||'',urls,mode:mode.toUpperCase()};
 }
 
 export function fallbackUrlCandidates(value){
@@ -139,9 +143,6 @@ export function extractDatedTextActivities(raw,now=new Date()){
     const directLineActivity=ACTION_RE.test(line)||/\b(fish fry|blood drive|music bingo|bbq contest|barbecue contest|tractor pull)\b/i.test(line);
     let snippet='',date=null;
 
-    // Content-level event/calendar pages often render one exact event per line.
-    // Prefer that date-centered line so a generic heading cannot merge multiple
-    // adjacent events into one candidate (for example Fish Fry + Blood Drive).
     if(lineDate&&(directLineActivity||sectionContext)){
       date=lineDate;
       snippet=datedLineSnippet_(lines,i,now);
@@ -149,8 +150,6 @@ export function extractDatedTextActivities(raw,now=new Date()){
       const hiringLine=/\b(current openings?|open positions?)\b/i.test(line);
       if(!directLineActivity&&!hiringLine)continue;
       if(EVENT_HEADING_RE.test(line))continue;
-      // If an action title immediately precedes an exact date under an Events
-      // heading, the dated line will create the candidate; avoid a duplicate.
       const nextDate=parseActivityDate(lines[i+1]||'',now);
       if(nextDate&&nearbyEventHeading_(lines,i,now))continue;
       snippet=actionableSnippet(lines,i);
@@ -263,26 +262,39 @@ export async function run(){
   const endpoint=process.env.LL_SOCIAL_ENDPOINT||DEFAULT_ENDPOINT;const ingestKey=process.env.LL_SOCIAL_INGEST_KEY||'';
   if(!ingestKey)throw new Error('LL_SOCIAL_INGEST_KEY is required.');
   const manifest=await postJson(endpoint,ingestKey,'social_worker_manifest');
-  const configured=(manifest.workers||[]).map(worker=>({worker,meta:parseFallbackMetadata(worker.notes)})).filter(item=>item.meta.url&&item.meta.mode);
+  const configured=(manifest.workers||[]).map(worker=>({worker,meta:parseFallbackMetadata(worker.notes)})).filter(item=>item.meta.urls.length&&item.meta.mode);
   if(!configured.length){console.log('First-party fallback scan complete: configured=0; delivered=0; duplicates=0');return;}
   const {chromium}=await import('playwright');const browser=await chromium.launch({headless:true});const context=await browser.newContext({locale:'en-US',timezoneId:TZ,viewport:{width:1365,height:900}});
   let delivered=0,duplicates=0,failures=0;
   try{
     for(const {worker,meta} of configured){
-      const page=await context.newPage();
-      try{
-        const now=new Date();const activities=await scanFirstParty(page,meta.url,meta.mode,now);
-        if(!activities.length){console.log(`${worker.organization}: FIRST-PARTY FALLBACK READABLE; no current configured activity extracted; mode=${meta.mode}`);continue;}
-        for(const activity of activities){
-          const result=await postJson(endpoint,ingestKey,'social_intake',{queueId:worker.queueId,organization:worker.organization,platform:'WEBSITE',profileUrl:meta.url,postUrl:meta.url,postId:activity.postId,postDate:now.toISOString(),postText:activity.postText,mediaUrl:'',mediaType:'',activityType:activity.activityType,louisburgMatch:'VERIFIED'});
-          delivered++;if(result.duplicate)duplicates++;
-        }
-        console.log(`${worker.organization}: FIRST-PARTY FALLBACK DELIVERED; mode=${meta.mode}; activities=${activities.length}; source=${meta.url}`);
-      }catch(error){failures++;console.error(`${worker.organization}: FIRST-PARTY FALLBACK ERROR: ${String(error.message||error).replace(/\s+/g,' ').slice(0,220)}`);}
-      finally{await page.close();}
+      const now=new Date();
+      const gathered=[],seen=new Set();
+      let readableSources=0,sourceErrors=0;
+      for(const sourceUrl of meta.urls){
+        const page=await context.newPage();
+        try{
+          const activities=await scanFirstParty(page,sourceUrl,meta.mode,now);readableSources++;
+          for(const activity of activities){
+            const key=`${activity.date}|${activity.activityType}|${normalizeText(activity.postText).toLowerCase()}`;
+            if(seen.has(key))continue;seen.add(key);gathered.push({activity,sourceUrl});
+          }
+        }catch(error){
+          sourceErrors++;
+          console.error(`${worker.organization}: FIRST-PARTY FALLBACK SOURCE ERROR; source=${sourceUrl}; ${String(error.message||error).replace(/\s+/g,' ').slice(0,180)}`);
+        }finally{await page.close();}
+      }
+      if(!readableSources&&sourceErrors){failures++;continue;}
+      if(!gathered.length){console.log(`${worker.organization}: FIRST-PARTY FALLBACK READABLE; no current configured activity extracted; mode=${meta.mode}; sources=${meta.urls.length}`);continue;}
+      for(const {activity,sourceUrl} of gathered){
+        const result=await postJson(endpoint,ingestKey,'social_intake',{queueId:worker.queueId,organization:worker.organization,platform:'WEBSITE',profileUrl:sourceUrl,postUrl:sourceUrl,postId:activity.postId,postDate:now.toISOString(),postText:activity.postText,mediaUrl:'',mediaType:'',activityType:activity.activityType,louisburgMatch:'VERIFIED'});
+        delivered++;if(result.duplicate)duplicates++;
+      }
+      console.log(`${worker.organization}: FIRST-PARTY FALLBACK DELIVERED; mode=${meta.mode}; activities=${gathered.length}; sources=${meta.urls.length}`);
     }
   }finally{await context.close();await browser.close();}
-  console.log(`First-party fallback scan complete: configured=${configured.length}; delivered=${delivered}; duplicates=${duplicates}; failures=${failures}`);
+  const sourceCount=configured.reduce((sum,item)=>sum+item.meta.urls.length,0);
+  console.log(`First-party fallback scan complete: configured=${configured.length}; sources=${sourceCount}; delivered=${delivered}; duplicates=${duplicates}; failures=${failures}`);
 }
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)run().catch(error=>{console.error(error);process.exitCode=1;});
