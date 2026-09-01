@@ -34,6 +34,7 @@ test('exact Facebook seed post is read from worker notes',()=>{
   assert.equal(facebookSeedPost(notes),'https://www.facebook.com/100063646776157/posts/pfbidExample');
 });
 
+// Protect Pages like Brew & Brews that have both stable numeric and vanity public identities.
 test('verified numeric Facebook identity also trusts configured vanity alias',()=>{
   const worker={profileUrl:'https://www.facebook.com/100063452718081',notes:'FACEBOOK_VANITY_ALIAS=https://www.facebook.com/BB.Coffee.Tea FACEBOOK_ALT_ID=100063452718081'};
   assert.deepEqual(facebookWorkerIdentityUrls(worker),['https://www.facebook.com/100063452718081','https://www.facebook.com/BB.Coffee.Tea']);
