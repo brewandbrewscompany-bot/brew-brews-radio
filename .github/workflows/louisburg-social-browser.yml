@@ -31,16 +31,17 @@ jobs:
       TZ: America/Chicago
     steps:
       - name: Check out the existing project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '24'
+          package-manager-cache: false
 
       - name: Install the browser worker
         working-directory: louisburg-local/social-browser-worker
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Install Chromium
         working-directory: louisburg-local/social-browser-worker
