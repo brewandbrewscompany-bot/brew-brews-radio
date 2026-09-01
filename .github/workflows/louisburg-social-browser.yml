@@ -71,6 +71,12 @@ jobs:
           NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node facebook-relay-recovery.mjs
 
+      - name: Recover alternate Relay shapes and 10-day lookback
+        working-directory: louisburg-local/social-browser-worker
+        env:
+          NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
+        run: node facebook-relay-lookback.mjs
+
       - name: Scan public Facebook Pages as DOM fallback
         working-directory: louisburg-local/social-browser-worker
         env:
