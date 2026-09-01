@@ -5,3 +5,4 @@ Manual public-social scan trigger
 2026-08-31: verify Louisburg Aquatic Center stable Facebook Page ID 100090464593937 from exact public post and official City Aquatic Center source.
 2026-08-31: verify Louisburg Athletic Club Facebook Page ID 100064303170395 from exact public post and official Athletic Club website sources.
 2026-08-31: verify Captain Cook's Treasure Chest Facebook Page ID 100033324591893 from exact public post and official Captain Cook's website source.
+2026-08-31: verify The Burg Pizza & Grill Facebook Page ID 61570196648157 from exact public post; preserve The Go To only as a former-name alias for the same 1 S Broadway Louisburg business.
