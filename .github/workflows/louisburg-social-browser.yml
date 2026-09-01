@@ -50,6 +50,10 @@ jobs:
         working-directory: louisburg-local/social-browser-worker
         run: npm test
 
+      - name: Recover configured exact public Facebook posts
+        working-directory: louisburg-local/social-browser-worker
+        run: node exact-post-recovery.mjs
+
       - name: Scan public Facebook Pages
         working-directory: louisburg-local/social-browser-worker
         run: npm start
