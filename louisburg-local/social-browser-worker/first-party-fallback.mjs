@@ -14,6 +14,19 @@ export function parseFallbackMetadata(notes){
   return {url:url.replace(/[),.;]+$/,''),mode:mode.toUpperCase()};
 }
 
+export function fallbackUrlCandidates(value){
+  const raw=String(value||'').trim();
+  if(!raw)return [];
+  let primary;
+  try{primary=new URL(raw);}catch{return [raw];}
+  const out=[primary.toString()];
+  const alternate=new URL(primary.toString());
+  if(primary.hostname.startsWith('www.'))alternate.hostname=primary.hostname.slice(4);
+  else alternate.hostname=`www.${primary.hostname}`;
+  if(alternate.hostname!==primary.hostname)out.push(alternate.toString());
+  return [...new Set(out)];
+}
+
 function localDateParts(now=new Date()){
   const parts=new Intl.DateTimeFormat('en-US',{timeZone:TZ,weekday:'long',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);
   const out={}; for(const p of parts)out[p.type]=p.value;
@@ -183,20 +196,27 @@ async function postJson(endpoint,ingestKey,action,payload={}){
 }
 
 async function scanFirstParty(page,url,mode,now){
-  let navigationError=null;
-  try{
-    await page.goto(url,{waitUntil:'domcontentloaded',timeout:25000});
-  }catch(error){
-    navigationError=error;
+  await page.route('**/*',route=>{
+    const type=route.request().resourceType();
+    if(['image','media','font'].includes(type))return route.abort();
+    return route.continue();
+  }).catch(()=>{});
+  let lastError=null;
+  for(const candidate of fallbackUrlCandidates(url)){
+    let navigationError=null;
+    try{
+      await page.goto(candidate,{waitUntil:'domcontentloaded',timeout:18000});
+    }catch(error){
+      navigationError=error;
+      lastError=error;
+    }
+    await page.waitForTimeout(navigationError?800:1200);
+    const body=await page.locator('body').innerText({timeout:8000}).catch(()=> '');
+    const jsonTexts=await page.locator('script[type="application/ld+json"]').allTextContents().catch(()=>[]);
+    if(normalizeText(body))return extractFallbackActivities(body,mode,now,jsonTexts);
   }
-  await page.waitForTimeout(navigationError?700:1400);
-  const body=await page.locator('body').innerText({timeout:10000}).catch(()=> '');
-  const jsonTexts=await page.locator('script[type="application/ld+json"]').allTextContents().catch(()=>[]);
-  if(!normalizeText(body)){
-    if(navigationError)throw navigationError;
-    return [];
-  }
-  return extractFallbackActivities(body,mode,now,jsonTexts);
+  if(lastError)throw lastError;
+  return [];
 }
 
 export async function run(){
