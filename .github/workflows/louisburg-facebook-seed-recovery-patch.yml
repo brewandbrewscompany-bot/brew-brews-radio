@@ -23,36 +23,38 @@ jobs:
 
           worker=Path('louisburg-local/social-browser-worker/worker-v2.mjs')
           s=worker.read_text()
-          target="""export function shouldScanWorker(worker,now=new Date(),force=false){
+
+          if 'export function facebookSeedPost(notes)' not in s:
+              marker="""export function shouldScanWorker(worker,now=new Date(),force=false){
             if(force||String(worker.scanMode||'').toUpperCase()!=='BROWSER_PUBLIC_PREVIEW')return true;
             const d=new Date(String(worker.lastScanAtIso||worker.lastScanAt||''));if(Number.isNaN(d.getTime()))return true;
             const interval=/DAILY/i.test(String(worker.scanFrequency||''))?20*3600000:45*60000;return now-d>=interval;
           }
-          """.replace('          ','')
-          insert=target+"""
+          """
+              marker='\n'.join(line[10:] if line.startswith('          ') else line for line in marker.splitlines())+'\n'
+              addition=marker+"""
           export function facebookSeedPost(notes){
             const value=(String(notes||'').match(/(?:^|\\s)FACEBOOK_SEED_POST=(https?:\\/\\/\\S+)/i)||[])[1]||'';
             return canonicalPostUrl(value);
           }
-          """.replace('          ','')
-          if 'export function facebookSeedPost(notes)' not in s:
-              if target not in s: raise SystemExit('shouldScanWorker target not found')
-              s=s.replace(target,insert,1)
+          """
+              addition='\n'.join(line[10:] if line.startswith('          ') else line for line in addition.splitlines())+'\n'
+              if marker not in s: raise SystemExit('shouldScanWorker target not found')
+              s=s.replace(marker,addition,1)
 
-          scan_target="""  try{
-            for(const candidate of publicFacebookPageCandidates(worker.profileUrl)){
-          """.replace('          ','')
-          scan_insert="""  try{
+          if 'PUBLIC SEED CONTENT OPENED' not in s:
+              needle="  try{\n    for(const candidate of publicFacebookPageCandidates(worker.profileUrl)){"
+              replacement="""  try{
             const seed=facebookSeedPost(worker.notes);
             if(seed){
               const captured=await extractContentLink(context,seed,worker,now);
               if(!captured.skip)return {result:'PUBLIC SEED CONTENT OPENED; captured=1',posts:[captured]};
             }
-            for(const candidate of publicFacebookPageCandidates(worker.profileUrl)){
-          """.replace('          ','')
-          if "PUBLIC SEED CONTENT OPENED" not in s:
-              if scan_target not in s: raise SystemExit('scanWorker target not found')
-              s=s.replace(scan_target,scan_insert,1)
+            for(const candidate of publicFacebookPageCandidates(worker.profileUrl)){"""
+              replacement='\n'.join(line[10:] if line.startswith('          ') else line for line in replacement.splitlines())
+              if needle not in s: raise SystemExit('scanWorker target not found')
+              s=s.replace(needle,replacement,1)
+
           worker.write_text(s)
 
           test=Path('louisburg-local/social-browser-worker/worker-v2.test.mjs')
@@ -67,7 +69,7 @@ jobs:
             const notes='FIRST_PARTY_MODE=AUTO_CURRENT FACEBOOK_SEED_POST=https://www.facebook.com/100063646776157/posts/pfbidExample/';
             assert.equal(facebookSeedPost(notes),'https://www.facebook.com/100063646776157/posts/pfbidExample');
           });
-          """.replace('          ','')
+          """
           test.write_text(t)
           PY
           cd louisburg-local/social-browser-worker
