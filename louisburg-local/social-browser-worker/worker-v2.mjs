@@ -73,6 +73,11 @@ export function shouldScanWorker(worker,now=new Date(),force=false){
   const interval=/DAILY/i.test(String(worker.scanFrequency||''))?20*3600000:45*60000;return now-d>=interval;
 }
 
+export function facebookSeedPost(notes){
+  const value=(String(notes||'').match(/(?:^|\s)FACEBOOK_SEED_POST=(https?:\/\/\S+)/i)||[])[1]||'';
+  return canonicalPostUrl(value);
+}
+
 export function publicFacebookPageCandidates(profileUrl){
   const raw=String(profileUrl||'').trim();if(!raw)return [];
   try{
@@ -160,7 +165,12 @@ async function extractVisiblePagePosts(page,worker,now,maxPosts){
 async function scanWorker(context,worker,settings){
   const page=await context.newPage();const now=new Date();let sawLogin=false,sawAgeGate=false,sawReadable=false,pageIdentity='';
   try{
-    for(const candidate of publicFacebookPageCandidates(worker.profileUrl)){
+  const seed=facebookSeedPost(worker.notes);
+  if(seed){
+    const captured=await extractContentLink(context,seed,worker,now);
+    if(!captured.skip)return {result:'PUBLIC SEED CONTENT OPENED; captured=1',posts:[captured]};
+  }
+  for(const candidate of publicFacebookPageCandidates(worker.profileUrl)){
       try{await page.goto(candidate,{waitUntil:'domcontentloaded',timeout:30000});await settlePage(page);}catch{continue;}
       const finalUrl=page.url();const body=await getBodyText(page);const identity=(await page.locator('h1').first().innerText({timeout:2500}).catch(()=>'' )).trim();if(identity&&!pageIdentity)pageIdentity=identity;
       if(/Log in to view this 18\+ content/i.test(body)){sawAgeGate=true;continue;}

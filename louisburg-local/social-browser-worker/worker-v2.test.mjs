@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {canonicalPostUrl,facebookPostBelongsToProfile,findFacebookDateLabel,parseFacebookDateLabel,publicFacebookPageCandidates} from './worker-v2.mjs';
+import {canonicalPostUrl,facebookPostBelongsToProfile,facebookSeedPost,findFacebookDateLabel,parseFacebookDateLabel,publicFacebookPageCandidates} from './worker-v2.mjs';
 
 test('modern Facebook content URLs canonicalize',()=>{
   assert.equal(canonicalPostUrl('https://m.facebook.com/test/posts/pfbid123?__cft__=x'),'https://www.facebook.com/test/posts/pfbid123');
@@ -26,4 +26,10 @@ test('post ownership must match the verified Facebook Page',()=>{
   assert.equal(facebookPostBelongsToProfile('https://www.facebook.com/LouisburgKSChamber/posts/pfbid123','https://www.facebook.com/LouisburgKSChamber'),true);
   assert.equal(facebookPostBelongsToProfile('https://www.facebook.com/louisburgsportszone/posts/pfbid123','https://www.facebook.com/LouisburgKSChamber'),false);
   assert.equal(facebookPostBelongsToProfile('https://www.facebook.com/450736031663124/posts/pfbid123','https://www.facebook.com/450736031663124'),true);
+});
+
+
+test('exact Facebook seed post is read from worker notes',()=>{
+  const notes='FIRST_PARTY_MODE=AUTO_CURRENT FACEBOOK_SEED_POST=https://www.facebook.com/100063646776157/posts/pfbidExample/';
+  assert.equal(facebookSeedPost(notes),'https://www.facebook.com/100063646776157/posts/pfbidExample');
 });
