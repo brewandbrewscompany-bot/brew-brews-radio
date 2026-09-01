@@ -21,7 +21,10 @@ const LL_CONFIG = Object.freeze({
     'live music','concert','register now','registration open','workshop','grand opening','now open',
     'closing early','closed today','closure','now hiring','fundraiser','festival',
     'new product','new coffee','new drink','new menu','launch','release','freshly roasted',
-    'cancelled','canceled','postponed','delayed','moved','rescheduled','tickets','sign up','signup'
+    'cancelled','canceled','postponed','delayed','moved','rescheduled','tickets','sign up','signup',
+    'open house','community night','family night','pto night','pep rally','back-to-school','back to school',
+    'school closed','schools closed','sports physical','physical night','tryouts','auditions','volunteer','volunteers',
+    'food drive','blood drive','supply drive','child find','enrollment','picture day','parent night'
   ],
   LOUISBURG_TERMS: ['louisburg','louisburg ks','louisburg, ks','louisburg kansas','66053'],
   BOILERPLATE_TERMS: [
