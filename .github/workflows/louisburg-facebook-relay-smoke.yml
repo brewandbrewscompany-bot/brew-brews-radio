@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - '.github/workflows/louisburg-facebook-relay-smoke.yml'
+      - 'louisburg-local/social-browser-worker/facebook-relay-recovery.mjs'
+      - 'louisburg-local/social-browser-worker/facebook-relay-recovery.test.mjs'
   workflow_dispatch:
 
 permissions:
