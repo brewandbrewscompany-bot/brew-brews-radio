@@ -1,0 +1,60 @@
+name: Patch school navigation filter
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/patch-school-navigation-filter.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Patch navigation filtering and regression test
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          src = Path('louisburg-local/social-browser-worker/school-first-party.mjs')
+          text = src.read_text()
+          old = "  if(/^find us$/i.test(value)||/^schools$/i.test(value)||/^stay connected$/i.test(value))return '';"
+          new = "  if(/^find us$/i.test(value)||/^schools$/i.test(value)||/^stay connected$/i.test(value))return '';\n  if(/^skyward family access$/i.test(value)||/^new student enrollment$/i.test(value)||/^returning student enrollment$/i.test(value)||/^search site$/i.test(value)||/^menu$/i.test(value)||/^translate$/i.test(value))return '';"
+          if old not in text:
+              raise SystemExit('cleanSchoolLine target not found')
+          text = text.replace(old, new, 1)
+          src.write_text(text)
+
+          test = Path('louisburg-local/social-browser-worker/school-first-party.test.mjs')
+          t = test.read_text()
+          marker = "test('school navigation enrollment labels do not become activity'"
+          if marker not in t:
+              t += "\n\ntest('school navigation enrollment labels do not become activity',()=>{\n  const raw=`Broadmoor 3-5 Elementary\\nSkyward Family Access\\nNew Student Enrollment\\nReturning Student Enrollment\\nSEARCH SITE\\nMENU\\nTRANSLATE\\nBROADMOOR 3-5 ELEMENTARY\\nLIVE FEED\\nHere's your Weekly Wildcat News for August 30, 2026!\\nhttps://app.smore.com/n/31njw`;\n  const result=extractSchoolActivities(raw,new Date('2026-09-01T12:00:00Z'));\n  assert.equal(result.length,0);\n});\n"
+              test.write_text(t)
+          PY
+
+      - name: Run worker tests
+        working-directory: louisburg-local/social-browser-worker
+        run: npm install --no-audit --no-fund && npm test
+
+      - name: Commit fix
+        shell: bash
+        run: |
+          git config user.name 'brewandbrewscompany-bot'
+          git config user.email 'brewandbrewscompany@gmail.com'
+          git add louisburg-local/social-browser-worker/school-first-party.mjs louisburg-local/social-browser-worker/school-first-party.test.mjs
+          git diff --cached --quiet && exit 0
+          git commit -m 'Filter USD 416 navigation enrollment labels'
+          git push origin HEAD:main
