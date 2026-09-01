@@ -47,13 +47,13 @@ function socialAutoVerificationDecisionLookbackAware_(payload,activityType,now,s
   if(dates.explicitPastOnly||dates.pastOnly)return {ok:false,reason:'post contains only stale dates'};
   const throughMonth=socialThroughMonthDate_(lower,now);
   const relevantDate=socialRelevantDate_(payload,activityType,now,dates)||throughMonth;
+  const today=Utilities.formatDate(now,LL_CONFIG.TZ,'yyyy-MM-dd');
 
   // Days 8-10 are a deliberate lookback band, not an extension for generic
   // evergreen marketing. Require a still-current/future dated activity there.
-  if(ageDays>7&&!((dates&&dates.hasCurrentOrFuture)||throughMonth||relevantDate))return {ok:false,reason:'8-10 day lookback requires a current or future dated activity'};
+  if(ageDays>7&&(!relevantDate||relevantDate<today))return {ok:false,reason:'8-10 day lookback requires a current or future dated activity'};
 
   if(activityType==='Event / Activity'&&!relevantDate)return {ok:false,reason:'event date is not exact enough for automatic publication'};
-  const today=Utilities.formatDate(now,LL_CONFIG.TZ,'yyyy-MM-dd');
   if(/\b(today only|today|tonight)\b/.test(lower)&&relevantDate&&relevantDate<today)return {ok:false,reason:'same-day activity has already expired'};
 
   return {ok:true,sourceType:'SOCIAL',reason:ageDays>7?'verified public Facebook Page identity/alias with a still-current or future dated activity inside the 10-day lookback':'verified public Facebook Page identity/alias, verified Louisburg registry match, recent owned content, eligible activity and no conflict',registry:registry,relevantDate:relevantDate,timeParts:socialTimeParts_(text),visibleCard:visibleCard};
@@ -77,8 +77,11 @@ function runSocialFutureLookbackSelfTest(){
   result=socialAutoVerificationDecisionLookbackAware_(Object.assign({},base,{postDate:'2026-08-23T12:00:00-05:00',text:'Louisburg KS. Fresh coffee available.'}),'Business Update',now,sources,registry,{});
   if(result.ok)failures.push('9-day undated generic promotion incorrectly auto-verified');
 
+  result=socialAutoVerificationDecisionLookbackAware_(Object.assign({},base,{postDate:'2026-08-23T12:00:00-05:00',text:'Louisburg KS. Wednesday special: burger basket $9.99.'}),'Deal / Special',now,sources,registry,{});
+  if(result.ok)failures.push('9-day stale weekday special incorrectly auto-verified');
+
   if(failures.length)throw new Error('Future lookback self-test failed: '+failures.join(' | '));
-  Logger.log('Future lookback self-test passed: 3/3.');
+  Logger.log('Future lookback self-test passed: 4/4.');
 }
 
 socialAutoVerificationDecision_=socialAutoVerificationDecisionLookbackAware_;
