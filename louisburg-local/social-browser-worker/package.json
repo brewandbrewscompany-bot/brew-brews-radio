@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "start": "node worker-v2.mjs",
-    "test": "node --test worker.test.mjs worker-v2.test.mjs facebook-relay-recovery.test.mjs first-party-fallback.test.mjs school-first-party.test.mjs exact-post-recovery.test.mjs"
+    "test": "node --test worker.test.mjs worker-v2.test.mjs facebook-relay-recovery.test.mjs facebook-relay-lookback.test.mjs first-party-fallback.test.mjs school-first-party.test.mjs exact-post-recovery.test.mjs"
   },
   "dependencies": {
     "playwright": "1.55.0"
