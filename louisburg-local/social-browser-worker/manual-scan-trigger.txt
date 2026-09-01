@@ -3,3 +3,4 @@ Manual public-social scan trigger
 2026-08-31 targeted exact-post recovery pass: run exact recovery hints before broad Page sweep.
 2026-08-31: verify Cedar Cove stable Facebook Page ID 100064725339064 from exact public post and official Cedar Cove website/events sources.
 2026-08-31: verify Louisburg Aquatic Center stable Facebook Page ID 100090464593937 from exact public post and official City Aquatic Center source.
+2026-08-31: verify Louisburg Athletic Club Facebook Page ID 100064303170395 from exact public post and official Athletic Club website sources.
