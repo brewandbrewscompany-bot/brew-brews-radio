@@ -34,9 +34,25 @@ test('signed-out data-sjs Relay timeline yields a verified current Brew & Brews 
   const posts=relayPostsFromDataSjsBlocks([block],worker,now,8);
   assert.equal(posts.length,1);
   assert.equal(posts[0].postUrl,'https://www.facebook.com/BB.Coffee.Tea/posts/pfbidToday');
+  // The intake profile must match the already-verified owner of the exact post URL.
+  assert.equal(posts[0].profileUrl,'https://www.facebook.com/BB.Coffee.Tea');
   assert.equal(posts[0].postText,'Fresh roasted coffee is ready in Louisburg today!');
   assert.equal(posts[0].mediaType,'IMAGE');
   assert.equal(posts[0].sourceMode,'PUBLIC_RELAY_DATA_SJS');
+});
+
+test('Relay recovery keeps numeric owner when the exact post is numeric',()=>{
+  const now=new Date('2026-09-01T17:30:00.000Z');
+  const story={
+    post_id:'100063452718081_999999998',
+    creation_time:Math.floor((now.getTime()-5*60*1000)/1000),
+    permalink_url:'https://www.facebook.com/100063452718081/posts/pfbidNumeric',
+    actors:[{id:'100063452718081',name:'Brew and Brews Company'}],
+  };
+  const worker={queueId:'SOC-BREW-PENDING',organization:'Brew & Brews Coffee Co.',profileUrl:'https://www.facebook.com/100063452718081',notes:'FACEBOOK_VANITY_ALIAS=https://www.facebook.com/BB.Coffee.Tea'};
+  const posts=relayPostsFromDataSjsBlocks([relayBlock(story)],worker,now,8);
+  assert.equal(posts.length,1);
+  assert.equal(posts[0].profileUrl,'https://www.facebook.com/100063452718081');
 });
 
 test('Relay recovery rejects a post owned by an unrelated Facebook Page',()=>{
