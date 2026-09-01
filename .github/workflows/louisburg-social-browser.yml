@@ -49,26 +49,37 @@ jobs:
 
       - name: Test extraction rules
         working-directory: louisburg-local/social-browser-worker
+        env:
+          NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: npm test
 
       - name: Scan rendered USD 416 first-party school feeds
         working-directory: louisburg-local/social-browser-worker
+        env:
+          NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node school-first-party.mjs
 
       - name: Recover configured exact public Facebook posts
         working-directory: louisburg-local/social-browser-worker
+        env:
+          NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node exact-post-recovery.mjs
 
       - name: Recover signed-out public Facebook Relay timeline
         working-directory: louisburg-local/social-browser-worker
+        env:
+          NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node facebook-relay-recovery.mjs
 
       - name: Scan public Facebook Pages as DOM fallback
         working-directory: louisburg-local/social-browser-worker
         env:
           LL_FORCE_SCAN: 'false'
+          NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: npm start
 
       - name: Run verified first-party fallbacks
         working-directory: louisburg-local/social-browser-worker
+        env:
+          NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node first-party-fallback.mjs
