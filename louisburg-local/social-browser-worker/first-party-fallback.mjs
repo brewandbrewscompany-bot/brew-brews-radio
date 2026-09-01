@@ -6,6 +6,7 @@ const TZ='America/Chicago';
 const WEEKDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const MONTHS='January February March April May June July August September October November December'.split(' ');
 const ACTION_RE=/\b(event|festival|live music|concert|special|deal|discount|coupon|promo(?:tion)?|sale|off\b|register|registration|enroll|class|workshop|camp|hiring|now hiring|job|opening|closed|closure|hours change|meeting|fundraiser|open house|new (?:product|drink|menu|offering)|now available)\b/i;
+const EVENT_HEADING_RE=/^(?:(?:upcoming|community|public)\s+)?events?(?:\s+(?:calendar|schedule))?$|^calendar$/i;
 
 export function parseFallbackMetadata(notes){
   const text=String(notes||'');
@@ -109,20 +110,59 @@ function actionableSnippet(lines,index){
   return normalizeText(lines.slice(start,end).join(' ')).slice(0,1400);
 }
 
+function nearbyEventHeading_(lines,index,now){
+  for(let i=index-1;i>=Math.max(0,index-5);i--){
+    if(parseActivityDate(lines[i],now))break;
+    if(EVENT_HEADING_RE.test(lines[i]))return true;
+  }
+  return false;
+}
+
+function datedLineSnippet_(lines,index,now){
+  const line=lines[index],parts=[];
+  const previous=lines[index-1]||'';
+  const next=lines[index+1]||'';
+  if(previous&&!EVENT_HEADING_RE.test(previous)&&!parseActivityDate(previous,now)&&!/^(contact|email|phone|learn more|details?)\b/i.test(previous))parts.push(previous);
+  parts.push(line);
+  if(next&&!EVENT_HEADING_RE.test(next)&&!parseActivityDate(next,now)&&ACTION_RE.test(next))parts.push(next);
+  return normalizeText(parts.join(' ')).slice(0,1400);
+}
+
 export function extractDatedTextActivities(raw,now=new Date()){
   const {weekday,date:today}=localDateParts(now);
   const lines=String(raw||'').split(/\r?\n/).map(normalizeText).filter(v=>v.length>=3&&v.length<=500);
   const out=[],seen=new Set();
   for(let i=0;i<lines.length;i++){
     const line=lines[i];
-    if(!ACTION_RE.test(line)&&!/\b(current openings?|open positions?)\b/i.test(line))continue;
-    const snippet=actionableSnippet(lines,i);
-    let date=parseActivityDate(snippet,now);
+    const lineDate=parseActivityDate(line,now);
+    const sectionContext=lineDate&&nearbyEventHeading_(lines,i,now);
+    const directLineActivity=ACTION_RE.test(line)||/\b(fish fry|blood drive|music bingo|bbq contest|barbecue contest|tractor pull)\b/i.test(line);
+    let snippet='',date=null;
+
+    // Content-level event/calendar pages often render one exact event per line.
+    // Prefer that date-centered line so a generic heading cannot merge multiple
+    // adjacent events into one candidate (for example Fish Fry + Blood Drive).
+    if(lineDate&&(directLineActivity||sectionContext)){
+      date=lineDate;
+      snippet=datedLineSnippet_(lines,i,now);
+    }else{
+      const hiringLine=/\b(current openings?|open positions?)\b/i.test(line);
+      if(!directLineActivity&&!hiringLine)continue;
+      if(EVENT_HEADING_RE.test(line))continue;
+      // If an action title immediately precedes an exact date under an Events
+      // heading, the dated line will create the candidate; avoid a duplicate.
+      const nextDate=parseActivityDate(lines[i+1]||'',now);
+      if(nextDate&&nearbyEventHeading_(lines,i,now))continue;
+      snippet=actionableSnippet(lines,i);
+      date=parseActivityDate(snippet,now);
+    }
+
+    if(!snippet)continue;
     if(!date&&new RegExp(`\\b${weekday}\\b`,'i').test(snippet)&&/\b(special|deal|discount|off|half[- ]price|\$\d)/i.test(snippet))date=localNoon(today);
     const hiring=/\b(hiring|now hiring|current openings?|open positions?|careers?)\b/i.test(snippet);
     if(!date&&!hiring)continue;
     if(date&&!dateInWindow(date,now))continue;
-    if(!ACTION_RE.test(snippet)&&!hiring)continue;
+    if(!ACTION_RE.test(snippet)&&!hiring&&!sectionContext&&!/\b(fish fry|blood drive|music bingo|bbq contest|barbecue contest|tractor pull)\b/i.test(snippet))continue;
     const dateKey=date?localDateParts(date).date:today;
     const key=hash12(`${dateKey}|${snippet.toLowerCase()}`);
     if(seen.has(key))continue;seen.add(key);
