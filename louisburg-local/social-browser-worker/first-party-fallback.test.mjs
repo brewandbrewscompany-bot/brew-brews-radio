@@ -5,7 +5,15 @@ import {parseFallbackMetadata,fallbackUrlCandidates,extractWeekdaySpecial,extrac
 test('fallback metadata is read from queue notes',()=>{
   const meta=parseFallbackMetadata('Keep social primary. FIRST_PARTY_FALLBACK=https://example.com/specials FIRST_PARTY_MODE=WEEKDAY_SPECIALS');
   assert.equal(meta.url,'https://example.com/specials');
+  assert.deepEqual(meta.urls,['https://example.com/specials']);
   assert.equal(meta.mode,'WEEKDAY_SPECIALS');
+});
+
+test('multiple fallback URLs are parsed in numbered order and de-duplicated',()=>{
+  const meta=parseFallbackMetadata('FIRST_PARTY_FALLBACK=https://example.com/classes FIRST_PARTY_FALLBACK_2=https://example.com/events FIRST_PARTY_FALLBACK_3=https://example.com/classes FIRST_PARTY_MODE=AUTO_CURRENT');
+  assert.equal(meta.url,'https://example.com/classes');
+  assert.deepEqual(meta.urls,['https://example.com/classes','https://example.com/events']);
+  assert.equal(meta.mode,'AUTO_CURRENT');
 });
 
 test('fallback URL recovery tries the verified host and its www/apex twin only',()=>{
