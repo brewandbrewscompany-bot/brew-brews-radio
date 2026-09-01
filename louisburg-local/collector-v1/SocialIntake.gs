@@ -471,12 +471,13 @@ function socialHubIndex_(sheet){
 function socialPromoteToHub_(sheet,index,payload,activityType,fingerprint,auto,now){
   const plan=socialPromotionPlan_(payload,activityType,fingerprint,auto,now);
   const normalizedUrl=socialNormalizeUrl_(auto.visibleCard?payload.profileUrl:payload.postUrl);
-  const existing=index.byDedupe[plan.dedupeKey]||(!auto.visibleCard?index.byUrl[normalizedUrl]:'')||'';
+  const useUrlDedupe=auto.sourceType!=='FIRST_PARTY'&&!auto.visibleCard;
+  const existing=index.byDedupe[plan.dedupeKey]||(useUrlDedupe?index.byUrl[normalizedUrl]:'')||'';
   if(existing)return {duplicate:true,itemId:existing};
   const target=sheet.getLastRow()+1;
   if(target>2)sheet.getRange(target-1,1,1,plan.row.length).copyTo(sheet.getRange(target,1,1,plan.row.length),SpreadsheetApp.CopyPasteType.PASTE_FORMAT,false);
   sheet.getRange(target,1,1,plan.row.length).setValues([plan.row]);
-  if(normalizedUrl&&!auto.visibleCard)index.byUrl[normalizedUrl]=plan.itemId;
+  if(normalizedUrl&&useUrlDedupe)index.byUrl[normalizedUrl]=plan.itemId;
   index.byDedupe[plan.dedupeKey]=plan.itemId;
   return {duplicate:false,itemId:plan.itemId};
 }
