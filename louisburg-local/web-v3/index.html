@@ -300,6 +300,7 @@
     function hasDesignation(i,d){return Array.isArray(i.designations)&&i.designations.includes(d)}
     function activityText(i){return [i.activityType,i.category,i.tags,i.organization,i.headline,i.summary,(i.designationLabels||[]).join(' ')].join(' ').toLowerCase()}
     function activityType(i){return String(i.activityType||'').trim().toLowerCase()}
+    function isEventActivityType(type){return /\bevent\b|\bactivity\b/.test(String(type||''))}
     function isBusinessSource(i){
       const org=String(i.organization||'').toLowerCase();
       const nonBusiness=/city of louisburg|louisburg recreation commission|louisburg library|usd 416|chamber of commerce|aquatic center|senior citizens|united methodist|first christian church|faith chapel|first baptist church|thechurch louisburg|american legion|lions club|rotary club|powell observatory|astronomical society|sports zone/;
@@ -319,11 +320,11 @@
       if(cat==='RIGHT_NOW')return sectionMatches(i,'TODAY');
       if(cat==='BUSINESS')return isBusinessSource(i);
       if(cat==='DEALS')return type==='deal / special'||/\bdeal\b|\bspecial\b|\bdiscount\b|\bcoupon\b|\bpromotion\b|\bon sale\b|\bhalf[- ]price\b|\bbogo\b/.test(text);
-      if(cat==='EVENTS')return type==='event / activity'||/\bevent\b|\bfestival\b|\bpublic hearing\b|\bopen house\b|\bfundraiser\b|\bworkshop\b|\bmeeting\b/.test(text);
+      if(cat==='EVENTS')return isEventActivityType(type)||/\bevent\b|\bfestival\b|\bpublic hearing\b|\bopen house\b|\bfundraiser\b|\bworkshop\b|\bmeeting\b/.test(text);
       if(cat==='FOOD'){
       const category=String(i.category||'').toLowerCase();
       const explicitFood=tags.has('food')||tags.has('food-drink')||/\bfood\b|\bdrink\b|\bcoffee\b|\bcafe\b|\bcafé\b|\brestaurant\b|\bmenu\b|\bshake\b/.test(category);
-      const eventLike=type==='event / activity'||/\bevent\b|\bfestival\b|\brun\b|\bmeeting\b|\bregistration\b|\bcommunity\b/.test(category);
+      const eventLike=isEventActivityType(type)||/\bevent\b|\bfestival\b|\brun\b|\bmeeting\b|\bregistration\b|\bcommunity\b/.test(category);
       if(explicitFood)return true;
       if(eventLike)return false;
       const foodSignal=/\bfood\b|\bdrink\b|\bcoffee\b|\bcafe\b|\bcafé\b|\brestaurant\b|\bmenu\b|\bshake\b|\bmeal\b|\bchicken\b|\bsteak\b|\bburger\b|\bcider\b/.test(text);
@@ -335,7 +336,7 @@
       if(cat==='HIRING')return type==='hiring'||/\bhiring\b|\bjob\b|\bcareer\b|\bemployment\b|\bposition\b|\bopenings?\b/.test(text);
       if(cat==='CITY')return type==='operational update'||String(i.organization||'').toLowerCase()==='city of louisburg'||/\bclosure\b|\bclosed\b|\broad\b|\butility\b|\bpublic notice\b|\balert\b/.test(text);
       if(cat==='NEW')return type==='new product / offering'||/\bnew product\b|\bnew offering\b|\bnew drink\b|\bjust arrived\b|\bnow available\b|\bregistration\b|\benrollment\b/.test(text);
-      if(cat==='WHAT')return type==='event / activity'||tags.has('what-to-do')||matchesCategory(i,'EVENTS')||matchesCategory(i,'FAMILY')||matchesCategory(i,'MUSIC')||matchesCategory(i,'SPORTS');
+      if(cat==='WHAT')return isEventActivityType(type)||tags.has('what-to-do')||matchesCategory(i,'EVENTS')||matchesCategory(i,'FAMILY')||matchesCategory(i,'MUSIC')||matchesCategory(i,'SPORTS');
       if(cat==='ROASTERY')return tags.has('local-roastery')||hasDesignation(i,'LOCAL_ROASTERY');
       if(cat==='ORIGINALS')return tags.has('louisburg-original')||tags.has('verified-first-only')||hasDesignation(i,'LOUISBURG_ORIGINAL')||hasDesignation(i,'VERIFIED_FIRST_ONLY');
       return true;
