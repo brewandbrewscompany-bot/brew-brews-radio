@@ -78,6 +78,26 @@ export function facebookSeedPost(notes){
   return canonicalPostUrl(value);
 }
 
+function facebookAliasFromNotes(notes){
+  const value=(String(notes||'').match(/(?:^|\s)FACEBOOK_VANITY_ALIAS=(https?:\/\/\S+)/i)||[])[1]||'';
+  if(!value)return '';
+  try{
+    const u=new URL(value.replace(/[),.;]+$/,''));
+    if(!/(^|\.)facebook\.com$/i.test(u.hostname))return '';
+    const path=u.pathname.replace(/\/+$/,'');
+    return path?`https://www.facebook.com${path}`:'';
+  }catch{return '';}
+}
+
+function facebookAltIdFromNotes(notes){return (String(notes||'').match(/(?:^|\s)FACEBOOK_ALT_ID=(\d+)/i)||[])[1]||'';}
+
+export function facebookWorkerIdentityUrls(worker){
+  const out=[];const add=v=>{v=String(v||'').trim();if(v&&!out.includes(v))out.push(v);};
+  add(worker?.profileUrl);add(facebookAliasFromNotes(worker?.notes));
+  const altId=facebookAltIdFromNotes(worker?.notes);if(altId)add(`https://www.facebook.com/${altId}`);
+  return out;
+}
+
 export function publicFacebookPageCandidates(profileUrl){
   const raw=String(profileUrl||'').trim();if(!raw)return [];
   try{
@@ -89,6 +109,10 @@ export function publicFacebookPageCandidates(profileUrl){
     for(const host of ['m.facebook.com','www.facebook.com','mbasic.facebook.com']){const base=`https://${host}${path}`;add(`${base}?sk=posts`);add(`${base}/posts`);add(base);}
     if(pathId)addId(pathId);add(raw);return out;
   }catch{return [raw];}
+}
+
+export function workerFacebookPageCandidates(worker){
+  const out=[];for(const profile of facebookWorkerIdentityUrls(worker)){for(const candidate of publicFacebookPageCandidates(profile)){if(!out.includes(candidate))out.push(candidate);}}return out;
 }
 
 export function facebookOwnerKey(url){
@@ -104,6 +128,7 @@ export function facebookOwnerKey(url){
   }catch{return '';}
 }
 export function facebookPostBelongsToProfile(postUrl,profileUrl){const a=facebookOwnerKey(postUrl),b=facebookOwnerKey(profileUrl);return !!a&&!!b&&a===b;}
+export function facebookPostBelongsToWorker(postUrl,worker){const key=facebookOwnerKey(postUrl);if(!key)return false;return facebookWorkerIdentityUrls(worker).map(facebookOwnerKey).filter(Boolean).includes(key);}
 
 function identityKey(v){return String(v||'').toLowerCase().replace(/\b(llc|inc|company|co|kansas|ks)\b/g,' ').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
 function identityMatches(a,b){a=identityKey(a);b=identityKey(b);if(!a||!b)return true;return a===b||a.includes(b)||b.includes(a);}
@@ -122,7 +147,13 @@ async function settlePage(page){
 }
 
 async function getBodyText(page){return (await page.locator('body').innerText({timeout:8000}).catch(()=>'' )).replace(/\s+/g,' ').trim();}
-async function collectPostLinks(page){const hrefs=await page.locator('a[href]').evaluateAll(nodes=>nodes.map(n=>n.href)).catch(()=>[]);return [...new Set(hrefs.map(canonicalPostUrl).filter(Boolean))];}
+async function collectPostLinks(page){
+  const hrefs=await page.locator('a[href]').evaluateAll(nodes=>nodes.map(n=>n.href)).catch(()=>[]);
+  const html=await page.content().catch(()=>'');
+  const decoded=String(html||'').replace(/\\u002F/gi,'/').replace(/\\\//g,'/').replace(/&amp;/g,'&');
+  const embedded=decoded.match(/https?:\/\/(?:[a-z0-9-]+\.)?facebook\.com\/[^"'<>\\\s]+\/(?:posts|reel|videos)\/[^"'<>\\\s?&#]+/gi)||[];
+  return [...new Set([...hrefs,...embedded].map(canonicalPostUrl).filter(Boolean))];
+}
 async function extractMedia(scope){const videos=await scope.locator('video').evaluateAll(nodes=>nodes.map(v=>v.currentSrc||v.src||v.poster||'').filter(Boolean)).catch(()=>[]);if(videos.length)return {mediaUrl:videos[0],mediaType:'VIDEO'};const imgs=await scope.locator('img').evaluateAll(nodes=>nodes.map(i=>({src:i.currentSrc||i.src||'',w:i.naturalWidth||i.width||0,h:i.naturalHeight||i.height||0})).filter(i=>/fbcdn\.net/i.test(i.src)&&i.w>=220&&i.h>=160).sort((a,b)=>b.w*b.h-a.w*a.h)).catch(()=>[]);return imgs.length?{mediaUrl:imgs[0].src,mediaType:'IMAGE'}:{mediaUrl:'',mediaType:''};}
 
 async function extractContentLink(context,postUrl,worker,now){
@@ -130,7 +161,7 @@ async function extractContentLink(context,postUrl,worker,now){
   try{
     await page.goto(postUrl,{waitUntil:'domcontentloaded',timeout:30000});await settlePage(page);
     const canonical=canonicalPostUrl(page.url())||canonicalPostUrl(postUrl);if(!canonical)return {skip:'CONTENT URL DID NOT REMAIN PUBLIC'};
-    const postOwner=facebookOwnerKey(canonical),profileOwner=facebookOwnerKey(worker.profileUrl);if(postOwner&&profileOwner&&postOwner!==profileOwner)return {skip:'CONTENT OWNER DOES NOT MATCH VERIFIED PAGE'};
+    const postOwner=facebookOwnerKey(canonical);if(postOwner&&!facebookPostBelongsToWorker(canonical,worker))return {skip:'CONTENT OWNER DOES NOT MATCH VERIFIED PAGE OR VERIFIED ALIAS'};
     const scope=page.locator('article,[role="article"],[role="dialog"],main').first();
     const raw=await (await scope.count()?scope:page.locator('body')).innerText({timeout:8000}).catch(()=>'' );if(raw.length<30)return {skip:'TOO LITTLE PUBLIC CONTENT'};
     let dateLabel=findFacebookDateLabel(raw,now);
@@ -149,7 +180,7 @@ async function extractVisiblePagePosts(page,worker,now,maxPosts){
   const scopes=page.locator('article,[role="article"],[data-pagelet*="FeedUnit"],div[data-ft]');const count=Math.min(await scopes.count().catch(()=>0),30);const posts=[],seen=new Set();
   for(let i=0;i<count&&posts.length<maxPosts;i++){
     const scope=scopes.nth(i);const raw=await scope.innerText({timeout:4000}).catch(()=>'' );if(raw.length<30)continue;
-    const hrefs=await scope.locator('a[href]').evaluateAll(nodes=>nodes.map(n=>n.href)).catch(()=>[]);let exact='';for(const href of hrefs){exact=canonicalPostUrl(href);if(exact)break;}if(exact&&!facebookPostBelongsToProfile(exact,worker.profileUrl))continue;
+    const hrefs=await scope.locator('a[href]').evaluateAll(nodes=>nodes.map(n=>n.href)).catch(()=>[]);let exact='';for(const href of hrefs){exact=canonicalPostUrl(href);if(exact)break;}if(exact&&!facebookPostBelongsToWorker(exact,worker))continue;
     let dateLabel=findFacebookDateLabel(raw,now);if(!dateLabel){const attrs=await scope.locator('a').evaluateAll(nodes=>nodes.flatMap(n=>[n.getAttribute('aria-label'),n.getAttribute('title')]).filter(Boolean)).catch(()=>[]);for(const a of attrs){const candidate=findFacebookDateLabel(a,now)||String(a).trim();if(isPostFresh(parseFacebookDateLabel(candidate,now),now)){dateLabel=candidate;break;}}}
     const parsedDate=parseFacebookDateLabel(dateLabel,now);if(!isPostFresh(parsedDate,now))continue;
     const author=(await scope.locator('h2 a,h3 a,strong a').first().innerText({timeout:1800}).catch(()=>worker.organization)).trim()||worker.organization;if(!identityMatches(author,worker.organization))continue;
@@ -170,12 +201,12 @@ async function scanWorker(context,worker,settings){
     const captured=await extractContentLink(context,seed,worker,now);
     if(!captured.skip)return {result:'PUBLIC SEED CONTENT OPENED; captured=1',posts:[captured]};
   }
-  for(const candidate of publicFacebookPageCandidates(worker.profileUrl)){
+  for(const candidate of workerFacebookPageCandidates(worker)){
       try{await page.goto(candidate,{waitUntil:'domcontentloaded',timeout:30000});await settlePage(page);}catch{continue;}
       const finalUrl=page.url();const body=await getBodyText(page);const identity=(await page.locator('h1').first().innerText({timeout:2500}).catch(()=>'' )).trim();if(identity&&!pageIdentity)pageIdentity=identity;
       if(/Log in to view this 18\+ content/i.test(body)){sawAgeGate=true;continue;}
       const visible=await extractVisiblePagePosts(page,worker,now,settings.maxPostsPerPage);if(visible.length)return {result:`PUBLIC PAGE POST CARDS VISIBLE; captured=${visible.length}; surface=${new URL(candidate).hostname}${pageIdentity?'; identity='+pageIdentity:''}`,posts:visible};
-      const links=(await collectPostLinks(page)).slice(0,settings.maxPostsPerPage);
+      const links=(await collectPostLinks(page)).filter(link=>facebookPostBelongsToWorker(link,worker)).slice(0,settings.maxPostsPerPage);
       if(links.length){
         const posts=[];for(const link of links){const captured=await extractContentLink(context,link,worker,now);if(!captured.skip)posts.push(captured);}
         if(posts.length)return {result:`PUBLIC CONTENT LINKS OPENED; links=${links.length}; captured=${posts.length}; surface=${new URL(candidate).hostname}${pageIdentity?'; identity='+pageIdentity:''}`,posts};
@@ -183,10 +214,10 @@ async function scanWorker(context,worker,settings){
       }
       if(/\/login\//i.test(finalUrl)||/^Log into Facebook/i.test(body)){sawLogin=true;continue;}if(body.length>80)sawReadable=true;
     }
-    if(sawReadable)return {result:`PUBLIC PAGE READABLE AFTER MOBILE/DESKTOP FALLBACKS; NO USABLE CURRENT POST CARDS OR CONTENT LINKS${pageIdentity?'; identity='+pageIdentity:''}`,posts:[]};
-    if(sawAgeGate)return {result:'AGE-GATED - PUBLIC POSTS NOT EXPOSED AFTER MOBILE/DESKTOP FALLBACKS',posts:[]};
-    if(sawLogin)return {result:'LOGIN ONLY - NO VISIBLE CURRENT POST CARDS AFTER MOBILE/DESKTOP FALLBACKS',posts:[]};
-    return {result:'PUBLIC FACEBOOK PAGE UNAVAILABLE AFTER MOBILE/DESKTOP FALLBACKS',posts:[]};
+    if(sawReadable)return {result:`PUBLIC PAGE READABLE AFTER NUMERIC/VANITY MOBILE/DESKTOP FALLBACKS; NO USABLE CURRENT POST CARDS OR CONTENT LINKS${pageIdentity?'; identity='+pageIdentity:''}`,posts:[]};
+    if(sawAgeGate)return {result:'AGE-GATED - PUBLIC POSTS NOT EXPOSED AFTER NUMERIC/VANITY MOBILE/DESKTOP FALLBACKS',posts:[]};
+    if(sawLogin)return {result:'LOGIN ONLY - NO VISIBLE CURRENT POST CARDS AFTER NUMERIC/VANITY MOBILE/DESKTOP FALLBACKS',posts:[]};
+    return {result:'PUBLIC FACEBOOK PAGE UNAVAILABLE AFTER NUMERIC/VANITY MOBILE/DESKTOP FALLBACKS',posts:[]};
   }finally{await page.close();}
 }
 
