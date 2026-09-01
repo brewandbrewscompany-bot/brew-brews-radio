@@ -5,7 +5,33 @@ import {deepRelayPostsFromDataSjsBlocks} from './facebook-relay-lookback.mjs';
 
 function alternateRelayBlock(story){
   const id='adp_ProfileCometTimelineFeedQueryRelayPreloader_altshape';
-  return JSON.stringify({require:[['RelayPrefetchedStreamCache','next',[],[id,{__bbox:{sequence_number:1,result:{data:{user:{timeline_feed:{units:[{payload:{story}}]}}}}}}]]});
+  const payload={
+    require:[
+      [
+        'RelayPrefetchedStreamCache',
+        'next',
+        [],
+        [
+          id,
+          {
+            __bbox:{
+              sequence_number:1,
+              result:{
+                data:{
+                  user:{
+                    timeline_feed:{
+                      units:[{payload:{story}}],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+      ],
+    ],
+  };
+  return JSON.stringify(payload);
 }
 
 const worker={queueId:'SOC-COWBOY-PENDING',organization:'Cowboy Coffee Post',profileUrl:'https://www.facebook.com/cowboycoffeepost/',notes:'Require Louisburg-specific text/location before publishing location-specific activity.'};
