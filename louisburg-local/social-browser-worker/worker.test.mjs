@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
 import {canonicalPostUrl,cleanPostText,findFacebookDateLabel,isPostFresh,parseFacebookDateLabel,publicFacebookPageCandidates,shouldScanWorker} from './worker.mjs';
 
 test('canonicalPostUrl keeps the public permalink and removes tracking',()=>{
@@ -51,4 +53,30 @@ test('numeric Facebook Pages get normal logged-out fallback surfaces',()=>{
   assert.ok(candidates.includes('https://www.facebook.com/450736031663124/posts'));
   assert.ok(candidates.includes('https://m.facebook.com/450736031663124'));
   assert.ok(candidates.includes('https://www.facebook.com/profile.php?id=450736031663124&sk=posts'));
+});
+
+function loadCollectorBridge(relativePath,globals={}){
+  const source=fs.readFileSync(new URL(relativePath,import.meta.url),'utf8');
+  const context=vm.createContext({console,...globals});
+  vm.runInContext(source,context,{filename:relativePath});
+  return context;
+}
+
+test('current activity-quality bridge passes its embedded regression suite',()=>{
+  const ctx=loadCollectorBridge('../collector-v1/ZZZSocialActivityQualityBridge.gs',{
+    classifySocialActivity_:()=>'',
+    socialPostGate_:()=>({ok:true})
+  });
+  const result=ctx.runSocialActivityQualityBridgeSelfTest();
+  assert.equal(result.total,9);
+  assert.equal(result.failed,0,JSON.stringify(result.failures));
+});
+
+test('current semantic-dedupe bridge passes its embedded regression suite',()=>{
+  const ctx=loadCollectorBridge('../collector-v1/ZZZZZSocialSemanticDedupeBridge.gs',{
+    socialPromoteToHub_:()=>({promoted:false,reason:'BASE_TEST_STUB'})
+  });
+  const result=ctx.runSocialSemanticDedupeBridgeSelfTest();
+  assert.equal(result.total,4);
+  assert.equal(result.failed,0,JSON.stringify(result.failures));
 });
