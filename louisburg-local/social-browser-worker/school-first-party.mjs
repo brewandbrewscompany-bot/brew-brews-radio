@@ -7,16 +7,16 @@ const MONTHS='January February March April May June July August September Octobe
 const SCHOOL_ACTION_RE=/\b(pto(?:\s+night)?|family night|community night|pep rally|open house|register|registration|enroll|enrollment|child find|sports physical|physical night|tryouts?|auditions?|fundraiser|food drive|blood drive|supply drive|volunteer|volunteers|meeting|concert|performance|games?|match|tournament|picture day|school(?:s)? closed|closed|closure|cancelled|canceled|postponed|rescheduled|delayed|schedule change|early dismissal|no school|sign up|signup|deadline|applications?|apply)\b/i;
 
 const SCHOOL_SOURCES=[
-  {organization:'Rockville K-2 Elementary',url:'https://www.usd416.org/o/rockville-elem/live-feed',kind:'LIVE_FEED'},
-  {organization:'Broadmoor 3-5 Elementary',url:'https://www.usd416.org/o/broadmoor-elem/live-feed/',kind:'LIVE_FEED'},
-  {organization:'Louisburg High School',url:'https://www.usd416.org/o/louisburg-high/live-feed',kind:'LIVE_FEED'},
-  {organization:'Louisburg Middle School',url:'https://www.usd416.org/o/louisburg-middle/live-feed',kind:'LIVE_FEED'},
-  {organization:'Circle Grove Preschool',url:'https://www.usd416.org/o/circle-grove-preschool/news',kind:'NEWS'},
-  {organization:'Circle Grove Preschool',url:'https://www.usd416.org/o/circle-grove-preschool/page/circle-grove-parent-information',kind:'ENROLLMENT'},
-  {organization:'Louisburg High School',url:'https://www.usd416.org/o/louisburg-high/news',kind:'NEWS'},
-  {organization:'Louisburg Middle School',url:'https://www.usd416.org/o/louisburg-middle/news',kind:'NEWS'},
-  {organization:'Broadmoor 3-5 Elementary',url:'https://www.usd416.org/o/broadmoor-elem/news',kind:'NEWS'},
-  {organization:'Rockville K-2 Elementary',url:'https://www.usd416.org/o/rockville-elem/news',kind:'NEWS'},
+  {organization:'Rockville K-2 Elementary - USD 416',url:'https://www.usd416.org/o/rockville-elem/live-feed',kind:'LIVE_FEED'},
+  {organization:'Broadmoor 3-5 Elementary - USD 416',url:'https://www.usd416.org/o/broadmoor-elem/live-feed/',kind:'LIVE_FEED'},
+  {organization:'Louisburg High School - USD 416',url:'https://www.usd416.org/o/louisburg-high/live-feed',kind:'LIVE_FEED'},
+  {organization:'Louisburg Middle School - USD 416',url:'https://www.usd416.org/o/louisburg-middle/live-feed',kind:'LIVE_FEED'},
+  {organization:'Circle Grove Preschool - USD 416',url:'https://www.usd416.org/o/circle-grove-preschool/news',kind:'NEWS'},
+  {organization:'Circle Grove Preschool - USD 416',url:'https://www.usd416.org/o/circle-grove-preschool/page/circle-grove-parent-information',kind:'ENROLLMENT'},
+  {organization:'Louisburg High School - USD 416',url:'https://www.usd416.org/o/louisburg-high/news',kind:'NEWS'},
+  {organization:'Louisburg Middle School - USD 416',url:'https://www.usd416.org/o/louisburg-middle/news',kind:'NEWS'},
+  {organization:'Broadmoor 3-5 Elementary - USD 416',url:'https://www.usd416.org/o/broadmoor-elem/news',kind:'NEWS'},
+  {organization:'Rockville K-2 Elementary - USD 416',url:'https://www.usd416.org/o/rockville-elem/news',kind:'NEWS'},
   {organization:'Louisburg USD 416',url:'https://www.usd416.org/live-feed',kind:'DISTRICT'}
 ];
 
