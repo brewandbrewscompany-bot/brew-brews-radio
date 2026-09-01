@@ -6,7 +6,7 @@ const TZ='America/Chicago';
 const WEEKDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const MONTHS='January February March April May June July August September October November December'.split(' ');
 const ACTION_RE=/\b(event|festival|live music|concert|special|deal|discount|coupon|promo(?:tion)?|sale|off\b|register|registration|enroll|class|workshop|camp|hiring|now hiring|job|opening|closed|closure|hours change|meeting|fundraiser|open house|new (?:product|drink|menu|offering)|now available)\b/i;
-const EVENT_HEADING_RE=/^(?:(?:upcoming|community|public)\s+)?events?(?:\s+(?:calendar|schedule))?$|^calendar$/i;
+const EVENT_HEADING_RE=/(?:^|\b)(?:upcoming|community|public)\s+events?(?:\s+(?:calendar|schedule))?$|^events?(?:\s+(?:calendar|schedule))?$|^calendar$/i;
 
 export function parseFallbackMetadata(notes){
   const text=String(notes||'');
