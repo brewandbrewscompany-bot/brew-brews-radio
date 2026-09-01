@@ -5,6 +5,7 @@ const DEFAULT_ENDPOINT='https://script.google.com/macros/s/AKfycbxw9gJBH50L_VZbg
 const TZ='America/Chicago';
 const MONTHS='January February March April May June July August September October November December'.split(' ');
 const SCHOOL_ACTION_RE=/\b(pto(?:\s+night)?|family night|community night|pep rally|open house|register|registration|enroll|enrollment|child find|sports physical|physical night|tryouts?|auditions?|fundraiser|food drive|blood drive|supply drive|volunteer|volunteers|meeting|concert|performance|games?|match|tournament|picture day|school(?:s)? closed|closed|closure|cancelled|canceled|postponed|rescheduled|delayed|schedule change|early dismissal|no school|sign up|signup|deadline|applications?|apply)\b/i;
+const AGE_MARKER_RE=/^\d+\s+(?:minute|hour|day|week|month|year)s?\s+ago\b/i;
 
 const SCHOOL_SOURCES=[
   {organization:'Rockville K-2 Elementary - USD 416',url:'https://www.usd416.org/o/rockville-elem/live-feed',kind:'LIVE_FEED'},
@@ -34,9 +35,34 @@ function localNoon(dateString){
   return new Date(Date.UTC(y,m-1,d,18,0,0));
 }
 
-export function parseSchoolActivityDate(text,now=new Date()){
+function relativeAgeAnchor(marker,now=new Date()){
+  const m=String(marker||'').match(/^(\d+)\s+(minute|hour|day|week|month|year)s?\s+ago\b/i);
+  if(!m)return null;
+  const amount=Number(m[1]),unit=m[2].toLowerCase(),d=new Date(now);
+  if(unit==='minute')d.setUTCMinutes(d.getUTCMinutes()-amount);
+  else if(unit==='hour')d.setUTCHours(d.getUTCHours()-amount);
+  else if(unit==='day')d.setUTCDate(d.getUTCDate()-amount);
+  else if(unit==='week')d.setUTCDate(d.getUTCDate()-amount*7);
+  else if(unit==='month')d.setUTCMonth(d.getUTCMonth()-amount);
+  else if(unit==='year')d.setUTCFullYear(d.getUTCFullYear()-amount);
+  return d;
+}
+
+function closestYearlessDate(month,day,anchor,defaultYear){
+  const baseYear=anchor?localDateParts(anchor).year:defaultYear;
+  const candidates=[baseYear-1,baseYear,baseYear+1].map(y=>new Date(Date.UTC(y,month,day,18)));
+  if(anchor){
+    candidates.sort((a,b)=>Math.abs(a-anchor)-Math.abs(b-anchor));
+    return candidates[0];
+  }
+  let d=candidates[1];
+  if(d<new Date(Date.now()-30*86400000))d=candidates[2];
+  return d;
+}
+
+export function parseSchoolActivityDate(text,now=new Date(),ageMarker=''){
   const value=normalizeText(text);
-  const {date:today,year}=localDateParts(now);
+  const {date:today,year}=localDateParts(now),ageAnchor=relativeAgeAnchor(ageMarker,now);
   if(/\btoday\b/i.test(value))return localNoon(today);
   if(/\btomorrow\b/i.test(value)){const d=localNoon(today);d.setUTCDate(d.getUTCDate()+1);return d;}
   let m=value.match(/\b(20\d{2})-(\d{1,2})-(\d{1,2})\b/);
@@ -49,9 +75,10 @@ export function parseSchoolActivityDate(text,now=new Date()){
   m=value.match(new RegExp(`\\b(${monthPattern})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s+(20\\d{2}))?\\b`,'i'));
   if(m){
     const month=MONTHS.findIndex(x=>x.toLowerCase().startsWith(m[1].slice(0,3).toLowerCase()));
-    let y=Number(m[3]||year);
-    let d=new Date(Date.UTC(y,month,Number(m[2]),18));
-    if(!m[3]&&d<new Date(now.getTime()-30*86400000))d=new Date(Date.UTC(y+1,month,Number(m[2]),18));
+    if(m[3])return new Date(Date.UTC(Number(m[3]),month,Number(m[2]),18));
+    if(ageAnchor)return closestYearlessDate(month,Number(m[2]),ageAnchor,year);
+    let d=new Date(Date.UTC(year,month,Number(m[2]),18));
+    if(d<new Date(now.getTime()-30*86400000))d=new Date(Date.UTC(year+1,month,Number(m[2]),18));
     return d;
   }
   return null;
@@ -77,9 +104,18 @@ function cleanSchoolLine(line){
   return value;
 }
 
-function snippetAround(lines,index){
-  const start=Math.max(0,index-2),end=Math.min(lines.length,index+3);
-  return normalizeText(lines.slice(start,end).filter(Boolean).join(' ')).slice(0,1400);
+function activitySegment(lines,index){
+  let previous=-1,next=-1;
+  for(let i=index-1;i>=0;i--){if(AGE_MARKER_RE.test(lines[i])){previous=i;break;}}
+  for(let i=index+1;i<lines.length;i++){if(AGE_MARKER_RE.test(lines[i])){next=i;break;}}
+  if(previous!==-1||next!==-1){
+    const start=previous!==-1?previous+1:Math.max(0,index-2);
+    const end=next!==-1?next:Math.min(lines.length,index+3);
+    const text=normalizeText(lines.slice(start,end).filter(Boolean).join(' ')).slice(0,1400);
+    const marker=next!==-1?lines[next]:(previous!==-1?lines[previous]:'');
+    return {text,ageMarker:marker};
+  }
+  return {text:normalizeText(lines.slice(Math.max(0,index-2),Math.min(lines.length,index+3)).filter(Boolean).join(' ')).slice(0,1400),ageMarker:''};
 }
 
 export function extractSchoolActivities(raw,now=new Date()){
@@ -87,8 +123,8 @@ export function extractSchoolActivities(raw,now=new Date()){
   const out=[],seen=new Set();
   for(let i=0;i<lines.length;i++){
     if(!SCHOOL_ACTION_RE.test(lines[i]))continue;
-    const snippet=snippetAround(lines,i);
-    const date=parseSchoolActivityDate(snippet,now);
+    const segment=activitySegment(lines,i),snippet=segment.text;
+    const date=parseSchoolActivityDate(snippet,now,segment.ageMarker);
     if(!date||!dateInWindow(date,now))continue;
     if(!SCHOOL_ACTION_RE.test(snippet))continue;
     const dateKey=localDateParts(date).date;
