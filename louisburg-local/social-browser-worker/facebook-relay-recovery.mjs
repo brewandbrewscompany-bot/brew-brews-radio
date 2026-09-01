@@ -227,7 +227,7 @@ function relayAuthor(story){
   return firstNamedActor(actors);
 }
 
-function identityKey(v){return normalizedText(v).toLowerCase().replace(/\b(llc|inc|company|co|kansas|ks)\b/g,' ').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
+function identityKey(v){return normalizedText(v).toLowerCase().replace(/\b(llc|inc|company|co|kansas|ks|and)\b/g,' ').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
 function identityMatches(a,b){
   a=identityKey(a);b=identityKey(b);
   if(!a||!b)return true;
