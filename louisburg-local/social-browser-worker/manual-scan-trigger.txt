@@ -1,2 +1,3 @@
 Manual public-social scan trigger
 2026-08-31: verify El Potro stable Facebook Page ID 61555865610404 and Timber Creek candidate Facebook owner ID 100047763378218 from exact public posts.
+2026-08-31 targeted exact-post recovery pass: run exact recovery hints before broad Page sweep.
