@@ -65,3 +65,5 @@ jobs:
       - name: Run verified first-party fallbacks
         working-directory: louisburg-local/social-browser-worker
         run: node first-party-fallback.mjs
+
+# Post-deployment verification trigger. No runtime behavior change.
