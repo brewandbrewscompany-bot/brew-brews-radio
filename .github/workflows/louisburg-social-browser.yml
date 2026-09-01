@@ -61,3 +61,7 @@ jobs:
       - name: Run verified first-party fallbacks
         working-directory: louisburg-local/social-browser-worker
         run: node first-party-fallback.mjs
+
+      - name: Scan rendered USD 416 first-party school feeds
+        working-directory: louisburg-local/social-browser-worker
+        run: node school-first-party.mjs
