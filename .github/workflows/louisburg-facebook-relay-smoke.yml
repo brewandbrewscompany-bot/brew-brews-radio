@@ -1,0 +1,90 @@
+name: Louisburg Brew public Facebook Relay smoke
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/louisburg-facebook-relay-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louisburg-brew-relay-smoke
+  cancel-in-progress: true
+
+jobs:
+  brew-relay-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install worker dependencies
+        working-directory: louisburg-local/social-browser-worker
+        run: npm install --no-audit --no-fund
+
+      - name: Install Chromium
+        working-directory: louisburg-local/social-browser-worker
+        run: npx playwright install --with-deps chromium
+
+      - name: Test Brew signed-out Relay payload
+        working-directory: louisburg-local/social-browser-worker
+        run: |
+          node --input-type=module <<'NODE'
+          import {chromium} from 'playwright';
+          import {dataSjsBlocksFromHtml,relayDocumentsFromDataSjsBlocks,relayPostsFromDataSjsBlocks} from './facebook-relay-recovery.mjs';
+
+          const worker={
+            queueId:'SOC-BREW-PENDING',
+            organization:'Brew & Brews Coffee Co.',
+            profileUrl:'https://www.facebook.com/100063452718081',
+            notes:'FACEBOOK_VANITY_ALIAS=https://www.facebook.com/BB.Coffee.Tea',
+          };
+          const urls=[
+            'https://www.facebook.com/100063452718081',
+            'https://www.facebook.com/BB.Coffee.Tea',
+            'https://www.facebook.com/BB.Coffee.Tea?sk=posts',
+            'https://www.facebook.com/profile.php?id=100063452718081&sk=posts',
+          ];
+          const browser=await chromium.launch({headless:true});
+          const context=await browser.newContext({
+            locale:'en-US',
+            timezoneId:'America/Chicago',
+            viewport:{width:1365,height:900},
+            userAgent:'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
+          });
+          const page=await context.newPage();
+          let found=[];
+          for(const url of urls){
+            try{
+              const response=await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
+              if(!response)continue;
+              let html='';
+              try{html=await response.text();}catch{html=await page.content();}
+              const blocks=dataSjsBlocksFromHtml(html);
+              const docs=relayDocumentsFromDataSjsBlocks(blocks);
+              const posts=relayPostsFromDataSjsBlocks(blocks,worker,new Date(),8);
+              console.log(`BREW RELAY surface=${url} final=${page.url()} blocks=${blocks.length} operations=${[...docs.keys()].join(',')||'none'} posts=${posts.length}`);
+              if(posts.length){found=posts;break;}
+            }catch(error){console.log(`BREW RELAY surface error ${url}: ${error.message}`);}
+          }
+          await context.close();
+          await browser.close();
+          if(!found.length){
+            console.error('BREW RELAY RESULT: no current public post recovered');
+            process.exit(2);
+          }
+          for(const post of found){
+            console.log(`BREW RELAY POST ${post.postDate} ${post.postUrl}`);
+            console.log(`BREW RELAY TEXT ${post.postText.slice(0,700)}`);
+          }
+          NODE
