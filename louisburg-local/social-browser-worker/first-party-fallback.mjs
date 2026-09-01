@@ -183,9 +183,19 @@ async function postJson(endpoint,ingestKey,action,payload={}){
 }
 
 async function scanFirstParty(page,url,mode,now){
-  await page.goto(url,{waitUntil:'domcontentloaded',timeout:45000});await page.waitForTimeout(1800);
-  const body=await page.locator('body').innerText({timeout:10000});
+  let navigationError=null;
+  try{
+    await page.goto(url,{waitUntil:'domcontentloaded',timeout:25000});
+  }catch(error){
+    navigationError=error;
+  }
+  await page.waitForTimeout(navigationError?700:1400);
+  const body=await page.locator('body').innerText({timeout:10000}).catch(()=> '');
   const jsonTexts=await page.locator('script[type="application/ld+json"]').allTextContents().catch(()=>[]);
+  if(!normalizeText(body)){
+    if(navigationError)throw navigationError;
+    return [];
+  }
   return extractFallbackActivities(body,mode,now,jsonTexts);
 }
 
