@@ -21,7 +21,7 @@ concurrency:
 jobs:
   scan-public-facebook-pages:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 32
     env:
       LL_SOCIAL_ENDPOINT: https://script.google.com/macros/s/AKfycbxw9gJBH50L_VZbgp6i_mHHnfPXAkraIqv63BA2XqWtb-XaaczXxdf89WveFkAOwV-azw/exec
       LL_SOCIAL_INGEST_KEY: ${{ secrets.LL_SOCIAL_INGEST_KEY }}
@@ -61,6 +61,10 @@ jobs:
       - name: Scan public Facebook Pages
         working-directory: louisburg-local/social-browser-worker
         run: npm start
+
+      - name: Recover signed-out public Facebook Relay timeline
+        working-directory: louisburg-local/social-browser-worker
+        run: node facebook-relay-recovery.mjs
 
       - name: Run verified first-party fallbacks
         working-directory: louisburg-local/social-browser-worker
