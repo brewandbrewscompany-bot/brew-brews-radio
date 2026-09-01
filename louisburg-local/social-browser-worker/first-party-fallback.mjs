@@ -140,7 +140,8 @@ export function extractDatedTextActivities(raw,now=new Date()){
     const line=lines[i];
     const lineDate=parseActivityDate(line,now);
     const sectionContext=lineDate&&nearbyEventHeading_(lines,i,now);
-    const directLineActivity=ACTION_RE.test(line)||/\b(fish fry|blood drive|music bingo|bbq contest|barbecue contest|tractor pull)\b/i.test(line);
+    const timedDatedLine=Boolean(lineDate&&/\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/i.test(line));
+    const directLineActivity=ACTION_RE.test(line)||timedDatedLine||/\b(fish fry|blood drive|music bingo|bbq contest|barbecue contest|tractor pull)\b/i.test(line);
     let snippet='',date=null;
 
     if(lineDate&&(directLineActivity||sectionContext)){
@@ -161,7 +162,7 @@ export function extractDatedTextActivities(raw,now=new Date()){
     const hiring=/\b(hiring|now hiring|current openings?|open positions?|careers?)\b/i.test(snippet);
     if(!date&&!hiring)continue;
     if(date&&!dateInWindow(date,now))continue;
-    if(!ACTION_RE.test(snippet)&&!hiring&&!sectionContext&&!/\b(fish fry|blood drive|music bingo|bbq contest|barbecue contest|tractor pull)\b/i.test(snippet))continue;
+    if(!ACTION_RE.test(snippet)&&!hiring&&!sectionContext&&!timedDatedLine&&!/\b(fish fry|blood drive|music bingo|bbq contest|barbecue contest|tractor pull)\b/i.test(snippet))continue;
     const dateKey=date?localDateParts(date).date:today;
     const key=hash12(`${dateKey}|${snippet.toLowerCase()}`);
     if(seen.has(key))continue;seen.add(key);
