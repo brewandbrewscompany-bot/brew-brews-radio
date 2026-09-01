@@ -37,6 +37,15 @@ test('dated current activity is extracted from verified first-party text',()=>{
   assert.match(result[0].postText,/September 5, 2026/i);
 });
 
+test('timed dated first-party title is treated as an event without requiring an event keyword',()=>{
+  const raw=`MCDM SEMI-ANNUAL HOLIDAY PRODUCTION\nWILDCAT ACTIVITY CENTER\n“A Christmas Carol”, Saturday, December 5th, 2026 – 2:30 PM\nPerformers include all MCDM Ballet levels`;
+  const result=extractFallbackActivities(raw,'AUTO_CURRENT',new Date('2026-09-01T18:00:00Z'));
+  assert.equal(result.length,1);
+  assert.equal(result[0].date,'2026-12-05');
+  assert.equal(result[0].activityType,'Event / Activity');
+  assert.match(result[0].postText,/Christmas Carol/i);
+});
+
 test('event calendar lines become separate dated activities instead of one multi-event blob',()=>{
   const raw=`American Legion Community Events\nIf you have an event to suggest please email us at info@example.com.\nSeptember 26th - Fish Fry\nOctober 5th - Red Cross Blood Drive\nOctober 8th - Sons of American Legion BBQ Contest\nNovember 7th - Music Bingo`;
   const result=extractFallbackActivities(raw,'AUTO_CURRENT',new Date('2026-09-01T18:00:00Z'));
