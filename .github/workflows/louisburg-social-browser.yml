@@ -58,13 +58,15 @@ jobs:
         working-directory: louisburg-local/social-browser-worker
         run: node exact-post-recovery.mjs
 
-      - name: Scan public Facebook Pages
-        working-directory: louisburg-local/social-browser-worker
-        run: npm start
-
       - name: Recover signed-out public Facebook Relay timeline
         working-directory: louisburg-local/social-browser-worker
         run: node facebook-relay-recovery.mjs
+
+      - name: Scan public Facebook Pages as DOM fallback
+        working-directory: louisburg-local/social-browser-worker
+        env:
+          LL_FORCE_SCAN: 'false'
+        run: npm start
 
       - name: Run verified first-party fallbacks
         working-directory: louisburg-local/social-browser-worker
