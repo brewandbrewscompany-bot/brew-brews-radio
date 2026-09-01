@@ -1,11 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseFallbackMetadata,extractWeekdaySpecial,extractFallbackActivity,extractFallbackActivities,extractJsonLdActivities} from './first-party-fallback.mjs';
+import {parseFallbackMetadata,fallbackUrlCandidates,extractWeekdaySpecial,extractFallbackActivity,extractFallbackActivities,extractJsonLdActivities} from './first-party-fallback.mjs';
 
 test('fallback metadata is read from queue notes',()=>{
   const meta=parseFallbackMetadata('Keep social primary. FIRST_PARTY_FALLBACK=https://example.com/specials FIRST_PARTY_MODE=WEEKDAY_SPECIALS');
   assert.equal(meta.url,'https://example.com/specials');
   assert.equal(meta.mode,'WEEKDAY_SPECIALS');
+});
+
+test('fallback URL recovery tries the verified host and its www/apex twin only',()=>{
+  assert.deepEqual(fallbackUrlCandidates('https://www.example.com/events/'),['https://www.example.com/events/','https://example.com/events/']);
+  assert.deepEqual(fallbackUrlCandidates('https://example.com/events/'),['https://example.com/events/','https://www.example.com/events/']);
 });
 
 test('current weekday special is extracted without neighboring days',()=>{
