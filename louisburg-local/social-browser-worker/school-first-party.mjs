@@ -100,6 +100,7 @@ function cleanSchoolLine(line){
   if(!value)return '';
   if(/^image(?::|$)/i.test(value))return '';
   if(/^find us$/i.test(value)||/^schools$/i.test(value)||/^stay connected$/i.test(value))return '';
+  if(/^skyward family access$/i.test(value)||/^new student enrollment$/i.test(value)||/^returning student enrollment$/i.test(value)||/^search site$/i.test(value)||/^menu$/i.test(value)||/^translate$/i.test(value))return '';
   if(/^copyright ©/i.test(value)||/^powered by apptegy/i.test(value))return '';
   return value;
 }

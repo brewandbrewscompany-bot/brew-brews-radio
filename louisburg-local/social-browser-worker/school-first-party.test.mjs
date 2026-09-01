@@ -42,3 +42,10 @@ test('school scanner treats same event reposted by district as one candidate',()
   assert.equal(result.length,1);
   assert.equal(result[0].source.organization,'Rockville K-2 Elementary - USD 416');
 });
+
+
+test('school navigation enrollment labels do not become activity',()=>{
+  const raw=`Broadmoor 3-5 Elementary\nSkyward Family Access\nNew Student Enrollment\nReturning Student Enrollment\nSEARCH SITE\nMENU\nTRANSLATE\nBROADMOOR 3-5 ELEMENTARY\nLIVE FEED\nHere's your Weekly Wildcat News for August 30, 2026!\nhttps://app.smore.com/n/31njw`;
+  const result=extractSchoolActivities(raw,new Date('2026-09-01T12:00:00Z'));
+  assert.equal(result.length,0);
+});
