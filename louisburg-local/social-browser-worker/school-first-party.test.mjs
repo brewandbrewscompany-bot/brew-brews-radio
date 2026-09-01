@@ -7,12 +7,15 @@ test('school scanner parses short US school dates',()=>{
   assert.equal(date.toISOString().slice(0,10),'2026-08-27');
 });
 
-test('school scanner extracts a future PTO night',()=>{
-  const raw=`Rockville K-2 Elementary\nGet ready for Louisburg Elementary PTO Night at the Stadium on September 18!\nAdmission is free and the first 100 students in Pre-K through 5th grade receive a free shirt.\n6 days ago, Louisburg USD #416 School District`;
+test('school scanner extracts a future PTO night without adjacent post text',()=>{
+  const raw=`Let’s kick off the year on a sweet note! We can’t wait to see our Wildcat families on the playground!\n10 DAYS AGO, JANNEIL CRADER\nCome out September 18th for Louisburg Elementary PTO Night at the Stadium! Free admission & Free Shirt to the first 100 students Pre-5th Grade.\n14 DAYS AGO, LOUISBURG USD #416 SCHOOL DISTRICT`;
   const result=extractSchoolActivities(raw,new Date('2026-09-01T12:00:00Z'));
   assert.equal(result.length,1);
   assert.equal(result[0].date,'2026-09-18');
   assert.equal(result[0].activityType,'Event / Activity');
+  assert.match(result[0].postText,/PTO Night at the Stadium/i);
+  assert.doesNotMatch(result[0].postText,/sweet note/i);
+  assert.doesNotMatch(result[0].postText,/14 DAYS AGO/i);
 });
 
 test('school scanner rejects stale event dates',()=>{
@@ -21,13 +24,21 @@ test('school scanner rejects stale event dates',()=>{
   assert.equal(result.length,0);
 });
 
+test('relative age prevents an old January closure from becoming next January',()=>{
+  const raw=`Louisburg Schools are closed on Monday, January 26th due to inclement weather.\n7 MONTHS AGO, LOUISBURG USD #416 SCHOOL DISTRICT\nAnother older post.`;
+  const parsed=parseSchoolActivityDate('Louisburg Schools are closed on Monday, January 26th due to inclement weather.',new Date('2026-09-01T12:00:00Z'),'7 MONTHS AGO, LOUISBURG USD #416 SCHOOL DISTRICT');
+  assert.equal(parsed.toISOString().slice(0,10),'2026-01-26');
+  const result=extractSchoolActivities(raw,new Date('2026-09-01T12:00:00Z'));
+  assert.equal(result.length,0);
+});
+
 test('school scanner treats same event reposted by district as one candidate',()=>{
   const activity={date:'2026-09-18',activityType:'Event / Activity',postId:'x',postText:'Louisburg Elementary PTO Night at the Stadium September 18. Admission is free for families.'};
   const district={date:'2026-09-18',activityType:'Event / Activity',postId:'y',postText:'Elementary PTO Night at the Stadium is September 18. Admission is free for Louisburg families.'};
   const result=dedupeSchoolCandidates([
-    {source:{organization:'Rockville K-2 Elementary'},activity},
+    {source:{organization:'Rockville K-2 Elementary - USD 416'},activity},
     {source:{organization:'Louisburg USD 416'},activity:district}
   ]);
   assert.equal(result.length,1);
-  assert.equal(result[0].source.organization,'Rockville K-2 Elementary');
+  assert.equal(result[0].source.organization,'Rockville K-2 Elementary - USD 416');
 });
