@@ -36,6 +36,7 @@ jobs:
         working-directory: louisburg-local/social-browser-worker
         run: npx playwright install --with-deps chromium
 
+      # Diagnostic only: public signed-out data, no Facebook credentials/cookies.
       - name: Test Brew signed-out Relay payload
         working-directory: louisburg-local/social-browser-worker
         run: |
