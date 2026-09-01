@@ -271,6 +271,23 @@ function relayPostUrl(story,worker){
   return urls.find(url=>relayPostBelongsToWorker(url,worker))||'';
 }
 
+// The intake verifier compares the submitted profile owner with the exact post
+// owner. Relay can legitimately return a vanity-owned permalink while the queue
+// stores the same verified Page by numeric ID. Submit the already-validated
+// permalink owner as profileUrl so the verifier sees the same Page identity;
+// relayPostBelongsToWorker() has already rejected unverified owners.
+function profileUrlForVerifiedPost(postUrl,worker){
+  try{
+    const u=new URL(String(postUrl||''));
+    if(!/(^|\.)facebook\.com$/i.test(u.hostname))return worker.profileUrl;
+    const id=String(u.searchParams.get('id')||'').trim();
+    if(id)return `https://www.facebook.com/${id}`;
+    const first=u.pathname.split('/').filter(Boolean)[0]||'';
+    if(first&&!/^(permalink\.php|story\.php|photo\.php|watch|reel|videos|profile\.php)$/i.test(first))return `https://www.facebook.com/${first}`;
+  }catch{}
+  return worker.profileUrl;
+}
+
 function collectFbcdn(value,out,depth=0){
   if(depth>16||value==null)return;
   if(typeof value==='string'){
@@ -332,7 +349,7 @@ export function relayPostsFromDataSjsBlocks(blockTexts,worker,now=new Date(),max
       posts.push({
         organization:worker.organization,
         platform:'FACEBOOK',
-        profileUrl:worker.profileUrl,
+        profileUrl:profileUrlForVerifiedPost(postUrl,worker),
         postUrl,
         postId:postId||postUrl,
         postDate:postDate.toISOString(),
