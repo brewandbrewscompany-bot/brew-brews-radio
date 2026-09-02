@@ -1,4 +1,5 @@
 import {pathToFileURL} from 'node:url';
+import {writeFileSync} from 'node:fs';
 
 const DEFAULT_ENDPOINT='https://script.google.com/macros/s/AKfycbxw9gJBH50L_VZbgp6i_mHHnfPXAkraIqv63BA2XqWtb-XaaczXxdf89WveFkAOwV-azw/exec';
 const TZ='America/Chicago';
@@ -7,6 +8,7 @@ const CALENDAR_URL=`https://www.arbiterlive.com/School/Calendar/${SCHOOL_ID}`;
 const GAME_BASE='https://www.arbiterlive.com';
 const EVENT_RESPONSE_RE=/\/School\/GetEventsByEntity\//i;
 const SPORT_RE=/\b(football|soccer|volleyball|cross country|golf|tennis|basketball|wrestling|baseball|softball|track(?:\s*&\s*field|\s+and\s+field)?|swimming|swim|bowling)\b/i;
+const SNAPSHOT_URL=new URL('../web-v4/wildcats-schedule.json',import.meta.url);
 
 function clean(v){return String(v||'').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();}
 function norm(v){return clean(v).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
@@ -71,6 +73,41 @@ function buildPostText(event){
   text+=' Official ArbiterLive Louisburg High School athletics schedule.';return text;
 }
 
+function snapshotHeadline(event){
+  const noun=eventNoun(event.sport),status=event.cancelled?'CANCELLED — ':'';let s=`${status}${event.teamLabel} ${noun}`;
+  if(event.opponent)s+=event.homeAway==='HOME'?` vs. ${event.opponent}`:event.homeAway==='AWAY'?` at ${event.opponent}`:` — ${event.opponent}`;
+  return clean(s);
+}
+
+function writeScheduleSnapshot(events,loaded){
+  const items=events.map(event=>({
+    id:event.postId,
+    organization:'Louisburg High School - USD 416',
+    category:'Event',
+    headline:snapshotHeadline(event),
+    summary:buildPostText(event),
+    section:'COMING UP',
+    date:event.date,
+    time:event.time,
+    endTime:event.endTime||'',
+    location:event.homeAway==='HOME'?'Louisburg, KS':event.opponent||'',
+    originalUrl:event.postUrl,
+    lifecycleState:event.cancelled?'CANCELLED':'COMING UP',
+    activityType:event.cancelled?'Operational Update':'Event / Activity',
+    tags:'sports what-to-do',
+    source:'ArbiterLive',
+    schoolId:SCHOOL_ID,
+    sport:event.sport,
+    teamLabel:event.teamLabel,
+    homeAway:event.homeAway,
+    opponent:event.opponent,
+    cancelled:!!event.cancelled
+  }));
+  const snapshot={ok:true,source:'ArbiterLive',school:'Louisburg High School',schoolId:SCHOOL_ID,calendarUrl:CALENDAR_URL,generatedAt:new Date().toISOString(),rangeStart:loaded.rangeStart||'',rangeEnd:loaded.rangeEnd||'',items};
+  writeFileSync(SNAPSHOT_URL,JSON.stringify(snapshot,null,2)+'\n','utf8');
+  console.log(`Wildcats public schedule snapshot written: ${items.length} items -> ${SNAPSHOT_URL.pathname}`);
+}
+
 async function postJson(endpoint,ingestKey,payload){
   const response=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'social_intake',ingestKey,...payload}),redirect:'follow'});const text=await response.text();let parsed;try{parsed=JSON.parse(text);}catch{throw new Error(`Non-JSON intake response: ${text.slice(0,180)}`);}if(!response.ok||!parsed.ok)throw new Error(`intake failed: ${parsed.error||response.status}`);return parsed;
 }
@@ -94,6 +131,7 @@ export async function run(){
   let loaded;try{loaded=await loadOfficialSchedule(context,{today,futureDays:35});}finally{await context.close();await browser.close();}
   const events=loaded.events.slice(0,80);console.log(`Official Arbiter Wildcats calendar: range=${loaded.rangeStart}..${loaded.rangeEnd}; gameLinks=${loaded.anchorCount}; currentFuture=${events.length}`);
   if(!events.length)throw new Error('Official Arbiter Wildcats calendar was readable but no current/future athletic events were extracted.');
+  writeScheduleSnapshot(events,loaded);
   let delivered=0,duplicates=0;
   for(const event of events){
     const result=await postJson(endpoint,ingestKey,{queueId:'FIRSTPARTY-WILDCATS-ARBITER',organization:'Louisburg High School - USD 416',platform:'WEBSITE',profileUrl:CALENDAR_URL,postUrl:event.postUrl,postId:event.postId,postDate:new Date().toISOString(),postText:buildPostText(event),mediaUrl:'',mediaType:'',activityType:event.cancelled?'Operational Update':'Event / Activity',louisburgMatch:'VERIFIED'});
