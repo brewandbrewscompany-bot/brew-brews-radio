@@ -127,7 +127,7 @@
   }
   function showWildcats(){
     showScreen('wildcats');
-    const more=document.querySelector('.navBtn[data-nav="more"]');if(more)more.classList.add('active');
+    const events=document.querySelector('.navBtn[data-nav="events"]');if(events)events.classList.add('active');
     renderWildcats();
   }
   function installStyles(){
@@ -143,7 +143,7 @@
       .wtCalendar{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 6px 18px rgba(46,23,62,.05)}.wtWeek{display:grid;grid-template-columns:repeat(7,1fr);background:#eee5f2;color:#5c4965}.wtWeek span{text-align:center;padding:8px 2px;font-size:8px;font-weight:900}.wtGrid{display:grid;grid-template-columns:repeat(7,1fr)}.wtCell{min-height:94px;border:0;border-right:1px solid #eee7ef;border-bottom:1px solid #eee7ef;background:#fff;text-align:left;padding:6px;overflow:hidden}.wtCell.blank{background:#faf7fb}.wtCell.today{box-shadow:inset 0 0 0 2px #8d64a9}.wtCell.selected{background:#f7f0fa}.wtCell.hasOverlap{background:#fffaf0}.wtDayNum{font-size:11px;font-weight:900;color:var(--deep);display:flex;justify-content:space-between}.wtDayNum i{font-style:normal;display:grid;place-items:center;width:16px;height:16px;border-radius:50%;background:#e5c992;color:#67470e;font-size:9px}.wtCellEvents{display:grid;gap:3px;margin-top:5px}.wtCellEvents span{display:block;border-radius:5px;padding:3px 4px;font-size:7px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.wtCellEvents span.school{background:#eee2f4;color:#4b216d}.wtCellEvents span.town{background:#fff0cd;color:#745115}.wtCellEvents small{font-size:7px;color:var(--muted)}
       .wtDayPanel{margin-top:10px}.wtDayHead{display:flex;justify-content:space-between;background:#f3ebf6;border:1px solid var(--line);border-radius:14px;padding:10px 12px}.wtDayHead b{display:block;color:var(--deep);font-size:12px}.wtDayHead small{display:block;color:var(--muted);font-size:9px;margin-top:2px}.wtDayItems,.wtList{display:grid;gap:9px;margin-top:9px}.wtListCard{display:grid;grid-template-columns:64px 1fr;background:#fff;border:1px solid var(--line);border-left:5px solid var(--purple);border-radius:16px;overflow:hidden;box-shadow:0 5px 14px rgba(46,23,62,.05);cursor:pointer}.wtListCard.town{border-left-color:#b8842e}.wtDate{display:grid;place-items:center;background:#f1e8f5;color:var(--deep);padding:8px}.wtListCard.town .wtDate{background:#fff2d8;color:#745115}.wtDate span{font-size:9px;font-weight:900}.wtDate b{font:800 23px Georgia,serif}.wtListInfo{padding:10px}.wtListInfo h3{font-size:14px;margin:2px 0 4px}.wtListInfo p{margin:0;color:var(--muted);font-size:10px;line-height:1.4}.wtListInfo>small{display:block;color:#6f5e76;font-size:8px;font-weight:800;margin-top:6px}.wtKind{font-size:8px;font-weight:900;color:var(--purple)}.wtListCard.town .wtKind{color:#8a5e18}.wtConflict{display:inline-block;margin-top:7px;background:#fff0cc;color:#765313;border-radius:999px;padding:5px 7px;font-size:8px;font-weight:900}.wtEmpty{background:#fff;border:1px dashed #cabed0;border-radius:16px;text-align:center;padding:23px 14px;color:var(--muted);font-size:11px}
       .wtMini{width:100%;display:grid;gap:2px;border:1px solid var(--line);border-left:4px solid var(--purple);background:#fff;border-radius:12px;padding:9px;text-align:left}.wtMini.town{border-left-color:#b8842e}.wtMini span{font-size:7px;font-weight:900;color:var(--purple)}.wtMini b{font-size:11px}.wtMini small{font-size:9px;color:var(--muted)}.wtMini em{font-size:8px;color:#765313;font-style:normal;font-weight:900}
-      .wtJump{border:1px solid #d8cedd;background:#fff;color:var(--deep);border-radius:12px;padding:8px 10px;font-size:9px;font-weight:900}
+      .wtJump{width:100%;margin-top:15px;border:1px solid #d8cedd;border-left:5px solid var(--purple);background:#fff;color:var(--deep);border-radius:16px;padding:14px 15px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;box-shadow:0 5px 14px rgba(46,23,62,.05)}.wtJump span{display:grid;gap:3px}.wtJump b{font:800 16px Georgia,serif}.wtJump small{font-size:9px;color:var(--muted)}.wtJump strong{font-size:10px;color:var(--purple);white-space:nowrap}
       @media(max-width:620px){.wtCell{min-height:76px;padding:4px}.wtCellEvents span{font-size:0;height:8px;padding:0;border-radius:999px}.wtCellEvents span.school:after{content:''}.wtCellEvents small{font-size:6px}.wtWeek span{font-size:7px}.wtHero h1{font-size:25px}.wtTownToggle{margin-left:0}.wtControls{align-items:stretch}.wtCalendar{border-radius:15px}}
       @media(min-width:760px){#wildcatsScreen{max-width:980px;margin:auto}.wtCell{min-height:118px}.wtDayItems,.wtList{grid-template-columns:repeat(2,minmax(0,1fr))}}
     `;document.head.appendChild(style);
@@ -161,9 +161,13 @@
     </section>`);
   }
   function separateTownEvents(){
-    const eventsTitle=document.querySelector('#eventsScreen .subHeader');
-    if(eventsTitle&&!document.querySelector('#wildcatJumpFromEvents')){
-      const jump=document.createElement('button');jump.id='wildcatJumpFromEvents';jump.className='wtJump';jump.textContent='🐾 Wildcat Territory';jump.onclick=showWildcats;eventsTitle.appendChild(jump);
+    const eventList=document.querySelector('#eventList');
+    if(eventList&&!document.querySelector('#wildcatJumpFromEvents')){
+      const jump=document.createElement('button');
+      jump.id='wildcatJumpFromEvents';jump.className='wtJump';
+      jump.innerHTML='<span><b>🐾 Wildcat Tracker</b><small>School calendar, athletics and parent schedule</small></span><strong>Open →</strong>';
+      jump.onclick=showWildcats;
+      eventList.insertAdjacentElement('afterend',jump);
     }
     renderEvents=function(){
       let arr=state.items.filter(i=>fresh(i)&&!isSchool(i)&&catMatch(i,'EVENTS')&&eventFilterMatch(i,state.eventFilter));
@@ -178,8 +182,6 @@
     const prev=document.querySelector('#wildcatPrevMonth'),next=document.querySelector('#wildcatNextMonth');if(prev)prev.onclick=()=>shiftMonth(-1);if(next)next.onclick=()=>shiftMonth(1);
     const cal=document.querySelector('#wildcatCalendar');if(cal)cal.onclick=e=>{const d=e.target.closest('[data-wt-date]');if(!d)return;wt.selected=d.dataset.wtDate;renderCalendar()};
     const back=document.querySelector('#wildcatTownEvents');if(back)back.onclick=()=>showScreen('events');
-    const sports=document.querySelector('#quickNav [data-cat="SPORTS"]');if(sports){sports.removeAttribute('data-cat');sports.dataset.wildcats='1';sports.innerHTML='<b>🐾</b>Wildcats';sports.onclick=showWildcats}
-    const moreSports=document.querySelector('[data-more-cat="SPORTS"]');if(moreSports){moreSports.removeAttribute('data-more-cat');moreSports.innerHTML='<b>🐾 Wildcat Territory</b><small>School calendar, athletics and parent schedule overlay</small>';moreSports.onclick=showWildcats}
     document.addEventListener('click',e=>{const card=e.target.closest('#wildcatsScreen [data-id]');if(card&&card.dataset.id)openDetail(findItem(card.dataset.id))});
   }
   installStyles();installScreen();separateTownEvents();wire();renderWildcats();
