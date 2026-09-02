@@ -12,7 +12,7 @@ on:
     - cron: '13 11,20 * * *'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: louisburg-local-wildcats-schedule
@@ -55,3 +55,15 @@ jobs:
       - name: Scan official Louisburg Wildcats calendar
         working-directory: louisburg-local/wildcats-schedule-worker
         run: npm start
+
+      - name: Publish Wildcat Territory schedule snapshot
+        run: |
+          if git diff --quiet -- louisburg-local/web-v4/wildcats-schedule.json; then
+            echo "Wildcats schedule snapshot unchanged."
+            exit 0
+          fi
+          git config user.name "brewandbrewscompany-bot"
+          git config user.email "brewandbrewscompany@gmail.com"
+          git add louisburg-local/web-v4/wildcats-schedule.json
+          git commit -m "Update Wildcats schedule snapshot"
+          git push
