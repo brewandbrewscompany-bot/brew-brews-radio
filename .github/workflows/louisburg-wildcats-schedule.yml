@@ -48,6 +48,10 @@ jobs:
         working-directory: louisburg-local/wildcats-schedule-worker
         run: npm test
 
+      - name: Resolve Louisburg in ArbiterLive
+        working-directory: louisburg-local/wildcats-schedule-worker
+        run: node arbiter-discovery.mjs
+
       - name: Scan official Louisburg Wildcats calendar
         working-directory: louisburg-local/wildcats-schedule-worker
         run: npm start
