@@ -1,0 +1,53 @@
+name: Louisburg Local Wildcats schedule
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'louisburg-local/wildcats-schedule-worker/**'
+      - '.github/workflows/louisburg-wildcats-schedule.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '13 11,20 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louisburg-local-wildcats-schedule
+  cancel-in-progress: true
+
+jobs:
+  scan-official-wildcats-calendar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      LL_SOCIAL_ENDPOINT: https://script.google.com/macros/s/AKfycbxw9gJBH50L_VZbgp6i_mHHnfPXAkraIqv63BA2XqWtb-XaaczXxdf89WveFkAOwV-azw/exec
+      LL_SOCIAL_INGEST_KEY: ${{ secrets.LL_SOCIAL_INGEST_KEY }}
+      TZ: America/Chicago
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Install worker dependencies
+        working-directory: louisburg-local/wildcats-schedule-worker
+        run: npm install --no-audit --no-fund
+
+      - name: Install Chromium
+        working-directory: louisburg-local/wildcats-schedule-worker
+        run: npx playwright install --with-deps chromium
+
+      - name: Test schedule parser
+        working-directory: louisburg-local/wildcats-schedule-worker
+        run: npm test
+
+      - name: Scan official Louisburg Wildcats calendar
+        working-directory: louisburg-local/wildcats-schedule-worker
+        run: npm start
