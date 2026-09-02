@@ -30,6 +30,8 @@
       icon.textContent='🔍';
       old.replaceWith(icon);
     }
+    const homeDefault=document.querySelector('#quickNav [data-cat="ALL"]');
+    if(homeDefault)homeDefault.classList.remove('active');
     if(!document.getElementById('v4-ui-corrections-style')){
       const style=document.createElement('style');
       style.id='v4-ui-corrections-style';
