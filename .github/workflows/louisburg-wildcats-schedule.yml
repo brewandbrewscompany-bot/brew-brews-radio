@@ -58,7 +58,7 @@ jobs:
 
       - name: Publish Wildcat Territory schedule snapshot
         run: |
-          if git diff --quiet -- louisburg-local/web-v4/wildcats-schedule.json; then
+          if [ -z "$(git status --porcelain -- louisburg-local/web-v4/wildcats-schedule.json)" ]; then
             echo "Wildcats schedule snapshot unchanged."
             exit 0
           fi
