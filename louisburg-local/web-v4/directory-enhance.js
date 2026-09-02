@@ -4,16 +4,26 @@
   state.registry=[];
   state.registryMap=new Map();
   state.currentOnly=false;
+  state.dirQuick='ALL';
 
   function norm(v){return String(v||'').toLowerCase().replace(/&/g,' and ').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim()}
   function currentPosts(org){const n=norm(org);return state.items.filter(i=>fresh(i)&&norm(i.organization)===n)}
   function latestPost(org){return currentPosts(org).sort((a,b)=>Number(b.rankScore||0)-Number(a.rankScore||0))[0]||null}
-  function registrySearchText(r){return [r.organization,r.category,r.address].join(' ').toLowerCase()}
+  function registrySearchText(r){return norm([r.organization,r.category,r.address].join(' '))}
+  function registryMatchesQuery(r,q){
+    const qn=norm(q);if(!qn)return true;
+    const hay=registrySearchText(r);if(hay.includes(qn))return true;
+    const stop=new Set(['the','and','co','llc','inc','company','corp','corporation']);
+    const wanted=qn.split(' ').filter(x=>x&&!stop.has(x));
+    if(!wanted.length)return true;
+    const have=hay.split(' ');
+    return wanted.every(w=>have.some(h=>h===w||h.startsWith(w)||w.startsWith(h)));
+  }
   function hasRegistrySource(r,source){if(!source)return true;if(source==='Facebook')return !!r.facebook;if(source==='Instagram')return !!r.instagram;if(source==='Website')return !!r.website;return true}
 
   function categoryGroup(r){
     const c=String(r.category||'').toLowerCase();
-    if(/dining|restaurant|coffee shop|café|cafe|grocery|catering|food|barbecue|pizza/.test(c))return 'Food & Drink';
+    if(/dining|restaurant|coffee|roast|café|cafe|grocery|catering|food|barbecue|pizza/.test(c))return 'Food & Drink';
     if(/beauty|salon|barber|nail|grooming/.test(c))return 'Beauty';
     if(/health|medical|dental|dentistry|pharmacy|chiropr|optometr|wellness|counsel/.test(c))return 'Health';
     if(/automotive|auto |towing|collision|vehicle/.test(c))return 'Automotive';
@@ -29,8 +39,30 @@
     return 'Services';
   }
 
+  function quickGroupMatch(r,q){
+    if(q==='ALL')return true;
+    const g=categoryGroup(r),t=norm([r.category,r.organization].join(' '));
+    if(q==='FOOD')return g==='Food & Drink';
+    if(q==='SHOPPING')return g==='Shopping';
+    if(q==='FAMILY')return ['Schools & Childcare','Fitness & Recreation'].includes(g)||/family|kid|child|preschool|school|dance|recreation|library/.test(t);
+    if(q==='BEAUTY')return g==='Beauty';
+    if(q==='HEALTH')return g==='Health';
+    if(q==='HOME')return ['Home & Trade Services','Real Estate & Housing'].includes(g);
+    if(q==='FITNESS')return g==='Fitness & Recreation';
+    if(q==='COMMUNITY')return ['Community','Churches'].includes(g);
+    return true;
+  }
+
   const directoryGroups=['ALL','Food & Drink','Shopping','Beauty','Health','Automotive','Home & Trade Services','Financial & Professional','Real Estate & Housing','Fitness & Recreation','Events & Creative','Community','Schools & Childcare','Churches','Services'];
   $('#directoryChips').innerHTML=directoryGroups.map(c=>`<button class="chip ${c==='ALL'?'active':''}" data-dir-cat="${esc(c)}">${esc(c==='ALL'?'All':c)}</button>`).join('');
+
+  const quickDefs=[
+    ['ALL','▦','All','Everything'],['FOOD','☕','Food','Dining + coffee'],['SHOPPING','◇','Shopping','Retail + local finds'],['FAMILY','♙','Family','Kids + schools'],['BEAUTY','✦','Beauty','Hair + nails'],['HEALTH','+','Health','Medical + wellness'],['HOME','⌂','Home','Trades + property'],['FITNESS','◉','Fitness','Sports + recreation'],['COMMUNITY','♥','Community','Groups + civic']
+  ];
+  const dirChips=$('#directoryChips');
+  const quick=document.createElement('div');quick.id='directoryQuick';quick.className='eventQuick';
+  quick.innerHTML=quickDefs.map(([k,icon,label,sub])=>`<button class="eventQuickCard ${k==='ALL'?'active':''}" data-dir-quick="${k}"><b>${icon}</b><span>${label}</span><small>${sub}</small></button>`).join('');
+  dirChips.parentNode.insertBefore(quick,dirChips);
 
   directoryData=function(){
     if(state.registry.length)return state.registry.slice();
@@ -45,8 +77,9 @@
   renderDirectory=function(){
     let arr=directoryData();
     if(state.registry.length){
-      arr=arr.filter(r=>state.dirCat==='ALL'||categoryGroup(r)===state.dirCat)
-        .filter(r=>!state.dirQ||registrySearchText(r).includes(state.dirQ));
+      arr=arr.filter(r=>quickGroupMatch(r,state.dirQuick))
+        .filter(r=>state.dirCat==='ALL'||categoryGroup(r)===state.dirCat)
+        .filter(r=>registryMatchesQuery(r,state.dirQ));
       if(state.source)arr=arr.filter(r=>hasRegistrySource(r,state.source));
       if(state.currentOnly)arr=arr.filter(r=>currentPosts(r.organization).length>0);
       if(state.recent)arr=arr.filter(r=>currentPosts(r.organization).some(i=>String(i.discoveryDate||'').slice(0,10)===lbToday()));
@@ -99,6 +132,20 @@
     openOverlay('#profileOverlay')
   };
 
+  quick.onclick=e=>{
+    const b=e.target.closest('[data-dir-quick]');if(!b)return;
+    state.dirQuick=b.dataset.dirQuick;state.dirCat='ALL';
+    $$('#directoryQuick .eventQuickCard').forEach(x=>x.classList.toggle('active',x===b));
+    $$('#directoryChips .chip').forEach(x=>x.classList.toggle('active',x.dataset.dirCat==='ALL'));
+    renderDirectory();
+  };
+  $('#directoryChips').onclick=e=>{
+    const b=e.target.closest('[data-dir-cat]');if(!b)return;
+    state.dirCat=b.dataset.dirCat;state.dirQuick='ALL';
+    $$('#directoryChips .chip').forEach(x=>x.classList.toggle('active',x===b));
+    $$('#directoryQuick .eventQuickCard').forEach(x=>x.classList.toggle('active',x.dataset.dirQuick==='ALL'));
+    renderDirectory();
+  };
   $$('[data-filter-current]').forEach(b=>b.onclick=()=>{state.currentOnly=!state.currentOnly;b.classList.toggle('active',state.currentOnly)});
 
   async function loadRegistryDirectory(){
