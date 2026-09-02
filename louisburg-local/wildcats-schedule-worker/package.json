@@ -1,0 +1,12 @@
+{
+  "name": "louisburg-local-wildcats-schedule-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node wildcats-schedule.mjs",
+    "test": "node --test wildcats-schedule.test.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.55.0"
+  }
+}
