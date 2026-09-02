@@ -21,6 +21,33 @@
   }
   function hasRegistrySource(r,source){if(!source)return true;if(source==='Facebook')return !!r.facebook;if(source==='Instagram')return !!r.instagram;if(source==='Website')return !!r.website;return true}
 
+  function installUiCorrections(){
+    const old=document.querySelector('#homeScreen .searchbar [data-open-filter]');
+    if(old){
+      const icon=document.createElement('span');
+      icon.className='homeSearchStatic';
+      icon.setAttribute('aria-hidden','true');
+      icon.textContent='🔍';
+      old.replaceWith(icon);
+    }
+    if(!document.getElementById('v4-ui-corrections-style')){
+      const style=document.createElement('style');
+      style.id='v4-ui-corrections-style';
+      style.textContent='.homeSearchStatic{flex:0 0 52px;height:48px;display:grid;place-items:center;font-size:25px;line-height:1;pointer-events:none;user-select:none}.profileLink.directions{background:#e7edf5;color:var(--deep)}';
+      document.head.appendChild(style);
+    }
+  }
+
+  function directionsUrl(address){
+    const raw=String(address||'').trim();if(!raw)return '';
+    const q=encodeURIComponent(raw),ua=String(navigator.userAgent||'');
+    if(/Android/i.test(ua))return `geo:0,0?q=${q}`;
+    if(/iPhone|iPad|iPod/i.test(ua))return `https://maps.apple.com/?daddr=${q}`;
+    return `https://www.google.com/maps/dir/?api=1&destination=${q}`;
+  }
+
+  installUiCorrections();
+
   function categoryGroup(r){
     const c=String(r.category||'').toLowerCase();
     if(/dining|restaurant|coffee|roast|café|cafe|grocery|catering|food|barbecue|pizza/.test(c))return 'Food & Drink';
@@ -127,8 +154,8 @@
   openProfile=function(org){
     const r=findRegistry(org),posts=currentPosts(org).slice().sort((a,b)=>Number(b.rankScore||0)-Number(a.rankScore||0)),i=posts[0]||null;
     if(!r&&!i)return;
-    const name=r?r.organization:org,category=r?r.category:(i.category||dirCategory(i)),address=r?r.address:(i.location||'Louisburg, KS'),links=registryProfileLinks(r,posts),photo=posts.find(x=>x.sourceMediaUrl&&/^https?:\/\//i.test(x.sourceMediaUrl));
-    $('#profileContent').innerHTML=`<div class="profileTop"><div class="profileLogo">${photo?`<img src="${esc(photo.sourceMediaUrl)}" alt="" onerror="this.parentNode.textContent='${esc(initials(name))}'">`:esc(initials(name))}</div><div class="profileIdentity"><h2>${esc(name)}</h2><p>${esc(category)}<br>${esc(address||'Louisburg, KS')}</p><span class="verifiedLine">✓ Verified Louisburg listing</span></div></div><div class="profileBlurb">${esc(registryBlurb(r,posts))}</div>${links.length?`<div class="profileLinks">${links.slice(0,6).map(([n,u])=>`<a class="profileLink ${profileLinkClass(n)}" target="_blank" rel="noopener noreferrer" href="${esc(u)}"><span>${profileLinkIcon(n)}</span>${esc(n)}</a>`).join('')}</div>`:`<div class="meta" style="margin-bottom:14px">No verified public web or social link is currently on file.</div>`}<div class="profileSection"><div class="profileSectionHead"><h3>Current activity</h3><small>${posts.length} update${posts.length===1?'':'s'}</small></div><div class="feed">${posts.length?posts.map(card).join(''):'<div class="empty"><b>No current posts right now.</b>This listing remains available in the directory.</div>'}</div></div>`;
+    const name=r?r.organization:org,category=r?r.category:(i.category||dirCategory(i)),mapAddress=r&&r.address?r.address:(i&&i.location?i.location:''),address=mapAddress||'Louisburg, KS',directions=mapAddress?directionsUrl(mapAddress):'',links=registryProfileLinks(r,posts),photo=posts.find(x=>x.sourceMediaUrl&&/^https?:\/\//i.test(x.sourceMediaUrl));
+    $('#profileContent').innerHTML=`<div class="profileTop"><div class="profileLogo">${photo?`<img src="${esc(photo.sourceMediaUrl)}" alt="" onerror="this.parentNode.textContent='${esc(initials(name))}'">`:esc(initials(name))}</div><div class="profileIdentity"><h2>${esc(name)}</h2><p>${esc(category)}<br>${esc(address)}</p><span class="verifiedLine">✓ Verified Louisburg listing</span></div></div><div class="profileBlurb">${esc(registryBlurb(r,posts))}</div>${links.length||directions?`<div class="profileLinks">${links.slice(0,6).map(([n,u])=>`<a class="profileLink ${profileLinkClass(n)}" target="_blank" rel="noopener noreferrer" href="${esc(u)}"><span>${profileLinkIcon(n)}</span>${esc(n)}</a>`).join('')}${directions?`<a class="profileLink directions" href="${esc(directions)}"><span>↗</span>Directions</a>`:''}</div>`:`<div class="meta" style="margin-bottom:14px">No verified public web or social link is currently on file.</div>`}<div class="profileSection"><div class="profileSectionHead"><h3>Current activity</h3><small>${posts.length} update${posts.length===1?'':'s'}</small></div><div class="feed">${posts.length?posts.map(card).join(''):'<div class="empty"><b>No current posts right now.</b>This listing remains available in the directory.</div>'}</div></div>`;
     openOverlay('#profileOverlay')
   };
 
