@@ -154,6 +154,7 @@
         <button type="button" data-quick-cat="FAMILY">👨‍👩‍👧 Family</button>
         <button type="button" data-quick-cat="SPORTS">⚽ Sports</button>
         <button type="button" data-quick-cat="HIRING">💼 Hiring</button>
+        <button type="button" data-quick-cat="COMMUNITY">🤝 Community & Volunteer</button>
         <button type="button" data-quick-cat="CITY">🏛 City & Alerts</button>
         <button type="button" data-quick-cat="NEW">✨ New & Now</button>
       </div>
@@ -189,6 +190,7 @@
       <button class="tag" type="button" data-filter-cat="FAMILY">👨‍👩‍👧 Family & Kids</button>
       <button class="tag" type="button" data-filter-cat="SPORTS">⚽ Sports</button>
       <button class="tag" type="button" data-filter-cat="HIRING">💼 Hiring</button>
+      <button class="tag" type="button" data-filter-cat="COMMUNITY">🤝 Community & Volunteer</button>
       <button class="tag" type="button" data-filter-cat="CITY">🏛 City & Alerts</button>
       <button class="tag" type="button" data-filter-cat="NEW">✨ New & Now</button>
     </div>
@@ -272,7 +274,7 @@
       ['LOCAL SPIRIT','Wildcat Country','School activity, youth sports and hometown pride.','SPORTS']
     ];
 
-    const esc=v=>String(v||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const esc=v=>String(v||'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
     function lbToday(){
       const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
       const out={};parts.forEach(x=>out[x.type]=x.value);
@@ -303,7 +305,7 @@
     function isEventActivityType(type){return /\bevent\b|\bactivity\b/.test(String(type||''))}
     function isBusinessSource(i){
       const org=String(i.organization||'').toLowerCase();
-      const nonBusiness=/city of louisburg|louisburg recreation commission|louisburg library|usd 416|chamber of commerce|aquatic center|senior citizens|united methodist|first christian church|faith chapel|first baptist church|thechurch louisburg|american legion|lions club|rotary club|powell observatory|astronomical society|sports zone/;
+      const nonBusiness=/city of louisburg|louisburg recreation commission|louisburg library|usd 416|chamber of commerce|aquatic center|senior citizens|united methodist|first christian church|faith chapel|first baptist church|thechurch louisburg|american legion|lions club|rotary club|powell observatory|astronomical society|sports zone|agape's grace/;
       return !nonBusiness.test(org);
     }
     function sectionMatches(i,wanted){
@@ -334,6 +336,7 @@
       if(cat==='FAMILY')return tags.has('family')||tags.has('kids')||/\bfamily\b|\bkid\b|\bchild\b|\byouth\b|\bstroller\b/.test(text);
       if(cat==='SPORTS')return tags.has('sports')||/\bsport\b|\bsoccer\b|\bfootball\b|\bathletic\b|\bwildcat\b|\bwalking club\b/.test(text);
       if(cat==='HIRING')return type==='hiring'||/\bhiring\b|\bjob\b|\bcareer\b|\bemployment\b|\bposition\b|\bopenings?\b/.test(text);
+      if(cat==='COMMUNITY')return tags.has('community')||/\bcommunity\b|\bvolunteer\b|\bfundraiser\b|\bnonprofit\b|\bservice project\b/.test(text);
       if(cat==='CITY')return type==='operational update'||String(i.organization||'').toLowerCase()==='city of louisburg'||/\bclosure\b|\bclosed\b|\broad\b|\butility\b|\bpublic notice\b|\balert\b/.test(text);
       if(cat==='NEW')return type==='new product / offering'||/\bnew product\b|\bnew offering\b|\bnew drink\b|\bjust arrived\b|\bnow available\b|\bregistration\b|\benrollment\b/.test(text);
       if(cat==='WHAT')return isEventActivityType(type)||tags.has('what-to-do')||matchesCategory(i,'EVENTS')||matchesCategory(i,'FAMILY')||matchesCategory(i,'MUSIC')||matchesCategory(i,'SPORTS');
