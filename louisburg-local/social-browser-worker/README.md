@@ -21,4 +21,4 @@ Required environment:
 
 The verification gate remains mandatory. A browser capture is discovery evidence, not automatic publication approval.
 
-<!-- manual full-pipeline scan trigger: 2026-08-31 -->
+<!-- manual full-pipeline scan trigger: 2026-09-01 Q NAILS source validation -->
