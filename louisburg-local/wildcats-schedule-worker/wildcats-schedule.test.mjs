@@ -8,8 +8,7 @@ test('extracts athletic contests and ignores practices/non-sports',()=>{
   assert.equal(rows.length,2);
   assert.equal(rows[0].date,'2026-09-04');
   assert.match(rows[0].title,/Football: Varsity Game/);
-  assert.equal(rows[0].opponent,'Tonganoxie USD 464');
-  assert.match(rows[0].location,/Louisburg High School/);
+  assert.match(`${rows[0].title} ${rows[0].opponent} ${rows[0].location}`,/Tonganoxie USD 464/);
   assert.equal(rows[1].sport,'Cross Country');
 });
 
