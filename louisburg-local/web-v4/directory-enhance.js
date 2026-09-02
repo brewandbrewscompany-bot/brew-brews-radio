@@ -164,7 +164,7 @@
 // Load the isolated Wildcat Territory parent calendar without changing the existing V4 feed/directory pipeline.
 (function(){
   const s=document.createElement('script');
-  s.src='wildcats-territory.js';
+  s.src='wildcats-data.js';
   s.async=false;
   document.body.appendChild(s);
 })();
