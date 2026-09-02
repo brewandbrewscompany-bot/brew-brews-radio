@@ -1,76 +1,105 @@
-import {createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 
 const DEFAULT_ENDPOINT='https://script.google.com/macros/s/AKfycbxw9gJBH50L_VZbgp6i_mHHnfPXAkraIqv63BA2XqWtb-XaaczXxdf89WveFkAOwV-azw/exec';
-const BASE='https://www.frontierleagueks.org/public/genie/976/school/13';
 const TZ='America/Chicago';
-const MONTHS='January February March April May June July August September October November December'.split(' ');
+const SCHOOL_ID='13250';
+const CALENDAR_URL=`https://www.arbiterlive.com/School/Calendar/${SCHOOL_ID}`;
+const GAME_BASE='https://www.arbiterlive.com';
+const EVENT_RESPONSE_RE=/\/School\/GetEventsByEntity\//i;
 const SPORT_RE=/\b(football|soccer|volleyball|cross country|golf|tennis|basketball|wrestling|baseball|softball|track(?:\s*&\s*field|\s+and\s+field)?|swimming|swim|bowling)\b/i;
-const CONTEST_RE=/\b(game|match|meet|tournament|invitational|dual|triangular|quad|championship|playoff|playoffs|regional|state|sub-state|substate|scrimmage)\b/i;
-const EXCLUDE_RE=/\b(practice|workout|workouts|camp|open gym|team dinner|dinner|awards? night|banquet|tryout|clinic|meeting|picture day|weights?|conditioning|first day of practice)\b/i;
-const DATE_RE=new RegExp(`^(?:Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday),\\s+(${MONTHS.join('|')})\\s+(\\d{1,2}),\\s+(20\\d{2})$`,'i');
-const TIME_ONLY_RE=/^(TBD|\d{1,2}:\d{2}\s*(?:am|pm)(?:\s*-\s*\d{1,2}:\d{2}\s*(?:am|pm))?|\d{1,2}\s*(?:am|pm))$/i;
 
 function clean(v){return String(v||'').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();}
-function hash12(v){return createHash('sha256').update(String(v||'')).digest('hex').slice(0,12);}
+function norm(v){return clean(v).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
 function localYmd(d=new Date()){
   const p=new Intl.DateTimeFormat('en-US',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d),o={};
   p.forEach(x=>o[x.type]=x.value);return `${o.year}-${o.month}-${o.day}`;
 }
-function ymdFromHeading(line){const m=clean(line).match(DATE_RE);if(!m)return '';const month=MONTHS.findIndex(x=>x.toLowerCase()===m[1].toLowerCase())+1;return `${m[3]}-${String(month).padStart(2,'0')}-${String(Number(m[2])).padStart(2,'0')}`;}
-function prettyDate(ymd){const [y,m,d]=ymd.split('-').map(Number);return new Intl.DateTimeFormat('en-US',{timeZone:TZ,month:'long',day:'numeric',year:'numeric'}).format(new Date(Date.UTC(y,m-1,d,18)));}
 function addDaysYmd(ymd,days){const [y,m,d]=ymd.split('-').map(Number),x=new Date(Date.UTC(y,m-1,d+days,18));return `${x.getUTCFullYear()}-${String(x.getUTCMonth()+1).padStart(2,'0')}-${String(x.getUTCDate()).padStart(2,'0')}`;}
-function compareYmd(a,b){return String(a).localeCompare(String(b));}
-function inWindow(date,today,futureDays=35){return compareYmd(date,today)>=0&&compareYmd(date,addDaysYmd(today,futureDays))<=0;}
-function isContest(title){const t=clean(title).replace(/\bBus Info\b/ig,'').replace(/\bmore\.\.\b/ig,'');return SPORT_RE.test(t)&&CONTEST_RE.test(t)&&!EXCLUDE_RE.test(t);}
-function sportName(title){const m=clean(title).match(SPORT_RE);return m?m[1].replace(/\s+/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):'Athletics';}
-function cleanTitle(title){return clean(title).replace(/\bBus Info\b/ig,'').replace(/\bmore\.\.\b/ig,'').replace(/\s*\(\s*(?:Cancelled|Canceled)\s*\)\s*/ig,' (Cancelled)').trim();}
-function cleanDetails(parts){return clean(parts.join(' ')).replace(/\* \* \*/g,' ').replace(/Leaves:\s*[^|]+/ig,' ').replace(/Dismissal:\s*[^|]+/ig,' ').replace(/Return:\s*[^|]+/ig,' ').replace(/\blocation(?:FS)?\b/ig,' ').replace(/\bBus Info\b/ig,' ').replace(/\s+/g,' ').trim();}
-function parseOpponent(details){const m=String(details||'').match(/\bvs\.\s*(.+?)(?=\s+@\s+|$)/i);return m?clean(m[1]).replace(/\.\.$/,''):'';}
-function parseLocation(details){const m=String(details||'').match(/\s@\s(.+)$/);return m?clean(m[1]).replace(/\blocation(?:FS)?\b/ig,'').trim():'';}
-function timeStart(raw){const m=clean(raw).match(/^(TBD|\d{1,2}:\d{2}\s*(?:am|pm)|\d{1,2}\s*(?:am|pm))/i);return m?clean(m[1]):'';}
-function rowFromInline(line){const cells=String(line||'').split(/\t+/).map(clean).filter(Boolean);if(cells.length>=2&&TIME_ONLY_RE.test(cells[0]))return {time:cells[0],title:cells[1],details:cells.slice(2)};const m=clean(line).match(/^(TBD|\d{1,2}:\d{2}\s*(?:am|pm)(?:\s*-\s*\d{1,2}:\d{2}\s*(?:am|pm))?|\d{1,2}\s*(?:am|pm))\s+(.+)$/i);return m?{time:m[1],title:m[2],details:[]}:null;}
+function inWindow(date,today,futureDays=35){return date>=today&&date<=addDaysYmd(today,futureDays);}
+function prettyDate(ymd){const [y,m,d]=ymd.split('-').map(Number);return new Intl.DateTimeFormat('en-US',{timeZone:TZ,month:'long',day:'numeric',year:'numeric'}).format(new Date(Date.UTC(y,m-1,d,18)));}
+function ymdFromArbiterStart(v){const m=String(v||'').match(/^(\d{1,2})\/(\d{1,2})\/(20\d{2})/);return m?`${m[3]}-${String(Number(m[1])).padStart(2,'0')}-${String(Number(m[2])).padStart(2,'0')}`:'';}
+function decodeEntities(v){let s=String(v||'');for(let pass=0;pass<2;pass++)s=s.replace(/&#(\d+);/g,(_,n)=>String.fromCodePoint(Number(n))).replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16))).replace(/&lt;/gi,'<').replace(/&gt;/gi,'>').replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&');return s;}
+function gameIdFromHref(href){const m=String(href||'').match(/\/Teams\/Game\/(\d+)\/(\d+)\/(\d+)\/(\d+)/i);return m&&m[2]===SCHOOL_ID?m[1]:'';}
+function normalizeClock(v){const m=clean(v).match(/^(\d{1,2}):(\d{2})\s*([ap])m?$/i);if(!m)return clean(v);return `${Number(m[1])}:${m[2]} ${m[3].toUpperCase()}M`;}
+function parseTimePrefix(text){const m=clean(text).match(/^(\d{1,2}:\d{2}\s*[ap]m?)(?:\s*-\s*(\d{1,2}:\d{2}\s*[ap]m?))?\s+(.+)$/i);if(!m)return {time:'',endTime:'',rest:clean(text)};return {time:normalizeClock(m[1]),endTime:m[2]?normalizeClock(m[2]):'',rest:clean(m[3])};}
+function sportName(label){const m=clean(label).match(SPORT_RE);return m?m[1].replace(/\s+/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):'Athletics';}
+function eventNoun(sport){return /cross country|track|golf|swim|bowling/i.test(sport)?'meet':'game';}
+function stripGameWord(v){return clean(v).replace(/\s+(?:game|match|meet)$/i,'').trim();}
 
-export function extractWildcatEvents(raw,{today=localYmd(),futureDays=35}={}){
-  const lines=String(raw||'').split(/\r?\n/).map(clean).filter(Boolean),out=[],seen=new Set();let currentDate='';
-  for(let i=0;i<lines.length;i++){
-    const heading=ymdFromHeading(lines[i]);if(heading){currentDate=heading;continue;}if(!currentDate||!inWindow(currentDate,today,futureDays))continue;
-    let row=rowFromInline(lines[i]),consume=0;
-    if(!row&&TIME_ONLY_RE.test(lines[i])){
-      let j=i+1;while(j<lines.length&&/^(Time|Event|Details|-+|\* \* \*)$/i.test(lines[j]))j++;
-      if(j<lines.length){row={time:lines[i],title:lines[j],details:[]};consume=j-i;}
+export function parseArbiterAnchorText(text){
+  const t=parseTimePrefix(text);let desc=t.rest,cancelled=/\b(cancelled|canceled)\b/i.test(desc);desc=clean(desc.replace(/\b(cancelled|canceled)\b/ig,''));
+  const rel=desc.match(/^(.*?)\s+(vs\.|at)\s+(.+)$/i);
+  const teamLabel=stripGameWord(rel?rel[1]:desc),relation=rel?rel[2].toLowerCase():'',opponent=rel?clean(rel[3]):'';
+  return {time:t.time,endTime:t.endTime,teamLabel,sport:sportName(teamLabel),homeAway:relation==='vs.'?'HOME':relation==='at'?'AWAY':'',opponent,cancelled};
+}
+
+function fallbackTextForGame(decodedTitle,gameId){
+  const re=new RegExp(`<a[^>]+href=['\"]([^'\"]*\\/Teams\\/Game\\/${gameId}\\/[^'\"]+)['\"][^>]*>([\\s\\S]*?)<\\/a>`,'i'),m=decodedTitle.match(re);if(!m)return '';
+  return clean(decodeEntities(m[2]).replace(/<br\s*\/?\s*>/gi,' ').replace(/<[^>]+>/g,' '));
+}
+
+export function parseArbiterEventsResponse(outer,anchors=[],{today=localYmd(),futureDays=35}={}){
+  const payload=typeof outer==='string'?JSON.parse(outer):outer||{};
+  const summaries=typeof payload.EventsFilteredSummaryString==='string'?JSON.parse(payload.EventsFilteredSummaryString||'[]'):Array.isArray(payload.EventsFilteredSummaryString)?payload.EventsFilteredSummaryString:[];
+  const anchorMap=new Map();
+  for(const a of anchors){const id=gameIdFromHref(a.href);if(id&&!anchorMap.has(id))anchorMap.set(id,clean(a.text));}
+  const raw=[];
+  for(const summary of summaries){
+    const date=ymdFromArbiterStart(summary.start);if(!date||!inWindow(date,today,futureDays))continue;
+    const decoded=decodeEntities(summary.title||'');
+    const ids=[...decoded.matchAll(new RegExp(`/Teams/Game/(\\d+)/${SCHOOL_ID}/\\d+/\\d+`,'gi'))].map(m=>m[1]);
+    for(const gameId of [...new Set(ids)]){
+      const hrefMatch=decoded.match(new RegExp(`(/Teams/Game/${gameId}/${SCHOOL_ID}/\\d+/\\d+)`,'i'));if(!hrefMatch)continue;
+      const path=hrefMatch[1],sourceText=anchorMap.get(gameId)||fallbackTextForGame(decoded,gameId),parsed=parseArbiterAnchorText(sourceText);
+      if(!parsed.teamLabel||!SPORT_RE.test(parsed.teamLabel))continue;
+      raw.push({...parsed,date,gameId,postId:`WILDCATS-${gameId}`,postUrl:`${GAME_BASE}${path}`});
     }
-    if(!row||!isContest(row.title))continue;
-    const detailParts=[...row.details];let j=i+Math.max(1,consume+1),steps=0;
-    while(j<lines.length&&steps<10){if(ymdFromHeading(lines[j])||TIME_ONLY_RE.test(lines[j])||rowFromInline(lines[j]))break;detailParts.push(lines[j]);j++;steps++;}
-    const title=cleanTitle(row.title),details=cleanDetails(detailParts),opponent=parseOpponent(details),location=parseLocation(details),cancelled=/\b(cancelled|canceled)\b/i.test(`${title} ${details}`),time=timeStart(row.time);
-    const stable=`${currentDate}|${time}|${title.toLowerCase()}|${opponent.toLowerCase()}|${location.toLowerCase()}`;if(seen.has(stable))continue;seen.add(stable);
-    out.push({date:currentDate,time,title,sport:sportName(title),opponent,location,cancelled,details,postId:`WILDCATS-${currentDate.replace(/-/g,'')}-${hash12(stable)}`});
   }
-  return out.sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time)||a.title.localeCompare(b.title));
+  const deduped=new Map();
+  for(const event of raw){
+    const key=[event.date,event.time,norm(event.teamLabel),norm(event.opponent),event.homeAway].join('|');const old=deduped.get(key);
+    if(!old||old.cancelled&&!event.cancelled)deduped.set(key,event);
+  }
+  return [...deduped.values()].sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time)||a.teamLabel.localeCompare(b.teamLabel));
 }
 
 function buildPostText(event){
-  const status=event.cancelled?'CANCELLED: ':'';let text=`${status}Louisburg Wildcats ${event.title} on ${prettyDate(event.date)}`;if(event.time)text+=` at ${event.time}`;text+='.';if(event.opponent)text+=` Opponent: ${event.opponent}.`;if(event.location)text+=` Location: ${event.location}.`;text+=' Official Frontier League Louisburg athletics schedule.';return text;
+  const noun=eventNoun(event.sport),status=event.cancelled?'CANCELLED: ':'';let text=`${status}Louisburg Wildcats ${event.teamLabel} ${noun}`;
+  if(event.opponent)text+=event.homeAway==='HOME'?` vs. ${event.opponent}`:event.homeAway==='AWAY'?` at ${event.opponent}`:` with ${event.opponent}`;
+  text+=` on ${prettyDate(event.date)}`;if(event.time)text+=` at ${event.time}`;text+='.';
+  if(event.homeAway==='HOME')text+=' Home event in Louisburg, KS.';else if(event.homeAway==='AWAY'&&event.opponent)text+=` Away event at ${event.opponent}.`;
+  text+=' Official ArbiterLive Louisburg High School athletics schedule.';return text;
 }
 
 async function postJson(endpoint,ingestKey,payload){
   const response=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'social_intake',ingestKey,...payload}),redirect:'follow'});const text=await response.text();let parsed;try{parsed=JSON.parse(text);}catch{throw new Error(`Non-JSON intake response: ${text.slice(0,180)}`);}if(!response.ok||!parsed.ok)throw new Error(`intake failed: ${parsed.error||response.status}`);return parsed;
 }
 
-function weekUrls(today){return [0,7,14,21,28].map(offset=>`${BASE}/date/${addDaysYmd(today,offset)}/view/week/`);}
+async function loadOfficialSchedule(context,{today,futureDays}){
+  const page=await context.newPage();
+  try{
+    const responsePromise=page.waitForResponse(r=>EVENT_RESPONSE_RE.test(r.url())&&r.request().method()==='POST',{timeout:20000});
+    await page.goto(CALENDAR_URL,{waitUntil:'domcontentloaded',timeout:30000});
+    const response=await responsePromise,outer=await response.json();
+    await page.waitForTimeout(1800);
+    const anchors=await page.locator('a[href*="/Teams/Game/"]').evaluateAll(as=>as.map(a=>({href:a.getAttribute('href')||a.href||'',text:(a.innerText||a.textContent||'').replace(/\s+/g,' ').trim()})).filter(x=>x.href));
+    const events=parseArbiterEventsResponse(outer,anchors,{today,futureDays});
+    return {events,rangeStart:outer.DataDateStart||'',rangeEnd:outer.DataDateEnd||'',anchorCount:anchors.length};
+  }finally{await page.close();}
+}
 
 export async function run(){
   const endpoint=process.env.LL_SOCIAL_ENDPOINT||DEFAULT_ENDPOINT,ingestKey=process.env.LL_SOCIAL_INGEST_KEY||'';if(!ingestKey)throw new Error('LL_SOCIAL_INGEST_KEY is required.');
-  const {chromium}=await import('playwright'),browser=await chromium.launch({headless:true}),context=await browser.newContext({locale:'en-US',timezoneId:TZ,viewport:{width:1365,height:1000}}),today=localYmd(),all=[];let readable=0,failures=0;
-  try{
-    for(const url of weekUrls(today)){
-      const page=await context.newPage();try{await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});await page.waitForTimeout(1800);const body=await page.locator('body').innerText({timeout:10000});const events=extractWildcatEvents(body,{today,futureDays:35});readable++;all.push(...events.map(event=>({event,url})));console.log(`Wildcats schedule readable: ${url}; contests=${events.length}`);}catch(error){failures++;console.error(`Wildcats schedule error: ${url}; ${String(error.message||error).replace(/\s+/g,' ').slice(0,220)}`);}finally{await page.close();}
-    }
-  }finally{await context.close();await browser.close();}
-  const unique=new Map();for(const x of all){const k=x.event.postId;if(!unique.has(k))unique.set(k,x);}const events=[...unique.values()].sort((a,b)=>a.event.date.localeCompare(b.event.date)||a.event.time.localeCompare(b.event.time)).slice(0,40);
-  let delivered=0,duplicates=0;for(const {event,url} of events){const result=await postJson(endpoint,ingestKey,{queueId:'FIRSTPARTY-WILDCATS-SCHEDULE',organization:'Louisburg High School - USD 416',platform:'WEBSITE',profileUrl:`${BASE}/`,postUrl:url,postId:event.postId,postDate:new Date().toISOString(),postText:buildPostText(event),mediaUrl:'',mediaType:'',activityType:event.cancelled?'Operational Update':'Event / Activity',louisburgMatch:'VERIFIED'});delivered++;if(result.duplicate)duplicates++;console.log(`${event.date} ${event.time} ${event.title} -> ${result.duplicate?'duplicate':'submitted'}`);}
-  console.log(`Wildcats schedule scan complete: readable=${readable}; extracted=${all.length}; unique=${events.length}; delivered=${delivered}; duplicates=${duplicates}; failures=${failures}`);if(!readable)throw new Error('No official Wildcats schedule page was readable.');
+  const {chromium}=await import('playwright'),browser=await chromium.launch({headless:true}),context=await browser.newContext({locale:'en-US',timezoneId:TZ,viewport:{width:1440,height:1100}}),today=localYmd();
+  let loaded;try{loaded=await loadOfficialSchedule(context,{today,futureDays:35});}finally{await context.close();await browser.close();}
+  const events=loaded.events.slice(0,80);console.log(`Official Arbiter Wildcats calendar: range=${loaded.rangeStart}..${loaded.rangeEnd}; gameLinks=${loaded.anchorCount}; currentFuture=${events.length}`);
+  if(!events.length)throw new Error('Official Arbiter Wildcats calendar was readable but no current/future athletic events were extracted.');
+  let delivered=0,duplicates=0;
+  for(const event of events){
+    const result=await postJson(endpoint,ingestKey,{queueId:'FIRSTPARTY-WILDCATS-ARBITER',organization:'Louisburg High School - USD 416',platform:'WEBSITE',profileUrl:CALENDAR_URL,postUrl:event.postUrl,postId:event.postId,postDate:new Date().toISOString(),postText:buildPostText(event),mediaUrl:'',mediaType:'',activityType:event.cancelled?'Operational Update':'Event / Activity',louisburgMatch:'VERIFIED'});
+    delivered++;if(result.duplicate)duplicates++;console.log(`${event.date} ${event.time} ${event.teamLabel}${event.opponent?` ${event.homeAway==='HOME'?'vs.':'at'} ${event.opponent}`:''}${event.cancelled?' [CANCELLED]':''} -> ${result.duplicate?'duplicate':'submitted'}`);
+  }
+  console.log(`Wildcats Arbiter scan complete: extracted=${events.length}; delivered=${delivered}; duplicates=${duplicates}`);
 }
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)run().catch(error=>{console.error(error);process.exitCode=1;});
