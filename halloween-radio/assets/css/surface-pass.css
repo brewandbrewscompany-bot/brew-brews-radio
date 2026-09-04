@@ -1,0 +1,70 @@
+/* Final surface pass for this restoration stage.
+   Intentionally uses only procedural CSS paint so no extracted swatch can leak into the cabinet. */
+@media (min-width:701px){
+  .cabinet-front{
+    background:
+      radial-gradient(circle at 11% 19%,rgba(160,91,42,.12) 0 1px,transparent 2px) 0 0/29px 31px,
+      radial-gradient(circle at 82% 57%,rgba(0,0,0,.5) 0 2px,transparent 3px) 0 0/41px 37px,
+      repeating-linear-gradient(111deg,rgba(134,71,30,.03) 0 1px,transparent 2px 12px),
+      linear-gradient(94deg,#0d0805 0,#030302 16%,#090604 47%,#020202 82%,#0d0704 100%)!important;
+  }
+  .cabinet-front::before{
+    background:
+      radial-gradient(circle at 13% 18%,#26170e 0 2px,#050302 3px 5px,transparent 6px) 0 0/79px 67px,
+      radial-gradient(circle at 72% 36%,rgba(122,65,29,.12) 0 2px,transparent 3px) 0 0/37px 39px,
+      repeating-linear-gradient(13deg,rgba(111,59,27,.025) 0 1px,transparent 2px 13px),
+      linear-gradient(90deg,#010101,#080503 15%,#040302 50%,#070403 85%,#010101)!important;
+  }
+  .cabinet-front::after{background:repeating-linear-gradient(116deg,transparent 0 24px,rgba(139,73,31,.018) 25px 26px,transparent 27px 48px)!important;mix-blend-mode:screen!important}
+
+  .top-deck::before{
+    content:"";position:absolute;z-index:-4;left:-16px;right:-5px;top:47px;bottom:-18px;border:3px solid #1b100a;border-radius:5px;
+    background:radial-gradient(circle at 7% 25%,rgba(124,65,28,.08) 0 2px,transparent 3px) 0 0/39px 37px,linear-gradient(100deg,#070403,#020202 54%,#0b0604);
+    box-shadow:inset 0 0 43px #000,0 12px 15px #000,0 0 0 2px #3a2113;pointer-events:none
+  }
+
+  .brand-header::after{
+    content:"";position:absolute;left:16%;right:16%;top:84px;height:34px;z-index:-1;opacity:.18;
+    background:repeating-linear-gradient(102deg,transparent 0 31px,rgba(195,111,48,.15) 32px 33px,transparent 34px 61px);filter:blur(.3px);pointer-events:none
+  }
+  .brand-main{text-shadow:1px 1px 0 #2c160b,2px 2px 0 #2c160b,4px 5px 0 #130a06,7px 11px 9px #000!important}
+
+  /* Steam should be a dominant silhouette like the historical receiver. */
+  .mug-module{overflow:visible!important}
+  .steam{display:block!important;z-index:30!important;bottom:213px!important;height:190px!important;width:35px!important;opacity:.74!important;filter:blur(5px)!important}
+  .steam::before{border-left-width:8px!important;border-left-color:rgba(205,199,189,.36)!important;filter:drop-shadow(0 0 6px rgba(218,210,197,.12))}
+  .steam.s1{margin-left:-57px!important}.steam.s2{margin-left:-12px!important}.steam.s3{margin-left:34px!important}
+
+  /* Tuner is the main cast-iron object: rough edge, deep black cavity, minimal polish. */
+  .tuner-outer{
+    background:
+      radial-gradient(circle at 17px 16px,#8b522d 0 3px,#0a0604 4px 8px,transparent 9px),
+      radial-gradient(circle at calc(100% - 18px) 15px,#71401f 0 3px,#090503 4px 8px,transparent 9px),
+      radial-gradient(circle at 18px calc(100% - 16px),#67401f 0 3px,#090503 4px 8px,transparent 9px),
+      radial-gradient(circle at calc(100% - 16px) calc(100% - 17px),#71401f 0 3px,#090503 4px 8px,transparent 9px),
+      radial-gradient(circle at 23% 57%,rgba(140,72,31,.12) 0 1px,transparent 2px) 0 0/25px 27px,
+      repeating-linear-gradient(117deg,rgba(142,75,33,.037) 0 1px,transparent 2px 12px),
+      linear-gradient(111deg,#0d0704,#3a2113 10%,#030302 29% 73%,#29170d 91%,#030201)!important;
+  }
+  .tuner-bezel{background:radial-gradient(circle at 18% 25%,rgba(145,76,31,.11) 0 1px,transparent 2px) 0 0/23px 21px,repeating-linear-gradient(118deg,rgba(129,68,29,.035) 0 1px,transparent 2px 11px),linear-gradient(#100b08,#2e1c12 13%,#020202 31% 76%,#21120b 95%)!important}
+  .tuner-cavity{background:#010101!important}
+  .tuner-glass{background:linear-gradient(110deg,rgba(255,255,255,.055) 0 3%,transparent 8% 78%,rgba(255,255,255,.008) 82%),radial-gradient(ellipse at 53% 54%,rgba(255,86,5,.07),transparent 62%),linear-gradient(#070706,#000 91%)!important}
+
+  /* Make the vacuum tube occupy the right tower and glow from a real filament core. */
+  .science-stack{overflow:visible!important}
+  .tube-module{top:-5px!important;height:300px!important}
+  .tube-glass{top:4px!important;bottom:79px!important;background:linear-gradient(104deg,rgba(255,255,255,.1),transparent 16% 71%,rgba(255,255,255,.025) 80%,transparent),radial-gradient(ellipse at 50% 72%,rgba(255,147,52,.72),rgba(255,78,5,.24) 24%,transparent 50%),linear-gradient(rgba(16,14,11,.08),rgba(1,1,1,.86))!important}
+  .tube-filament svg{filter:drop-shadow(0 0 4px #ffd08a) drop-shadow(0 0 12px #ff8a25) drop-shadow(0 0 28px #ff5a05)!important}
+  .tube-socket{background:linear-gradient(108deg,#100b08,#3b2417 18%,#070504 43%,#57331c 61%,#070403 82%,#24150d)!important}
+
+  /* Lower hardware sits on one uninterrupted black iron plate. */
+  .info-deck::before{content:"";position:absolute;z-index:-3;inset:-8px -7px -5px -9px;border:3px solid #1d120b;background:linear-gradient(105deg,#090604,#020202 72%,#0b0604);box-shadow:inset 0 0 39px #000,0 13px 16px #000,0 0 0 2px #3b2112;pointer-events:none}
+  .module,.display-panel,.meter-module{background:repeating-linear-gradient(115deg,rgba(129,67,28,.025) 0 1px,transparent 2px 13px),linear-gradient(105deg,#0d0906,#020202 73%)!important}
+  .control-deck{background:radial-gradient(circle at 13px 13px,#754421 0 3px,#080503 4px 7px,transparent 8px),radial-gradient(circle at calc(100% - 13px) 13px,#67401f 0 3px,#080503 4px 7px,transparent 8px),radial-gradient(circle at 13px calc(100% - 13px),#67401f 0 3px,#080503 4px 7px,transparent 8px),radial-gradient(circle at calc(100% - 13px) calc(100% - 13px),#67401f 0 3px,#080503 4px 7px,transparent 8px),repeating-linear-gradient(114deg,rgba(131,68,29,.025) 0 1px,transparent 2px 12px),linear-gradient(#100b08,#020202 78%)!important}
+  .witching-strip{background:repeating-linear-gradient(114deg,rgba(126,65,27,.025) 0 1px,transparent 2px 12px),linear-gradient(90deg,#0d0906,#020202 70%,#0f0906)!important}
+  .nav-btn{background:repeating-linear-gradient(116deg,rgba(126,65,27,.025) 0 1px,transparent 2px 12px),linear-gradient(#0e0906,#020202 78%)!important}
+
+  .knob,.transport-btn,.nav-medallion{filter:drop-shadow(0 5px 1px #000) drop-shadow(0 11px 9px #000)}
+  .knob::after{box-shadow:0 0 0 1px rgba(148,88,44,.36),inset 0 0 13px #000!important}
+  .speaker-grille{background:radial-gradient(circle,#010101 0 2px,transparent 2.4px) 0 0/7px 7px,linear-gradient(90deg,#0c0806,#010101 55%,#0c0806)!important}
+}
