@@ -1,0 +1,16 @@
+{
+  "auditDate": "2026-09-04",
+  "sourceCommit": "f3846ad1d9995dec203915908e838948729c3e9e",
+  "selectedFor34TrackRotation": [
+    {"source":"Haunted Ragtime (1).mp3","target":"coffin-lid-rag.mp3","durationSec":141.5,"contentType":"instrumental"},
+    {"source":"Midnight Static (1).mp3","target":"dead-air-interlude.mp3","durationSec":131.9,"contentType":"instrumental"},
+    {"source":"Roaster Rock.mp3","target":"roaster-rattle.mp3","durationSec":172.8,"contentType":"instrumental"},
+    {"source":"Spooky Boogie x Spooky Boogie (Mashup).mp3","target":"black-cat-boogie.mp3","durationSec":180.4,"contentType":"instrumental"},
+    {"source":"October Fog.mp3","target":"lanterns-in-the-fog.mp3","durationSec":203.3,"contentType":"instrumental"},
+    {"source":"Boiler Room Swing.mp3","target":"boiler-room-bones.mp3","durationSec":154.2,"contentType":"instrumental"},
+    {"source":"Pre-Dawn Roastery.mp3","target":"last-cup-before-dawn.mp3","durationSec":174.6,"contentType":"instrumental"},
+    {"source":"Goodnight, Louisburg (1).mp3","target":"the-town-goes-quiet.mp3","durationSec":272.1,"contentType":"vocal","introType":"announcer-signoff"}
+  ],
+  "alternate": {"source":"Spooky Boogie.mp3","target":"black-cat-boogie-alt.mp3","durationSec":108.1,"contentType":"instrumental"},
+  "notes": "Whisper samples at beginning, middle and late section found no intelligible vocals in the seven selected instrumentals or either Spooky Boogie version. Goodnight, Louisburg contains the intended announcer/signoff material throughout. The longer mashup is selected as Black Cat Boogie; the shorter version is retained as an alternate and is not counted in the 34-track rotation."
+}
