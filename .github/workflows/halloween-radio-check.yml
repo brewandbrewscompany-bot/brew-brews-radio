@@ -93,6 +93,13 @@ jobs:
             if(!initial.paused) throw new Error('Audio autoplayed on page load');
             if(!initial.src.includes('ironclad.mp3')) throw new Error(`Unexpected default source: ${initial.src}`);
 
+            // Disable randomized Haunted Auto Tune during deterministic smoke testing.
+            // This does not change the production default; it only prevents a timer from
+            // moving the station while the test is deliberately checking another station.
+            if(await page.$eval('#autoTuneToggle',b=>b.getAttribute('aria-pressed')==='true')){
+              await page.click('#autoTuneToggle');
+            }
+
             await page.click('.preset[data-frequency="88.3"]');
             await new Promise(r=>setTimeout(r,200));
             if(!(await page.$eval('#radioAudio',a=>a.paused))) throw new Error('Preset started audio while paused');
