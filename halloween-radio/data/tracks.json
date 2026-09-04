@@ -1,0 +1,22 @@
+{
+  "project": "Brew & Brews Halloween Radio",
+  "expectedTrackCount": 34,
+  "defaultStation": 103.1,
+  "stations": [
+    {"frequency": 88.3, "name": "Graveyard AM"},
+    {"frequency": 91.7, "name": "Dead Air"},
+    {"frequency": 95.9, "name": "The Grind"},
+    {"frequency": 99.5, "name": "After Dark"},
+    {"frequency": 103.1, "name": "B&B Radio"},
+    {"frequency": 106.7, "name": "Witching Hour"}
+  ],
+  "tracks": [
+    {
+      "id": "ironclad",
+      "title": "IRONCLAD",
+      "file": "audio/ironclad.mp3",
+      "station": 103.1,
+      "status": "current-default"
+    }
+  ]
+}
