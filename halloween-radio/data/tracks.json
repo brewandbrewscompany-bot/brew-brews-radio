@@ -2,7 +2,10 @@
   "project": "Brew & Brews Halloween Radio",
   "expectedTrackCount": 34,
   "uploadedTrackCount": 26,
+  "plannedTrackCount": 8,
   "defaultStation": 103.1,
+  "broadcastConfig": "data/broadcasts.json",
+  "remainingTrackPlan": "data/remaining-8.json",
   "stations": [
     {"frequency": 88.3, "name": "Graveyard AM"},
     {"frequency": 91.7, "name": "Dead Air"},
