@@ -12,31 +12,36 @@
     {"frequency": 106.7, "name": "Witching Hour"}
   ],
   "tracks": [
-    {"id":"brew-and-brews-after-dark","title":"Brew & Brews After Dark","file":"audio/brew-and-brews-after-dark.mp3","station":null,"status":"uploaded"},
-    {"id":"brew-and-brews-after-dark-v2","title":"Brew & Brews After Dark (Version 2)","file":"audio/brew-and-brews-after-dark-v2.mp3","station":null,"status":"uploaded"},
-    {"id":"dead-of-night","title":"Dead of Night","file":"audio/dead-of-night.mp3","station":null,"status":"uploaded"},
-    {"id":"do-the-goblin-stomp","title":"Do the Goblin Stomp","file":"audio/do-the-goblin-stomp.mp3","station":null,"status":"uploaded"},
-    {"id":"full-moon-frequency","title":"Full Moon Frequency","file":"audio/full-moon-frequency.mp3","station":null,"status":"uploaded"},
-    {"id":"goblin-chase","title":"Goblin Chase","file":"audio/goblin-chase.mp3","station":null,"status":"uploaded"},
-    {"id":"haunted-roast","title":"Haunted Roast","file":"audio/haunted-roast.mp3","station":null,"status":"uploaded"},
-    {"id":"howling-in-the-dark","title":"Howling in the Dark","file":"audio/howling-in-the-dark.mp3","station":null,"status":"uploaded"},
-    {"id":"ironclad","title":"IRONCLAD","file":"audio/ironclad.mp3","station":103.1,"status":"current-default"},
-    {"id":"ironclad-walk","title":"Ironclad Walk","file":"audio/ironclad-walk.mp3","station":null,"status":"uploaded"},
-    {"id":"it-knows-youre-awake","title":"It Knows You're Awake","file":"audio/it-knows-youre-awake.mp3","station":null,"status":"uploaded"},
-    {"id":"midnight-static","title":"Midnight Static","file":"audio/midnight-static.mp3","station":null,"status":"uploaded"},
-    {"id":"monsters-in-the-house","title":"Monsters in the House","file":"audio/monsters-in-the-house.mp3","station":null,"status":"uploaded"},
-    {"id":"phantom-groove","title":"Phantom Groove","file":"audio/phantom-groove.mp3","station":null,"status":"uploaded"},
-    {"id":"run-away-from-shadows","title":"Run Away from Shadows","file":"audio/run-away-from-shadows.mp3","station":null,"status":"uploaded"},
-    {"id":"run-from-the-shadows","title":"Run from the Shadows","file":"audio/run-from-the-shadows.mp3","station":null,"status":"uploaded"},
-    {"id":"skeleton-shuffle","title":"Skeleton Shuffle","file":"audio/skeleton-shuffle.mp3","station":null,"status":"uploaded"},
-    {"id":"static-on-the-highway","title":"Static on the Highway","file":"audio/static-on-the-highway.mp3","station":null,"status":"uploaded"},
-    {"id":"the-witching-hour","title":"The Witching Hour","file":"audio/the-witching-hour.mp3","station":null,"status":"uploaded"},
-    {"id":"the-witching-hour-v2","title":"The Witching Hour (Version 2)","file":"audio/the-witching-hour-v2.mp3","station":null,"status":"uploaded"},
-    {"id":"they-prefer-the-dark-roast","title":"They Prefer the Dark Roast","file":"audio/they-prefer-the-dark-roast.mp3","station":null,"status":"uploaded"},
-    {"id":"voodoo-after-midnight","title":"Voodoo after Midnight","file":"audio/voodoo-after-midnight.mp3","station":null,"status":"uploaded"},
-    {"id":"welcome-to-the-haunted-roast","title":"Welcome to the Haunted Roast","file":"audio/welcome-to-the-haunted-roast.mp3","station":null,"status":"uploaded"},
-    {"id":"when-the-lights-go-out","title":"When the Lights Go Out","file":"audio/when-the-lights-go-out.mp3","station":null,"status":"uploaded"},
-    {"id":"when-the-lights-go-out-v2","title":"When the Lights Go Out (Version 2)","file":"audio/when-the-lights-go-out-v2.mp3","station":null,"status":"uploaded"},
-    {"id":"when-the-night-comes-alive","title":"When the Night Comes Alive","file":"audio/when-the-night-comes-alive.mp3","station":null,"status":"uploaded"}
+    {"id":"welcome-to-the-haunted-roast","title":"Welcome to the Haunted Roast","file":"audio/welcome-to-the-haunted-roast.mp3","station":88.3,"order":1,"status":"uploaded"},
+    {"id":"haunted-roast","title":"Haunted Roast","file":"audio/haunted-roast.mp3","station":88.3,"order":2,"status":"uploaded"},
+    {"id":"dead-of-night","title":"Dead of Night","file":"audio/dead-of-night.mp3","station":88.3,"order":3,"status":"uploaded"},
+    {"id":"it-knows-youre-awake","title":"It Knows You're Awake","file":"audio/it-knows-youre-awake.mp3","station":88.3,"order":4,"status":"uploaded"},
+
+    {"id":"midnight-static","title":"Midnight Static","file":"audio/midnight-static.mp3","station":91.7,"order":1,"status":"uploaded"},
+    {"id":"static-on-the-highway","title":"Static on the Highway","file":"audio/static-on-the-highway.mp3","station":91.7,"order":2,"status":"uploaded"},
+    {"id":"run-away-from-shadows","title":"Run Away from Shadows","file":"audio/run-away-from-shadows.mp3","station":91.7,"order":3,"status":"uploaded"},
+    {"id":"run-from-the-shadows","title":"Run from the Shadows","file":"audio/run-from-the-shadows.mp3","station":91.7,"order":4,"status":"uploaded"},
+
+    {"id":"ironclad-walk","title":"Ironclad Walk","file":"audio/ironclad-walk.mp3","station":95.9,"order":1,"status":"uploaded"},
+    {"id":"they-prefer-the-dark-roast","title":"They Prefer the Dark Roast","file":"audio/they-prefer-the-dark-roast.mp3","station":95.9,"order":2,"status":"uploaded"},
+    {"id":"goblin-chase","title":"Goblin Chase","file":"audio/goblin-chase.mp3","station":95.9,"order":3,"status":"uploaded"},
+    {"id":"do-the-goblin-stomp","title":"Do the Goblin Stomp","file":"audio/do-the-goblin-stomp.mp3","station":95.9,"order":4,"status":"uploaded"},
+
+    {"id":"brew-and-brews-after-dark","title":"Brew & Brews After Dark","file":"audio/brew-and-brews-after-dark.mp3","station":99.5,"order":1,"status":"uploaded"},
+    {"id":"brew-and-brews-after-dark-v2","title":"Brew & Brews After Dark (Version 2)","file":"audio/brew-and-brews-after-dark-v2.mp3","station":99.5,"order":2,"status":"uploaded"},
+    {"id":"when-the-lights-go-out","title":"When the Lights Go Out","file":"audio/when-the-lights-go-out.mp3","station":99.5,"order":3,"status":"uploaded"},
+    {"id":"when-the-lights-go-out-v2","title":"When the Lights Go Out (Version 2)","file":"audio/when-the-lights-go-out-v2.mp3","station":99.5,"order":4,"status":"uploaded"},
+    {"id":"when-the-night-comes-alive","title":"When the Night Comes Alive","file":"audio/when-the-night-comes-alive.mp3","station":99.5,"order":5,"status":"uploaded"},
+
+    {"id":"ironclad","title":"IRONCLAD","file":"audio/ironclad.mp3","station":103.1,"order":1,"status":"current-default"},
+    {"id":"voodoo-after-midnight","title":"Voodoo after Midnight","file":"audio/voodoo-after-midnight.mp3","station":103.1,"order":2,"status":"uploaded"},
+    {"id":"monsters-in-the-house","title":"Monsters in the House","file":"audio/monsters-in-the-house.mp3","station":103.1,"order":3,"status":"uploaded"},
+    {"id":"phantom-groove","title":"Phantom Groove","file":"audio/phantom-groove.mp3","station":103.1,"order":4,"status":"uploaded"},
+
+    {"id":"the-witching-hour","title":"The Witching Hour","file":"audio/the-witching-hour.mp3","station":106.7,"order":1,"status":"uploaded"},
+    {"id":"the-witching-hour-v2","title":"The Witching Hour (Version 2)","file":"audio/the-witching-hour-v2.mp3","station":106.7,"order":2,"status":"uploaded"},
+    {"id":"full-moon-frequency","title":"Full Moon Frequency","file":"audio/full-moon-frequency.mp3","station":106.7,"order":3,"status":"uploaded"},
+    {"id":"howling-in-the-dark","title":"Howling in the Dark","file":"audio/howling-in-the-dark.mp3","station":106.7,"order":4,"status":"uploaded"},
+    {"id":"skeleton-shuffle","title":"Skeleton Shuffle","file":"audio/skeleton-shuffle.mp3","station":106.7,"order":5,"status":"uploaded"}
   ]
 }
