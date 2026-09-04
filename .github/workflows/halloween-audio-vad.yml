@@ -15,8 +15,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install VAD
-        run: python -m pip install webrtcvad-wheels
+      - name: Install VAD and ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          python -m pip install webrtcvad-wheels
 
       - name: Analyze voice presence
         run: |
@@ -39,7 +42,7 @@ jobs:
                   '-ss',f'{max(0,start):.2f}','-t',f'{length:.2f}','-i',str(path),
                   '-ac','1','-ar','16000','-f','s16le','-acodec','pcm_s16le','-'
               ])
-              frame_bytes=960  # 30ms, 16kHz, 16-bit mono
+              frame_bytes=960
               total=voiced=0
               for i in range(0,len(pcm)-frame_bytes+1,frame_bytes):
                   frame=pcm[i:i+frame_bytes]
