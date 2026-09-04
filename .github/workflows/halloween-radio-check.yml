@@ -1,0 +1,117 @@
+name: Halloween Radio Check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'halloween-radio/**'
+      - '.github/workflows/halloween-radio-check.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate JavaScript and JSON
+        run: |
+          node --check halloween-radio/assets/js/radio.js
+          python -m json.tool halloween-radio/data/tracks.json >/dev/null
+          python -m json.tool halloween-radio/data/broadcasts.json >/dev/null
+          python -m json.tool halloween-radio/data/remaining-8.json >/dev/null
+
+      - name: Validate manifest audio paths and playback-intent rule
+        run: |
+          python - <<'PY'
+          import json, pathlib, re
+          root = pathlib.Path('halloween-radio')
+          manifest = json.loads((root/'data/tracks.json').read_text())
+          tracks = manifest['tracks']
+          assert len(tracks) == manifest['uploadedTrackCount'] == 26, (len(tracks), manifest['uploadedTrackCount'])
+          missing = [t['file'] for t in tracks if not (root/t['file']).is_file()]
+          assert not missing, f'Missing audio files: {missing}'
+          names = [t['file'] for t in tracks]
+          assert len(names) == len(set(names)), 'Duplicate manifest file paths found'
+          js = (root/'assets/js/radio.js').read_text()
+          assigns = re.findall(r'state\.playbackIntent\s*=\s*true', js)
+          assert len(assigns) == 1, f'Expected exactly one playbackIntent=true assignment, found {len(assigns)}'
+          print(f'Validated {len(tracks)} uploaded tracks and playback-intent invariant.')
+          PY
+
+      - name: Install browser test helper
+        run: npm install --no-save puppeteer-core@24.16.0
+
+      - name: Browser smoke test
+        run: |
+          python3 -m http.server 8000 --directory . >/tmp/halloween-radio-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          if [ -z "$CHROME_BIN" ]; then
+            echo 'Chrome/Chromium not found on runner.'
+            exit 1
+          fi
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const puppeteer = require('puppeteer-core');
+          (async()=>{
+            const browser = await puppeteer.launch({
+              executablePath: process.env.CHROME_BIN,
+              headless: true,
+              args: ['--no-sandbox','--disable-dev-shm-usage','--autoplay-policy=no-user-gesture-required','--mute-audio']
+            });
+            const page = await browser.newPage();
+            const pageErrors=[];
+            page.on('pageerror',e=>pageErrors.push(String(e)));
+            await page.goto('http://127.0.0.1:8000/halloween-radio/',{waitUntil:'networkidle0'});
+            await page.waitForFunction(()=>document.querySelector('#liveTrackTitle')?.textContent.trim()==='IRONCLAD');
+
+            const initial = await page.$eval('#radioAudio',a=>({paused:a.paused,src:a.currentSrc||a.src}));
+            if(!initial.paused) throw new Error('Audio autoplayed on page load');
+            if(!initial.src.includes('ironclad.mp3')) throw new Error(`Unexpected default source: ${initial.src}`);
+
+            await page.click('.preset[data-frequency="88.3"]');
+            await new Promise(r=>setTimeout(r,200));
+            if(!(await page.$eval('#radioAudio',a=>a.paused))) throw new Error('Preset started audio while paused');
+            if((await page.$eval('#liveTrackTitle',e=>e.textContent.trim()))!=='Welcome to the Haunted Roast') throw new Error('88.3 did not select its first real track');
+
+            await page.click('#next');
+            await new Promise(r=>setTimeout(r,200));
+            if(!(await page.$eval('#radioAudio',a=>a.paused))) throw new Error('Next started audio while paused');
+            if((await page.$eval('#liveTrackTitle',e=>e.textContent.trim()))!=='Haunted Roast') throw new Error('Next did not advance the station playlist');
+
+            await page.click('#play');
+            await page.waitForFunction(()=>document.querySelector('#broadcastState')?.textContent.trim()==='ON AIR',{timeout:5000});
+            if(await page.$eval('#radioAudio',a=>a.paused)) throw new Error('Explicit Play did not start the selected track');
+
+            await page.click('.preset[data-frequency="91.7"]');
+            await page.waitForFunction(()=>document.querySelector('#broadcastState')?.textContent.trim()==='TUNING',{timeout:2000});
+            await page.waitForFunction(()=>document.querySelector('#broadcastState')?.textContent.trim()==='ON AIR',{timeout:5000});
+            const afterTune = await page.$eval('#radioAudio',a=>({paused:a.paused,src:a.currentSrc||a.src}));
+            if(afterTune.paused) throw new Error('Playing station did not resume after tuning transition');
+            if(!afterTune.src.includes('midnight-static.mp3')) throw new Error(`91.7 wrong source: ${afterTune.src}`);
+
+            await page.click('#play');
+            await new Promise(r=>setTimeout(r,150));
+            if(!(await page.$eval('#radioAudio',a=>a.paused))) throw new Error('Explicit Pause did not stop station audio');
+            await page.click('.preset[data-frequency="106.7"]');
+            await new Promise(r=>setTimeout(r,250));
+            if(!(await page.$eval('#radioAudio',a=>a.paused))) throw new Error('Station change after Pause restarted audio');
+
+            const meta = await page.evaluate(()=>({
+              title: document.querySelector('#liveTrackTitle')?.textContent.trim(),
+              profile: document.querySelector('#stationProfile')?.textContent.trim(),
+              position: document.querySelector('#trackPosition')?.textContent.trim(),
+              status: document.querySelector('#broadcastState')?.textContent.trim()
+            }));
+            if(meta.title!=='The Witching Hour') throw new Error(`106.7 display mismatch: ${JSON.stringify(meta)}`);
+            if(meta.profile!=='UNSTABLE NIGHT') throw new Error(`106.7 sound profile label mismatch: ${JSON.stringify(meta)}`);
+            if(meta.status!=='STANDBY') throw new Error(`Paused radio should be STANDBY: ${JSON.stringify(meta)}`);
+            if(pageErrors.length) throw new Error(`Page errors: ${pageErrors.join(' | ')}`);
+            console.log('Browser smoke test passed:',meta);
+            await browser.close();
+          })().catch(err=>{console.error(err);process.exit(1)});
+          NODE
