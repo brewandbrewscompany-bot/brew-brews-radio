@@ -1,19 +1,10 @@
 {
   "project": "Brew & Brews Halloween Radio",
-  "version": 1,
-  "stationBumpers": {
-    "88.3": {"every": 2, "title": "GRAVEYARD AM", "text": "Signal from the far side of the dial · Louisburg, Kansas"},
-    "91.7": {"every": 2, "title": "DEAD AIR", "text": "Weak carrier · distant static · keep listening"},
-    "95.9": {"every": 2, "title": "THE GRIND", "text": "Brew & Brews Coffee Roastery · strange machinery after dark"},
-    "99.5": {"every": 2, "title": "AFTER DARK", "text": "The town is quieter now · the signal is not"},
-    "103.1": {"every": 2, "title": "B&B RADIO", "text": "Brew & Brews Radio · Louisburg, Kansas · Brew Something Bold"},
-    "106.7": {"every": 2, "title": "WITCHING HOUR", "text": "Full moon frequency · unstable late-night transmission"}
-  },
+  "version": 2,
+  "policy": "Most uploaded songs already contain their own broadcaster intro. Do not add automatic between-song announcer or station-ID material. Tuning/static transitions remain part of the radio. Optional audio inserts are only for specific gaps that are identified later.",
+  "stationBumpers": {},
   "plannedAudioInserts": [
-    {"id":"bb-legal-id","type":"station-id","station":103.1,"file":null,"enabled":false,"script":"Brew & Brews Radio, Louisburg, Kansas. Broadcasting from the coffee roastery after dark."},
-    {"id":"fresh-roasted-spot","type":"roastery-spot","station":95.9,"file":null,"enabled":false,"script":"Fresh roasted right here in Louisburg. Brew & Brews Coffee Roastery. Brew Something Bold."},
-    {"id":"werewolf-break","type":"host-break","station":106.7,"file":null,"enabled":false,"script":"I was going to give you a proper howl... [clears throat] woof. Right. Back to the show."},
-    {"id":"late-night-weather","type":"weather-break","station":99.5,"file":null,"enabled":false,"script":"Fog is settling low over town. The goblins are heading home, the beasts are moving downwind, and the streets are getting quiet."},
-    {"id":"end-of-show-signoff","type":"signoff","station":103.1,"file":null,"enabled":false,"script":"That brings tonight's broadcast to a close from Brew & Brews Radio. Keep the porch light on, keep the coffee warm, and we'll find you again after dark."}
+    {"id":"gap-station-id","type":"station-id","station":null,"file":null,"enabled":false,"script":"Optional only. Use if a specific track is confirmed to have no broadcaster intro and needs a short station bridge."},
+    {"id":"end-of-show-signoff","type":"signoff","station":103.1,"file":null,"enabled":false,"script":"Optional final signoff only if the finished closing song does not already contain one."}
   ]
 }
