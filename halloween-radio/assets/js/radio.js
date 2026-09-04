@@ -172,8 +172,7 @@
   }
 
   function updateTimeDisplay(){
-    if(!trackTime) return;
-    if(state.currentKind!=='track') return;
+    if(!trackTime||state.currentKind!=='track') return;
     trackTime.textContent=`${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
   }
 
@@ -354,21 +353,22 @@
     filter.frequency.exponentialRampToValueAtTime(4200,ctx.currentTime+duration*.72);
     filter.frequency.exponentialRampToValueAtTime(1200,ctx.currentTime+duration);
     const gain=ctx.createGain();
-    const max=state.audioGraph&&!state.audioGraph.fallback?.16:.16*state.volume;
+    const max=(state.audioGraph&&!state.audioGraph.fallback)?0.16:0.16*state.volume;
     gain.gain.setValueAtTime(.001,ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(Math.max(.006,max),ctx.currentTime+duration*.15);
     gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+duration);
-    const destination=state.audioGraph&&!state.audioGraph.fallback?state.audioGraph.masterGain:ctx.destination;
+    const destination=(state.audioGraph&&!state.audioGraph.fallback)?state.audioGraph.masterGain:ctx.destination;
     src.connect(filter).connect(gain).connect(destination);
     src.start(); src.stop(ctx.currentTime+duration+.03);
 
     const osc=ctx.createOscillator();
     const og=ctx.createGain();
+    const oscMax=(state.audioGraph&&!state.audioGraph.fallback)?0.018:0.018*state.volume;
     osc.type='sine';
     osc.frequency.setValueAtTime(1780,ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(720,ctx.currentTime+duration);
     og.gain.setValueAtTime(.0001,ctx.currentTime);
-    og.gain.exponentialRampToValueAtTime(state.audioGraph&&!state.audioGraph.fallback?.018:.018*state.volume,ctx.currentTime+duration*.18);
+    og.gain.exponentialRampToValueAtTime(oscMax,ctx.currentTime+duration*.18);
     og.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+duration*.88);
     osc.connect(og).connect(destination);
     osc.start(); osc.stop(ctx.currentTime+duration);
@@ -420,7 +420,7 @@
     ensureAudioGraph();
     applyStationProfile(st);
     const changed=setAudioItem(track,'track');
-    if(restart&&!changed) audio.currentTime=0;
+    if(restart&&!changed){try{audio.currentTime=0}catch(_){}}
     if(state.audioGraph&&state.audioGraph.fallback) audio.volume=state.volume;
     try{
       await audio.play();
@@ -610,7 +610,7 @@
   }
 
   function playSignalBumper(bumper,st){
-    if(!state.playbackIntent){return}
+    if(!state.playbackIntent) return;
     if(state.bumperTimer) clearTimeout(state.bumperTimer);
     const token=++state.bumperToken;
     audio.pause();
