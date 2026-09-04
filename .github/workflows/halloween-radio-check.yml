@@ -22,6 +22,7 @@ jobs:
           python -m json.tool halloween-radio/data/tracks.json >/dev/null
           python -m json.tool halloween-radio/data/broadcasts.json >/dev/null
           python -m json.tool halloween-radio/data/remaining-8.json >/dev/null
+          python -m json.tool halloween-radio/data/final-upload-audit.json >/dev/null
 
       - name: Validate manifest audio paths, pacing, and playback-intent rule
         run: |
@@ -30,7 +31,8 @@ jobs:
           root = pathlib.Path('halloween-radio')
           manifest = json.loads((root/'data/tracks.json').read_text())
           tracks = manifest['tracks']
-          assert len(tracks) == manifest['uploadedTrackCount'] == 26, (len(tracks), manifest['uploadedTrackCount'])
+          assert len(tracks) == manifest['uploadedTrackCount'] == manifest['expectedTrackCount'] == 34, (len(tracks), manifest['uploadedTrackCount'])
+          assert manifest.get('plannedTrackCount') == 0, manifest.get('plannedTrackCount')
           missing = [t['file'] for t in tracks if not (root/t['file']).is_file()]
           assert not missing, f'Missing audio files: {missing}'
           names = [t['file'] for t in tracks]
@@ -46,12 +48,17 @@ jobs:
             orders = [t['order'] for t in lineup]
             assert orders == list(range(1, len(lineup)+1)), f'Bad order sequence on {freq}: {orders}'
             types = [t['contentType'] for t in lineup]
-            assert all(a != b for a,b in zip(types,types[1:])), f'Back-to-back same content type on {freq}: {types}'
+            assert not any(a == b == 'vocal' for a,b in zip(types,types[1:])), f'Back-to-back vocal tracks on {freq}: {types}'
+            assert 'instrumental,instrumental,instrumental' not in ','.join(types), f'Three instrumentals in a row on {freq}: {types}'
+
+          closing = [t for t in tracks if t['id'] == 'the-town-goes-quiet']
+          assert len(closing) == 1 and closing[0]['station'] == 103.1, 'Final signoff track missing from B&B Radio'
+          assert closing[0]['order'] == max(t['order'] for t in tracks if t['station'] == 103.1), 'Final signoff must close 103.1 sequence'
 
           js = (root/'assets/js/radio.js').read_text()
           assigns = re.findall(r'state\.playbackIntent\s*=\s*true', js)
           assert len(assigns) == 1, f'Expected exactly one playbackIntent=true assignment, found {len(assigns)}'
-          print(f'Validated {len(tracks)} uploaded tracks, alternating station pacing, and playback-intent invariant.')
+          print(f"Validated {len(tracks)} uploaded tracks, station pacing, final signoff placement, and playback-intent invariant.")
           PY
 
       - name: Install browser test helper
@@ -122,7 +129,7 @@ jobs:
             }));
             if(meta.title!=='The Witching Hour') throw new Error(`106.7 display mismatch: ${JSON.stringify(meta)}`);
             if(meta.profile!=='UNSTABLE NIGHT') throw new Error(`106.7 sound profile label mismatch: ${JSON.stringify(meta)}`);
-            if(meta.position!=='1 / 4') throw new Error(`106.7 position mismatch: ${JSON.stringify(meta)}`);
+            if(meta.position!=='1 / 5') throw new Error(`106.7 position mismatch: ${JSON.stringify(meta)}`);
             if(meta.status!=='STANDBY') throw new Error(`Paused radio should be STANDBY: ${JSON.stringify(meta)}`);
             if(pageErrors.length) throw new Error(`Page errors: ${pageErrors.join(' | ')}`);
             console.log('Browser smoke test passed:',meta);
