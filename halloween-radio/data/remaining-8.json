@@ -1,16 +1,19 @@
 {
   "project": "Brew & Brews Halloween Radio",
-  "neededTrackCount": 8,
+  "status": "complete",
+  "neededTrackCount": 0,
+  "completedTrackCount": 8,
   "targetTotal": 34,
-  "broadcastIntroPolicy": "Most existing songs already contain the broadcaster at the front. The final eight should add music and atmosphere, not duplicate announcer IDs. Only the closing piece may carry a signoff if needed.",
+  "selectedAlternatePolicy": "The longer Spooky Boogie mashup is used as Black Cat Boogie. The shorter Spooky Boogie output remains available as an alternate and is not counted in the 34-track rotation.",
   "tracks": [
-    {"id":"coffin-lid-rag","targetFile":"audio/coffin-lid-rag.mp3","title":"Coffin Lid Rag","station":88.3,"role":"instrumental","direction":"1930s spooky rag / hillbilly swing instrumental, upright feel, creaky room energy, no modern country production, no announcer needed."},
-    {"id":"dead-air-interlude","targetFile":"audio/dead-air-interlude.mp3","title":"Dead Air Interlude","station":91.7,"role":"instrumental transition","direction":"Short weak-signal instrumental, muffled old radio tone, sparse steel guitar and static, no big build, no announcer needed."},
-    {"id":"roaster-rattle","targetFile":"audio/roaster-rattle.mp3","title":"Roaster Rattle","station":95.9,"role":"instrumental","direction":"Mechanical coffee-roastery rhythm, old rockabilly / steel guitar, dark playful Halloween machinery, vintage not modern, no announcer needed."},
-    {"id":"black-cat-boogie","targetFile":"audio/black-cat-boogie.mp3","title":"Black Cat Boogie","station":95.9,"role":"music","direction":"Fast playful 1940s/50s spooky rockabilly boogie, slap bass, hollow-body guitar, hand percussion, Halloween fun without modern country gloss."},
-    {"id":"lanterns-in-the-fog","targetFile":"audio/lanterns-in-the-fog.mp3","title":"Lanterns in the Fog","station":99.5,"role":"instrumental","direction":"Slow eerie vintage instrumental, distant steel guitar, brushed drums, low organ, foggy small-town night feeling, restrained and atmospheric."},
-    {"id":"boiler-room-bones","targetFile":"audio/boiler-room-bones.mp3","title":"Boiler Room Bones","station":106.7,"role":"instrumental","direction":"Clanking haunted-machine rhythm with bones/percussion illusion, old swing and hillbilly accents, playful PG-creepy energy, no crowd and no modern production."},
-    {"id":"last-cup-before-dawn","targetFile":"audio/last-cup-before-dawn.mp3","title":"Last Cup Before Dawn","station":103.1,"role":"closing music","direction":"Lazy late-night vintage closer, warm tube-radio feel, restrained and sleepy, coffee-roastery imagery without sounding like a cafe; broadcaster only if naturally integrated."},
-    {"id":"the-town-goes-quiet","targetFile":"audio/the-town-goes-quiet.mp3","title":"The Town Goes Quiet","station":103.1,"role":"final signoff song","direction":"Creatures, ghosts, goblins and beasts are moving away; town winds down after the night's escalation; relaxed end-of-show feeling. A normal announcer may sign off at the end only if the song needs the final show close."}
-  ]
+    {"id":"coffin-lid-rag","file":"audio/Haunted Ragtime (1).mp3","title":"Coffin Lid Rag","station":88.3,"contentType":"instrumental","durationSec":141.5,"status":"integrated"},
+    {"id":"dead-air-interlude","file":"audio/Midnight Static (1).mp3","title":"Dead Air Interlude","station":91.7,"contentType":"instrumental","durationSec":131.9,"status":"integrated"},
+    {"id":"roaster-rattle","file":"audio/Roaster Rock.mp3","title":"Roaster Rattle","station":95.9,"contentType":"instrumental","durationSec":172.8,"status":"integrated"},
+    {"id":"black-cat-boogie","file":"audio/Spooky Boogie x Spooky Boogie (Mashup).mp3","title":"Black Cat Boogie","station":95.9,"contentType":"instrumental","durationSec":180.4,"status":"integrated"},
+    {"id":"lanterns-in-the-fog","file":"audio/October Fog.mp3","title":"Lanterns in the Fog","station":99.5,"contentType":"instrumental","durationSec":203.3,"status":"integrated"},
+    {"id":"boiler-room-bones","file":"audio/Boiler Room Swing.mp3","title":"Boiler Room Bones","station":106.7,"contentType":"instrumental","durationSec":154.2,"status":"integrated"},
+    {"id":"last-cup-before-dawn","file":"audio/Pre-Dawn Roastery.mp3","title":"Last Cup Before Dawn","station":103.1,"contentType":"instrumental","durationSec":174.6,"status":"integrated"},
+    {"id":"the-town-goes-quiet","file":"audio/Goodnight, Louisburg (1).mp3","title":"The Town Goes Quiet","station":103.1,"contentType":"vocal","introType":"announcer-signoff","durationSec":272.1,"status":"integrated"}
+  ],
+  "alternate": {"file":"audio/Spooky Boogie.mp3","title":"Black Cat Boogie Alternate","contentType":"instrumental","durationSec":108.1,"status":"alternate-not-in-rotation"}
 }
