@@ -1,0 +1,110 @@
+name: Halloween Radio Visual Check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'halloween-radio/index.html'
+      - 'halloween-radio/assets/css/**'
+      - 'halloween-radio/assets/js/radio.js'
+      - '.github/workflows/halloween-radio-visual-check.yml'
+  workflow_dispatch:
+
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install browser helper
+        run: npm install --no-save puppeteer-core@24.16.0
+
+      - name: Render desktop and phone layouts
+        run: |
+          mkdir -p visual-output
+          python3 -m http.server 8000 --directory . >/tmp/halloween-visual-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          if [ -z "$CHROME_BIN" ]; then
+            echo 'Chrome/Chromium not found on runner.'
+            exit 1
+          fi
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const puppeteer = require('puppeteer-core');
+          const fs = require('fs');
+
+          async function inspect(page, label, mobile=false) {
+            const pageErrors=[];
+            page.on('pageerror',e=>pageErrors.push(String(e)));
+            await page.goto('http://127.0.0.1:8000/halloween-radio/',{waitUntil:'networkidle0'});
+            await page.waitForFunction(()=>document.querySelector('#liveTrackTitle')?.textContent.trim()==='IRONCLAD');
+            const state = await page.evaluate((mobile)=>{
+              const q=s=>document.querySelector(s);
+              const visible=el=>!!el && getComputedStyle(el).display!=='none' && el.getBoundingClientRect().width>0 && el.getBoundingClientRect().height>0;
+              const animations=s=>q(s)?getComputedStyle(q(s)).animationName:'none';
+              return {
+                innerWidth: innerWidth,
+                scrollWidth: document.documentElement.scrollWidth,
+                needleCount: document.querySelectorAll('.tuner-needle').length,
+                presetCount: document.querySelectorAll('.preset').length,
+                tunerWidth: q('#tunerGlass')?.getBoundingClientRect().width||0,
+                tunerHeight: q('#tunerGlass')?.getBoundingClientRect().height||0,
+                playWidth: q('#play')?.getBoundingClientRect().width||0,
+                mobileScienceVisible: visible(q('.science-stack')),
+                navMedallionVisible: visible(q('.nav-medallion')),
+                visibleNav: [...document.querySelectorAll('.bottom-nav button')].filter(visible).length,
+                flameAnimation: animations('.flame'),
+                orbAnimation: animations('.arc'),
+                tubeAnimation: animations('.tube-glass'),
+                tunerAnimation: animations('.tuner-glass'),
+                audioPaused: q('#radioAudio')?.paused,
+                mobile
+              };
+            },mobile);
+            if(pageErrors.length) throw new Error(`${label} page errors: ${pageErrors.join(' | ')}`);
+            if(state.needleCount!==1) throw new Error(`${label}: expected exactly one tuner needle, got ${state.needleCount}`);
+            if(state.presetCount!==6) throw new Error(`${label}: expected six station presets, got ${state.presetCount}`);
+            if(state.audioPaused!==true) throw new Error(`${label}: audio autoplayed`);
+            if(state.flameAnimation==='none' || state.tubeAnimation==='none' || state.tunerAnimation==='none') throw new Error(`${label}: expected animated candle/tube/tuner effects: ${JSON.stringify(state)}`);
+            if(!mobile && state.orbAnimation==='none') throw new Error(`${label}: static-ball lightning is not animated`);
+            if(state.scrollWidth>state.innerWidth+3) throw new Error(`${label}: horizontal overflow ${state.scrollWidth}px > ${state.innerWidth}px`);
+            if(mobile){
+              if(state.tunerWidth<330) throw new Error(`${label}: tuner too narrow on phone: ${state.tunerWidth}`);
+              if(state.mobileScienceVisible) throw new Error(`${label}: desktop science stack should recompose away on phone`);
+              if(!state.navMedallionVisible) throw new Error(`${label}: center Brew & Brews medallion missing on phone`);
+              if(state.visibleNav!==5) throw new Error(`${label}: expected five phone nav controls, got ${state.visibleNav}`);
+            } else {
+              if(state.tunerWidth<570) throw new Error(`${label}: desktop tuner too narrow: ${state.tunerWidth}`);
+              if(state.playWidth<100) throw new Error(`${label}: desktop play button lost physical scale: ${state.playWidth}`);
+            }
+            console.log(label,state);
+          }
+
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--mute-audio']});
+            const desktop=await browser.newPage();
+            await desktop.setViewport({width:1440,height:1100,deviceScaleFactor:1});
+            await inspect(desktop,'desktop',false);
+            await desktop.evaluate(()=>document.querySelector('#play')?.classList.add('is-playing'));
+            await desktop.screenshot({path:'visual-output/halloween-radio-desktop.png',fullPage:true});
+
+            const phone=await browser.newPage();
+            await phone.setViewport({width:390,height:844,deviceScaleFactor:1});
+            await inspect(phone,'phone',true);
+            await phone.evaluate(()=>document.querySelector('#play')?.classList.add('is-playing'));
+            await phone.screenshot({path:'visual-output/halloween-radio-phone.png',fullPage:true});
+            await browser.close();
+          })().catch(err=>{console.error(err);process.exit(1)});
+          NODE
+
+      - name: Upload visual screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: halloween-radio-visuals
+          path: visual-output/*.png
+          if-no-files-found: warn
