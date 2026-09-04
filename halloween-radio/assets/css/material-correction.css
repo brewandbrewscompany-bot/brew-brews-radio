@@ -1,0 +1,85 @@
+/* Material correction after the heavy-hardware pass.
+   Keep the depth, remove the accidental raw swatch bands, and push the visible finish back to blackened iron / aged wood. */
+@media (min-width:701px){
+  .cabinet-front{
+    background-image:
+      radial-gradient(circle at 11% 18%,rgba(151,83,37,.15) 0 1px,transparent 2px) 0 0/31px 29px,
+      radial-gradient(circle at 73% 64%,rgba(0,0,0,.5) 0 2px,transparent 3px) 0 0/43px 37px,
+      repeating-linear-gradient(107deg,rgba(146,78,33,.035) 0 1px,transparent 2px 13px),
+      linear-gradient(94deg,#120b07 0,#050403 18%,#0b0806 48%,#030303 82%,#120a06 100%)!important;
+    background-size:31px 29px,43px 37px,auto,auto!important;
+    background-blend-mode:screen,multiply,normal,normal!important;
+  }
+  .cabinet-front::before{
+    background:
+      radial-gradient(circle at 13% 18%,#2d1a10 0 2px,#060403 3px 5px,transparent 6px) 0 0/78px 65px,
+      radial-gradient(circle at 77% 41%,rgba(111,60,27,.16) 0 2px,transparent 3px) 0 0/39px 41px,
+      repeating-linear-gradient(13deg,rgba(122,67,31,.03) 0 1px,transparent 2px 12px),
+      linear-gradient(90deg,#020202,#090604 16%,#050403 50%,#080604 84%,#020202)!important;
+    background-size:78px 65px,39px 41px,auto,auto!important;
+  }
+  .cabinet-top-face{background:repeating-linear-gradient(3deg,#21130c 0 5px,#090604 6px 10px,#321c10 11px 14px,#080503 15px 19px)!important}
+  .cabinet-right-face{background:linear-gradient(90deg,#1d1009,#080503 38%,#020202 78%)!important}
+  .cabinet-bottom-face{background:linear-gradient(#21120a,#050302 70%,#010101)!important}
+
+  .mug-module::after{background:repeating-linear-gradient(2deg,#20120a 0 4px,#070403 5px 9px,#2b180d 10px 12px)!important}
+  .mug-body{background:
+    radial-gradient(circle at 25% 31%,rgba(180,98,42,.07) 0 1px,transparent 2px) 0 0/17px 19px,
+    linear-gradient(104deg,#020202,#211a17 28%,#070606 53%,#2a211d 74%,#030303)!important}
+
+  .tuner-outer{background-image:
+    radial-gradient(circle at 17px 16px,#8f5831 0 3px,#0d0805 4px 8px,transparent 9px),
+    radial-gradient(circle at calc(100% - 18px) 15px,#754825 0 3px,#0d0805 4px 8px,transparent 9px),
+    radial-gradient(circle at 18px calc(100% - 16px),#684020 0 3px,#0d0805 4px 8px,transparent 9px),
+    radial-gradient(circle at calc(100% - 16px) calc(100% - 17px),#754825 0 3px,#0d0805 4px 8px,transparent 9px),
+    radial-gradient(circle at 24% 52%,rgba(143,78,34,.13) 0 1px,transparent 2px) 0 0/27px 25px,
+    repeating-linear-gradient(113deg,rgba(160,88,39,.045) 0 1px,transparent 2px 11px),
+    linear-gradient(115deg,#100906,#442717 10%,#050403 30% 72%,#2f1a0f 91%,#040302)!important;
+    background-size:auto,auto,auto,auto,27px 25px,auto,auto!important;
+  }
+  .tuner-bezel{background:
+    radial-gradient(circle at 19% 24%,rgba(128,70,32,.11) 0 1px,transparent 2px) 0 0/23px 21px,
+    repeating-linear-gradient(116deg,rgba(156,82,34,.04) 0 1px,transparent 2px 10px),
+    linear-gradient(#130d09,#352116 13%,#030303 31% 75%,#27160d 95%)!important}
+
+  /* The original has one obvious vacuum tube. Remove the competing plasma orb and let the tube own this corner. */
+  .science-stack{display:block;position:relative;height:305px}
+  .static-orb{display:none!important}
+  .tube-module{position:absolute!important;left:50%;top:2px;bottom:auto;transform:translateX(-50%)!important;width:160px!important;height:286px!important}
+  .tube-module::before{left:1px!important;right:1px!important;top:-5px!important;bottom:55px!important;border:5px solid #352b22!important;border-radius:47% 47% 15% 15%/16% 16% 7% 7%!important;background:linear-gradient(90deg,rgba(255,255,255,.015),transparent 20% 78%,rgba(255,255,255,.01));box-shadow:inset 0 0 39px #000,0 0 0 6px #030302,0 0 30px rgba(255,91,8,.13)!important}
+  .tube-module::after{left:22px!important;right:22px!important;top:10px!important;bottom:70px!important;border-left:3px solid #34271c!important;border-right:3px solid #34271c!important;border-top:3px solid #34271c!important;border-bottom:0!important;border-radius:42% 42% 0 0/14% 14% 0 0!important;box-shadow:inset 16px 0 0 -14px #4d3725,inset -16px 0 0 -14px #4d3725!important}
+  .tube-glass{left:18px!important;right:18px!important;top:14px!important;bottom:78px!important;border:3px solid rgba(100,88,72,.76)!important;border-radius:45% 45% 29% 29%/23% 23% 11% 11%!important;background:
+    linear-gradient(104deg,rgba(255,255,255,.09),transparent 17% 69%,rgba(255,255,255,.025) 79%,transparent),
+    radial-gradient(ellipse at 50% 72%,rgba(255,126,28,.64),rgba(255,74,4,.19) 24%,transparent 48%),
+    linear-gradient(rgba(16,15,12,.1),rgba(1,1,1,.84))!important;box-shadow:inset 0 0 42px #000,0 0 31px rgba(255,88,5,.32),0 0 0 5px #020202!important}
+  .tube-glass::before{left:31%!important;right:31%!important;top:22%!important;bottom:18%!important;border-color:#594027!important;background:linear-gradient(90deg,transparent,rgba(255,112,23,.18),transparent)!important}
+  .tube-glass::after{top:18%!important;left:22%!important;right:22%!important;box-shadow:0 48px 0 #3b281a,0 96px 0 #3b281a!important}
+  .tube-filament{left:30%!important;right:30%!important;top:31%!important;bottom:17%!important}
+  .tube-socket{background:linear-gradient(110deg,#15100c,#4a2c1a 19%,#0a0705 44%,#6e4326 63%,#090604 83%,#2d1b11)!important}
+  .science-stack::before{background:
+    radial-gradient(circle at 13px 13px,#704521 0 2px,#090604 3px 6px,transparent 7px),
+    radial-gradient(circle at calc(100% - 13px) 13px,#704521 0 2px,#090604 3px 6px,transparent 7px),
+    repeating-linear-gradient(112deg,rgba(132,70,30,.045) 0 1px,transparent 2px 11px),
+    linear-gradient(110deg,#1b110b,#050403 70%,#21130c)!important}
+
+  .module,.display-panel,.meter-module{background-image:
+    radial-gradient(circle at 10px 10px,#714321 0 1px,#080503 2px 4px,transparent 5px),
+    radial-gradient(circle at calc(100% - 10px) calc(100% - 10px),#5d371c 0 1px,#080503 2px 4px,transparent 5px),
+    repeating-linear-gradient(112deg,rgba(128,67,29,.035) 0 1px,transparent 2px 12px),
+    linear-gradient(105deg,#110d0a,#040403 72%)!important;background-size:auto,auto,auto,auto!important}
+  .control-deck{background-image:
+    radial-gradient(circle at 13px 13px,#87522c 0 3px,#0b0705 4px 7px,transparent 8px),
+    radial-gradient(circle at calc(100% - 13px) 13px,#6f4324 0 3px,#0b0705 4px 7px,transparent 8px),
+    radial-gradient(circle at 13px calc(100% - 13px),#68401f 0 3px,#0b0705 4px 7px,transparent 8px),
+    radial-gradient(circle at calc(100% - 13px) calc(100% - 13px),#68401f 0 3px,#0b0705 4px 7px,transparent 8px),
+    repeating-linear-gradient(111deg,rgba(141,74,31,.042) 0 1px,transparent 2px 10px),
+    linear-gradient(#15100c,#030303 78%)!important;background-size:auto,auto,auto,auto,auto,auto!important}
+  .witching-strip{background-image:repeating-linear-gradient(113deg,rgba(124,65,28,.035) 0 1px,transparent 2px 12px),linear-gradient(90deg,#100c09,#030303 70%,#130c08)!important}
+  .nav-btn{background-image:repeating-linear-gradient(114deg,rgba(126,67,29,.04) 0 1px,transparent 2px 10px),linear-gradient(#15100c,#030303 78%)!important;background-size:auto,auto!important}
+
+  /* Hard click-safe tuner: visual children cannot sit over the preset buttons. */
+  .tuner-glass{isolation:isolate}
+  .tuner-glass > .station-tag{z-index:1000!important;pointer-events:auto!important}
+  .tuner-glass > .station-tag *{pointer-events:none!important}
+  .tuner-glass > :not(.station-tag){pointer-events:none!important}
+}
