@@ -1,0 +1,90 @@
+name: Halloween Radio Offline Package
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'halloween-radio/**'
+      - '.github/workflows/halloween-radio-offline-package.yml'
+  workflow_dispatch:
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build offline package
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, re, shutil
+
+          src = Path('halloween-radio')
+          out = Path('offline-radio')
+          if out.exists(): shutil.rmtree(out)
+          out.mkdir()
+          shutil.copytree(src/'audio', out/'audio')
+
+          html = (src/'index.html').read_text(encoding='utf-8')
+          css_parts = []
+          for name in ['base.css','components.css','responsive.css','radio.css']:
+              text = (src/'assets/css'/name).read_text(encoding='utf-8')
+              if name == 'radio.css':
+                  text = re.sub(r'@import\s+url\([^\)]+\);\s*', '', text)
+              css_parts.append(text)
+          css = '\n\n'.join(css_parts)
+
+          js = (src/'assets/js/radio.js').read_text(encoding='utf-8')
+          tracks = json.loads((src/'data/tracks.json').read_text(encoding='utf-8'))
+          broadcasts = json.loads((src/'data/broadcasts.json').read_text(encoding='utf-8'))
+
+          prelude = """
+          window.__HALLOWEEN_TRACKS__ = %s;
+          window.__HALLOWEEN_BROADCASTS__ = %s;
+          (() => {
+            const realFetch = window.fetch ? window.fetch.bind(window) : null;
+            window.fetch = (input, init) => {
+              const u = String(input || '');
+              if (u.endsWith('data/tracks.json') || u === 'data/tracks.json') {
+                return Promise.resolve(new Response(JSON.stringify(window.__HALLOWEEN_TRACKS__), {headers:{'Content-Type':'application/json'}}));
+              }
+              if (u.endsWith('data/broadcasts.json') || u === 'data/broadcasts.json') {
+                return Promise.resolve(new Response(JSON.stringify(window.__HALLOWEEN_BROADCASTS__), {headers:{'Content-Type':'application/json'}}));
+              }
+              if (realFetch) return realFetch(input, init);
+              return Promise.reject(new Error('fetch unavailable'));
+            };
+          })();
+          """ % (json.dumps(tracks), json.dumps(broadcasts))
+
+          html = re.sub(r'<link\s+rel="stylesheet"\s+href="assets/css/radio.css"\s*>', '<style>\n'+css+'\n</style>', html)
+          html = re.sub(r'<script\s+src="assets/js/radio.js"\s+defer></script>', '<script>\n'+prelude+'\n'+js+'\n</script>', html)
+          html = html.replace('<audio id="radioAudio" preload="metadata" loop>', '<audio id="radioAudio" preload="metadata">')
+          (out/'index.html').write_text(html, encoding='utf-8')
+          (out/'README.txt').write_text('Brew & Brews Halloween Radio offline test package.\nUnzip the folder and double-click index.html in Chrome or Edge.\nNo internet connection is required for the current 26-track build.\n', encoding='utf-8')
+          PY
+
+      - name: Verify package
+        run: |
+          test -f offline-radio/index.html
+          test -f offline-radio/audio/ironclad.mp3
+          python - <<'PY'
+          from pathlib import Path
+          html=Path('offline-radio/index.html').read_text(encoding='utf-8')
+          assert 'assets/css/radio.css' not in html
+          assert 'assets/js/radio.js' not in html
+          assert 'window.__HALLOWEEN_TRACKS__' in html
+          assert html.count('class="tuner-needle"') == 1
+          print('Offline package verified')
+          PY
+
+      - name: Upload offline package
+        uses: actions/upload-artifact@v4
+        with:
+          name: Brew-Brews-Halloween-Radio-Offline
+          path: offline-radio/
+          compression-level: 0
+          retention-days: 7
