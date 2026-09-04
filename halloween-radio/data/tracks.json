@@ -1,12 +1,14 @@
 {
   "project": "Brew & Brews Halloween Radio",
   "expectedTrackCount": 34,
-  "uploadedTrackCount": 26,
-  "plannedTrackCount": 8,
+  "uploadedTrackCount": 34,
+  "plannedTrackCount": 0,
+  "rotationDurationSec": 6421.3,
+  "rotationDurationMin": 107.0,
   "defaultStation": 103.1,
   "broadcastConfig": "data/broadcasts.json",
-  "remainingTrackPlan": "data/remaining-8.json",
-  "arrangementBasis": "Actual audio sampled at the beginning, middle, and late section of every uploaded track. Primary goal: alternate vocal/story tracks with instrumental breathing room while preserving station themes.",
+  "finalUploadAudit": "data/final-upload-audit.json",
+  "arrangementBasis": "Actual audio sampled at the beginning, middle, and late section. Existing vocal/story and instrumental pacing is preserved; the final music-heavy set is inserted as breathing room. No station has adjacent vocal tracks and no station has more than two instrumentals in a row.",
   "stations": [
     {"frequency": 88.3, "name": "Graveyard AM"},
     {"frequency": 91.7, "name": "Dead Air"},
@@ -21,31 +23,39 @@
     {"id":"dead-of-night","title":"Dead of Night","file":"audio/dead-of-night.mp3","station":88.3,"order":3,"status":"uploaded","contentType":"vocal","introType":"broadcaster","durationSec":238.4},
     {"id":"run-from-the-shadows","title":"Run from the Shadows","file":"audio/run-from-the-shadows.mp3","station":88.3,"order":4,"status":"uploaded","contentType":"instrumental","introType":"none","durationSec":92.8},
     {"id":"it-knows-youre-awake","title":"It Knows You're Awake","file":"audio/it-knows-youre-awake.mp3","station":88.3,"order":5,"status":"uploaded","contentType":"vocal","introType":"narrative","durationSec":314.1},
+    {"id":"coffin-lid-rag","title":"Coffin Lid Rag","file":"audio/Haunted Ragtime (1).mp3","station":88.3,"order":6,"status":"uploaded","contentType":"instrumental","introType":"none","durationSec":141.5},
 
     {"id":"haunted-roast","title":"Haunted Roast","file":"audio/haunted-roast.mp3","station":91.7,"order":1,"status":"uploaded","contentType":"vocal","introType":"broadcaster","durationSec":268.0},
     {"id":"static-on-the-highway","title":"Static on the Highway","file":"audio/static-on-the-highway.mp3","station":91.7,"order":2,"status":"uploaded","contentType":"instrumental","introType":"none","durationSec":177.4},
     {"id":"when-the-lights-go-out-v2","title":"When the Lights Go Out (Version 2)","file":"audio/when-the-lights-go-out-v2.mp3","station":91.7,"order":3,"status":"uploaded","contentType":"vocal","introType":"song","durationSec":263.5},
     {"id":"run-away-from-shadows","title":"Run Away from Shadows","file":"audio/run-away-from-shadows.mp3","station":91.7,"order":4,"status":"uploaded","contentType":"instrumental","introType":"none","durationSec":149.8},
+    {"id":"dead-air-interlude","title":"Dead Air Interlude","file":"audio/Midnight Static (1).mp3","station":91.7,"order":5,"status":"uploaded","contentType":"instrumental","introType":"none","durationSec":131.9},
 
     {"id":"ironclad-walk","title":"Ironclad Walk","file":"audio/ironclad-walk.mp3","station":95.9,"order":1,"status":"uploaded","contentType":"instrumental","introType":"none","durationSec":149.8,"analysisConfidence":"medium"},
     {"id":"they-prefer-the-dark-roast","title":"They Prefer the Dark Roast","file":"audio/they-prefer-the-dark-roast.mp3","station":95.9,"order":2,"status":"uploaded","contentType":"vocal","introType":"broadcaster","durationSec":153.7},
     {"id":"goblin-chase","title":"Goblin Chase","file":"audio/goblin-chase.mp3","station":95.9,"order":3,"status":"uploaded","contentType":"instrumental","introType":"none","durationSec":150.2},
     {"id":"do-the-goblin-stomp","title":"Do the Goblin Stomp","file":"audio/do-the-goblin-stomp.mp3","station":95.9,"order":4,"status":"uploaded","contentType":"vocal","introType":"broadcaster","durationSec":198.8},
+    {"id":"roaster-rattle","title":"Roaster Rattle","file":"audio/Roaster Rock.mp3","station":95.9,"order":5,"status":"uploaded","contentType":"instrumental","introType":"none","durationSec":172.8},
+    {"id":"black-cat-boogie","title":"Black Cat Boogie","file":"audio/Spooky Boogie x Spooky Boogie (Mashup).mp3","station":95.9,"order":6,"status":"uploaded","contentType":"instrumental","introType":"none","durationSec":180.4},
 
     {"id":"brew-and-brews-after-dark","title":"Brew & Brews After Dark","file":"audio/brew-and-brews-after-dark.mp3","station":99.5,"order":1,"status":"uploaded","contentType":"vocal","introType":"broadcaster","durationSec":258.8},
     {"id":"the-witching-hour-v2","title":"The Witching Hour (Version 2)","file":"audio/the-witching-hour-v2.mp3","station":99.5,"order":2,"status":"uploaded","contentType":"instrumental","introType":"none","durationSec":57.0},
     {"id":"when-the-lights-go-out","title":"When the Lights Go Out","file":"audio/when-the-lights-go-out.mp3","station":99.5,"order":3,"status":"uploaded","contentType":"vocal","introType":"broadcaster","durationSec":298.6},
     {"id":"skeleton-shuffle","title":"Skeleton Shuffle","file":"audio/skeleton-shuffle.mp3","station":99.5,"order":4,"status":"uploaded","contentType":"instrumental","introType":"none","durationSec":103.0},
     {"id":"brew-and-brews-after-dark-v2","title":"Brew & Brews After Dark (Version 2)","file":"audio/brew-and-brews-after-dark-v2.mp3","station":99.5,"order":5,"status":"uploaded","contentType":"vocal","introType":"broadcaster","durationSec":289.8},
+    {"id":"lanterns-in-the-fog","title":"Lanterns in the Fog","file":"audio/October Fog.mp3","station":99.5,"order":6,"status":"uploaded","contentType":"instrumental","introType":"none","durationSec":203.3},
 
     {"id":"ironclad","title":"IRONCLAD","file":"audio/ironclad.mp3","station":103.1,"order":1,"status":"current-default","contentType":"vocal","introType":"broadcaster","durationSec":164.8},
     {"id":"voodoo-after-midnight","title":"Voodoo after Midnight","file":"audio/voodoo-after-midnight.mp3","station":103.1,"order":2,"status":"uploaded","contentType":"instrumental","introType":"none","durationSec":149.5},
     {"id":"monsters-in-the-house","title":"Monsters in the House","file":"audio/monsters-in-the-house.mp3","station":103.1,"order":3,"status":"uploaded","contentType":"vocal","introType":"broadcaster","durationSec":228.7},
     {"id":"phantom-groove","title":"Phantom Groove","file":"audio/phantom-groove.mp3","station":103.1,"order":4,"status":"uploaded","contentType":"instrumental","introType":"none","durationSec":150.0},
+    {"id":"last-cup-before-dawn","title":"Last Cup Before Dawn","file":"audio/Pre-Dawn Roastery.mp3","station":103.1,"order":5,"status":"uploaded","contentType":"instrumental","introType":"none","durationSec":174.6},
+    {"id":"the-town-goes-quiet","title":"The Town Goes Quiet","file":"audio/Goodnight, Louisburg (1).mp3","station":103.1,"order":6,"status":"uploaded","contentType":"vocal","introType":"announcer-signoff","durationSec":272.1},
 
     {"id":"the-witching-hour","title":"The Witching Hour","file":"audio/the-witching-hour.mp3","station":106.7,"order":1,"status":"uploaded","contentType":"instrumental","introType":"none","durationSec":79.7},
     {"id":"full-moon-frequency","title":"Full Moon Frequency","file":"audio/full-moon-frequency.mp3","station":106.7,"order":2,"status":"uploaded","contentType":"vocal","introType":"broadcaster","durationSec":242.2},
     {"id":"howling-in-the-dark","title":"Howling in the Dark","file":"audio/howling-in-the-dark.mp3","station":106.7,"order":3,"status":"uploaded","contentType":"instrumental","introType":"none","durationSec":40.7},
-    {"id":"when-the-night-comes-alive","title":"When the Night Comes Alive","file":"audio/when-the-night-comes-alive.mp3","station":106.7,"order":4,"status":"uploaded","contentType":"vocal","introType":"broadcaster","durationSec":282.1}
+    {"id":"when-the-night-comes-alive","title":"When the Night Comes Alive","file":"audio/when-the-night-comes-alive.mp3","station":106.7,"order":4,"status":"uploaded","contentType":"vocal","introType":"broadcaster","durationSec":282.1},
+    {"id":"boiler-room-bones","title":"Boiler Room Bones","file":"audio/Boiler Room Swing.mp3","station":106.7,"order":5,"status":"uploaded","contentType":"instrumental","introType":"none","durationSec":154.2}
   ]
 }
