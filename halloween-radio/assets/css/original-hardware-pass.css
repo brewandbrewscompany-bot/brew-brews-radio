@@ -1,0 +1,113 @@
+/* Original-hardware pass: make the live receiver read as battered 1930s lab equipment,
+   not a clean modern UI. This intentionally exaggerates mass, occlusion, corrosion and asymmetry. */
+@media (min-width:701px){
+  .scene{padding-top:18px;perspective:1450px}
+  .radio-shell{width:min(1160px,97vw);transform:rotateX(1.8deg) rotateY(-3.4deg) rotateZ(-.28deg);transform-origin:48% 8%}
+
+  /* HEAVY CABINET / WALL */
+  .cabinet-front{padding:18px 22px 21px;border:9px solid #21140d;border-radius:7px 12px 8px 5px;background-image:
+    radial-gradient(circle at 8% 12%,rgba(171,101,48,.09) 0 2px,transparent 3px) 0 0/43px 37px,
+    linear-gradient(96deg,rgba(0,0,0,.5),transparent 9% 87%,rgba(0,0,0,.62)),
+    url('../../artwork/textures/blackened-metal.jpg'),
+    linear-gradient(#100a07,#040403 72%,#0e0805);
+    background-size:43px 37px,auto,510px 510px,auto;background-blend-mode:screen,normal,hard-light,normal;
+    box-shadow:inset 0 0 0 3px #000,inset 0 0 0 8px #342013,inset 0 0 0 12px #050403,inset 0 32px 48px rgba(93,49,22,.12),inset 0 -88px 104px #000,0 28px 38px #000}
+  .cabinet-front::before{top:15px;height:195px;left:15px;right:15px;border:3px solid #281910;border-radius:3px;background:
+    radial-gradient(circle at 13% 18%,#2b1b11 0 2px,#080504 3px 5px,transparent 6px) 0 0/74px 62px,
+    radial-gradient(circle at 76% 43%,rgba(112,61,28,.17) 0 2px,transparent 3px) 0 0/37px 41px,
+    linear-gradient(90deg,#030303,transparent 14% 84%,#020202),
+    url('../../artwork/textures/blackened-metal.jpg'),#040302;
+    background-size:74px 62px,37px 41px,auto,450px 450px,auto;background-blend-mode:normal,screen,normal,soft-light,normal;
+    box-shadow:inset 0 0 70px #000,inset 0 -34px 50px #000,0 4px 0 #050302,0 0 0 2px #4a2a16}
+  .cabinet-front::after{inset:8px;border:2px solid rgba(101,57,29,.36);box-shadow:inset 0 0 0 2px #020201,inset 0 0 60px rgba(0,0,0,.65);opacity:.8}
+  .cabinet-top-face{top:-45px;height:49px;left:21px;right:-50px;background:url('../../artwork/textures/blackened-metal.jpg'),linear-gradient(#21130c,#080503);background-size:460px 460px,auto;background-blend-mode:soft-light,normal;border-width:3px;box-shadow:inset 0 -28px 32px #000,0 -4px 0 #050302}
+  .cabinet-right-face{right:-55px;width:58px;bottom:-39px;background:url('../../artwork/textures/blackened-metal.jpg'),linear-gradient(90deg,#1b100a,#020202);background-size:360px 360px,auto;background-blend-mode:soft-light,normal}
+  .cabinet-bottom-face{bottom:-41px;height:43px;right:-50px;background:url('../../artwork/textures/blackened-metal.jpg'),linear-gradient(#20120a,#020202);background-size:420px 420px,auto;background-blend-mode:soft-light,normal}
+
+  /* BRAND SHOULD FEEL LIKE BOLTED CAST LETTERING, NOT A WEB LOGO */
+  .brand-header{min-height:153px;margin:0 70px -13px;padding-top:4px;transform:translateZ(58px)}
+  .brand-lockup{transform:perspective(650px) rotateX(-10deg) rotateZ(-2.2deg) skewX(-2deg) scaleX(1.02);filter:drop-shadow(0 3px 0 #5a321b) drop-shadow(0 7px 0 #180c07) drop-shadow(0 15px 9px #000)}
+  .brand-main{font-size:clamp(67px,7.1vw,96px);letter-spacing:-.018em;-webkit-text-stroke:2.4px #211008;background:
+    radial-gradient(circle at 23% 30%,rgba(235,192,128,.28) 0 1px,transparent 2px) 0 0/19px 17px,
+    repeating-linear-gradient(8deg,rgba(30,14,8,.45) 0 1px,transparent 2px 7px),
+    linear-gradient(#c28a53 0,#76502e 45%,#ac7441 62%,#4a2b18 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .brand-radio{margin-top:9px;font-size:31px;letter-spacing:.56em;color:#8f5428;text-shadow:0 2px #341b0d,0 6px 7px #000}
+  .live-pill{bottom:-7px;padding:5px 16px 5px 12px;border:3px solid #432717;background:#090604;box-shadow:0 9px 0 #020201,0 15px 14px #000,inset 0 0 13px #000,0 0 0 2px #6c3b1d}
+
+  /* PACK THE TOP AS ONE PHYSICAL ASSEMBLY */
+  .top-deck{grid-template-columns:224px minmax(0,1fr) 184px;gap:0;margin:-1px -7px 0 -18px;align-items:end}
+
+  .mug-module{height:306px;transform:translateZ(108px) translate(4px,18px) rotate(-1.6deg)}
+  .mug-module::after{left:-56px;right:-34px;bottom:-12px;height:54px;border:4px solid #1f130c;background:url('../../artwork/textures/blackened-metal.jpg'),linear-gradient(#22140c,#050302);background-size:260px 260px,auto;background-blend-mode:soft-light,normal;box-shadow:0 25px 21px #000,inset 0 9px 13px #000}
+  .mug-body{left:4px;right:24px;bottom:17px;height:178px;border:5px solid #14100f;border-radius:7px 8px 33px 28px;background-image:url('../../artwork/textures/blackened-metal.jpg'),linear-gradient(104deg,#030303,#27201d 30%,#080707 55%,#1d1715 78%,#030303);background-size:230px 230px,auto;background-blend-mode:soft-light,normal;box-shadow:0 31px 28px #000,inset 17px 0 20px rgba(255,255,255,.025),inset -25px 0 31px #000,0 0 0 4px #050303}
+  .mug-rim{left:-2px;right:17px;bottom:187px;height:43px;border:4px solid #211a16;background:radial-gradient(ellipse,#2e1308 0 48%,#050404 51% 63%,#50423a 66% 73%,#0b0908 76%);box-shadow:0 10px 9px #000,inset 0 3px 4px rgba(255,133,55,.12)}
+  .mug-handle{right:-22px;bottom:58px;width:92px;height:108px;border-width:20px 20px 20px 11px;border-color:#090707;box-shadow:15px 18px 17px #000,inset 0 0 0 3px #302722}
+  .mug-mark{left:17px;bottom:76px;width:132px;font-size:20px;color:#b96c31;text-shadow:0 2px #000,0 0 7px rgba(255,99,10,.16)}
+  .steam{bottom:218px;height:162px;opacity:.76;filter:blur(4px)}
+
+  /* MASSIVE CAST TUNER */
+  .tuner-outer{margin-left:-21px;margin-right:-19px;padding:20px 21px 23px;border:7px solid #170f0a;border-radius:40px 25px 36px 18px;transform:translateZ(112px) translateY(8px) perspective(800px) rotateX(-3.2deg) rotateZ(-.65deg);background-image:
+    radial-gradient(circle at 17px 16px,#8f5831 0 3px,#0d0805 4px 8px,transparent 9px),
+    radial-gradient(circle at calc(100% - 18px) 15px,#754825 0 3px,#0d0805 4px 8px,transparent 9px),
+    radial-gradient(circle at 18px calc(100% - 16px),#684020 0 3px,#0d0805 4px 8px,transparent 9px),
+    radial-gradient(circle at calc(100% - 16px) calc(100% - 17px),#754825 0 3px,#0d0805 4px 8px,transparent 9px),
+    url('../../artwork/textures/blackened-metal.jpg'),linear-gradient(115deg,#120b07,#452818 11%,#070504 31% 73%,#321d11 91%,#050302);
+    background-size:auto,auto,auto,auto,260px 260px,auto;background-blend-mode:normal,normal,normal,normal,normal,normal;
+    box-shadow:0 11px 0 #26160d,0 23px 0 #040302,0 42px 34px #000,-13px 11px 19px #000,inset 0 6px 5px rgba(255,255,255,.02),inset 0 -22px 28px #000,0 0 0 3px #5b321b}
+  .tuner-bezel{padding:16px;border:6px solid #15100c;border-radius:28px 17px 24px 12px;background-image:url('../../artwork/textures/blackened-metal.jpg'),linear-gradient(#16100c,#3d2518 13%,#040303 29% 76%,#29170d 95%);background-size:235px 235px,auto;background-blend-mode:normal,normal;box-shadow:inset 0 0 0 7px #010101,inset 0 17px 19px rgba(111,59,27,.14),inset 0 -22px 27px #000,0 13px 16px #000,0 0 0 4px #53311c}
+  .tuner-cavity{padding:25px 22px 23px;border-radius:14px 9px 15px 7px;box-shadow:inset 0 49px 58px #000,inset 34px 0 45px #000,inset -35px 0 46px #000,inset 0 -24px 30px #000,0 0 0 4px #3b2415}
+  .tuner-glass{height:269px;border-radius:7px 3px 8px 4px;border-color:#4a321e;box-shadow:inset 0 0 98px #000,inset 21px 0 36px #000,inset -23px 0 38px #000,0 0 0 9px #000,0 0 0 12px #1c120c,0 0 26px rgba(255,86,5,.04);background:
+    linear-gradient(110deg,rgba(255,255,255,.065) 0 3%,transparent 8% 78%,rgba(255,255,255,.009) 82%),
+    radial-gradient(circle at 17% 34%,rgba(178,105,48,.04) 0 1px,transparent 2px) 0 0/29px 31px,
+    radial-gradient(ellipse at 53% 54%,rgba(255,85,5,.075),transparent 61%),#010101}
+  .fm-scale{font-size:27px}.am-scale{font-size:20px}.scale-line{height:2px;box-shadow:0 0 9px rgba(255,103,12,.18)}
+  .station-tag{top:194px;width:102px;z-index:80!important;pointer-events:auto!important}
+  .station-tag *{pointer-events:none!important}
+  .tuner-glass{isolation:isolate}
+  .tuner-glass > :not(.station-tag){pointer-events:none!important}
+  .tuner-needle{z-index:35!important;width:3px;box-shadow:0 0 4px #ff9a36,0 0 12px #ff5d08,0 0 25px rgba(255,76,0,.45)}
+  .tuner-readout{min-width:260px;bottom:2px;border:4px solid #281a11;background:#050302;box-shadow:0 10px 12px #000,inset 0 0 20px #000,0 0 0 3px #5b331a;color:#a66c38}
+
+  /* VACUUM TUBE AS A REAL GLASS INSTRUMENT, NOT A LINE ICON */
+  .science-stack{height:302px;transform:translateZ(128px) translate(4px,14px) rotate(.6deg)}
+  .science-stack::before{height:95px;left:-18px;right:-10px;bottom:-13px;border:5px solid #1c120c;background-image:url('../../artwork/textures/blackened-metal.jpg'),linear-gradient(110deg,#20140d,#050303 70%,#21130c);background-size:215px 215px,auto;background-blend-mode:normal,normal;box-shadow:0 18px 18px #000,inset 0 0 24px #000,0 0 0 3px #3b2315}
+  .tube-module{width:158px;height:289px;transform:translateY(-7px)}
+  .tube-module::before{left:4px;right:4px;top:-18px;bottom:60px;border:4px solid #393027;border-radius:49% 49% 16% 16%/17% 17% 7% 7%;box-shadow:inset 0 0 35px #000,0 0 0 6px #050403,0 0 28px rgba(255,87,5,.14)}
+  .tube-glass{left:14px;right:14px;top:2px;bottom:76px;border:3px solid rgba(96,84,69,.84);border-radius:48% 48% 32% 32%/25% 25% 12% 12%;background:linear-gradient(105deg,rgba(255,255,255,.11),transparent 16% 68%,rgba(255,255,255,.03) 79%,transparent),radial-gradient(ellipse at 50% 71%,rgba(255,113,19,.54),rgba(255,68,3,.16) 25%,transparent 48%),linear-gradient(rgba(20,18,14,.18),rgba(2,2,2,.82));box-shadow:inset 0 0 39px #000,0 0 27px rgba(255,86,5,.3),0 0 0 5px #030302}
+  .tube-glass::before{content:"";position:absolute;left:29%;right:29%;top:20%;bottom:19%;border:2px solid rgba(105,70,43,.78);border-radius:7px;background:linear-gradient(90deg,transparent,rgba(255,105,18,.13),transparent);box-shadow:inset 0 0 14px #000,0 0 9px rgba(255,87,7,.17);pointer-events:none}
+  .tube-glass::after{content:"";position:absolute;left:20%;right:20%;top:15%;height:8px;border-top:3px solid #49311f;border-bottom:2px solid #1b120c;box-shadow:0 43px 0 #342317,0 86px 0 #342317;opacity:.9;pointer-events:none}
+  .tube-filament{left:28%;right:28%;top:30%;bottom:17%;filter:drop-shadow(0 0 7px #ffae4d) drop-shadow(0 0 25px #ff5a05)}
+  .tube-base-ring{left:15px;right:15px;bottom:64px;height:31px;border:4px solid #312015;background:linear-gradient(#55331d,#0b0806 58%,#020202);box-shadow:0 10px 10px #000}
+  .tube-socket{left:-3px;right:-3px;bottom:-6px;height:80px;border:5px solid #1c120c;border-radius:5px;background-image:url('../../artwork/textures/blackened-metal.jpg'),linear-gradient(110deg,#19100b,#482a18 46%,#060403 78%);background-size:190px 190px,auto;background-blend-mode:normal,normal;box-shadow:0 16px 17px #000,inset 0 0 23px #000,0 0 0 3px #3d2416}
+  .mini-bulbs{right:5px;bottom:-8px;gap:6px}.mini-bulbs span{width:11px;height:11px;border:3px solid #302014;background:#0b0704;box-shadow:0 0 5px rgba(255,95,8,.4),inset 0 0 5px #000}.mini-bulbs span:first-child{width:31px;height:31px;border-radius:50%;background:radial-gradient(circle at 38% 32%,#32241b,#090706 65%);box-shadow:0 7px 8px #000,0 0 0 3px #120b07}
+
+  /* LOWER INSTRUMENTS: THICK, BOLTED, UNEVEN */
+  .info-deck{margin:2px 19px 1px 215px;grid-template-columns:minmax(0,1fr) 213px;transform:translateZ(88px) perspective(850px) rotateX(.8deg) rotateZ(.18deg)}
+  .display-panel,.meter-module{border:5px solid #1a110b!important;border-radius:4px 8px 3px 5px!important;box-shadow:inset 0 0 0 3px #020202,inset 0 0 0 5px #342014,0 16px 19px #000!important}
+  .display-well{min-height:137px;border:4px solid #24180f;border-radius:2px 6px 3px 2px;box-shadow:inset 0 0 57px #000,0 0 0 4px #020201,0 12px 15px #000}
+  .album-tile{border:4px solid #23170e;box-shadow:inset 0 0 24px #000,0 0 0 3px #020201;transform:rotate(-1.5deg)}
+  .display-track{font-size:clamp(31px,3.2vw,43px);font-family:"Courier New",monospace;color:#c49767;text-shadow:0 2px #251309,0 5px 7px #000}
+  .meter-module{transform:translateY(-4px) rotate(.55deg)}
+  .meter-frame{filter:drop-shadow(0 11px 8px #000)}
+  .meter-glass{border:4px solid #21160e!important;box-shadow:inset 0 0 25px rgba(37,21,8,.88),0 0 0 5px #030201!important}
+
+  .control-deck{grid-template-columns:190px 116px 172px 116px 190px;gap:18px;min-height:194px;margin:-1px 20px 2px 30px;border:6px solid #1a110b;border-radius:5px 3px 7px 4px;transform:translateZ(82px) rotateZ(-.18deg);background-image:
+    radial-gradient(circle at 13px 13px,#87522c 0 3px,#0b0705 4px 7px,transparent 8px),
+    radial-gradient(circle at calc(100% - 13px) 13px,#6f4324 0 3px,#0b0705 4px 7px,transparent 8px),
+    radial-gradient(circle at 13px calc(100% - 13px),#68401f 0 3px,#0b0705 4px 7px,transparent 8px),
+    radial-gradient(circle at calc(100% - 13px) calc(100% - 13px),#68401f 0 3px,#0b0705 4px 7px,transparent 8px),
+    url('../../artwork/textures/blackened-metal.jpg'),linear-gradient(#17100c,#030303 78%);background-size:auto,auto,auto,auto,230px 230px,auto;background-blend-mode:normal,normal,normal,normal,normal,normal;box-shadow:inset 0 0 0 5px #020201,inset 0 0 0 8px #2e1c11,0 20px 22px #000,0 0 0 3px #0d0805}
+  .knob-contact{width:142px;height:142px;border:4px solid #2c1d13;background:repeating-conic-gradient(#5c3e22 0 2deg,#080706 3deg 5deg);box-shadow:0 14px 16px #000,inset 0 0 28px #000,0 0 0 6px #020201}
+  .knob{width:112px;height:112px;border:2px solid #1d140e;background:repeating-conic-gradient(#3b2f27 0 3deg,#050504 4deg 6deg);box-shadow:0 14px 0 #010101,0 23px 22px #000,inset 0 0 0 10px #030303,inset 0 0 0 14px #5a3c26,inset 0 0 19px #000,0 0 0 4px #110a06}
+  .transport-btn{width:112px;height:112px;min-height:112px;border:5px solid #24180f;box-shadow:0 14px 0 #010101,0 24px 22px #000,inset 0 5px 5px rgba(255,255,255,.018),0 0 0 6px #020201}
+  .transport-btn.play{width:168px;height:168px;min-height:168px;border:7px solid #392315;box-shadow:0 16px 0 #010101,0 28px 26px #000,inset 0 6px 6px rgba(255,255,255,.018),0 0 0 8px #020201,0 0 calc(34px * var(--playGlow)) rgba(255,91,8,calc(var(--playGlow)*.34))}
+
+  .witching-strip{margin:1px 18px 3px 56px;min-height:92px;border:5px solid #1a110b;border-radius:3px 6px 4px 3px;transform:translateZ(72px) rotateZ(.16deg);box-shadow:inset 0 0 0 4px #020201,inset 0 0 0 6px #2c1b11,0 16px 18px #000}
+  .speaker-grille{border:4px solid #18100b;box-shadow:inset 0 0 32px #000,0 0 0 5px #26180f}
+  .bottom-nav{margin:5px 3px 0 14px;transform:translateZ(67px) perspective(800px) rotateX(5.5deg) rotateZ(-.12deg)}
+  .nav-btn{min-height:67px;border:4px solid #1b120c;background-image:url('../../artwork/textures/blackened-metal.jpg'),linear-gradient(#17100c,#030303 78%);background-size:190px 190px,auto;background-blend-mode:normal,normal;box-shadow:inset 0 0 0 3px #020201,0 10px 10px #000}
+  .nav-medallion{width:122px;height:122px;transform:translateY(-21px) translateZ(36px) rotate(-.7deg);border:6px solid #281b12;box-shadow:0 14px 0 #010101,0 23px 20px #000,0 0 0 6px #030201,inset 0 0 24px #000}
+
+  .cobweb{opacity:.48;filter:sepia(.55) brightness(.55) contrast(1.3)}
+  .web-a{right:7px;top:5px}.web-b{left:7px;top:5px}
+}
