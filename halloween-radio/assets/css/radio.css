@@ -1,3 +1,15 @@
 @import url("base.css");
 @import url("components.css");
 @import url("responsive.css");
+
+/* Live broadcast readout enhancements */
+.display-well{overflow:hidden}
+.display-meta,.display-signal-row{display:flex;align-items:center;justify-content:space-between;gap:12px;font-variant-numeric:tabular-nums}
+.display-meta{margin-top:9px;padding-top:7px;border-top:1px solid rgba(158,111,57,.18);font-size:9px;letter-spacing:.1em;color:#746957}
+.display-signal-row{margin-top:5px;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:#6e624e}
+#stationProfile{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#broadcastState{flex:0 0 auto;color:#a98455;text-shadow:0 0 5px rgba(255,119,20,.12)}
+.display-track{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.display-station{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.transport-btn:focus-visible,.preset:focus-visible,.toggle:focus-visible,.tube-module:focus-visible,.brand-plaque:focus-visible,.mug-module:focus-visible{outline:2px solid #bd8145;outline-offset:3px}
+@media (max-width:720px){.display-meta{font-size:8px}.display-signal-row{font-size:7px;gap:7px}.display-track{font-size:18px}}
