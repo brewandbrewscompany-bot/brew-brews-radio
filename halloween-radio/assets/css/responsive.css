@@ -1,0 +1,31 @@
+/* Mobile is recomposed, not merely scaled. */
+@media (max-width:780px){
+  :root{--cabinetDepth:24px}
+  .scene{padding:34px 11px 70px;place-items:start center;perspective:1100px}
+  .radio-shell{width:min(660px,94vw);transform:none;filter:drop-shadow(0 28px 24px rgba(0,0,0,.58))}
+  .cabinet-top-face{left:12px;right:-18px;top:-22px;height:24px;transform:skewX(-35deg)}
+  .cabinet-right-face{right:-22px;bottom:-15px;transform:skewY(-24deg)}
+  .cabinet-bottom-face{left:11px;right:-18px;bottom:-16px;height:18px}
+  .cabinet-front{padding:15px 13px 22px;border-radius:12px}
+  .crown{grid-template-columns:132px 1fr 126px;gap:8px;min-height:164px;padding:0 4px 18px}
+  .shelf{left:0;right:0;height:24px}
+  .tube-module{height:158px;transform:translateZ(34px)}
+  .tube-glass{width:67px;height:109px;bottom:39px}.tube-socket{width:92px;height:34px}.tube-base-ring{width:74px;height:20px;bottom:32px}.tube-filament{inset:18px 18px 17px}
+  .brand-plaque{padding:14px 8px 12px;min-height:104px;margin-bottom:7px}.brand-plaque .brand{font-size:clamp(20px,6vw,31px)}.brand-plaque .place{font-size:10px;letter-spacing:.12em}.brand-plaque .roastery{font-size:9px;letter-spacing:.1em}.brand-plaque .bat-mark{font-size:14px;margin-bottom:4px}
+  .mug-module{height:147px;transform:translateZ(32px)}.mug-body{width:74px;height:77px;bottom:14px}.mug-rim{width:79px;height:19px;bottom:82px}.mug-handle{bottom:28px;right:5px;width:40px;height:49px;border-width:9px}.mug-mark{width:68px;bottom:34px;font-size:12px}.mug-mark small{font-size:6px}.steam{bottom:102px;height:61px}
+  .chassis{grid-template-columns:1fr 1fr;grid-template-areas:"tuner tuner" "volume meter" "tune meter" "transport transport" "display display" "speaker speaker";padding:12px;gap:11px}
+  .center-stack{display:contents}.left-stack{display:contents}.right-stack{display:contents}
+  .tuner-outer{grid-area:tuner;transform:translateZ(22px)}
+  #volumeModule{grid-area:volume}.meter-module{grid-area:meter;height:auto;min-height:324px}.speaker-module{grid-area:speaker}.display-panel{grid-area:display}.transport-panel{grid-area:transport}#tuneModule{grid-area:tune}
+  .knob-module{height:146px;padding:8px}.knob{width:83px;height:83px;box-shadow:inset 0 0 0 6px rgba(0,0,0,.48),inset 0 6px 8px rgba(255,255,255,.05),0 8px 0 #070707,0 13px 14px rgba(0,0,0,.75)}.knob-indicator{top:6px;height:20px;transform-origin:50% 36px}.knob-contact{width:90px;bottom:34px}
+  .tuner-glass{height:188px}.station-tag{width:72px;font-size:7px}.station-tag strong{font-size:9px}.preset-row{grid-template-columns:repeat(3,1fr);gap:8px}.preset{min-height:58px;font-size:9px}
+  .transport-panel{padding:13px 10px 18px}.transport-btn{min-height:70px}.transport-btn.play{width:82px;height:82px}
+  .meter-glass{height:180px}.speaker-module{height:145px}.speaker-grille{height:87px}
+  .tagline{font-size:9px;letter-spacing:.13em;padding:5px 13px}
+  .cobweb.tl{top:180px}.discovery-counter{position:static;text-align:right;margin:8px 7px -4px 0}
+}
+@media (max-width:480px){
+  .scene{padding-left:7px;padding-right:7px}
+  .crown{grid-template-columns:98px 1fr 94px;min-height:137px}.tube-module{height:130px}.tube-glass{width:56px;height:90px;bottom:34px}.tube-socket{width:78px;height:29px}.tube-base-ring{width:62px;bottom:29px}.mug-module{height:122px}.mug-body{width:62px;height:65px}.mug-rim{width:66px;bottom:71px}.mug-handle{width:32px;height:42px;right:1px}.mug-mark{width:57px;font-size:10px;bottom:29px}.steam{bottom:88px}.brand-plaque{min-height:89px;padding:9px 5px}.brand-plaque .brand{font-size:19px}.brand-plaque .place{font-size:8px}.brand-plaque .roastery{font-size:7px}.brand-plaque .bat-mark{font-size:11px}.chassis{grid-template-columns:1fr 1fr;padding:9px;gap:8px}.tuner-outer{padding:7px}.tuner-bezel{padding:7px}.tuner-cavity{padding:10px}.tuner-glass{height:178px}.fm-scale{font-size:12px}.station-tag{display:none}.station-tag strong{font-size:8px}.preset{min-height:55px;padding:5px 2px}.knob-module{height:132px}.knob{width:72px;height:72px}.knob-indicator{transform-origin:50% 31px}.meter-module{min-height:286px;padding:8px}.meter-glass{height:157px}.display-track{font-size:18px}.transport-btn{min-height:64px;font-size:10px}.transport-btn.play{width:72px;height:72px}.transport-btn.play .play-triangle{border-top-width:12px;border-bottom-width:12px;border-left-width:20px}.speaker-module{height:132px}.speaker-grille{height:75px}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}}
