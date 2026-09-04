@@ -22,10 +22,8 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
           python -m pip install openai-whisper
-          ffmpeg -version | head -1
-          ffprobe -version | head -1
 
-      - name: Classify vocals versus music
+      - name: Audit unmanifested uploads
         run: |
           python - <<'PY'
           import json, pathlib, subprocess, tempfile, re
@@ -33,69 +31,44 @@ jobs:
 
           root = pathlib.Path('halloween-radio')
           manifest = json.loads((root/'data/tracks.json').read_text())
+          used = {pathlib.Path(t['file']).name for t in manifest['tracks']}
+          candidates = sorted(p for p in (root/'audio').glob('*.mp3') if p.name not in used)
+          print('CANDIDATES', len(candidates))
           model = whisper.load_model('tiny.en')
 
           def duration(path):
-              out = subprocess.check_output([
-                  'ffprobe','-v','error','-show_entries','format=duration',
-                  '-of','default=noprint_wrappers=1:nokey=1',str(path)
-              ], text=True).strip()
+              out = subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','default=noprint_wrappers=1:nokey=1',str(path)], text=True).strip()
               return float(out)
 
-          def transcribe_sample(path, start, length, tmpdir, tag):
-              wav = pathlib.Path(tmpdir)/f'{tag}.wav'
-              subprocess.run([
-                  'ffmpeg','-hide_banner','-loglevel','error','-y',
-                  '-ss',f'{max(0,start):.2f}','-t',f'{length:.2f}','-i',str(path),
-                  '-ac','1','-ar','16000',str(wav)
-              ], check=True)
-              r = model.transcribe(
-                  str(wav), language='en', fp16=False, verbose=False,
-                  condition_on_previous_text=False, temperature=0
-              )
+          def sample(path,start,length,tmpdir,tag):
+              wav=pathlib.Path(tmpdir)/f'{tag}.wav'
+              subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-y','-ss',f'{max(0,start):.2f}','-t',f'{length:.2f}','-i',str(path),'-ac','1','-ar','16000',str(wav)],check=True)
+              r=model.transcribe(str(wav),language='en',fp16=False,verbose=False,condition_on_previous_text=False,temperature=0)
               good=[]
               for s in r.get('segments',[]):
-                  if s.get('no_speech_prob',1) < .62 and s.get('avg_logprob',-99) > -1.35:
+                  if s.get('no_speech_prob',1)<.62 and s.get('avg_logprob',-99)>-1.35:
                       good.append(s)
-              good_text=' '.join(s.get('text','').strip() for s in good).strip()
-              words=re.findall(r"\b[\w']+\b", good_text)
-              return {'goodText':good_text[:220],'words':len(words),'segments':len(good)}
+              text=' '.join(s.get('text','').strip() for s in good).strip()
+              words=re.findall(r"\b[\w']+\b",text)
+              return {'text':text[:260],'words':len(words)}
 
           results=[]
-          for i,t in enumerate(manifest['tracks'],1):
-              path=root/t['file']
+          for i,path in enumerate(candidates,1):
               dur=duration(path)
-              front_len=min(32,dur)
-              mid_start=max(0,dur*.48-12)
-              late_start=max(0,dur*.78-12)
+              starts=[0,max(0,dur*.45-15),max(0,dur*.80-12)]
               with tempfile.TemporaryDirectory() as td:
-                  front=transcribe_sample(path,0,front_len,td,'front')
-                  middle=transcribe_sample(path,mid_start,min(24,max(1,dur-mid_start)),td,'middle')
-                  late=transcribe_sample(path,late_start,min(24,max(1,dur-late_start)),td,'late')
-              front_voice=front['words']>=5
-              mid_voice=middle['words']>=5
-              late_voice=late['words']>=5
-              continuation=mid_voice or late_voice
-              total=front['words']+middle['words']+late['words']
-              if front_voice and not continuation:
-                  category='broadcaster-intro + mostly music'
-              elif continuation and total>=18:
-                  category='lyrics/vocal song'
-              elif total<9:
-                  category='instrumental/mostly music'
-              else:
-                  category='mixed/uncertain'
-              result={
-                  'id':t['id'],'title':t['title'],'station':t['station'],
-                  'durationSec':round(dur,1),'category':category,
-                  'frontVoice':front_voice,'middleVoice':mid_voice,'lateVoice':late_voice,
-                  'frontWords':front['words'],'middleWords':middle['words'],'lateWords':late['words'],
-                  'frontText':front['goodText'],'middleText':middle['goodText'],'lateText':late['goodText']
-              }
-              results.append(result)
-              print(f"[{i:02d}/{len(manifest['tracks'])}] {t['title']} => {category} | words {front['words']}/{middle['words']}/{late['words']}")
-
-          print('AUDIO_AUDIT_JSON_START')
-          print(json.dumps(results, ensure_ascii=False))
-          print('AUDIO_AUDIT_JSON_END')
+                  a=sample(path,starts[0],min(35,dur),td,'front')
+                  b=sample(path,starts[1],min(30,max(1,dur-starts[1])),td,'middle')
+                  c=sample(path,starts[2],min(24,max(1,dur-starts[2])),td,'late')
+              total=a['words']+b['words']+c['words']
+              if total<8: cat='instrumental/mostly music'
+              elif a['words']>=5 and b['words']<5 and c['words']<5: cat='spoken intro + mostly music'
+              elif b['words']>=5 or c['words']>=5: cat='vocal/spoken throughout'
+              else: cat='mixed/uncertain'
+              row={'file':path.name,'durationSec':round(dur,1),'category':cat,'frontWords':a['words'],'middleWords':b['words'],'lateWords':c['words'],'frontText':a['text'],'middleText':b['text'],'lateText':c['text']}
+              results.append(row)
+              print(f"[{i}/{len(candidates)}] {path.name} | {dur:.1f}s | {cat} | words {a['words']}/{b['words']}/{c['words']}")
+          print('NEW_AUDIO_AUDIT_JSON_START')
+          print(json.dumps(results,ensure_ascii=False))
+          print('NEW_AUDIO_AUDIT_JSON_END')
           PY
