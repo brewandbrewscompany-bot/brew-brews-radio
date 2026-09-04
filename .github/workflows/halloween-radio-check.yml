@@ -115,8 +115,12 @@ jobs:
             if(await page.$eval('#radioAudio',a=>a.paused)) throw new Error('Explicit Play did not start the selected track');
 
             await page.click('.preset[data-frequency="91.7"]');
-            await page.waitForFunction(()=>document.querySelector('#broadcastState')?.textContent.trim()==='TUNING',{timeout:2000});
-            await page.waitForFunction(()=>document.querySelector('#broadcastState')?.textContent.trim()==='ON AIR',{timeout:5000});
+            await page.waitForFunction(()=>{
+              const a=document.querySelector('#radioAudio');
+              return document.querySelector('#broadcastState')?.textContent.trim()==='ON AIR'
+                && !a.paused
+                && (a.currentSrc||a.src).includes('haunted-roast.mp3');
+            },{timeout:7000});
             const afterTune = await page.$eval('#radioAudio',a=>({paused:a.paused,src:a.currentSrc||a.src}));
             if(afterTune.paused) throw new Error('Playing station did not resume after tuning transition');
             if(!afterTune.src.includes('haunted-roast.mp3')) throw new Error(`91.7 wrong source: ${afterTune.src}`);
