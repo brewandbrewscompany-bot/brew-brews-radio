@@ -1,0 +1,74 @@
+name: Halloween Audio Voice Presence Audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/halloween-audio-vad.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install VAD
+        run: python -m pip install webrtcvad-wheels
+
+      - name: Analyze voice presence
+        run: |
+          python - <<'PY'
+          import json, pathlib, subprocess, webrtcvad
+
+          root=pathlib.Path('halloween-radio')
+          manifest=json.loads((root/'data/tracks.json').read_text())
+          vad=webrtcvad.Vad(3)
+
+          def duration(path):
+              return float(subprocess.check_output([
+                  'ffprobe','-v','error','-show_entries','format=duration',
+                  '-of','default=noprint_wrappers=1:nokey=1',str(path)
+              ],text=True).strip())
+
+          def voiced_ratio(path,start,length):
+              pcm=subprocess.check_output([
+                  'ffmpeg','-hide_banner','-loglevel','error',
+                  '-ss',f'{max(0,start):.2f}','-t',f'{length:.2f}','-i',str(path),
+                  '-ac','1','-ar','16000','-f','s16le','-acodec','pcm_s16le','-'
+              ])
+              frame_bytes=960  # 30ms, 16kHz, 16-bit mono
+              total=voiced=0
+              for i in range(0,len(pcm)-frame_bytes+1,frame_bytes):
+                  frame=pcm[i:i+frame_bytes]
+                  total+=1
+                  try:
+                      voiced+=1 if vad.is_speech(frame,16000) else 0
+                  except Exception:
+                      pass
+              return voiced/total if total else 0
+
+          out=[]
+          for i,t in enumerate(manifest['tracks'],1):
+              p=root/t['file']; d=duration(p)
+              front=voiced_ratio(p,0,min(35,d))
+              middle=voiced_ratio(p,max(0,d*.48-15),min(30,d))
+              late=voiced_ratio(p,max(0,d*.78-15),min(30,d))
+              if front>=.22 and middle<.13 and late<.13:
+                  cat='broadcaster-intro + mostly music'
+              elif middle>=.18 or late>=.18:
+                  cat='continuing vocals / likely lyrics'
+              elif max(front,middle,late)<.10:
+                  cat='instrumental / mostly music'
+              else:
+                  cat='mixed / uncertain'
+              r={'id':t['id'],'title':t['title'],'station':t['station'],'durationSec':round(d,1),
+                 'front':round(front,3),'middle':round(middle,3),'late':round(late,3),'category':cat}
+              out.append(r)
+              print(f"[{i:02d}/26] {t['title']}: {cat} | {front:.3f}/{middle:.3f}/{late:.3f}")
+          print('VAD_AUDIT_JSON_START')
+          print(json.dumps(out))
+          print('VAD_AUDIT_JSON_END')
+          PY
