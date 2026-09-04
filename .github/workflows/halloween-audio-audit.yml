@@ -17,15 +17,18 @@ jobs:
 
       - name: Install audio analysis tools
         run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
           python -m pip install --upgrade pip
+          python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
           python -m pip install openai-whisper
-          which ffmpeg
-          which ffprobe
+          ffmpeg -version | head -1
+          ffprobe -version | head -1
 
       - name: Classify vocals versus music
         run: |
           python - <<'PY'
-          import json, pathlib, subprocess, tempfile, re, math
+          import json, pathlib, subprocess, tempfile, re
           import whisper
 
           root = pathlib.Path('halloween-radio')
@@ -50,19 +53,13 @@ jobs:
                   str(wav), language='en', fp16=False, verbose=False,
                   condition_on_previous_text=False, temperature=0
               )
-              text = re.sub(r'\s+',' ',r.get('text','')).strip()
               good=[]
               for s in r.get('segments',[]):
                   if s.get('no_speech_prob',1) < .62 and s.get('avg_logprob',-99) > -1.35:
                       good.append(s)
               good_text=' '.join(s.get('text','').strip() for s in good).strip()
               words=re.findall(r"\b[\w']+\b", good_text)
-              return {
-                  'text': text[:220],
-                  'goodText': good_text[:220],
-                  'words': len(words),
-                  'segments': len(good)
-              }
+              return {'goodText':good_text[:220],'words':len(words),'segments':len(good)}
 
           results=[]
           for i,t in enumerate(manifest['tracks'],1):
@@ -96,7 +93,7 @@ jobs:
                   'frontText':front['goodText'],'middleText':middle['goodText'],'lateText':late['goodText']
               }
               results.append(result)
-              print(f"[{i:02d}/{len(manifest['tracks'])}] {t['title']} => {category} | front/mid/late words {front['words']}/{middle['words']}/{late['words']}")
+              print(f"[{i:02d}/{len(manifest['tracks'])}] {t['title']} => {category} | words {front['words']}/{middle['words']}/{late['words']}")
 
           print('AUDIO_AUDIT_JSON_START')
           print(json.dumps(results, ensure_ascii=False))
