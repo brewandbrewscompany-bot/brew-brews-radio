@@ -20,15 +20,21 @@ jobs:
         run: |
           node --check halloween-radio/assets/js/skin-radio.js
           node --check halloween-radio/assets/js/radio-enhancements.js
+          node --check halloween-radio/assets/js/library-panels.js
           python - <<'PY'
           from pathlib import Path
           html=Path('halloween-radio/index.html').read_text()
           css=Path('halloween-radio/assets/css/skin-radio.css').read_text()
           js=Path('halloween-radio/assets/js/skin-radio.js').read_text()
           extra=Path('halloween-radio/assets/js/radio-enhancements.js').read_text()
+          library=Path('halloween-radio/assets/js/library-panels.js').read_text()
           assert 'id="shuffleSwitch"' in html
           assert 'id="repeatSwitch"' in html
+          assert 'id="schedulePanel"' in html
+          assert 'id="showsPanel"' in html
           assert 'assets/js/radio-enhancements.js' in html
+          assert 'assets/js/library-panels.js' in html
+          assert 'assets/css/library-panels.css' in html
           assert '.desktop .play-symbol{left:48.95%' in css
           assert '.desktop [data-hit="play"]{left:48.55%' in css
           assert 'window.BBRadio={' in js
@@ -40,6 +46,8 @@ jobs:
           assert "STORAGE_KEY='bb-halloween-radio-state-v1'" in extra
           assert 'mediaSession.setActionHandler' in extra
           assert "set('previoustrack'" in extra and "set('nexttrack'" in extra
+          assert "FAVORITES_KEY='bb-halloween-radio-favorites-v1'" in library
+          assert 'data-start-track' in library and 'data-play-track' in library and 'data-favorite' in library
           print('Halloween Radio playback source checks passed.')
           PY
 
@@ -84,6 +92,38 @@ jobs:
             if(await page.$eval('#shuffleSwitch',b=>b.getAttribute('aria-pressed')!=='false'))throw new Error('Shuffle must default off');
             if(await page.$eval('#repeatSwitch',b=>b.getAttribute('aria-pressed')!=='false'))throw new Error('Repeat must default off');
             if(await page.$eval('#autoSwitch',b=>b.getAttribute('aria-pressed')==='true'))await toggle('#autoSwitch');
+
+            // Schedule shows all frequencies and all 34 songs, and choosing START HERE stays silent.
+            await page.click('.desktop [data-hit="schedule"]');
+            await page.waitForSelector('#schedulePanel.open',{timeout:5000});
+            await page.waitForFunction(()=>document.querySelectorAll('#schedulePanel .station-block').length===6&&document.querySelectorAll('#schedulePanel .schedule-track').length===34,{timeout:5000});
+            await page.click('#schedulePanel [data-start-track="dead-of-night"]');
+            await sleep(250);
+            if(await title()!=='Dead of Night')throw new Error('Schedule START HERE did not select the requested song');
+            if(!(await audioState()).paused)throw new Error('Schedule START HERE violated no-autoplay');
+            await page.click('#schedulePanel [data-library-close]');
+
+            // Shows stays open while playing a selected song and favorites survive a reload.
+            await page.click('.desktop [data-hit="shows"]');
+            await page.waitForSelector('#showsPanel.open',{timeout:5000});
+            await page.click('#showsPanel [data-favorite="dead-of-night"]');
+            await sleep(120);
+            let favs=await page.evaluate(()=>JSON.parse(localStorage.getItem('bb-halloween-radio-favorites-v1')||'[]'));
+            if(!favs.includes('dead-of-night'))throw new Error('Favorite was not saved');
+            await page.click('#showsPanel [data-play-track="midnight-static"]');
+            await page.waitForFunction(()=>!document.querySelector('#radioAudio').paused,{timeout:15000});
+            if(await title()!=='Midnight Static')throw new Error('Shows PLAY did not select requested song');
+            if(!await page.$eval('#showsPanel',p=>p.classList.contains('open')))throw new Error('Shows panel closed during playback');
+            await page.click('#showsPanel [data-show-play]');
+            await sleep(100);
+            if(!(await audioState()).paused)throw new Error('Shows pause control failed');
+            await page.click('#showsPanel [data-shows-tab="favorites"]');
+            if(!await page.$('#showsPanel [data-play-track="dead-of-night"]'))throw new Error('Favorites tab did not show saved track');
+            await page.click('#showsPanel [data-library-close]');
+
+            // Put the ordered 88.3 opener back in place for the original playback regression.
+            await page.evaluate(()=>window.BBRadio.restore({currentFreq:88.3,trackId:'welcome-to-the-haunted-roast',volume:.78,autoTune:false,shuffle:false,repeat:false}));
+            await sleep(120);
 
             await station('88.3');
             await sleep(250);
@@ -152,15 +192,17 @@ jobs:
               auto:document.querySelector('#autoSwitch').getAttribute('aria-pressed'),
               shuffle:document.querySelector('#shuffleSwitch').getAttribute('aria-pressed'),
               repeat:document.querySelector('#repeatSwitch').getAttribute('aria-pressed'),
-              state:window.BBRadio.snapshot()
+              state:window.BBRadio.snapshot(),
+              favorites:JSON.parse(localStorage.getItem('bb-halloween-radio-favorites-v1')||'[]')
             }));
             if(!restored.paused)throw new Error('Saved state restore autoplayed audio');
             if(Math.abs(restored.volume-.42)>.02)throw new Error('Saved volume did not restore: '+JSON.stringify(restored));
             if(restored.auto!=='false'||restored.shuffle!=='false'||restored.repeat!=='true')throw new Error('Saved controls did not restore: '+JSON.stringify(restored));
             if(restored.state.currentFreq!==91.7||restored.state.trackId!=='static-on-the-highway')throw new Error('Saved station/track did not restore: '+JSON.stringify(restored));
+            if(!restored.favorites.includes('dead-of-night'))throw new Error('Favorite did not survive reload');
             if(errors.length)throw new Error('Page errors: '+errors.join(' | '));
 
-            console.log('Playback and persistence regression passed:',shuffled,restored.state);
+            console.log('Playback, library, favorites, and persistence regression passed:',shuffled,restored.state);
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
