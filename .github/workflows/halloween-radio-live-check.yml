@@ -1,0 +1,66 @@
+name: Halloween Radio Live Check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'halloween-radio/**'
+      - '.github/workflows/halloween-radio-live-check.yml'
+  workflow_dispatch:
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Wait for GitHub Pages skin app
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://brewandbrewscompany-bot.github.io/brew-brews-radio/halloween-radio'
+          ok=0
+          for attempt in $(seq 1 36); do
+            echo "Live check attempt $attempt/36"
+            if curl -fsSL --max-time 20 "$BASE/?check=${GITHUB_SHA}-${attempt}" -o /tmp/halloween-live.html; then
+              if grep -q 'assets/css/skin-radio.css' /tmp/halloween-live.html \
+                && grep -q 'assets/js/skin-radio.js' /tmp/halloween-live.html \
+                && grep -q 'id="radioAudio"' /tmp/halloween-live.html; then
+                ok=1
+                break
+              fi
+            fi
+            sleep 5
+          done
+          if [ "$ok" -ne 1 ]; then
+            echo 'The deployed Halloween Radio did not expose the skin app in time.'
+            sed -n '1,120p' /tmp/halloween-live.html || true
+            exit 1
+          fi
+
+      - name: Verify live assets and audio
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://brewandbrewscompany-bot.github.io/brew-brews-radio/halloween-radio'
+          for path in \
+            'assets/css/skin-radio.css' \
+            'assets/js/skin-radio.js' \
+            'artwork/desktop-skin.webp' \
+            'artwork/phone-skin.webp' \
+            'audio/ironclad.mp3'; do
+            echo "Checking $path"
+            curl -fsSL --max-time 30 -r 0-1023 "$BASE/$path?check=${GITHUB_SHA}" -o /tmp/live-asset
+            test -s /tmp/live-asset
+          done
+
+      - name: Verify deployed safety markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          JS='https://brewandbrewscompany-bot.github.io/brew-brews-radio/halloween-radio/assets/js/skin-radio.js'
+          curl -fsSL --max-time 30 "$JS?check=${GITHUB_SHA}" -o /tmp/skin-radio.js
+          grep -q 'playbackIntent:false' /tmp/skin-radio.js
+          grep -q "id:'ironclad'" /tmp/skin-radio.js
+          grep -q "id:'the-town-goes-quiet'" /tmp/skin-radio.js
+          test "$(grep -o 'state\.playbackIntent=true' /tmp/skin-radio.js | wc -l | tr -d ' ')" = '1'
+          echo 'Live Halloween Radio deployment verified.'
