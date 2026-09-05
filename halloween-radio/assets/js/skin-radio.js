@@ -111,10 +111,41 @@ document.querySelectorAll('[data-hit="merch"]').forEach(b=>b.addEventListener('c
 document.querySelectorAll('[data-hit="contact"]').forEach(b=>b.addEventListener('click',()=>showToast('Contact','Contact link can be connected here.')));
 document.querySelectorAll('[data-hit="menu"]').forEach(b=>b.addEventListener('click',()=>toggleDrawer(true)));
 document.getElementById('closeDrawer').addEventListener('click',()=>toggleDrawer(false));
-autoSwitch.addEventListener('click',()=>{state.autoTune=!state.autoTune;autoSwitch.classList.toggle('on',state.autoTune);autoSwitch.setAttribute('aria-pressed',String(state.autoTune));showToast('Haunted Auto Tune',state.autoTune?'On':'Off');scheduleAuto(true)});
+function setAutoTune(enabled,announce=false){state.autoTune=!!enabled;autoSwitch.classList.toggle('on',state.autoTune);autoSwitch.setAttribute('aria-pressed',String(state.autoTune));if(announce)showToast('Haunted Auto Tune',state.autoTune?'On':'Off');scheduleAuto(true)}
+autoSwitch.addEventListener('click',()=>setAutoTune(!state.autoTune,true));
 shuffleSwitch.addEventListener('click',()=>{const enabled=!state.shuffle;setShuffle(enabled);shuffleSwitch.classList.toggle('on',enabled);shuffleSwitch.setAttribute('aria-pressed',String(enabled));showToast('Shuffle',enabled?'On · signoff stays last':'Off · station order restored')});
 repeatSwitch.addEventListener('click',()=>{setRepeat(!state.repeat);showToast('Repeat Track',state.repeat?'On':'Off')});
-function scheduleAuto(reset=false){if(reset&&state.autoTimer)clearTimeout(state.autoTimer);if(!state.autoTune)return;state.autoTimer=setTimeout(()=>{if(state.autoTune&&!state.drag&&!isFinalSignoff(currentTrack())&&Math.random()<.62){let st=stations[Math.floor(Math.random()*stations.length)];if(st.freq===nearestStation(state.currentFreq).freq)st=stations[(stations.indexOf(st)+1)%stations.length];transitionToStation(st.freq)}scheduleAuto()},19000+Math.random()*26000)}
+
+window.BBRadio={
+  snapshot:()=>{const st=nearestStation(state.currentFreq),t=currentTrack();return{currentFreq:st.freq,stationName:st.name,trackId:t?.id||null,trackTitle:t?.title||'',volume:state.volume,autoTune:state.autoTune,shuffle:state.shuffle,repeat:state.repeat,playbackIntent:state.playbackIntent}},
+  restore:(saved={})=>{
+    state.playbackIntent=false;silence();
+    if(Number.isFinite(Number(saved.volume)))setVolume(Number(saved.volume),false);
+    setAutoTune(saved.autoTune!==false,false);
+    setRepeat(!!saved.repeat);
+    state.shuffle=false;state.shuffleOrder.clear();
+    const chosen=tracks.find(t=>t.id===saved.trackId)||null;
+    const targetFreq=chosen?chosen.station:nearestStation(Number(saved.currentFreq)||103.1).freq;
+    state.currentFreq=targetFreq;
+    if(chosen){const base=basePlaylist(targetFreq);state.trackIndex.set(key(targetFreq),Math.max(0,base.findIndex(t=>t.id===chosen.id)))}
+    else state.trackIndex.set(key(targetFreq),state.trackIndex.get(key(targetFreq))??0);
+    setTrackSource(currentTrack());
+    if(saved.shuffle)setShuffle(true);
+    shuffleSwitch.classList.toggle('on',state.shuffle);shuffleSwitch.setAttribute('aria-pressed',String(state.shuffle));
+    repeatSwitch.classList.toggle('on',state.repeat);repeatSwitch.setAttribute('aria-pressed',String(state.repeat));
+    silence();updateUI();
+  },
+  setVolume:v=>setVolume(Number(v),false),
+  setAutoTune:enabled=>setAutoTune(enabled,false),
+  setShuffle:enabled=>{setShuffle(!!enabled);shuffleSwitch.classList.toggle('on',state.shuffle);shuffleSwitch.setAttribute('aria-pressed',String(state.shuffle))},
+  setRepeat:enabled=>setRepeat(!!enabled),
+  next:()=>changeTrack(1,{announce:false}),
+  previous:()=>changeTrack(-1,{announce:false}),
+  togglePlay
+};
+
+function scheduleAuto(reset=false)
+{if(reset&&state.autoTimer)clearTimeout(state.autoTimer);if(!state.autoTune)return;state.autoTimer=setTimeout(()=>{if(state.autoTune&&!state.drag&&!isFinalSignoff(currentTrack())&&Math.random()<.62){let st=stations[Math.floor(Math.random()*stations.length)];if(st.freq===nearestStation(state.currentFreq).freq)st=stations[(stations.indexOf(st)+1)%stations.length];transitionToStation(st.freq)}scheduleAuto()},19000+Math.random()*26000)}
 function scheduleGhost(){clearTimeout(state.ghostTimer);state.ghostTimer=setTimeout(()=>{const ghost=matchMedia('(max-width:760px)').matches?document.querySelector('.phone [data-ghost]'):document.querySelector('.desktop [data-ghost]');ghost.classList.remove('visit');void ghost.offsetWidth;ghost.classList.add('visit');if(!state.autoTune&&!isFinalSignoff(currentTrack())&&Math.random()<.42){const st=stations[Math.floor(Math.random()*stations.length)];setTimeout(()=>{if(!isFinalSignoff(currentTrack()))transitionToStation(st.freq)},2300)}scheduleGhost()},15000+Math.random()*24000)}
 audio.addEventListener('timeupdate',updateNow);
 audio.addEventListener('loadedmetadata',updateNow);
