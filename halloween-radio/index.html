@@ -3,166 +3,97 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Brew &amp; Brews Radio — Haunted Broadcast</title>
-<link rel="stylesheet" href="assets/css/radio.css">
-<link rel="stylesheet" href="assets/css/desktop-reference.css">
-<link rel="stylesheet" href="assets/css/restoration-pass.css">
-<link rel="stylesheet" href="assets/css/original-hardware-pass.css">
-<link rel="stylesheet" href="assets/css/material-correction.css">
-<link rel="stylesheet" href="assets/css/surface-pass.css">
+<title>Brew & Brews Halloween Radio</title>
+<link rel="stylesheet" href="assets/css/skin-radio.css">
 </head>
 <body>
-<main class="scene" aria-label="Brew and Brews haunted radio">
-  <div class="ambient ambient-left" aria-hidden="true"></div>
-  <div class="ambient ambient-right" aria-hidden="true"></div>
-
-  <section class="radio-shell" id="radioShell">
-    <div class="cabinet-top-face" aria-hidden="true"></div>
-    <div class="cabinet-right-face" aria-hidden="true"></div>
-    <div class="cabinet-bottom-face" aria-hidden="true"></div>
-
-    <div class="cabinet-front">
-      <div class="cobweb web-a" aria-hidden="true"></div>
-      <div class="cobweb web-b" aria-hidden="true"></div>
-
-      <header class="brand-header">
-        <button class="menu-glyph" type="button" aria-label="Menu"><span></span><span></span><span></span></button>
-        <button class="brand-lockup" data-discovery="brand" type="button" aria-label="Brew and Brews Radio plaque">
-          <span class="brand-main">Brew &amp; Brews</span>
-          <span class="brand-radio">Radio</span>
-        </button>
-        <div class="live-pill" aria-live="polite"><span class="live-dot"></span><span>Live On Air</span></div>
-      </header>
-
-      <section class="top-deck">
-        <button class="mug-module" data-discovery="mug" type="button" aria-label="Brew and Brews steaming coffee mug">
-          <span class="mug-shadow" aria-hidden="true"></span>
-          <span class="steam s1" aria-hidden="true"></span>
-          <span class="steam s2" aria-hidden="true"></span>
-          <span class="steam s3" aria-hidden="true"></span>
-          <span class="mug-handle" aria-hidden="true"></span>
-          <span class="mug-body" aria-hidden="true"></span>
-          <span class="mug-rim" aria-hidden="true"></span>
-          <span class="mug-mark">Brew &amp; Brews<small>Radio</small></span>
-        </button>
-
-        <div class="tuner-outer" data-discovery="tuner">
-          <div class="tuner-bezel">
-            <div class="tuner-cavity">
-              <div class="tuner-glass" id="tunerGlass" role="slider" aria-label="Radio tuner" aria-valuemin="88" aria-valuemax="108" aria-valuenow="103.1" tabindex="0">
-                <span class="band-label fm">FM</span>
-                <span class="band-label am">AM</span>
-                <div class="fm-scale"><span>88</span><span>92</span><span>96</span><span>100</span><span>104</span><span>108</span></div>
-                <div class="am-scale"><span>530</span><span>700</span><span>900</span><span>1200</span><span>1500</span><span>1700</span></div>
-                <div class="scale-line fm-line"></div>
-                <div class="scale-line am-line"></div>
-
-                <button class="station-tag preset" onpointerdown="event.stopPropagation()" data-station-tag="88.3" data-frequency="88.3" style="--p:8.3%" type="button"><strong>88.3</strong><span>Graveyard AM</span></button>
-                <button class="station-tag preset" onpointerdown="event.stopPropagation()" data-station-tag="91.7" data-frequency="91.7" style="--p:22.9%" type="button"><strong>91.7</strong><span>Dead Air</span></button>
-                <button class="station-tag preset" onpointerdown="event.stopPropagation()" data-station-tag="95.9" data-frequency="95.9" style="--p:41%" type="button"><strong>95.9</strong><span>The Grind</span></button>
-                <button class="station-tag preset" onpointerdown="event.stopPropagation()" data-station-tag="99.5" data-frequency="99.5" style="--p:56.5%" type="button"><strong>99.5</strong><span>After Dark</span></button>
-                <button class="station-tag preset" onpointerdown="event.stopPropagation()" data-station-tag="103.1" data-frequency="103.1" style="--p:71.9%" type="button"><strong>103.1</strong><span>B&amp;B Radio</span></button>
-                <button class="station-tag preset" onpointerdown="event.stopPropagation()" data-station-tag="106.7" data-frequency="106.7" style="--p:87.4%" type="button"><strong>106.7</strong><span>Witching Hour</span></button>
-
-                <div class="tuner-needle" id="tunerNeedle" aria-hidden="true"></div>
-                <div class="tuner-readout" id="tunerReadout"><strong>103.1</strong> B&amp;B RADIO</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <aside class="science-stack" aria-label="Haunted electrical effects">
-          <div class="static-orb" aria-hidden="true">
-            <span class="orb-glass"></span>
-            <span class="arc a1"></span><span class="arc a2"></span><span class="arc a3"></span><span class="arc a4"></span><span class="arc a5"></span>
-            <span class="orb-base"></span>
-          </div>
-          <button class="tube-module" id="tube" data-discovery="tube" type="button" aria-label="Touch the vacuum tube">
-            <span class="tube-shadow" aria-hidden="true"></span>
-            <span class="tube-socket" aria-hidden="true"></span>
-            <span class="tube-base-ring" aria-hidden="true"></span>
-            <span class="tube-glass" aria-hidden="true">
-              <span class="tube-filament">
-                <svg viewBox="0 0 50 100" aria-hidden="true"><path d="M11 86 C20 68 7 57 21 45 C35 33 16 22 25 8 C34 23 16 34 31 47 C44 58 29 70 39 87"/><path class="hot" d="M15 85 C24 68 12 57 25 45 C37 34 21 23 26 10 C31 24 18 35 31 47 C41 59 30 70 36 85"/></svg>
-              </span>
-            </span>
-          </button>
-          <div class="mini-bulbs" aria-hidden="true"><span></span><span></span><span></span></div>
-        </aside>
-      </section>
-
-      <section class="info-deck">
-        <div class="module display-panel">
-          <div class="display-well" data-discovery="display" id="nowBrewing" role="button" tabindex="0" aria-label="Now brewing display">
-            <div class="album-tile" aria-hidden="true"><span class="moon"></span><span class="house"></span><span class="ground"></span></div>
-            <div class="track-copy">
-              <div class="display-label">☕ Now Brewing</div>
-              <div class="display-track" id="liveTrackTitle">IRONCLAD</div>
-              <div class="display-station" id="liveStationName">Brew &amp; Brews Radio · 103.1</div>
-              <div class="progress-rail" aria-hidden="true"><span></span></div>
-            </div>
-          </div>
-          <div class="auto-tune"><span id="autoTuneText">Haunted Auto Tune · On</span><button class="toggle" id="autoTuneToggle" type="button" aria-pressed="true" aria-label="Turn haunted auto tune off"><span class="toggle-knob"></span></button></div>
-        </div>
-
-        <div class="module meter-module" data-discovery="meter" id="meterModule">
-          <div class="module-title">Signal Strength</div>
-          <div class="meter-frame"><div class="meter-cavity"><div class="meter-glass">
-            <svg viewBox="0 0 200 140" aria-label="Analog signal meter">
-              <path d="M28 111 A78 78 0 0 1 172 111" fill="none" stroke="#4b3524" stroke-width="2"/>
-              <path d="M38 108 A68 68 0 0 1 162 108" fill="none" stroke="#6d4f30" stroke-width="1" stroke-dasharray="2 5"/>
-              <g fill="#4b3925" font-family="Georgia" font-size="9" text-anchor="middle"><text x="31" y="104">0</text><text x="58" y="68">25</text><text x="100" y="54">50</text><text x="142" y="68">75</text><text x="169" y="104">100</text></g>
-              <text x="100" y="87" fill="#4d3521" font-family="Georgia" font-size="13" text-anchor="middle" letter-spacing="2">SIGNAL</text>
-              <g class="meter-needle-group" id="meterNeedleGroup"><line x1="100" y1="118" x2="100" y2="53" stroke="#7a160d" stroke-width="3"/><line x1="100" y1="118" x2="100" y2="55" stroke="#d54222" stroke-width="1"/><circle cx="100" cy="118" r="7" fill="#2e2116" stroke="#6e4e2e" stroke-width="2"/></g>
-            </svg>
-          </div></div></div>
-          <div class="meter-caption" id="meterCaption">Strong · 103.1</div>
-        </div>
-      </section>
-
-      <section class="control-deck" aria-label="Playback controls">
-        <div class="knob-module module" id="volumeModule" data-discovery="volume" role="slider" aria-label="Volume" aria-valuemin="0" aria-valuemax="100" aria-valuenow="78" tabindex="0">
-          <div class="module-title">Volume</div><div class="knob-contact" aria-hidden="true"></div><div class="knob" id="volumeKnob" aria-hidden="true"></div><div class="knob-indicator" id="volumeIndicator" aria-hidden="true"></div><div class="knob-value" id="volumeValue">78%</div>
-        </div>
-
-        <button class="transport-btn" id="prev" type="button" aria-label="Previous song"><span class="icon">◀</span><span>Prev</span></button>
-        <button class="transport-btn play" id="play" type="button" aria-label="Play"><span class="play-triangle" aria-hidden="true"></span></button>
-        <button class="transport-btn" id="next" type="button" aria-label="Next song"><span class="icon">▶</span><span>Next</span></button>
-
-        <div class="knob-module module" id="tuneModule" data-discovery="tune" role="slider" aria-label="Tune" aria-valuemin="88" aria-valuemax="108" aria-valuenow="103.1" tabindex="0">
-          <div class="module-title">Tune</div><div class="knob-contact" aria-hidden="true"></div><div class="knob" id="tuneKnob" aria-hidden="true"></div><div class="knob-indicator" id="tuneIndicator" aria-hidden="true"></div><div class="knob-value" id="tuneValue">103.1 FM</div>
-        </div>
-      </section>
-
-      <section class="witching-strip">
-        <div class="speaker-module" data-discovery="speaker" id="speakerModule" role="button" tabindex="0" aria-label="Old radio speaker grille"><div class="speaker-grille"></div></div>
-        <div class="witch-copy"><strong>Witching Hour</strong><span>Midnight – 5AM</span><small>Darker tunes. Deeper brews.</small></div>
-        <button class="schedule-btn" type="button">View Schedule <span>›</span></button>
-      </section>
-
-      <nav class="bottom-nav" aria-label="Radio navigation">
-        <button class="nav-btn active" type="button"><span class="nav-icon">▣</span><span>Home</span></button>
-        <button class="nav-btn" type="button"><span class="nav-icon">▦</span><span>Schedule</span></button>
-        <button class="nav-btn" type="button"><span class="nav-icon">◉</span><span>Shows</span></button>
-        <button class="nav-medallion" type="button" aria-label="Brew and Brews Coffee Roastery"><span>☕</span><strong>B&amp;B</strong></button>
-        <button class="nav-btn" type="button"><span class="nav-icon">◆</span><span>Merch</span></button>
-        <button class="nav-btn" type="button"><span class="nav-icon">✉</span><span>Contact</span></button>
-        <button class="nav-btn" type="button"><span class="nav-icon">☰</span><span>Menu</span></button>
-      </nav>
-
-      <div class="tagline">Same Great Coffee · A Darker Frequency</div>
-      <div class="discovery-counter" id="discoveryCounter">Haunts Found 0 / 9</div>
-      <div class="ghost" id="ghost" aria-hidden="true"></div>
-
-      <div class="candle candle-left" aria-hidden="true"><span class="wax"></span><span class="wick"></span><span class="flame"></span><span class="candle-glow"></span></div>
-      <div class="candle candle-right" aria-hidden="true"><span class="wax"></span><span class="wick"></span><span class="flame"></span><span class="candle-glow"></span></div>
+<div class="app-shell">
+  <section class="skin-stage desktop" id="desktopStage" aria-label="Brew and Brews Halloween Radio">
+    <div class="overlay tuner-glow"></div>
+    <div class="overlay tuner-needle" data-needle></div>
+    <div class="overlay station-layer" data-stations></div>
+    <div class="overlay live-lamp"></div>
+    <div class="overlay tube-glow"></div>
+    <div class="overlay steam"><i></i><i></i><i></i></div>
+    <div class="overlay now-live" data-now>
+      <div class="track-title" data-title>IRONCLAD</div>
+      <div class="track-meta" data-meta>B&amp;B Radio · 103.1</div>
+      <div class="track-extra"><span data-position>1 / 6</span><span data-time>0:00 / 2:45</span></div>
+      <div class="progress"><div class="progress-fill" data-progress></div></div>
     </div>
+    <div class="overlay meter-wrap"><div class="meter-needle" data-meter></div></div>
+    <div class="overlay play-halo"></div>
+    <div class="overlay play-symbol"><div class="triangle"></div><div class="bars"><b></b><b></b></div></div>
+    <div class="overlay knob-marker volume-marker" data-volume-marker></div>
+    <div class="overlay knob-marker tune-marker" data-tune-marker></div>
+    <div class="overlay ghost" data-ghost>👻</div>
+
+    <button class="hit drag" data-hit="tuner" aria-label="Tune radio"></button>
+    <button class="hit" data-hit="mug" aria-label="Haunted coffee mug"></button>
+    <button class="hit" data-hit="tube" aria-label="Vacuum tube"></button>
+    <button class="hit" data-hit="display" aria-label="Now Brewing display"></button>
+    <button class="hit" data-hit="meter" aria-label="Signal meter"></button>
+    <button class="hit drag" data-hit="volume" aria-label="Volume control"></button>
+    <button class="hit" data-hit="prev" aria-label="Previous song"></button>
+    <button class="hit" data-hit="play" aria-label="Play"></button>
+    <button class="hit" data-hit="next" aria-label="Next song"></button>
+    <button class="hit drag" data-hit="tune" aria-label="Tune control"></button>
+    <button class="hit" data-hit="witch" aria-label="Witching Hour"></button>
+    <button class="hit" data-hit="brand" aria-label="Brew and Brews"></button>
+    <button class="hit" data-hit="home" aria-label="Home"></button>
+    <button class="hit" data-hit="schedule" aria-label="Schedule"></button>
+    <button class="hit" data-hit="shows" aria-label="Shows"></button>
+    <button class="hit" data-hit="merch" aria-label="Merch"></button>
+    <button class="hit" data-hit="contact" aria-label="Contact"></button>
+    <button class="hit" data-hit="menu" aria-label="Menu"></button>
   </section>
-</main>
+
+  <section class="skin-stage phone" id="phoneStage" aria-label="Brew and Brews Halloween Radio mobile">
+    <div class="overlay tuner-glow"></div>
+    <div class="overlay tuner-needle" data-needle></div>
+    <div class="overlay station-layer" data-stations></div>
+    <div class="overlay live-lamp"></div>
+    <div class="overlay now-live" data-now>
+      <div class="track-title" data-title>IRONCLAD</div>
+      <div class="track-meta" data-meta>B&amp;B Radio · 103.1</div>
+      <div class="track-extra"><span data-position>1 / 6</span><span data-time>0:00 / 2:45</span></div>
+      <div class="progress"><div class="progress-fill" data-progress></div></div>
+    </div>
+    <div class="overlay play-halo"></div>
+    <div class="overlay play-symbol"><div class="triangle"></div><div class="bars"><b></b><b></b></div></div>
+    <div class="overlay knob-marker volume-marker" data-volume-marker></div>
+    <div class="overlay knob-marker tune-marker" data-tune-marker></div>
+    <div class="overlay ghost" data-ghost>👻</div>
+
+    <button class="hit drag" data-hit="tuner" aria-label="Tune radio"></button>
+    <button class="hit" data-hit="display" aria-label="Now Brewing display"></button>
+    <button class="hit" data-hit="prev" aria-label="Previous song"></button>
+    <button class="hit" data-hit="play" aria-label="Play"></button>
+    <button class="hit" data-hit="next" aria-label="Next song"></button>
+    <button class="hit drag" data-hit="volume" aria-label="Volume control"></button>
+    <button class="hit drag" data-hit="tune" aria-label="Tune control"></button>
+    <button class="hit" data-hit="witch" aria-label="Witching Hour"></button>
+    <button class="hit" data-hit="brand" aria-label="Brew and Brews"></button>
+    <button class="hit" data-hit="home" aria-label="Home"></button>
+    <button class="hit" data-hit="schedule" aria-label="Schedule"></button>
+    <button class="hit" data-hit="shows" aria-label="Shows"></button>
+    <button class="hit" data-hit="menu" aria-label="Menu"></button>
+  </section>
+</div>
+
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <h2>Receiver Controls</h2>
+  <div class="drawer-row"><span>Haunted Auto Tune</span><button class="switch on" id="autoSwitch" aria-pressed="true" aria-label="Toggle Haunted Auto Tune"><i></i></button></div>
+  <div class="drawer-row"><span>Frequency</span><strong id="drawerFreq">103.1 FM</strong></div>
+  <div class="drawer-row"><span>Station</span><strong id="drawerStation">B&amp;B Radio</strong></div>
+  <div class="drawer-row"><span>Haunts Found</span><strong id="hauntCount">0 / 9</strong></div>
+  <button class="close-drawer" id="closeDrawer">Close Panel</button>
+</aside>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<audio id="radioAudio" preload="metadata"><source src="audio/ironclad.mp3" type="audio/mpeg"></audio>
-<script src="assets/js/radio.js" defer></script>
-<script src="assets/js/preset-hit-fix.js" defer></script>
+<div class="sr" id="sr" aria-live="polite"></div>
+<audio id="radioAudio" preload="metadata"></audio>
+
+<script src="assets/js/skin-radio.js" defer></script>
 </body>
 </html>
