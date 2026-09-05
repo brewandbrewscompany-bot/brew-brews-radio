@@ -19,6 +19,7 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import textwrap
           p=Path('halloween-radio/assets/js/skin-radio.js')
           s=p.read_text()
 
@@ -28,37 +29,39 @@ jobs:
           s=s.replace(old_auto,new_auto,1)
 
           anchor="repeatSwitch.addEventListener('click',()=>{setRepeat(!state.repeat);showToast('Repeat Track',state.repeat?'On':'Off')});\nfunction scheduleAuto(reset=false)"
-          bridge="""repeatSwitch.addEventListener('click',()=>{setRepeat(!state.repeat);showToast('Repeat Track',state.repeat?'On':'Off')});
+          bridge=textwrap.dedent("""
+          repeatSwitch.addEventListener('click',()=>{setRepeat(!state.repeat);showToast('Repeat Track',state.repeat?'On':'Off')});
 
-window.BBRadio={
-  snapshot:()=>{const st=nearestStation(state.currentFreq),t=currentTrack();return{currentFreq:st.freq,stationName:st.name,trackId:t?.id||null,trackTitle:t?.title||'',volume:state.volume,autoTune:state.autoTune,shuffle:state.shuffle,repeat:state.repeat,playbackIntent:state.playbackIntent}},
-  restore:(saved={})=>{
-    state.playbackIntent=false;silence();
-    if(Number.isFinite(Number(saved.volume)))setVolume(Number(saved.volume),false);
-    setAutoTune(saved.autoTune!==false,false);
-    setRepeat(!!saved.repeat);
-    state.shuffle=false;state.shuffleOrder.clear();
-    const chosen=tracks.find(t=>t.id===saved.trackId)||null;
-    const targetFreq=chosen?chosen.station:nearestStation(Number(saved.currentFreq)||103.1).freq;
-    state.currentFreq=targetFreq;
-    if(chosen){const base=basePlaylist(targetFreq);state.trackIndex.set(key(targetFreq),Math.max(0,base.findIndex(t=>t.id===chosen.id)))}
-    else state.trackIndex.set(key(targetFreq),state.trackIndex.get(key(targetFreq))??0);
-    setTrackSource(currentTrack());
-    if(saved.shuffle)setShuffle(true);
-    shuffleSwitch.classList.toggle('on',state.shuffle);shuffleSwitch.setAttribute('aria-pressed',String(state.shuffle));
-    repeatSwitch.classList.toggle('on',state.repeat);repeatSwitch.setAttribute('aria-pressed',String(state.repeat));
-    silence();updateUI();
-  },
-  setVolume:v=>setVolume(Number(v),false),
-  setAutoTune:enabled=>setAutoTune(enabled,false),
-  setShuffle:enabled=>{setShuffle(!!enabled);shuffleSwitch.classList.toggle('on',state.shuffle);shuffleSwitch.setAttribute('aria-pressed',String(state.shuffle))},
-  setRepeat:enabled=>setRepeat(!!enabled),
-  next:()=>changeTrack(1,{announce:false}),
-  previous:()=>changeTrack(-1,{announce:false}),
-  togglePlay
-};
+          window.BBRadio={
+            snapshot:()=>{const st=nearestStation(state.currentFreq),t=currentTrack();return{currentFreq:st.freq,stationName:st.name,trackId:t?.id||null,trackTitle:t?.title||'',volume:state.volume,autoTune:state.autoTune,shuffle:state.shuffle,repeat:state.repeat,playbackIntent:state.playbackIntent}},
+            restore:(saved={})=>{
+              state.playbackIntent=false;silence();
+              if(Number.isFinite(Number(saved.volume)))setVolume(Number(saved.volume),false);
+              setAutoTune(saved.autoTune!==false,false);
+              setRepeat(!!saved.repeat);
+              state.shuffle=false;state.shuffleOrder.clear();
+              const chosen=tracks.find(t=>t.id===saved.trackId)||null;
+              const targetFreq=chosen?chosen.station:nearestStation(Number(saved.currentFreq)||103.1).freq;
+              state.currentFreq=targetFreq;
+              if(chosen){const base=basePlaylist(targetFreq);state.trackIndex.set(key(targetFreq),Math.max(0,base.findIndex(t=>t.id===chosen.id)))}
+              else state.trackIndex.set(key(targetFreq),state.trackIndex.get(key(targetFreq))??0);
+              setTrackSource(currentTrack());
+              if(saved.shuffle)setShuffle(true);
+              shuffleSwitch.classList.toggle('on',state.shuffle);shuffleSwitch.setAttribute('aria-pressed',String(state.shuffle));
+              repeatSwitch.classList.toggle('on',state.repeat);repeatSwitch.setAttribute('aria-pressed',String(state.repeat));
+              silence();updateUI();
+            },
+            setVolume:v=>setVolume(Number(v),false),
+            setAutoTune:enabled=>setAutoTune(enabled,false),
+            setShuffle:enabled=>{setShuffle(!!enabled);shuffleSwitch.classList.toggle('on',state.shuffle);shuffleSwitch.setAttribute('aria-pressed',String(state.shuffle))},
+            setRepeat:enabled=>setRepeat(!!enabled),
+            next:()=>changeTrack(1,{announce:false}),
+            previous:()=>changeTrack(-1,{announce:false}),
+            togglePlay
+          };
 
-function scheduleAuto(reset=false)"""
+          function scheduleAuto(reset=false)
+          """).lstrip()
           assert anchor in s, 'Bridge insertion anchor not found'
           s=s.replace(anchor,bridge,1)
           p.write_text(s)
