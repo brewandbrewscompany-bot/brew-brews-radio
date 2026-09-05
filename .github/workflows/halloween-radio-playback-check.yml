@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate playback mode source
+      - name: Validate source
         run: |
           node --check halloween-radio/assets/js/skin-radio.js
           node --check halloween-radio/assets/js/radio-enhancements.js
@@ -31,23 +31,22 @@ jobs:
           assert 'assets/js/radio-enhancements.js' in html
           assert '.desktop .play-symbol{left:48.95%' in css
           assert '.desktop [data-hit="play"]{left:48.55%' in css
-          assert 'shuffle:false,repeat:false' in js
+          assert 'window.BBRadio={' in js
+          assert js.count('state.playbackIntent=true') == 1
           assert "changeTrack(1,{announce:false})" in js
           assert "if(isFinalSignoff(t))" in js
           assert "state.repeat&&state.playbackIntent" in js
           assert "ending=base.find(t=>t.id==='the-town-goes-quiet')" in js
-          assert 'window.BBRadio={' in js
-          assert js.count('state.playbackIntent=true') == 1
           assert "STORAGE_KEY='bb-halloween-radio-state-v1'" in extra
-          assert "setActionHandler('play'" not in extra or 'mediaSession.setActionHandler' in extra
-          assert 'setActionHandler(name,fn)' in extra
-          print('Playback, persistence, and media-control source checks passed.')
+          assert 'mediaSession.setActionHandler' in extra
+          assert "set('previoustrack'" in extra and "set('nexttrack'" in extra
+          print('Halloween Radio playback source checks passed.')
           PY
 
       - name: Install browser helper
         run: npm install --no-save puppeteer-core@24.16.0
 
-      - name: Browser playback regression
+      - name: Browser playback and persistence regression
         run: |
           python3 -m http.server 8000 --directory . >/tmp/halloween-playback-http.log 2>&1 &
           SERVER_PID=$!
@@ -59,57 +58,93 @@ jobs:
           const puppeteer=require('puppeteer-core');
           const sleep=ms=>new Promise(r=>setTimeout(r,ms));
           (async()=>{
-            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--autoplay-policy=no-user-gesture-required','--mute-audio']});
+            const browser=await puppeteer.launch({
+              executablePath:process.env.CHROME_BIN,
+              headless:true,
+              args:['--no-sandbox','--disable-dev-shm-usage','--autoplay-policy=no-user-gesture-required','--mute-audio']
+            });
             const page=await browser.newPage();
             await page.setViewport({width:1105,height:1024,deviceScaleFactor:1});
-            const errors=[]; page.on('pageerror',e=>errors.push(String(e)));
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e)));
             await page.goto('http://127.0.0.1:8000/halloween-radio/',{waitUntil:'domcontentloaded'});
-            await page.waitForFunction(()=>document.querySelector('.desktop [data-title]')?.textContent.trim()==='IRONCLAD'&&window.BBRadio);
-            if(!(await page.$eval('#radioAudio',a=>a.paused))) throw new Error('Autoplay occurred');
-            if(await page.$eval('#shuffleSwitch',b=>b.getAttribute('aria-pressed')!=='false')) throw new Error('Shuffle must default off');
-            if(await page.$eval('#repeatSwitch',b=>b.getAttribute('aria-pressed')!=='false')) throw new Error('Repeat must default off');
-            if(await page.$eval('#autoSwitch',b=>b.getAttribute('aria-pressed')==='true')) await page.$eval('#autoSwitch',b=>b.click());
+            await page.waitForFunction(()=>window.BBRadio&&document.querySelector('.desktop [data-title]')?.textContent.trim()==='IRONCLAD',{timeout:15000});
 
-            const station=async f=>page.evaluate(f=>{const b=[...document.querySelectorAll('.desktop .station-label')].find(x=>x.textContent.includes(f));if(!b)throw new Error('Missing station '+f);b.click();},f);
+            const audioState=()=>page.$eval('#radioAudio',a=>({paused:a.paused,volume:a.volume}));
             const title=()=>page.$eval('.desktop [data-title]',e=>e.textContent.trim());
-            const ended=()=>page.$eval('#radioAudio',a=>a.dispatchEvent(new Event('ended')));
             const toggle=id=>page.$eval(id,b=>b.click());
+            const ended=()=>page.$eval('#radioAudio',a=>a.dispatchEvent(new Event('ended')));
+            const station=async freq=>page.evaluate(freq=>{
+              const b=[...document.querySelectorAll('.desktop .station-label')].find(x=>x.textContent.includes(freq));
+              if(!b)throw new Error('Missing station '+freq);
+              b.click();
+            },freq);
 
-            await station('88.3'); await sleep(200);
-            if(await title()!=='Welcome to the Haunted Roast') throw new Error('Ordered station start is wrong');
+            if(!(await audioState()).paused)throw new Error('Audio autoplayed on load');
+            if(await page.$eval('#shuffleSwitch',b=>b.getAttribute('aria-pressed')!=='false'))throw new Error('Shuffle must default off');
+            if(await page.$eval('#repeatSwitch',b=>b.getAttribute('aria-pressed')!=='false'))throw new Error('Repeat must default off');
+            if(await page.$eval('#autoSwitch',b=>b.getAttribute('aria-pressed')==='true'))await toggle('#autoSwitch');
+
+            await station('88.3');
+            await sleep(250);
+            if(await title()!=='Welcome to the Haunted Roast')throw new Error('88.3 ordered start is wrong');
+            if(!(await audioState()).paused)throw new Error('Tuning while paused started playback');
+
             await page.click('.desktop [data-hit="play"]');
             await page.waitForFunction(()=>!document.querySelector('#radioAudio').paused,{timeout:15000});
-            await ended(); await sleep(350);
-            if(await title()!=='Midnight Static') throw new Error('Ended event did not automatically advance to next song');
+            await ended();
+            await sleep(350);
+            if(await title()!=='Midnight Static')throw new Error('Song end did not auto-advance');
 
             await toggle('#repeatSwitch');
-            if(await page.$eval('#repeatSwitch',b=>b.getAttribute('aria-pressed'))!=='true') throw new Error('Repeat did not turn on');
             const repeatTitle=await title();
-            await ended(); await sleep(300);
-            if(await title()!==repeatTitle) throw new Error('Repeat did not keep the current song');
+            await ended();
+            await sleep(300);
+            if(await title()!==repeatTitle)throw new Error('Repeat did not retain current song');
             await toggle('#repeatSwitch');
 
-            await page.click('.desktop [data-hit="play"]'); await sleep(150);
-            if(!(await page.$eval('#radioAudio',a=>a.paused))) throw new Error('Pause failed');
-            await station('103.1'); await sleep(200);
+            await page.click('.desktop [data-hit="play"]');
+            await sleep(150);
+            if(!(await audioState()).paused)throw new Error('Pause failed');
+
+            await station('103.1');
+            await sleep(250);
             await toggle('#shuffleSwitch');
-            if(await page.$eval('#shuffleSwitch',b=>b.getAttribute('aria-pressed'))!=='true') throw new Error('Shuffle did not turn on');
-            const seen=[await title()];
-            for(let i=0;i<5;i++){await page.click('.desktop [data-hit="next"]');await sleep(80);seen.push(await title());}
-            if(seen.at(-1)!=='The Town Goes Quiet') throw new Error('Final signoff was not pinned last in shuffle: '+seen.join(' | '));
-            if(seen.slice(0,-1).includes('The Town Goes Quiet')) throw new Error('Final signoff appeared before the end in shuffle');
+            const shuffled=[await title()];
+            for(let i=0;i<5;i++){
+              await page.click('.desktop [data-hit="next"]');
+              await sleep(80);
+              shuffled.push(await title());
+            }
+            if(shuffled.at(-1)!=='The Town Goes Quiet')throw new Error('Final signoff was not pinned last: '+shuffled.join(' | '));
+            if(shuffled.slice(0,-1).includes('The Town Goes Quiet'))throw new Error('Final signoff appeared early');
 
             await toggle('#repeatSwitch');
             await page.click('.desktop [data-hit="play"]');
             await page.waitForFunction(()=>!document.querySelector('#radioAudio').paused,{timeout:15000});
-            await ended(); await sleep(250);
-            if(!(await page.$eval('#radioAudio',a=>a.paused))) throw new Error('Final signoff did not stop playback');
-            if(await page.$eval('.desktop',e=>e.classList.contains('is-playing'))) throw new Error('Final signoff left ON AIR state active');
+            await ended();
+            await sleep(250);
+            if(!(await audioState()).paused)throw new Error('Final signoff did not stop');
+            if(await page.$eval('.desktop',e=>e.classList.contains('is-playing')))throw new Error('Final signoff left ON AIR active');
 
-            // Verify saved state restores station, track, volume and modes without autoplay.
-            await page.evaluate(()=>localStorage.setItem('bb-halloween-radio-state-v1',JSON.stringify({version:1,currentFreq:91.7,trackId:'static-on-the-highway',volume:.42,autoTune:false,shuffle:false,repeat:true,currentTime:12})));
+            // Create a real listener state and allow the enhancement layer to save it.
+            if(await page.$eval('#repeatSwitch',b=>b.getAttribute('aria-pressed')==='true'))await toggle('#repeatSwitch');
+            if(await page.$eval('#shuffleSwitch',b=>b.getAttribute('aria-pressed')==='true'))await toggle('#shuffleSwitch');
+            await station('91.7');
+            await sleep(250);
+            await page.click('.desktop [data-hit="next"]');
+            await sleep(200);
+            if(await title()!=='Static on the Highway')throw new Error('Persistence setup track is wrong');
+            await page.evaluate(()=>window.BBRadio.setVolume(.42));
+            await toggle('#repeatSwitch');
+            await sleep(650);
+
+            const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('bb-halloween-radio-state-v1')||'null'));
+            if(!saved||saved.trackId!=='static-on-the-highway'||saved.currentFreq!==91.7)throw new Error('State was not saved: '+JSON.stringify(saved));
+            if(Math.abs(saved.volume-.42)>.02||saved.autoTune!==false||saved.shuffle!==false||saved.repeat!==true)throw new Error('Saved modes are wrong: '+JSON.stringify(saved));
+
             await page.reload({waitUntil:'domcontentloaded'});
-            await page.waitForFunction(()=>window.BBRadio&&document.querySelector('.desktop [data-title]')?.textContent.trim()==='Static on the Highway');
+            await page.waitForFunction(()=>window.BBRadio&&document.querySelector('.desktop [data-title]')?.textContent.trim()==='Static on the Highway',{timeout:15000});
             await sleep(300);
             const restored=await page.evaluate(()=>({
               paused:document.querySelector('#radioAudio').paused,
@@ -119,13 +154,13 @@ jobs:
               repeat:document.querySelector('#repeatSwitch').getAttribute('aria-pressed'),
               state:window.BBRadio.snapshot()
             }));
-            if(!restored.paused) throw new Error('Saved state restore autoplayed audio');
-            if(Math.abs(restored.volume-.42)>.02) throw new Error('Saved volume did not restore: '+JSON.stringify(restored));
-            if(restored.auto!=='false'||restored.shuffle!=='false'||restored.repeat!=='true') throw new Error('Saved mode state did not restore: '+JSON.stringify(restored));
-            if(restored.state.currentFreq!==91.7||restored.state.trackId!=='static-on-the-highway') throw new Error('Saved station/track did not restore: '+JSON.stringify(restored));
+            if(!restored.paused)throw new Error('Saved state restore autoplayed audio');
+            if(Math.abs(restored.volume-.42)>.02)throw new Error('Saved volume did not restore: '+JSON.stringify(restored));
+            if(restored.auto!=='false'||restored.shuffle!=='false'||restored.repeat!=='true')throw new Error('Saved controls did not restore: '+JSON.stringify(restored));
+            if(restored.state.currentFreq!==91.7||restored.state.trackId!=='static-on-the-highway')throw new Error('Saved station/track did not restore: '+JSON.stringify(restored));
+            if(errors.length)throw new Error('Page errors: '+errors.join(' | '));
 
-            if(errors.length) throw new Error('Page errors: '+errors.join(' | '));
-            console.log('Playback and persistence regression passed:',seen,restored.state);
+            console.log('Playback and persistence regression passed:',shuffled,restored.state);
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
