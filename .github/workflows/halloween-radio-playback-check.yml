@@ -19,13 +19,16 @@ jobs:
       - name: Validate playback mode source
         run: |
           node --check halloween-radio/assets/js/skin-radio.js
+          node --check halloween-radio/assets/js/radio-enhancements.js
           python - <<'PY'
           from pathlib import Path
           html=Path('halloween-radio/index.html').read_text()
           css=Path('halloween-radio/assets/css/skin-radio.css').read_text()
           js=Path('halloween-radio/assets/js/skin-radio.js').read_text()
+          extra=Path('halloween-radio/assets/js/radio-enhancements.js').read_text()
           assert 'id="shuffleSwitch"' in html
           assert 'id="repeatSwitch"' in html
+          assert 'assets/js/radio-enhancements.js' in html
           assert '.desktop .play-symbol{left:48.95%' in css
           assert '.desktop [data-hit="play"]{left:48.55%' in css
           assert 'shuffle:false,repeat:false' in js
@@ -33,8 +36,12 @@ jobs:
           assert "if(isFinalSignoff(t))" in js
           assert "state.repeat&&state.playbackIntent" in js
           assert "ending=base.find(t=>t.id==='the-town-goes-quiet')" in js
+          assert 'window.BBRadio={' in js
           assert js.count('state.playbackIntent=true') == 1
-          print('Playback mode source checks passed.')
+          assert "STORAGE_KEY='bb-halloween-radio-state-v1'" in extra
+          assert "setActionHandler('play'" not in extra or 'mediaSession.setActionHandler' in extra
+          assert 'setActionHandler(name,fn)' in extra
+          print('Playback, persistence, and media-control source checks passed.')
           PY
 
       - name: Install browser helper
@@ -57,7 +64,7 @@ jobs:
             await page.setViewport({width:1105,height:1024,deviceScaleFactor:1});
             const errors=[]; page.on('pageerror',e=>errors.push(String(e)));
             await page.goto('http://127.0.0.1:8000/halloween-radio/',{waitUntil:'domcontentloaded'});
-            await page.waitForFunction(()=>document.querySelector('.desktop [data-title]')?.textContent.trim()==='IRONCLAD');
+            await page.waitForFunction(()=>document.querySelector('.desktop [data-title]')?.textContent.trim()==='IRONCLAD'&&window.BBRadio);
             if(!(await page.$eval('#radioAudio',a=>a.paused))) throw new Error('Autoplay occurred');
             if(await page.$eval('#shuffleSwitch',b=>b.getAttribute('aria-pressed')!=='false')) throw new Error('Shuffle must default off');
             if(await page.$eval('#repeatSwitch',b=>b.getAttribute('aria-pressed')!=='false')) throw new Error('Repeat must default off');
@@ -98,8 +105,27 @@ jobs:
             await ended(); await sleep(250);
             if(!(await page.$eval('#radioAudio',a=>a.paused))) throw new Error('Final signoff did not stop playback');
             if(await page.$eval('.desktop',e=>e.classList.contains('is-playing'))) throw new Error('Final signoff left ON AIR state active');
+
+            // Verify saved state restores station, track, volume and modes without autoplay.
+            await page.evaluate(()=>localStorage.setItem('bb-halloween-radio-state-v1',JSON.stringify({version:1,currentFreq:91.7,trackId:'static-on-the-highway',volume:.42,autoTune:false,shuffle:false,repeat:true,currentTime:12})));
+            await page.reload({waitUntil:'domcontentloaded'});
+            await page.waitForFunction(()=>window.BBRadio&&document.querySelector('.desktop [data-title]')?.textContent.trim()==='Static on the Highway');
+            await sleep(300);
+            const restored=await page.evaluate(()=>({
+              paused:document.querySelector('#radioAudio').paused,
+              volume:document.querySelector('#radioAudio').volume,
+              auto:document.querySelector('#autoSwitch').getAttribute('aria-pressed'),
+              shuffle:document.querySelector('#shuffleSwitch').getAttribute('aria-pressed'),
+              repeat:document.querySelector('#repeatSwitch').getAttribute('aria-pressed'),
+              state:window.BBRadio.snapshot()
+            }));
+            if(!restored.paused) throw new Error('Saved state restore autoplayed audio');
+            if(Math.abs(restored.volume-.42)>.02) throw new Error('Saved volume did not restore: '+JSON.stringify(restored));
+            if(restored.auto!=='false'||restored.shuffle!=='false'||restored.repeat!=='true') throw new Error('Saved mode state did not restore: '+JSON.stringify(restored));
+            if(restored.state.currentFreq!==91.7||restored.state.trackId!=='static-on-the-highway') throw new Error('Saved station/track did not restore: '+JSON.stringify(restored));
+
             if(errors.length) throw new Error('Page errors: '+errors.join(' | '));
-            console.log('Playback regression passed:',seen);
+            console.log('Playback and persistence regression passed:',seen,restored.state);
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
