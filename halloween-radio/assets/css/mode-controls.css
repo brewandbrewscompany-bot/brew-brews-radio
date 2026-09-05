@@ -1,0 +1,9 @@
+/* Visible Shuffle/Repeat controls live only in the dynamic Now Brewing area.
+   The approved radio skin artwork is untouched. */
+.mode-controls{position:absolute;z-index:38;display:flex;align-items:center;justify-content:flex-end;gap:4px;pointer-events:auto}
+.mode-button{flex:1;min-width:0;height:100%;padding:0 4px;border:1px solid rgba(136,91,49,.52);border-radius:4px;background:linear-gradient(180deg,rgba(20,13,9,.84),rgba(7,5,4,.9));color:#8f6b47;font-family:Georgia,"Times New Roman",serif;font-weight:700;line-height:1;letter-spacing:.08em;text-align:center;text-shadow:0 1px 2px #000;box-shadow:inset 0 1px rgba(255,255,255,.025);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:color .16s ease,border-color .16s ease,box-shadow .16s ease,background .16s ease}
+.mode-button.on{color:#ffc168;border-color:rgba(238,150,55,.78);background:linear-gradient(180deg,rgba(80,42,15,.86),rgba(22,12,7,.94));box-shadow:0 0 8px rgba(255,139,37,.32),inset 0 0 7px rgba(255,147,42,.12);text-shadow:0 0 5px rgba(255,157,55,.42),0 1px 2px #000}
+.desktop .mode-controls{left:62.1%;top:53.35%;width:11.5%;height:2.25%}
+.desktop .mode-button{font-size:9px}
+.phone .mode-controls{left:63.0%;top:40.25%;width:25.5%;height:2.7%}
+.phone .mode-button{font-size:8px}
