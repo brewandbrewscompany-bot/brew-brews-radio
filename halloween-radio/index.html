@@ -6,6 +6,7 @@
 <title>Brew & Brews Halloween Radio</title>
 <link rel="stylesheet" href="assets/css/skin-radio.css">
 <link rel="stylesheet" href="assets/css/mode-controls.css">
+<link rel="stylesheet" href="assets/css/library-panels.css">
 </head>
 <body>
 <div class="app-shell">
@@ -101,6 +102,24 @@
   <button class="close-drawer" id="closeDrawer">Close Panel</button>
 </aside>
 
+<div class="radio-library-backdrop" id="radioLibraryBackdrop" aria-hidden="true"></div>
+
+<section class="radio-library-panel" id="schedulePanel" aria-hidden="true" aria-label="Station schedule and song list">
+  <header class="library-head">
+    <div><p class="library-kicker">Station Schedule</p><h2>Choose Your Signal</h2><p class="library-sub">See every song on every frequency and choose exactly where the broadcast should start.</p></div>
+    <button class="library-close" type="button" data-library-close aria-label="Close schedule">×</button>
+  </header>
+  <div class="library-body" id="scheduleBody"><div class="library-loading">Loading the haunted frequencies…</div></div>
+</section>
+
+<section class="radio-library-panel" id="showsPanel" aria-hidden="true" aria-label="Now playing shows and favorites">
+  <header class="library-head">
+    <div><p class="library-kicker">Shows</p><h2>Now Playing</h2><p class="library-sub">Stay here while the radio plays, jump to another song, or save favorites with 💕 for next time.</p></div>
+    <button class="library-close" type="button" data-library-close aria-label="Close shows">×</button>
+  </header>
+  <div class="library-body" id="showsBody"><div class="library-loading">Opening the broadcast console…</div></div>
+</section>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="sr" id="sr" aria-live="polite"></div>
 <audio id="radioAudio" preload="metadata"></audio>
@@ -108,5 +127,6 @@
 <script src="assets/js/skin-radio.js" defer></script>
 <script src="assets/js/radio-enhancements.js" defer></script>
 <script src="assets/js/mode-controls.js" defer></script>
+<script src="assets/js/library-panels.js" defer></script>
 </body>
 </html>
