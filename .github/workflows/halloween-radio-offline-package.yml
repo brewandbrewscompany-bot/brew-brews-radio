@@ -20,65 +20,69 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          import json, re, shutil
+          import shutil
 
           src = Path('halloween-radio')
           out = Path('offline-radio')
-          if out.exists(): shutil.rmtree(out)
-          out.mkdir()
+          if out.exists():
+              shutil.rmtree(out)
+
+          (out/'assets/css').mkdir(parents=True)
+          (out/'assets/js').mkdir(parents=True)
+          (out/'artwork').mkdir(parents=True)
+
+          shutil.copy2(src/'index.html', out/'index.html')
+          shutil.copy2(src/'assets/css/skin-radio.css', out/'assets/css/skin-radio.css')
+          shutil.copy2(src/'artwork/desktop-skin.webp', out/'artwork/desktop-skin.webp')
+          shutil.copy2(src/'artwork/phone-skin.webp', out/'artwork/phone-skin.webp')
           shutil.copytree(src/'audio', out/'audio')
 
-          html = (src/'index.html').read_text(encoding='utf-8')
-          css_parts = []
-          for name in ['base.css','components.css','responsive.css','radio.css']:
-              text = (src/'assets/css'/name).read_text(encoding='utf-8')
-              if name == 'radio.css':
-                  text = re.sub(r'@import\s+url\([^\)]+\);\s*', '', text)
-              css_parts.append(text)
-          css = '\n\n'.join(css_parts)
+          js = (src/'assets/js/skin-radio.js').read_text(encoding='utf-8')
+          live_audio = 'https://brewandbrewscompany-bot.github.io/brew-brews-radio/halloween-radio/audio/'
+          js = js.replace(live_audio, 'audio/')
+          start = "function trackUrl(file){const liveBase='https://brewandbrewscompany-bot.github.io/brew-brews-radio/halloween-radio/';return location.protocol==='file:'&&!/^https?:/i.test(file)?liveBase+file:file}"
+          js = js.replace(start, 'function trackUrl(file){return file}')
+          (out/'assets/js/skin-radio.js').write_text(js, encoding='utf-8')
 
-          js = (src/'assets/js/radio.js').read_text(encoding='utf-8')
-          tracks = json.loads((src/'data/tracks.json').read_text(encoding='utf-8'))
-          broadcasts = json.loads((src/'data/broadcasts.json').read_text(encoding='utf-8'))
-
-          prelude = """
-          window.__HALLOWEEN_TRACKS__ = %s;
-          window.__HALLOWEEN_BROADCASTS__ = %s;
-          (() => {
-            const realFetch = window.fetch ? window.fetch.bind(window) : null;
-            window.fetch = (input, init) => {
-              const u = String(input || '');
-              if (u.endsWith('data/tracks.json') || u === 'data/tracks.json') {
-                return Promise.resolve(new Response(JSON.stringify(window.__HALLOWEEN_TRACKS__), {headers:{'Content-Type':'application/json'}}));
-              }
-              if (u.endsWith('data/broadcasts.json') || u === 'data/broadcasts.json') {
-                return Promise.resolve(new Response(JSON.stringify(window.__HALLOWEEN_BROADCASTS__), {headers:{'Content-Type':'application/json'}}));
-              }
-              if (realFetch) return realFetch(input, init);
-              return Promise.reject(new Error('fetch unavailable'));
-            };
-          })();
-          """ % (json.dumps(tracks), json.dumps(broadcasts))
-
-          html = re.sub(r'<link\s+rel="stylesheet"\s+href="assets/css/radio.css"\s*>', '<style>\n'+css+'\n</style>', html)
-          html = re.sub(r'<script\s+src="assets/js/radio.js"\s+defer></script>', '<script>\n'+prelude+'\n'+js+'\n</script>', html)
-          html = html.replace('<audio id="radioAudio" preload="metadata" loop>', '<audio id="radioAudio" preload="metadata">')
-          (out/'index.html').write_text(html, encoding='utf-8')
-          (out/'README.txt').write_text('Brew & Brews Halloween Radio offline test package.\nUnzip the folder and double-click index.html in Chrome or Edge.\nNo internet connection is required for the current 26-track build.\n', encoding='utf-8')
+          (out/'README.txt').write_text(
+              'Brew & Brews Halloween Radio — offline package\n'
+              'Unzip the entire folder, then open index.html in Chrome or Edge.\n'
+              'The approved desktop/phone skins and all 34 rotation tracks are included.\n'
+              'Playback still begins silent; press Play to start the radio.\n',
+              encoding='utf-8'
+          )
           PY
 
       - name: Verify package
         run: |
-          test -f offline-radio/index.html
-          test -f offline-radio/audio/ironclad.mp3
+          test -s offline-radio/index.html
+          test -s offline-radio/assets/css/skin-radio.css
+          test -s offline-radio/assets/js/skin-radio.js
+          test -s offline-radio/artwork/desktop-skin.webp
+          test -s offline-radio/artwork/phone-skin.webp
+          test -s offline-radio/audio/ironclad.mp3
           python - <<'PY'
           from pathlib import Path
-          html=Path('offline-radio/index.html').read_text(encoding='utf-8')
-          assert 'assets/css/radio.css' not in html
-          assert 'assets/js/radio.js' not in html
-          assert 'window.__HALLOWEEN_TRACKS__' in html
-          assert html.count('class="tuner-needle"') == 1
-          print('Offline package verified')
+          import json, re
+
+          src = Path('halloween-radio')
+          out = Path('offline-radio')
+          manifest = json.loads((src/'data/tracks.json').read_text(encoding='utf-8'))
+          assert len(manifest['tracks']) == 34
+          missing = [t['file'] for t in manifest['tracks'] if not (out/t['file']).is_file()]
+          assert not missing, f'Missing packaged tracks: {missing}'
+
+          html = (out/'index.html').read_text(encoding='utf-8')
+          js = (out/'assets/js/skin-radio.js').read_text(encoding='utf-8')
+          css = (out/'assets/css/skin-radio.css').read_text(encoding='utf-8')
+          assert 'assets/css/skin-radio.css' in html
+          assert 'assets/js/skin-radio.js' in html
+          assert 'desktop-skin.webp' in css and 'phone-skin.webp' in css
+          assert 'github.io/brew-brews-radio/halloween-radio/audio/' not in js
+          assert "function trackUrl(file){return file}" in js
+          assert len(re.findall(r"file:'audio/[^']+\.mp3'", js)) == 34
+          assert html.count('class="overlay tuner-needle"') == 2
+          print('Offline skin package verified: 34 tracks, two responsive skins, no remote audio dependency.')
           PY
 
       - name: Upload offline package
