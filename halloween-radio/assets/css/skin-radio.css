@@ -100,8 +100,8 @@ button:focus-visible{outline:2px solid rgba(255,166,64,.95);outline-offset:2px}
 .desktop .now-live{left:43.4%;top:53.1%;width:31.5%;height:11.2%}
 .desktop .track-title{font-size:27px;margin-bottom:5px}.desktop .track-meta{font-size:15px;margin-bottom:10px}.desktop .track-extra{font-size:11px;margin-bottom:6px}
 .desktop .meter-wrap{left:79.0%;top:51.2%;width:12.6%;height:9.5%}
-.desktop .play-symbol{left:48.4%;top:65.8%;width:12.2%;height:12.0%}
-.desktop .play-halo{left:48.4%;top:65.8%;width:12.2%;height:12.0%}
+.desktop .play-symbol{left:48.95%;top:65.8%;width:12.2%;height:12.0%}
+.desktop .play-halo{left:48.95%;top:65.8%;width:12.2%;height:12.0%}
 .desktop .volume-marker{left:15.3%;top:68.7%;width:10.5%;height:10.5%}
 .desktop .tune-marker{left:82.3%;top:68.7%;width:10.5%;height:10.5%}
 .desktop .ghost{left:73%;top:19%}
@@ -113,7 +113,7 @@ button:focus-visible{outline:2px solid rgba(255,166,64,.95);outline-offset:2px}
 .desktop [data-hit="meter"]{left:78%;top:50.4%;width:15%;height:13%}
 .desktop [data-hit="volume"]{left:13.5%;top:66.1%;width:15%;height:15%}
 .desktop [data-hit="prev"]{left:34.1%;top:66.6%;width:10%;height:11%}
-.desktop [data-hit="play"]{left:48.0%;top:64.7%;width:13.4%;height:14%}
+.desktop [data-hit="play"]{left:48.55%;top:64.7%;width:13.4%;height:14%}
 .desktop [data-hit="next"]{left:68%;top:66.6%;width:10%;height:11%}
 .desktop [data-hit="tune"]{left:81%;top:66.1%;width:14.5%;height:15%}
 .desktop [data-hit="witch"]{left:8%;top:80.5%;width:87%;height:9.5%}
