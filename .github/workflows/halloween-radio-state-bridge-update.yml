@@ -1,0 +1,77 @@
+name: Halloween Radio State Bridge Update
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/halloween-radio-state-bridge-update.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch radio state bridge
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('halloween-radio/assets/js/skin-radio.js')
+          s=p.read_text()
+
+          old_auto="autoSwitch.addEventListener('click',()=>{state.autoTune=!state.autoTune;autoSwitch.classList.toggle('on',state.autoTune);autoSwitch.setAttribute('aria-pressed',String(state.autoTune));showToast('Haunted Auto Tune',state.autoTune?'On':'Off');scheduleAuto(true)});"
+          new_auto="function setAutoTune(enabled,announce=false){state.autoTune=!!enabled;autoSwitch.classList.toggle('on',state.autoTune);autoSwitch.setAttribute('aria-pressed',String(state.autoTune));if(announce)showToast('Haunted Auto Tune',state.autoTune?'On':'Off');scheduleAuto(true)}\nautoSwitch.addEventListener('click',()=>setAutoTune(!state.autoTune,true));"
+          assert old_auto in s, 'Auto Tune listener anchor not found'
+          s=s.replace(old_auto,new_auto,1)
+
+          anchor="repeatSwitch.addEventListener('click',()=>{setRepeat(!state.repeat);showToast('Repeat Track',state.repeat?'On':'Off')});\nfunction scheduleAuto(reset=false)"
+          bridge="""repeatSwitch.addEventListener('click',()=>{setRepeat(!state.repeat);showToast('Repeat Track',state.repeat?'On':'Off')});
+
+window.BBRadio={
+  snapshot:()=>{const st=nearestStation(state.currentFreq),t=currentTrack();return{currentFreq:st.freq,stationName:st.name,trackId:t?.id||null,trackTitle:t?.title||'',volume:state.volume,autoTune:state.autoTune,shuffle:state.shuffle,repeat:state.repeat,playbackIntent:state.playbackIntent}},
+  restore:(saved={})=>{
+    state.playbackIntent=false;silence();
+    if(Number.isFinite(Number(saved.volume)))setVolume(Number(saved.volume),false);
+    setAutoTune(saved.autoTune!==false,false);
+    setRepeat(!!saved.repeat);
+    state.shuffle=false;state.shuffleOrder.clear();
+    const chosen=tracks.find(t=>t.id===saved.trackId)||null;
+    const targetFreq=chosen?chosen.station:nearestStation(Number(saved.currentFreq)||103.1).freq;
+    state.currentFreq=targetFreq;
+    if(chosen){const base=basePlaylist(targetFreq);state.trackIndex.set(key(targetFreq),Math.max(0,base.findIndex(t=>t.id===chosen.id)))}
+    else state.trackIndex.set(key(targetFreq),state.trackIndex.get(key(targetFreq))??0);
+    setTrackSource(currentTrack());
+    if(saved.shuffle)setShuffle(true);
+    shuffleSwitch.classList.toggle('on',state.shuffle);shuffleSwitch.setAttribute('aria-pressed',String(state.shuffle));
+    repeatSwitch.classList.toggle('on',state.repeat);repeatSwitch.setAttribute('aria-pressed',String(state.repeat));
+    silence();updateUI();
+  },
+  setVolume:v=>setVolume(Number(v),false),
+  setAutoTune:enabled=>setAutoTune(enabled,false),
+  setShuffle:enabled=>{setShuffle(!!enabled);shuffleSwitch.classList.toggle('on',state.shuffle);shuffleSwitch.setAttribute('aria-pressed',String(state.shuffle))},
+  setRepeat:enabled=>setRepeat(!!enabled),
+  next:()=>changeTrack(1,{announce:false}),
+  previous:()=>changeTrack(-1,{announce:false}),
+  togglePlay
+};
+
+function scheduleAuto(reset=false)"""
+          assert anchor in s, 'Bridge insertion anchor not found'
+          s=s.replace(anchor,bridge,1)
+          p.write_text(s)
+          PY
+
+      - name: Commit patch
+        run: |
+          git config user.name "brewandbrewscompany-bot"
+          git config user.email "brewandbrewscompany@gmail.com"
+          git add halloween-radio/assets/js/skin-radio.js
+          if git diff --cached --quiet; then
+            echo "No patch needed"
+          else
+            git commit -m "Expose safe radio state bridge"
+            git push
+          fi
