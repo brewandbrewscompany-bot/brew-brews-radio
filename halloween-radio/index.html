@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Brew & Brews Halloween Radio</title>
 <link rel="stylesheet" href="assets/css/skin-radio.css">
+<link rel="stylesheet" href="assets/css/mode-controls.css">
 </head>
 <body>
 <div class="app-shell">
@@ -20,6 +21,10 @@
       <div class="track-meta" data-meta>B&amp;B Radio · 103.1</div>
       <div class="track-extra"><span data-position>1 / 6</span><span data-time>0:00 / 2:45</span></div>
       <div class="progress"><div class="progress-fill" data-progress></div></div>
+    </div>
+    <div class="overlay mode-controls" aria-label="Playback modes">
+      <button type="button" class="mode-button" data-mode-button="shuffle" aria-pressed="false" aria-label="Toggle shuffle">SHF</button>
+      <button type="button" class="mode-button" data-mode-button="repeat" aria-pressed="false" aria-label="Toggle repeat">RPT</button>
     </div>
     <div class="overlay meter-wrap"><div class="meter-needle" data-meter></div></div>
     <div class="overlay play-halo"></div>
@@ -58,6 +63,10 @@
       <div class="track-meta" data-meta>B&amp;B Radio · 103.1</div>
       <div class="track-extra"><span data-position>1 / 6</span><span data-time>0:00 / 2:45</span></div>
       <div class="progress"><div class="progress-fill" data-progress></div></div>
+    </div>
+    <div class="overlay mode-controls" aria-label="Playback modes">
+      <button type="button" class="mode-button" data-mode-button="shuffle" aria-pressed="false" aria-label="Toggle shuffle">SHF</button>
+      <button type="button" class="mode-button" data-mode-button="repeat" aria-pressed="false" aria-label="Toggle repeat">RPT</button>
     </div>
     <div class="overlay play-halo"></div>
     <div class="overlay play-symbol"><div class="triangle"></div><div class="bars"><b></b><b></b></div></div>
@@ -98,5 +107,6 @@
 
 <script src="assets/js/skin-radio.js" defer></script>
 <script src="assets/js/radio-enhancements.js" defer></script>
+<script src="assets/js/mode-controls.js" defer></script>
 </body>
 </html>
