@@ -101,8 +101,8 @@ function updateMediaSession(){
 function installMediaHandlers(){
   if(!('mediaSession' in navigator))return;
   const set=(name,fn)=>{try{navigator.mediaSession.setActionHandler(name,fn)}catch{}};
-  set('play',()=>{if(audio.paused)api.togglePlay()});
-  set('pause',()=>{if(!audio.paused)api.togglePlay()});
+  set('play',()=>{if(!api.snapshot().playbackIntent)api.togglePlay()});
+  set('pause',()=>{if(api.snapshot().playbackIntent)api.togglePlay()});
   set('previoustrack',()=>api.previous());
   set('nexttrack',()=>api.next());
   set('seekbackward',details=>{audio.currentTime=Math.max(0,audio.currentTime-(details.seekOffset||10));updatePositionState()});
