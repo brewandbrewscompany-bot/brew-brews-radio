@@ -34,7 +34,7 @@ let activePanel=null;
 let showsTab='signal';
 let lastSnapshot='';
 
-function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}
+function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function fmt(sec){sec=Number(sec)||0;const m=Math.floor(sec/60),s=String(Math.floor(sec%60)).padStart(2,'0');return`${m}:${s}`}
 function stationFor(freq){return manifest.stations.find(s=>Math.abs(Number(s.frequency)-Number(freq))<.01)||{frequency:freq,name:`${Number(freq).toFixed(1)} FM`}}
 function tracksFor(freq){return manifest.tracks.filter(t=>Math.abs(Number(t.station)-Number(freq))<.01).sort((a,b)=>a.order-b.order)}
