@@ -1,0 +1,35 @@
+{
+  "version": "environment-material-pass-v4",
+  "models": {
+    "dead-tree.glb": 27,
+    "haunted-fence.glb": 23,
+    "jack-o-lantern.glb": 16
+  },
+  "textures": [
+    "asphalt-albedo.png",
+    "asphalt-normal.png",
+    "asphalt-gloss.png",
+    "asphalt-puddles.png",
+    "shoulder-mud-albedo.png",
+    "shoulder-mud-normal.png",
+    "shoulder-mud-gloss.png",
+    "dead-bark-albedo.png",
+    "dead-bark-normal.png",
+    "fence-wood-albedo.png",
+    "fence-wood-normal.png",
+    "pumpkin-skin-albedo.png",
+    "pumpkin-skin-normal.png"
+  ],
+  "features": [
+    "512px multi-scale asphalt",
+    "cracks and patch repairs",
+    "wetness variation",
+    "mud ruts",
+    "split bark normals",
+    "root flares and branch detail",
+    "splintered fence rails",
+    "rusted nails",
+    "ribbed pumpkin geometry",
+    "emissive carved face"
+  ]
+}
