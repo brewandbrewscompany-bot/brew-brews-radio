@@ -26,6 +26,10 @@ jobs:
           test -s halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
           test -s halloween-radio/games/witch-ride-3d/assets/models/dead-tree.glb
           test -s halloween-radio/games/witch-ride-3d/assets/models/coffee-bean.glb
+          grep -a -q '"NORMAL"' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
+          grep -a -q '"NORMAL"' halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
+          grep -a -q '"NORMAL"' halloween-radio/games/witch-ride-3d/assets/models/dead-tree.glb
+          grep -a -q '"NORMAL"' halloween-radio/games/witch-ride-3d/assets/models/coffee-bean.glb
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-albedo.png
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-normal.png
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-gloss.png
