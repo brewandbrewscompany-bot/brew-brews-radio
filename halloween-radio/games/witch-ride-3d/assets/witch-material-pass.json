@@ -1,0 +1,32 @@
+{
+  "version": "witch-material-pass-v2",
+  "file": "witch-rider.glb",
+  "bytes": 498540,
+  "nodes": 52,
+  "textures": [
+    "witch-burgundy-albedo.png",
+    "witch-burgundy-normal.png",
+    "witch-cloth-albedo.png",
+    "witch-cloth-normal.png",
+    "witch-hair-albedo.png",
+    "witch-hair-normal.png",
+    "witch-leather-albedo.png",
+    "witch-leather-normal.png",
+    "broom-wood-albedo.png",
+    "broom-wood-normal.png"
+  ],
+  "features": [
+    "woven cloth textures",
+    "cloth normal maps",
+    "leather grain normal maps",
+    "auburn hair strand maps",
+    "broom wood grain",
+    "cape fold geometry",
+    "cape hem cords",
+    "clustered animated hair",
+    "coat seams",
+    "epaulettes",
+    "glove finger detail",
+    "denser bristles"
+  ]
+}
