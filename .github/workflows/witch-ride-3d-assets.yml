@@ -6,6 +6,7 @@ on:
       - witch-ride-3d-pbr
       - witch-ride-3d-cinematic-detail
       - witch-ride-3d-realism-pass-1
+      - witch-ride-3d-realism-pass-2
     paths:
       - halloween-radio/games/witch-ride-3d/tools/**
       - .github/workflows/witch-ride-3d-assets.yml
@@ -33,6 +34,8 @@ jobs:
         run: python halloween-radio/games/witch-ride-3d/tools/build_pbr_assets.py
       - name: Build realism matte and fog assets
         run: python halloween-radio/games/witch-ride-3d/tools/build_realism_assets.py
+      - name: Author textured surface materials
+        run: python halloween-radio/games/witch-ride-3d/tools/build_surface_assets.py
       - name: Validate generated cinematic pack
         run: |
           test -s halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
@@ -43,6 +46,7 @@ jobs:
           test -s halloween-radio/games/witch-ride-3d/assets/models/jack-o-lantern.glb
           test -s halloween-radio/games/witch-ride-3d/assets/models/haunted-roastery.glb
           grep -a -q '"NORMAL"' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
+          grep -a -q '"TEXCOORD_0"' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
           grep -a -q 'hair_05' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
           grep -a -q 'cape_lining' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
           grep -a -q 'whitewall' halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
@@ -54,8 +58,15 @@ jobs:
           test -s halloween-radio/games/witch-ride-3d/assets/textures/cinematic-backdrop.jpg
           test -s halloween-radio/games/witch-ride-3d/assets/textures/fog-sheet.png
           test -s halloween-radio/games/witch-ride-3d/assets/textures/cinematic-vignette.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/surfaces/wool-albedo.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/surfaces/wool-normal.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/surfaces/leather-albedo.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/surfaces/hair-albedo.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/surfaces/carpaint-albedo.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/surfaces/carpaint-metalrough.png
           grep -q 'cinematic-detail-v2' halloween-radio/games/witch-ride-3d/assets/manifest.json
           grep -q 'realism-pass-v1' halloween-radio/games/witch-ride-3d/assets/realism-manifest.json
+          grep -q 'surface-realism-v1' halloween-radio/games/witch-ride-3d/assets/surface-manifest.json
       - name: Commit generated production assets
         run: |
           git config user.name "brewandbrewscompany-bot"
@@ -64,6 +75,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "Asset pack already current"
           else
-            git commit -m "Build Witch Ride 3D realism atmosphere assets"
+            git commit -m "Build Witch Ride textured realism assets"
             git push origin HEAD:${{ github.ref_name }}
           fi
