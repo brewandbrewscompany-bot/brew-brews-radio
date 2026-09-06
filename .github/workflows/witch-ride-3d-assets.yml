@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - witch-ride-3d-pbr
+      - witch-ride-3d-cinematic-detail
     paths:
       - halloween-radio/games/witch-ride-3d/tools/**
       - .github/workflows/witch-ride-3d-assets.yml
@@ -16,10 +17,10 @@ jobs:
   build-assets:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout PBR branch
+      - name: Checkout current 3D branch
         uses: actions/checkout@v4
         with:
-          ref: witch-ride-3d-pbr
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -29,15 +30,25 @@ jobs:
         run: python -m pip install --disable-pip-version-check numpy pillow trimesh
       - name: Build GLB and PBR assets
         run: python halloween-radio/games/witch-ride-3d/tools/build_pbr_assets.py
-      - name: Validate generated pack
+      - name: Validate generated cinematic pack
         run: |
           test -s halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
           test -s halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
           test -s halloween-radio/games/witch-ride-3d/assets/models/dead-tree.glb
           test -s halloween-radio/games/witch-ride-3d/assets/models/coffee-bean.glb
+          test -s halloween-radio/games/witch-ride-3d/assets/models/haunted-fence.glb
+          test -s halloween-radio/games/witch-ride-3d/assets/models/jack-o-lantern.glb
+          test -s halloween-radio/games/witch-ride-3d/assets/models/haunted-roastery.glb
+          grep -a -q '"NORMAL"' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
+          grep -a -q 'hair_05' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
+          grep -a -q 'cape_lining' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
+          grep -a -q 'whitewall' halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
+          grep -a -q 'jack_eye' halloween-radio/games/witch-ride-3d/assets/models/jack-o-lantern.glb
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-albedo.png
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-normal.png
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-gloss.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-puddles.png
+          grep -q 'cinematic-detail-v2' halloween-radio/games/witch-ride-3d/assets/manifest.json
       - name: Commit generated production assets
         run: |
           git config user.name "brewandbrewscompany-bot"
@@ -46,6 +57,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "Asset pack already current"
           else
-            git commit -m "Build Witch Ride 3D GLB and PBR asset pack"
-            git push origin HEAD:witch-ride-3d-pbr
+            git commit -m "Build Witch Ride 3D cinematic GLB/PBR asset pack"
+            git push origin HEAD:${{ github.ref_name }}
           fi
