@@ -40,7 +40,7 @@ function tuneLights(app){
   const rim=new pc.Entity('Realism Cool Rim');rim.addComponent('light',{type:'directional',color:new pc.Color(.21,.34,.55),intensity:.31,castShadows:false});rim.setEulerAngles(28,36,-8);app.root.addChild(rim);
 }
 function tuneModels(app){
-  const witch=app.root.findByName('Witch Rig')||app.root.findByName('Witch Rig Fallback');if(witch){witch.setLocalScale(.91,.91,.91);const rim=new pc.Entity('Witch Rim Glow');rim.addComponent('light',{type:'point',color:new pc.Color(.20,.34,.58),intensity=.46,range:7.5,castShadows:false});rim.setLocalPosition(0,2.3,1.5);witch.addChild(rim);const ember=witch.findByName('Broom Ember Light');if(ember?.light){ember.light.intensity=.88;ember.light.range=10.5}}
+  const witch=app.root.findByName('Witch Rig')||app.root.findByName('Witch Rig Fallback');if(witch){witch.setLocalScale(.91,.91,.91);const rim=new pc.Entity('Witch Rim Glow');rim.addComponent('light',{type:'point',color:new pc.Color(.20,.34,.58),intensity:.46,range:7.5,castShadows:false});rim.setLocalPosition(0,2.3,1.5);witch.addChild(rim);const ember=witch.findByName('Broom Ember Light');if(ember?.light){ember.light.intensity=.88;ember.light.range=10.5}}
   for(let i=0;i<7;i++){const car=app.root.findByName(`1938 Coupe ${i}`);if(!car)continue;car.setLocalScale(1.02,1.02,1.02);for(const c of car.children){if(c.name?.startsWith('Headlight Glow')&&c.light){c.light.intensity=.52;c.light.range=13}}}
 }
 function addAtmosphere(app,fogTexture){
