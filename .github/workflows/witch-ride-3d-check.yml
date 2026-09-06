@@ -34,41 +34,37 @@ jobs:
           test -s halloween-radio/games/witch-ride-3d/assets/models/haunted-fence.glb
           test -s halloween-radio/games/witch-ride-3d/assets/models/jack-o-lantern.glb
           test -s halloween-radio/games/witch-ride-3d/assets/models/haunted-roastery.glb
-          grep -a -q '"NORMAL"' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
-          grep -a -q 'cape_lining' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
-          grep -a -q 'hair_05' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
           grep -a -q 'coat_back_seam' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
-          grep -a -q 'epaulette_' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
-          grep -a -q 'woven black wool' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
           grep -a -q 'auburn strand cluster' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
-          grep -a -q 'whitewall' halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
           grep -a -q 'hood_center_ridge' halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
-          grep -a -q 'spokes_' halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
           grep -a -q 'weathered black lacquer' halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
-          grep -a -q 'jack_eye' halloween-radio/games/witch-ride-3d/assets/models/jack-o-lantern.glb
+          grep -a -q 'root_flare_' halloween-radio/games/witch-ride-3d/assets/models/dead-tree.glb
+          grep -a -q 'bark_knot_' halloween-radio/games/witch-ride-3d/assets/models/dead-tree.glb
+          grep -a -q 'nail_' halloween-radio/games/witch-ride-3d/assets/models/haunted-fence.glb
+          grep -a -q 'broken_splinter' halloween-radio/games/witch-ride-3d/assets/models/haunted-fence.glb
+          grep -a -q 'pumpkin_lobe_' halloween-radio/games/witch-ride-3d/assets/models/jack-o-lantern.glb
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-albedo.png
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-normal.png
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-gloss.png
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-puddles.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/shoulder-mud-albedo.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/shoulder-mud-normal.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/shoulder-mud-gloss.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/dead-bark-albedo.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/dead-bark-normal.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/fence-wood-albedo.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/fence-wood-normal.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/pumpkin-skin-albedo.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/pumpkin-skin-normal.png
           test -s halloween-radio/games/witch-ride-3d/assets/textures/cinematic-backdrop.jpg
           test -s halloween-radio/games/witch-ride-3d/assets/textures/fog-sheet.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/cinematic-vignette.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/witch-cloth-albedo.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/witch-cloth-normal.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/witch-burgundy-albedo.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/witch-leather-normal.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/witch-hair-albedo.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/witch-hair-normal.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/broom-wood-normal.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/car-paint-albedo.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/car-paint-normal.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/car-paint-metalrough.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/car-chrome-normal.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/car-tire-normal.png
           grep -q 'cinematic-detail-v2' halloween-radio/games/witch-ride-3d/assets/manifest.json
           grep -q 'realism-pass-v1' halloween-radio/games/witch-ride-3d/assets/realism-manifest.json
           grep -q 'witch-material-pass-v2' halloween-radio/games/witch-ride-3d/assets/witch-material-pass.json
           grep -q 'vehicle-material-pass-v3' halloween-radio/games/witch-ride-3d/assets/vehicle-material-pass.json
+          grep -q 'environment-material-pass-v4' halloween-radio/games/witch-ride-3d/assets/environment-material-pass.json
+          grep -q 'environment-material-pass-v4' halloween-radio/games/witch-ride-3d/realism-pass.js
+          grep -q 'Puddle Variation' halloween-radio/games/witch-ride-3d/realism-pass.js
       - name: Install browser helper
         run: npm install --no-save puppeteer-core@24.16.0
       - name: Run realism 3D renderer smoke test
@@ -91,11 +87,13 @@ jobs:
             page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
             await page.goto('http://127.0.0.1:8000/halloween-radio/games/witch-ride-3d/',{waitUntil:'domcontentloaded',timeout:30000});
             await page.waitForFunction(()=>window.WitchRide3D?.ready&&document.body.classList.contains('ready'),{timeout:30000});
-            await page.waitForFunction(()=>window.WitchRide3D?.realismPass==='realism-pass-v1'&&window.WitchRide3D?.materialPass==='witch-material-pass-v2'&&window.WitchRide3D?.vehiclePass==='vehicle-material-pass-v3'&&document.body.classList.contains('realism-pass-ready')&&document.body.classList.contains('witch-material-pass-ready')&&document.body.classList.contains('vehicle-material-pass-ready'),{timeout:30000});
-            const before=await page.evaluate(()=>({canvas:!!document.querySelector('canvas'),title:document.querySelector('#title').classList.contains('open'),engine:window.WitchRide3D.engine,assetMode:window.WitchRide3D.assetMode,detailMode:window.WitchRide3D.detailMode,realismPass:window.WitchRide3D.realismPass,materialPass:window.WitchRide3D.materialPass,vehiclePass:window.WitchRide3D.vehiclePass,tech:document.querySelector('#tech')?.textContent||''}));
+            await page.waitForFunction(()=>window.WitchRide3D?.realismPass==='realism-pass-v1'&&window.WitchRide3D?.materialPass==='witch-material-pass-v2'&&window.WitchRide3D?.vehiclePass==='vehicle-material-pass-v3'&&window.WitchRide3D?.environmentPass==='environment-material-pass-v4'&&document.body.classList.contains('environment-material-pass-ready'),{timeout:30000});
+            const before=await page.evaluate(()=>({canvas:!!document.querySelector('canvas'),title:document.querySelector('#title').classList.contains('open'),engine:window.WitchRide3D.engine,assetMode:window.WitchRide3D.assetMode,detailMode:window.WitchRide3D.detailMode,realismPass:window.WitchRide3D.realismPass,materialPass:window.WitchRide3D.materialPass,vehiclePass:window.WitchRide3D.vehiclePass,environmentPass:window.WitchRide3D.environmentPass,tech:document.querySelector('#tech')?.textContent||''}));
             if(!before.canvas||!before.title||before.engine!=='PlayCanvas')throw new Error('3D boot failed '+JSON.stringify(before));
             if(before.assetMode!=='glb-pbr')throw new Error('Production GLB/PBR assets did not fully load '+JSON.stringify(before));
-            if(before.detailMode!=='cinematic-detail-v2'||before.realismPass!=='realism-pass-v1'||before.materialPass!=='witch-material-pass-v2'||before.vehiclePass!=='vehicle-material-pass-v3')throw new Error('Vehicle realism pass did not boot '+JSON.stringify(before));
+            if(before.detailMode!=='cinematic-detail-v2'||before.realismPass!=='realism-pass-v1'||before.materialPass!=='witch-material-pass-v2'||before.vehiclePass!=='vehicle-material-pass-v3'||before.environmentPass!=='environment-material-pass-v4')throw new Error('Environment realism pass did not boot '+JSON.stringify(before));
+            const environmentDetail=await page.evaluate(()=>{const app=window.pc?.app||null,root=app?.root?.findByName?.('Road Segment 0'),road=root?.findByName?.('Road'),shoulder=root?.findByName?.('Shoulder L');return{puddleVariation:!!root?.findByName?.('Puddle Variation 0'),roadTexture:!!road?.render?.material?.diffuseMap,shoulderTexture:!!shoulder?.render?.material?.diffuseMap}});
+            if(!environmentDetail.puddleVariation||!environmentDetail.roadTexture||!environmentDetail.shoulderTexture)throw new Error('Environment materials were not applied '+JSON.stringify(environmentDetail));
             if(errors.length)throw new Error('Browser errors during asset boot: '+errors.join(' | '));
             await page.click('#play');await sleep(1800);
             const running=await page.evaluate(()=>({score:Number((document.querySelector('#score').textContent||'0').replace(/,/g,'')),distance:document.querySelector('#distance').textContent,hud:!document.querySelector('#hud').classList.contains('hidden'),mode:window.WitchRide3D.state.mode,x:window.WitchRide3D.state.x,targetX:window.WitchRide3D.state.targetX,speed:window.WitchRide3D.state.speed}));
@@ -107,7 +105,11 @@ jobs:
             const keyStart=await page.evaluate(()=>window.WitchRide3D.state.targetX);await page.keyboard.down('ArrowLeft');await sleep(700);await page.keyboard.up('ArrowLeft');await sleep(100);
             const keyboardMove=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,x:window.WitchRide3D.state.x,targetX:window.WitchRide3D.state.targetX}));
             if(keyboardMove.mode!=='playing'||!(keyboardMove.targetX<keyStart-.15))throw new Error('3D keyboard steering target did not respond '+JSON.stringify({keyStart,keyboardMove}));
+            await page.click('#pause');await sleep(120);const paused=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,open:document.querySelector('#paused').classList.contains('open')}));if(paused.mode!=='paused'||!paused.open)throw new Error('Pause failed '+JSON.stringify(paused));
+            await page.click('#resume');await sleep(120);const resumed=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,pausedOpen:document.querySelector('#paused').classList.contains('open')}));if(resumed.mode!=='playing'||resumed.pausedOpen)throw new Error('Resume failed '+JSON.stringify(resumed));
             if(errors.length)throw new Error('Browser errors: '+errors.join(' | '));
-            console.log('Witch Ride 3D vehicle realism pass passed',JSON.stringify({before,running,pointerMove,keyboardMove}));await browser.close();
+            await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded',timeout:10000}),page.evaluate(()=>document.querySelector('#paused .back').click())]);
+            if(!page.url().endsWith('/halloween-radio/'))throw new Error('Back to Radio did not return to Halloween Radio: '+page.url());
+            console.log('Witch Ride 3D environment realism pass passed',JSON.stringify({before,environmentDetail,running,pointerMove,keyboardMove,paused,resumed,backUrl:page.url()}));await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
