@@ -102,7 +102,11 @@ jobs:
             await page.mouse.move(box.x+box.w*.84,box.y+box.h*.64);await page.mouse.down();await sleep(700);await page.mouse.up();await sleep(150);
             const pointerMove=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,x:window.WitchRide3D.state.x,targetX:window.WitchRide3D.state.targetX}));
             if(pointerMove.mode!=='playing'||!(pointerMove.x>.03)||!(pointerMove.targetX>.5))throw new Error('3D pointer steering did not move witch '+JSON.stringify(pointerMove));
-            const keyStart=await page.evaluate(()=>window.WitchRide3D.state.targetX);await page.keyboard.down('ArrowLeft');await sleep(700);await page.keyboard.up('ArrowLeft');await sleep(100);
+            const keyStart=await page.evaluate(()=>window.WitchRide3D.state.targetX);
+            await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keydown',{code:'ArrowLeft',key:'ArrowLeft',bubbles:true})));
+            await sleep(700);
+            await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keyup',{code:'ArrowLeft',key:'ArrowLeft',bubbles:true})));
+            await sleep(100);
             const keyboardMove=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,x:window.WitchRide3D.state.x,targetX:window.WitchRide3D.state.targetX}));
             if(keyboardMove.mode!=='playing'||!(keyboardMove.targetX<keyStart-.15))throw new Error('3D keyboard steering target did not respond '+JSON.stringify({keyStart,keyboardMove}));
             await page.click('#pause');await sleep(120);const paused=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,open:document.querySelector('#paused').classList.contains('open')}));if(paused.mode!=='paused'||!paused.open)throw new Error('Pause failed '+JSON.stringify(paused));
