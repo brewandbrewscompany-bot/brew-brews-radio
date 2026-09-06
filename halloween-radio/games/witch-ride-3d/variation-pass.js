@@ -2,7 +2,6 @@ import * as pc from 'playcanvas';
 
 const VERSION='variation-pass-v8';
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
 const CAR_PALETTES=[
   {name:'Midnight Black',color:[.024,.030,.036],metal:.47,gloss:.77,worn:[.095,.082,.073]},
@@ -66,15 +65,12 @@ function applyBeanRoastDepth(app){
   });
   return {beanVariants:beans.length,beanRoastTones:pool.size,beanAssignments:assignments};
 }
-function animateSubtleVariation(app){
-  const cars=collectNamed(app,'1938 Coupe',7);let t=0;app.on('update',dt=>{t+=Math.min(dt,.04);for(let i=0;i<cars.length;i++){const car=cars[i];if(!car.__active)continue;const target=.995+Math.sin(t*.82+i*.91)*.0025;const s=clamp(target,.991,1.003);car.setLocalScale(1.02*s,1.02,1.02*s)}})
-}
 async function install(){
   for(let i=0;i<320;i++){
     const app=pc.app,w=window.WitchRide3D;
     if(app&&w?.ready&&w?.cinematicPass==='cinematic-camera-pass-v7'){
       try{
-        const cars=applyCarVariants(app),scenery=applyScenerySilhouettes(app),beans=applyBeanRoastDepth(app);animateSubtleVariation(app);
+        const cars=applyCarVariants(app),scenery=applyScenerySilhouettes(app),beans=applyBeanRoastDepth(app);
         const detail={...cars,...scenery,...beans,uniqueCarPalettes:new Set(cars.palettes).size};
         w.variationPass=VERSION;w.variationDetail=detail;document.body.classList.add('variation-pass-ready');console.info('Witch Ride variation pass ready',VERSION,detail);return;
       }catch(err){console.error('Witch Ride variation pass failed',err);w.variationPass='fallback';w.variationDetail={};return}
