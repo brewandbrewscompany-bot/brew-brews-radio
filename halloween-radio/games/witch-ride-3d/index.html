@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#05080b">
+<title>Witch Ride 3D — Brew & Brews Halloween Radio</title>
+<link rel="stylesheet" href="game.css">
+<script type="importmap">
+{
+  "imports": {
+    "playcanvas": "https://cdn.jsdelivr.net/npm/playcanvas@2.22.0/+esm"
+  }
+}
+</script>
+</head>
+<body>
+<div id="shell">
+  <canvas id="game-canvas" aria-label="Witch Ride 3D game"></canvas>
+  <div id="hud" class="hidden">
+    <div><span>SCORE</span><strong id="score">0</strong></div>
+    <div><span>DISTANCE</span><strong id="distance">0.00 MI</strong></div>
+    <div><span>BEANS</span><strong id="beans">0</strong></div>
+    <div><span>SPEED</span><strong id="speed">1.0×</strong></div>
+    <button id="pause" type="button" aria-label="Pause">Ⅱ</button>
+  </div>
+  <section id="title" class="screen open">
+    <div class="panel">
+      <p class="eyebrow">BREW &amp; BREWS HALLOWEEN RADIO PRESENTS</p>
+      <h1>WITCH <em>RIDE</em> <b>3D</b></h1>
+      <p class="sub">A REAL 3D NIGHT RUN</p>
+      <button id="play" class="primary" type="button">RIDE INTO THE NIGHT</button>
+      <button class="back" type="button">BACK TO RADIO</button>
+      <p id="tech">INITIALIZING 3D ENGINE…</p>
+    </div>
+  </section>
+  <section id="paused" class="screen">
+    <div class="panel compact">
+      <p class="eyebrow">SIGNAL HELD</p>
+      <h2>PAUSED</h2>
+      <button id="resume" class="primary" type="button">RESUME</button>
+      <button class="back" type="button">BACK TO RADIO</button>
+    </div>
+  </section>
+  <section id="over" class="screen">
+    <div class="panel compact">
+      <p class="eyebrow">TRANSMISSION LOST</p>
+      <h2>RIDE OVER</h2>
+      <div class="results"><span>SCORE</span><strong id="over-score">0</strong><span>DISTANCE</span><strong id="over-distance">0.00 MI</strong><span>BEANS</span><strong id="over-beans">0</strong></div>
+      <button id="again" class="primary" type="button">RIDE AGAIN</button>
+      <button class="back" type="button">BACK TO RADIO</button>
+    </div>
+  </section>
+  <div id="loading">BUILDING THE HAUNTED ROAD…</div>
+</div>
+<script type="module" src="game.js"></script>
+</body>
+</html>
