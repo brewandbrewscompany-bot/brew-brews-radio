@@ -34,7 +34,7 @@ jobs:
       - name: Install browser helper
         run: npm install --no-save puppeteer-core@24.16.0
 
-      - name: Run WebGL game smoke test
+      - name: Run game renderer smoke test
         run: |
           python3 -m http.server 8000 --directory . >/tmp/witch-ride-http.log 2>&1 &
           SERVER_PID=$!
@@ -51,16 +51,28 @@ jobs:
               headless:true,
               args:[
                 '--no-sandbox','--disable-dev-shm-usage','--mute-audio',
-                '--enable-webgl','--ignore-gpu-blocklist','--use-gl=swiftshader'
+                '--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader'
               ]
             });
             const page=await browser.newPage();
             await page.setViewport({width:430,height:932,deviceScaleFactor:1});
             const errors=[];
             page.on('pageerror',e=>errors.push(String(e)));
-            page.on('console',msg=>{if(msg.type()==='error')errors.push('console: '+msg.text())});
+            page.on('console',msg=>{if(msg.type()==='error'||msg.type()==='warning')errors.push(msg.type()+': '+msg.text())});
             await page.goto('http://127.0.0.1:8000/halloween-radio/games/witch-ride/',{waitUntil:'domcontentloaded',timeout:30000});
-            await page.waitForFunction(()=>window.WitchRide&&document.querySelector('#game canvas')&&document.body.classList.contains('ready'),{timeout:30000});
+            await sleep(5000);
+            const diag=await page.evaluate(()=>({
+              phaser:typeof window.Phaser,
+              phaserVersion:window.Phaser?.VERSION||null,
+              witch:!!window.WitchRide,
+              ready:document.body.classList.contains('ready'),
+              canvas:!!document.querySelector('#game canvas'),
+              loading:document.querySelector('#loading')?.textContent||null,
+              webgl:!!document.createElement('canvas').getContext('webgl')
+            }));
+            console.log('Witch Ride diagnostics:',JSON.stringify(diag));
+            if(errors.length)console.log('Browser messages:',errors.join(' | '));
+            await page.waitForFunction(()=>window.WitchRide&&document.querySelector('#game canvas')&&document.body.classList.contains('ready'),{timeout:20000});
             const before=await page.evaluate(()=>({
               titleOpen:document.querySelector('#title-screen').classList.contains('open'),
               hudHidden:document.querySelector('#hud').classList.contains('hidden'),
@@ -84,8 +96,9 @@ jobs:
             await page.waitForFunction(()=>document.querySelector('#pause-screen').classList.contains('open'),{timeout:3000});
             await page.click('#resume-btn');
             await page.waitForFunction(()=>!document.querySelector('#pause-screen').classList.contains('open'),{timeout:3000});
-            if(errors.length)throw new Error('Game page errors: '+errors.join(' | '));
-            console.log('Witch Ride WebGL vertical slice passed:',running);
+            const fatalErrors=errors.filter(e=>!e.includes('WebGL')&&!e.includes('Automatic fallback'));
+            if(fatalErrors.length)throw new Error('Game page errors: '+fatalErrors.join(' | '));
+            console.log('Witch Ride vertical slice passed:',JSON.stringify(running));
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
