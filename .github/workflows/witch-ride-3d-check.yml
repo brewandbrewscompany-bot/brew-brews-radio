@@ -38,11 +38,11 @@ jobs:
           grep -a -q 'auburn strand cluster' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
           grep -a -q 'hood_center_ridge' halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
           grep -a -q 'weathered black lacquer' halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
-          grep -a -q 'root_flare_' halloween-radio/games/witch-ride-3d/assets/models/dead-tree.glb
-          grep -a -q 'bark_knot_' halloween-radio/games/witch-ride-3d/assets/models/dead-tree.glb
-          grep -a -q 'nail_' halloween-radio/games/witch-ride-3d/assets/models/haunted-fence.glb
-          grep -a -q 'broken_splinter' halloween-radio/games/witch-ride-3d/assets/models/haunted-fence.glb
-          grep -a -q 'pumpkin_lobe_' halloween-radio/games/witch-ride-3d/assets/models/jack-o-lantern.glb
+          grep -a -q 'root_flare_bark_knot_combined' halloween-radio/games/witch-ride-3d/assets/models/dead-tree.glb
+          grep -a -q 'broken_splinter_wood_combined' halloween-radio/games/witch-ride-3d/assets/models/haunted-fence.glb
+          grep -a -q 'nail_rusted_combined' halloween-radio/games/witch-ride-3d/assets/models/haunted-fence.glb
+          grep -a -q 'pumpkin_lobe_combined' halloween-radio/games/witch-ride-3d/assets/models/jack-o-lantern.glb
+          grep -a -q 'jack_eye_jack_mouth_glow_combined' halloween-radio/games/witch-ride-3d/assets/models/jack-o-lantern.glb
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-albedo.png
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-normal.png
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-gloss.png
@@ -63,6 +63,7 @@ jobs:
           grep -q 'witch-material-pass-v2' halloween-radio/games/witch-ride-3d/assets/witch-material-pass.json
           grep -q 'vehicle-material-pass-v3' halloween-radio/games/witch-ride-3d/assets/vehicle-material-pass.json
           grep -q 'environment-material-pass-v4' halloween-radio/games/witch-ride-3d/assets/environment-material-pass.json
+          grep -q 'merged-static-material-batches' halloween-radio/games/witch-ride-3d/assets/environment-material-pass.json
           grep -q 'environment-material-pass-v4' halloween-radio/games/witch-ride-3d/realism-pass.js
           grep -q 'environmentDetail' halloween-radio/games/witch-ride-3d/realism-pass.js
       - name: Install browser helper
@@ -95,18 +96,20 @@ jobs:
             const environmentDetail=before.environmentDetail||{};
             if(environmentDetail.segments!==9||environmentDetail.roadMaterials!==9||environmentDetail.shoulderMaterials!==18||environmentDetail.puddles!==9)throw new Error('Environment materials were not applied '+JSON.stringify(environmentDetail));
             if(errors.length)throw new Error('Browser errors during asset boot: '+errors.join(' | '));
-            await page.click('#play');await sleep(1800);
+            await page.click('#play');
+            await page.waitForFunction(()=>window.WitchRide3D?.state?.mode==='playing'&&Number((document.querySelector('#score').textContent||'0').replace(/,/g,''))>0,{timeout:3000});
             const running=await page.evaluate(()=>({score:Number((document.querySelector('#score').textContent||'0').replace(/,/g,'')),distance:document.querySelector('#distance').textContent,hud:!document.querySelector('#hud').classList.contains('hidden'),mode:window.WitchRide3D.state.mode,x:window.WitchRide3D.state.x,targetX:window.WitchRide3D.state.targetX,speed:window.WitchRide3D.state.speed}));
             if(!running.hud||running.mode!=='playing'||!(running.score>0)||!(running.speed>=1))throw new Error('3D ride did not advance '+JSON.stringify(running));
             const box=await page.$eval('#game-canvas',e=>{const r=e.getBoundingClientRect();return{x:r.left,y:r.top,w:r.width,h:r.height}});
-            await page.mouse.move(box.x+box.w*.84,box.y+box.h*.64);await page.mouse.down();await sleep(700);await page.mouse.up();await sleep(150);
+            await page.mouse.move(box.x+box.w*.84,box.y+box.h*.64);await page.mouse.down();
+            await page.waitForFunction(()=>window.WitchRide3D.state.targetX>.5&&window.WitchRide3D.state.x>.03,{timeout:1500});
+            await page.mouse.up();
             const pointerMove=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,x:window.WitchRide3D.state.x,targetX:window.WitchRide3D.state.targetX}));
             if(pointerMove.mode!=='playing'||!(pointerMove.x>.03)||!(pointerMove.targetX>.5))throw new Error('3D pointer steering did not move witch '+JSON.stringify(pointerMove));
             const keyStart=await page.evaluate(()=>window.WitchRide3D.state.targetX);
             await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keydown',{code:'ArrowLeft',key:'ArrowLeft',bubbles:true})));
-            await sleep(700);
+            await page.waitForFunction(start=>window.WitchRide3D.state.targetX<start-.15,{timeout:1500},keyStart);
             await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keyup',{code:'ArrowLeft',key:'ArrowLeft',bubbles:true})));
-            await sleep(100);
             const keyboardMove=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,x:window.WitchRide3D.state.x,targetX:window.WitchRide3D.state.targetX}));
             if(keyboardMove.mode!=='playing'||!(keyboardMove.targetX<keyStart-.15))throw new Error('3D keyboard steering target did not respond '+JSON.stringify({keyStart,keyboardMove}));
             await page.click('#pause');await sleep(120);const paused=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,open:document.querySelector('#paused').classList.contains('open')}));if(paused.mode!=='paused'||!paused.open)throw new Error('Pause failed '+JSON.stringify(paused));
@@ -114,6 +117,6 @@ jobs:
             if(errors.length)throw new Error('Browser errors: '+errors.join(' | '));
             await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded',timeout:10000}),page.evaluate(()=>document.querySelector('#paused .back').click())]);
             if(!page.url().endsWith('/halloween-radio/'))throw new Error('Back to Radio did not return to Halloween Radio: '+page.url());
-            console.log('Witch Ride 3D environment realism pass passed',JSON.stringify({before,running,pointerMove,keyboardMove,paused,resumed,backUrl:page.url()}));await browser.close();
+            console.log('Witch Ride 3D optimized environment pass passed',JSON.stringify({before,running,pointerMove,keyboardMove,paused,resumed,backUrl:page.url()}));await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
