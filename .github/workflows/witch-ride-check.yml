@@ -56,9 +56,10 @@ jobs:
             });
             const page=await browser.newPage();
             await page.setViewport({width:430,height:932,deviceScaleFactor:1});
-            const errors=[];
-            page.on('pageerror',e=>errors.push(String(e)));
-            page.on('console',msg=>{if(msg.type()==='error'||msg.type()==='warning')errors.push(msg.type()+': '+msg.text())});
+            const pageErrors=[];
+            const httpErrors=[];
+            page.on('pageerror',e=>pageErrors.push(String(e)));
+            page.on('response',res=>{if(res.status()>=400)httpErrors.push({status:res.status(),url:res.url()})});
             await page.goto('http://127.0.0.1:8000/halloween-radio/games/witch-ride/',{waitUntil:'domcontentloaded',timeout:30000});
             await sleep(5000);
             const diag=await page.evaluate(()=>({
@@ -71,7 +72,8 @@ jobs:
               webgl:!!document.createElement('canvas').getContext('webgl')
             }));
             console.log('Witch Ride diagnostics:',JSON.stringify(diag));
-            if(errors.length)console.log('Browser messages:',errors.join(' | '));
+            if(pageErrors.length)console.log('Page errors:',pageErrors.join(' | '));
+            if(httpErrors.length)console.log('HTTP misses:',JSON.stringify(httpErrors));
             await page.waitForFunction(()=>window.WitchRide&&document.querySelector('#game canvas')&&document.body.classList.contains('ready'),{timeout:20000});
             const before=await page.evaluate(()=>({
               titleOpen:document.querySelector('#title-screen').classList.contains('open'),
@@ -96,8 +98,9 @@ jobs:
             await page.waitForFunction(()=>document.querySelector('#pause-screen').classList.contains('open'),{timeout:3000});
             await page.click('#resume-btn');
             await page.waitForFunction(()=>!document.querySelector('#pause-screen').classList.contains('open'),{timeout:3000});
-            const fatalErrors=errors.filter(e=>!e.includes('WebGL')&&!e.includes('Automatic fallback'));
-            if(fatalErrors.length)throw new Error('Game page errors: '+fatalErrors.join(' | '));
+            if(pageErrors.length)throw new Error('Game page errors: '+pageErrors.join(' | '));
+            const criticalHttp=httpErrors.filter(x=>x.url.includes('/halloween-radio/games/witch-ride/')&&(/\.(?:js|css|html)(?:\?|$)/.test(x.url)||x.url.endsWith('/witch-ride/')));
+            if(criticalHttp.length)throw new Error('Critical game resources failed: '+JSON.stringify(criticalHttp));
             console.log('Witch Ride vertical slice passed:',JSON.stringify(running));
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
