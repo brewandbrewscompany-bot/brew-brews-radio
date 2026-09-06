@@ -20,6 +20,7 @@ const BEAN_TONES=[
 ];
 const BARK_TONES=[[.155,.105,.080],[.120,.080,.062],[.185,.128,.095],[.105,.073,.060]];
 const PUMPKIN_TONES=[[.36,.105,.018],[.44,.145,.024],[.30,.082,.014],[.39,.118,.017]];
+const PRESERVED_TRIM=['pitted chrome','smoky glass','period rubber','aged whitewall','warm headlamp','ruby tail lamp'];
 
 function meshInstances(root){const out=[];for(const r of root.findComponents?.('render')||[])for(const mi of r.meshInstances||[])out.push(mi);return out}
 function cloneSurface(base,name,color,metalness,gloss,emissive=null){
@@ -29,10 +30,10 @@ function cloneSurface(base,name,color,metalness,gloss,emissive=null){
 }
 function materialMatches(mi,terms){const n=(mi.material?.name||'').toLowerCase();return terms.some(t=>n.includes(t))}
 function applyCarVariants(app){
-  const detail={cars:0,paintAssignments:0,wornAssignments:0,palettes:[],headlightTunes:0};
+  const preserved=new Set(),detail={cars:0,paintAssignments:0,wornAssignments:0,palettes:[],headlightTunes:0,preservedTrimKinds:0};
   for(let i=0;i<7;i++){
     const car=app.root.findByName(`1938 Coupe ${i}`);if(!car)continue;const spec=CAR_PALETTES[i],instances=meshInstances(car),main=[],worn=[];
-    for(const mi of instances){if(materialMatches(mi,['aged black lacquer']))main.push(mi);else if(materialMatches(mi,['worn lacquer']))worn.push(mi)}
+    for(const mi of instances){const n=(mi.material?.name||'').toLowerCase();for(const trim of PRESERVED_TRIM)if(n.includes(trim))preserved.add(trim);if(n.includes('aged black lacquer'))main.push(mi);else if(n.includes('worn lacquer'))worn.push(mi)}
     if(!main.length)throw new Error(`car ${i} production lacquer material not found`);
     const mainMat=cloneSurface(main[0].material,`v8 ${spec.name} lacquer`,spec.color,spec.metal,spec.gloss);
     const wornBase=worn[0]?.material||main[0].material,wornMat=cloneSurface(wornBase,`v8 ${spec.name} weathering`,spec.worn,Math.max(.16,spec.metal-.17),Math.max(.31,spec.gloss-.25));
@@ -40,7 +41,7 @@ function applyCarVariants(app){
     car.__visualVariant=spec.name;detail.palettes.push(spec.name);detail.cars++;
     const lamps=car.children.filter(c=>c.name?.startsWith('Headlight Glow')&&c.light);for(const lamp of lamps){lamp.light.intensity=.45+(i%3)*.045;lamp.light.color=new pc.Color(1,.43+(i%2)*.035,.105+(i%3)*.014);detail.headlightTunes++}
   }
-  return detail;
+  detail.preservedTrimKinds=preserved.size;detail.preservedTrim=[...preserved];return detail;
 }
 function collectNamed(app,prefix,count){const out=[];for(let i=0;i<count;i++){const e=app.root.findByName(`${prefix} ${i}`);if(e)out.push(e)}return out}
 function scaleEntity(e,mx,my,mz){const s=e.getLocalScale();e.setLocalScale(s.x*mx,s.y*my,s.z*mz)}
