@@ -1,0 +1,29 @@
+{
+  "version": "vehicle-material-pass-v3",
+  "file": "vintage-car.glb",
+  "bytes": 372120,
+  "nodes": 77,
+  "textures": [
+    "car-paint-albedo.png",
+    "car-paint-normal.png",
+    "car-paint-metalrough.png",
+    "car-chrome-albedo.png",
+    "car-chrome-normal.png",
+    "car-chrome-metalrough.png",
+    "car-tire-albedo.png",
+    "car-tire-normal.png"
+  ],
+  "features": [
+    "aged lacquer PBR",
+    "oxidized chips",
+    "pitted chrome",
+    "dirty bias-ply rubber",
+    "whitewalls",
+    "wheel spokes",
+    "door seams",
+    "hood ridge",
+    "tungsten headlamps",
+    "exhaust detail",
+    "restrained rust"
+  ]
+}
