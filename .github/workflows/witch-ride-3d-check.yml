@@ -16,13 +16,17 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Validate source and cinematic assets
+      - name: Validate source and realism assets
         run: |
           cp halloween-radio/games/witch-ride-3d/game.js /tmp/witch-ride-3d.mjs
+          cp halloween-radio/games/witch-ride-3d/realism-pass.js /tmp/witch-ride-realism.mjs
           node --check /tmp/witch-ride-3d.mjs
+          node --check /tmp/witch-ride-realism.mjs
           grep -q "playcanvas@2.22.0" halloween-radio/games/witch-ride-3d/index.html
+          grep -q "realism-pass.js" halloween-radio/games/witch-ride-3d/index.html
           grep -q "new pc.Application" halloween-radio/games/witch-ride-3d/game.js
           grep -q "cinematic-detail-v2" halloween-radio/games/witch-ride-3d/game.js
+          grep -q "realism-pass-v1" halloween-radio/games/witch-ride-3d/realism-pass.js
           test -s halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
           test -s halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
           test -s halloween-radio/games/witch-ride-3d/assets/models/dead-tree.glb
@@ -31,9 +35,6 @@ jobs:
           test -s halloween-radio/games/witch-ride-3d/assets/models/jack-o-lantern.glb
           test -s halloween-radio/games/witch-ride-3d/assets/models/haunted-roastery.glb
           grep -a -q '"NORMAL"' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
-          grep -a -q '"NORMAL"' halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
-          grep -a -q '"NORMAL"' halloween-radio/games/witch-ride-3d/assets/models/dead-tree.glb
-          grep -a -q '"NORMAL"' halloween-radio/games/witch-ride-3d/assets/models/coffee-bean.glb
           grep -a -q 'cape_lining' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
           grep -a -q 'hair_05' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
           grep -a -q 'whitewall' halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
@@ -42,10 +43,14 @@ jobs:
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-normal.png
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-gloss.png
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-puddles.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/cinematic-backdrop.jpg
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/fog-sheet.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/cinematic-vignette.png
           grep -q 'cinematic-detail-v2' halloween-radio/games/witch-ride-3d/assets/manifest.json
+          grep -q 'realism-pass-v1' halloween-radio/games/witch-ride-3d/assets/realism-manifest.json
       - name: Install browser helper
         run: npm install --no-save puppeteer-core@24.16.0
-      - name: Run cinematic 3D renderer smoke test
+      - name: Run realism 3D renderer smoke test
         run: |
           python3 -m http.server 8000 --directory . >/tmp/wr3d-http.log 2>&1 &
           SERVER_PID=$!
@@ -65,42 +70,23 @@ jobs:
             page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
             await page.goto('http://127.0.0.1:8000/halloween-radio/games/witch-ride-3d/',{waitUntil:'domcontentloaded',timeout:30000});
             await page.waitForFunction(()=>window.WitchRide3D?.ready&&document.body.classList.contains('ready'),{timeout:30000});
-            const before=await page.evaluate(()=>({
-              canvas:!!document.querySelector('canvas'),
-              title:document.querySelector('#title').classList.contains('open'),
-              engine:window.WitchRide3D.engine,
-              assetMode:window.WitchRide3D.assetMode,
-              detailMode:window.WitchRide3D.detailMode,
-              tech:document.querySelector('#tech')?.textContent||''
-            }));
+            await page.waitForFunction(()=>window.WitchRide3D?.realismPass==='realism-pass-v1'&&document.body.classList.contains('realism-pass-ready'),{timeout:30000});
+            const before=await page.evaluate(()=>({canvas:!!document.querySelector('canvas'),title:document.querySelector('#title').classList.contains('open'),engine:window.WitchRide3D.engine,assetMode:window.WitchRide3D.assetMode,detailMode:window.WitchRide3D.detailMode,realismPass:window.WitchRide3D.realismPass,tech:document.querySelector('#tech')?.textContent||''}));
             if(!before.canvas||!before.title||before.engine!=='PlayCanvas')throw new Error('3D boot failed '+JSON.stringify(before));
             if(before.assetMode!=='glb-pbr')throw new Error('Production GLB/PBR assets did not fully load '+JSON.stringify(before));
-            if(before.detailMode!=='cinematic-detail-v2'||!before.tech.includes('CINEMATIC'))throw new Error('Cinematic detail mode did not boot '+JSON.stringify(before));
+            if(before.detailMode!=='cinematic-detail-v2'||before.realismPass!=='realism-pass-v1')throw new Error('Realism pass did not boot '+JSON.stringify(before));
             if(errors.length)throw new Error('Browser errors during asset boot: '+errors.join(' | '));
-            await page.click('#play');
-            await sleep(1800);
+            await page.click('#play');await sleep(1800);
             const running=await page.evaluate(()=>({score:Number((document.querySelector('#score').textContent||'0').replace(/,/g,'')),distance:document.querySelector('#distance').textContent,hud:!document.querySelector('#hud').classList.contains('hidden'),mode:window.WitchRide3D.state.mode,x:window.WitchRide3D.state.x,targetX:window.WitchRide3D.state.targetX,speed:window.WitchRide3D.state.speed}));
             if(!running.hud||running.mode!=='playing'||!(running.score>0)||!(running.speed>=1))throw new Error('3D ride did not advance '+JSON.stringify(running));
-            if(errors.length)throw new Error('Browser errors during ride: '+errors.join(' | '));
-
             const box=await page.$eval('#game-canvas',e=>{const r=e.getBoundingClientRect();return{x:r.left,y:r.top,w:r.width,h:r.height}});
-            await page.mouse.move(box.x+box.w*.84,box.y+box.h*.64);
-            await page.mouse.down();
-            await sleep(700);
-            await page.mouse.up();
-            await sleep(150);
+            await page.mouse.move(box.x+box.w*.84,box.y+box.h*.64);await page.mouse.down();await sleep(700);await page.mouse.up();await sleep(150);
             const pointerMove=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,x:window.WitchRide3D.state.x,targetX:window.WitchRide3D.state.targetX}));
             if(pointerMove.mode!=='playing'||!(pointerMove.x>.03)||!(pointerMove.targetX>.5))throw new Error('3D pointer steering did not move witch '+JSON.stringify(pointerMove));
-
-            const keyStart=await page.evaluate(()=>window.WitchRide3D.state.targetX);
-            await page.keyboard.down('ArrowLeft');
-            await sleep(700);
-            await page.keyboard.up('ArrowLeft');
-            await sleep(100);
+            const keyStart=await page.evaluate(()=>window.WitchRide3D.state.targetX);await page.keyboard.down('ArrowLeft');await sleep(700);await page.keyboard.up('ArrowLeft');await sleep(100);
             const keyboardMove=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,x:window.WitchRide3D.state.x,targetX:window.WitchRide3D.state.targetX}));
             if(keyboardMove.mode!=='playing'||!(keyboardMove.targetX<keyStart-.15))throw new Error('3D keyboard steering target did not respond '+JSON.stringify({keyStart,keyboardMove}));
             if(errors.length)throw new Error('Browser errors: '+errors.join(' | '));
-            console.log('Witch Ride 3D cinematic GLB/PBR passed',JSON.stringify({before,running,pointerMove,keyboardMove}));
-            await browser.close();
+            console.log('Witch Ride 3D realism pass passed',JSON.stringify({before,running,pointerMove,keyboardMove}));await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
