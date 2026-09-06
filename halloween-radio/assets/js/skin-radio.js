@@ -144,9 +144,37 @@ window.BBRadio={
   togglePlay
 };
 
-function scheduleAuto(reset=false)
-{if(reset&&state.autoTimer)clearTimeout(state.autoTimer);if(!state.autoTune)return;state.autoTimer=setTimeout(()=>{if(state.autoTune&&!state.drag&&!isFinalSignoff(currentTrack())&&Math.random()<.62){let st=stations[Math.floor(Math.random()*stations.length)];if(st.freq===nearestStation(state.currentFreq).freq)st=stations[(stations.indexOf(st)+1)%stations.length];transitionToStation(st.freq)}scheduleAuto()},19000+Math.random()*26000)}
-function scheduleGhost(){clearTimeout(state.ghostTimer);state.ghostTimer=setTimeout(()=>{const ghost=matchMedia('(max-width:760px)').matches?document.querySelector('.phone [data-ghost]'):document.querySelector('.desktop [data-ghost]');ghost.classList.remove('visit');void ghost.offsetWidth;ghost.classList.add('visit');if(!state.autoTune&&!isFinalSignoff(currentTrack())&&Math.random()<.42){const st=stations[Math.floor(Math.random()*stations.length)];setTimeout(()=>{if(!isFinalSignoff(currentTrack()))transitionToStation(st.freq)},2300)}scheduleGhost()},15000+Math.random()*24000)}
+function scheduleAuto(reset=false){
+  if(reset&&state.autoTimer){clearTimeout(state.autoTimer);state.autoTimer=null}
+  if(!state.autoTune)return;
+  if(state.autoTimer)clearTimeout(state.autoTimer);
+  state.autoTimer=setTimeout(()=>{
+    state.autoTimer=null;
+    // Haunted Auto Tune may wander only while the receiver is silent. Never interrupt a song.
+    if(state.autoTune&&!state.playbackIntent&&!state.drag&&!isFinalSignoff(currentTrack())&&Math.random()<.62){
+      let st=stations[Math.floor(Math.random()*stations.length)];
+      if(st.freq===nearestStation(state.currentFreq).freq)st=stations[(stations.indexOf(st)+1)%stations.length];
+      transitionToStation(st.freq);
+    }
+    scheduleAuto();
+  },19000+Math.random()*26000);
+}
+function scheduleGhost(){
+  if(state.ghostTimer)clearTimeout(state.ghostTimer);
+  state.ghostTimer=setTimeout(()=>{
+    state.ghostTimer=null;
+    const ghost=matchMedia('(max-width:760px)').matches?document.querySelector('.phone [data-ghost]'):document.querySelector('.desktop [data-ghost]');
+    ghost.classList.remove('visit');void ghost.offsetWidth;ghost.classList.add('visit');
+    // Ghost tuning is also silent-only so a delayed haunt cannot cut into playback.
+    if(!state.autoTune&&!state.playbackIntent&&!isFinalSignoff(currentTrack())&&Math.random()<.42){
+      const st=stations[Math.floor(Math.random()*stations.length)];
+      setTimeout(()=>{
+        if(!state.autoTune&&!state.playbackIntent&&!isFinalSignoff(currentTrack()))transitionToStation(st.freq);
+      },2300);
+    }
+    scheduleGhost();
+  },15000+Math.random()*24000);
+}
 audio.addEventListener('timeupdate',updateNow);
 audio.addEventListener('loadedmetadata',updateNow);
 audio.addEventListener('ended',()=>{const t=currentTrack();if(isFinalSignoff(t)){state.playbackIntent=false;silence();showToast('Transmission Ended','Good night, Louisburg.');updateUI();return}if(state.repeat&&state.playbackIntent){audio.currentTime=0;playCurrent();updateUI();return}changeTrack(1,{announce:false})});
