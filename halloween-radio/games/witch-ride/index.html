@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#070809">
+<title>Witch Ride — Brew & Brews Halloween Radio</title>
+<link rel="stylesheet" href="game.css">
+</head>
+<body>
+<div id="game-shell">
+  <div id="game"></div>
+  <div id="hud" class="hidden" aria-live="polite">
+    <div class="hud-cell"><span>SCORE</span><strong id="hud-score">0</strong></div>
+    <div class="hud-cell"><span>DISTANCE</span><strong id="hud-distance">0.00 MI</strong></div>
+    <div class="hud-cell"><span>BEANS</span><strong id="hud-beans">0</strong></div>
+    <div class="hud-cell speed"><span>SPEED</span><strong id="hud-speed">1.0×</strong></div>
+    <button id="pause-btn" type="button" aria-label="Pause Witch Ride">Ⅱ</button>
+  </div>
+
+  <section id="title-screen" class="screen open" aria-label="Witch Ride title screen">
+    <div class="panel title-panel">
+      <p class="eyebrow">BREW &amp; BREWS HALLOWEEN RADIO PRESENTS</p>
+      <h1>WITCH <em>RIDE</em></h1>
+      <p class="tagline">DODGE · COLLECT · SURVIVE</p>
+      <div class="divider"></div>
+      <button id="play-btn" class="primary" type="button">RIDE INTO THE NIGHT</button>
+      <button id="how-btn" type="button">HOW TO PLAY</button>
+      <button class="back-radio" type="button">BACK TO RADIO</button>
+      <div class="record"><span>HIGH SCORE</span><strong id="title-high">0</strong><span>LONGEST RIDE</span><strong id="title-distance">0.00 MI</strong></div>
+    </div>
+  </section>
+
+  <section id="how-screen" class="screen" aria-label="How to play Witch Ride">
+    <div class="panel how-panel">
+      <p class="eyebrow">FIELD MANUAL</p>
+      <h2>STAY OFF THE ROAD.</h2>
+      <p><b>Phone:</b> drag the witch left/right. Drag slightly up/down to change flying height.</p>
+      <p><b>Desktop:</b> Arrow keys or A/D steer. W/S or ↑/↓ adjust height.</p>
+      <p>Cars and fallen trees are hazards. Follow the glowing coffee-bean lines through safe gaps.</p>
+      <p>The road gets faster the longer you survive. Your hair, cape and broom react to actual speed and steering.</p>
+      <button id="how-back" class="primary" type="button">BACK</button>
+    </div>
+  </section>
+
+  <section id="pause-screen" class="screen" aria-label="Witch Ride paused">
+    <div class="panel compact-panel">
+      <p class="eyebrow">RECEIVER HOLD</p>
+      <h2>PAUSED</h2>
+      <button id="resume-btn" class="primary" type="button">RESUME</button>
+      <button class="back-radio" type="button">BACK TO RADIO</button>
+    </div>
+  </section>
+
+  <section id="gameover-screen" class="screen" aria-label="Witch Ride game over">
+    <div class="panel compact-panel">
+      <p class="eyebrow">TRANSMISSION LOST</p>
+      <h2>GAME OVER</h2>
+      <div class="results">
+        <span>SCORE</span><strong id="over-score">0</strong>
+        <span>DISTANCE</span><strong id="over-distance">0.00 MI</strong>
+        <span>BEANS</span><strong id="over-beans">0</strong>
+      </div>
+      <button id="again-btn" class="primary" type="button">RIDE AGAIN</button>
+      <button class="back-radio" type="button">BACK TO RADIO</button>
+    </div>
+  </section>
+
+  <div id="rotate-note">For the strongest ride, keep your phone upright.</div>
+  <div id="loading">TUNING THE WITCHING SIGNAL…</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
