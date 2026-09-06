@@ -25,6 +25,9 @@ const schedulePanel=document.getElementById('schedulePanel');
 const showsPanel=document.getElementById('showsPanel');
 const scheduleBody=document.getElementById('scheduleBody');
 const showsBody=document.getElementById('showsBody');
+const showsSub=showsPanel?.querySelector('.library-sub');
+if(showsSub)showsSub.textContent='Stay here while the radio plays, jump to another song, or save haunted favorites for next time.';
+
 let manifest=fallback;
 let favorites=readFavorites();
 let activePanel=null;
@@ -39,7 +42,37 @@ function trackById(id){return manifest.tracks.find(t=>t.id===id)||null}
 function readFavorites(){try{const v=JSON.parse(localStorage.getItem(FAVORITES_KEY)||'[]');return Array.isArray(v)?v.filter(Boolean):[]}catch{return[]}}
 function saveFavorites(){try{localStorage.setItem(FAVORITES_KEY,JSON.stringify(favorites))}catch{}}
 function isFavorite(id){return favorites.includes(id)}
-function toggleFavorite(id){if(isFavorite(id))favorites=favorites.filter(x=>x!==id);else favorites.push(id);saveFavorites();renderOpenPanel()}
+function favoriteMarkup(on){return `<span class="favorite-heart" aria-hidden="true">${on?'♥':'♡'}</span>`}
+
+function installMainFavoriteButtons(){
+  document.querySelectorAll('.skin-stage').forEach(stage=>{
+    if(stage.querySelector('[data-main-favorite]'))return;
+    const button=document.createElement('button');
+    button.type='button';
+    button.className='main-favorite-button';
+    button.setAttribute('data-main-favorite','');
+    button.innerHTML=favoriteMarkup(false);
+    stage.appendChild(button);
+  });
+  syncMainFavoriteButtons();
+}
+function syncMainFavoriteButtons(){
+  const id=api.snapshot().trackId;
+  const on=!!id&&isFavorite(id);
+  document.querySelectorAll('[data-main-favorite]').forEach(button=>{
+    button.classList.toggle('active',on);
+    button.setAttribute('aria-label',on?'Remove current song from favorites':'Favorite current song');
+    button.setAttribute('aria-pressed',String(on));
+    button.innerHTML=favoriteMarkup(on);
+  });
+}
+function toggleFavorite(id){
+  if(!id)return;
+  if(isFavorite(id))favorites=favorites.filter(x=>x!==id);else favorites.push(id);
+  saveFavorites();
+  syncMainFavoriteButtons();
+  renderOpenPanel();
+}
 function preservedState(){const s=api.snapshot();return{currentFreq:s.currentFreq,trackId:s.trackId,volume:s.volume,autoTune:s.autoTune,shuffle:s.shuffle,repeat:s.repeat,playbackIntent:s.playbackIntent}}
 function chooseTrack(track,{forcePlay=false}={}){
   if(!track)return;
@@ -47,6 +80,7 @@ function chooseTrack(track,{forcePlay=false}={}){
   api.restore({currentFreq:track.station,trackId:track.id,volume:before.volume,autoTune:before.autoTune,shuffle:before.shuffle,repeat:before.repeat});
   if(before.playbackIntent||forcePlay)api.togglePlay();
   lastSnapshot='';
+  syncMainFavoriteButtons();
   renderOpenPanel();
 }
 function closeDrawer(){const drawer=document.getElementById('drawer');drawer?.classList.remove('open');drawer?.setAttribute('aria-hidden','true')}
@@ -69,15 +103,16 @@ function closePanel(){
   backdrop.classList.remove('open');backdrop.setAttribute('aria-hidden','true');
   document.body.classList.remove('library-panel-open');
 }
-function renderOpenPanel(){if(activePanel==='schedule')renderSchedule();else if(activePanel==='shows')renderShows()}
+function renderOpenPanel(){syncMainFavoriteButtons();if(activePanel==='schedule')renderSchedule();else if(activePanel==='shows')renderShows()}
 
 function scheduleRow(t,currentId){
   const current=t.id===currentId;
   const final=t.id==='the-town-goes-quiet';
+  const fav=isFavorite(t.id);
   return `<div class="schedule-track${current?' current':''}" data-track-row="${esc(t.id)}">
     <div class="track-copy"><div class="track-title-line"><span class="track-number">${t.order}.</span><span class="track-title-text">${esc(t.title)}</span>${final?'<span class="track-final">Ending</span>':''}</div><div class="track-meta-line">${fmt(t.durationSec)}</div></div>
     <button class="start-button" type="button" data-start-track="${esc(t.id)}">START HERE</button>
-    <button class="favorite-button${isFavorite(t.id)?' active':''}" type="button" data-favorite="${esc(t.id)}" aria-label="${isFavorite(t.id)?'Remove from favorites':'Add to favorites'}">💕</button>
+    <button class="favorite-button${fav?' active':''}" type="button" data-favorite="${esc(t.id)}" aria-pressed="${fav}" aria-label="${fav?'Remove from favorites':'Add to favorites'}">${favoriteMarkup(fav)}</button>
   </div>`
 }
 function renderSchedule(){
@@ -91,11 +126,11 @@ function renderSchedule(){
 }
 
 function showRow(t,currentId){
-  const st=stationFor(t.station),current=t.id===currentId;
+  const st=stationFor(t.station),current=t.id===currentId,fav=isFavorite(t.id);
   return `<div class="show-track${current?' current':''}">
     <div class="track-copy"><div class="track-title-line">${current?'<span class="live-dot"></span>':''}<span class="track-title-text">${esc(t.title)}</span></div><div class="track-meta-line">${Number(st.frequency).toFixed(1)} · ${esc(st.name)} · ${fmt(t.durationSec)}</div></div>
     <button class="play-track-button" type="button" data-play-track="${esc(t.id)}">▶ PLAY</button>
-    <button class="favorite-button${isFavorite(t.id)?' active':''}" type="button" data-favorite="${esc(t.id)}" aria-label="${isFavorite(t.id)?'Remove from favorites':'Add to favorites'}">💕</button>
+    <button class="favorite-button${fav?' active':''}" type="button" data-favorite="${esc(t.id)}" aria-pressed="${fav}" aria-label="${fav?'Remove from favorites':'Add to favorites'}">${favoriteMarkup(fav)}</button>
   </div>`
 }
 function renderShows(){
@@ -112,19 +147,27 @@ function renderShows(){
         <button class="library-control" type="button" data-show-prev aria-label="Previous song">◀</button>
         <button class="library-control play-main" type="button" data-show-play>${s.playbackIntent?'❚❚ PAUSE':'▶ PLAY'}</button>
         <button class="library-control" type="button" data-show-next aria-label="Next song">▶</button>
-        ${current?`<button class="favorite-button${currentFav?' active':''}" type="button" data-favorite="${esc(current.id)}" aria-label="${currentFav?'Remove current song from favorites':'Favorite current song'}">💕</button>`:''}
+        ${current?`<button class="favorite-button${currentFav?' active':''}" type="button" data-favorite="${esc(current.id)}" aria-pressed="${currentFav}" aria-label="${currentFav?'Remove current song from favorites':'Favorite current song'}">${favoriteMarkup(currentFav)}</button>`:''}
       </div>
     </div>
     <div class="shows-tabs"><button class="shows-tab${showsTab==='signal'?' active':''}" type="button" data-shows-tab="signal">CURRENT SIGNAL</button><button class="shows-tab${showsTab==='favorites'?' active':''}" type="button" data-shows-tab="favorites">FAVORITES · ${favTracks.length}</button></div>
     <section class="shows-section${showsTab==='signal'?' active':''}" data-shows-section="signal"><div class="favorites-summary"><span>${Number(st.frequency).toFixed(1)} FM · ${esc(st.name)}</span><span>${tracksFor(st.frequency).length} songs</span></div><div class="show-list">${signalRows}</div></section>
-    <section class="shows-section${showsTab==='favorites'?' active':''}" data-shows-section="favorites"><div class="favorites-summary"><span>Your saved Halloween rotation</span><span>${favTracks.length} saved</span></div>${favTracks.length?`<div class="favorites-list">${favoriteRows}</div>`:'<div class="favorite-empty">Tap 💕 beside any song to build your favorites list. It will still be here the next time you open the radio.</div>'}</section>`;
+    <section class="shows-section${showsTab==='favorites'?' active':''}" data-shows-section="favorites"><div class="favorites-summary"><span>Your saved Halloween rotation</span><span>${favTracks.length} saved</span></div>${favTracks.length?`<div class="favorites-list">${favoriteRows}</div>`:'<div class="favorite-empty">Tap the haunted heart beside any song to build your favorites list. It will still be here the next time you open the radio.</div>'}</section>`;
 }
 
-function currentFingerprint(){const s=api.snapshot();return[s.currentFreq,s.trackId,s.playbackIntent,s.shuffle,s.repeat,Math.floor(audio.currentTime)].join('|')}
-function refreshIfNeeded(){if(!activePanel)return;const f=currentFingerprint();if(f===lastSnapshot)return;lastSnapshot=f;renderOpenPanel()}
+function currentFingerprint(){const s=api.snapshot();return[s.currentFreq,s.trackId,s.playbackIntent,s.shuffle,s.repeat,Math.floor(audio.currentTime),favorites.join(',')].join('|')}
+function refreshIfNeeded(){
+  syncMainFavoriteButtons();
+  if(!activePanel)return;
+  const f=currentFingerprint();
+  if(f===lastSnapshot)return;
+  lastSnapshot=f;
+  renderOpenPanel();
+}
 
 async function loadManifest(){
   try{const r=await fetch('data/tracks.json',{cache:'no-store'});if(r.ok){const data=await r.json();if(Array.isArray(data.stations)&&Array.isArray(data.tracks)){manifest=data}}}catch{}
+  syncMainFavoriteButtons();
   renderOpenPanel();
 }
 
@@ -135,23 +178,25 @@ document.addEventListener('click',e=>{
 },true);
 
 document.addEventListener('click',e=>{
+  const mainFavorite=e.target.closest('[data-main-favorite]');if(mainFavorite){e.preventDefault();e.stopPropagation();toggleFavorite(api.snapshot().trackId);return}
   const close=e.target.closest('[data-library-close]');if(close){closePanel();return}
   const jump=e.target.closest('[data-jump-station]');if(jump){document.getElementById(`schedule-station-${String(jump.dataset.jumpStation).replace('.','-')}`)?.scrollIntoView({behavior:'smooth',block:'start'});return}
   const start=e.target.closest('[data-start-track]');if(start){chooseTrack(trackById(start.dataset.startTrack),{forcePlay:false});return}
   const play=e.target.closest('[data-play-track]');if(play){chooseTrack(trackById(play.dataset.playTrack),{forcePlay:true});return}
   const favorite=e.target.closest('[data-favorite]');if(favorite){toggleFavorite(favorite.dataset.favorite);return}
   const tab=e.target.closest('[data-shows-tab]');if(tab){showsTab=tab.dataset.showsTab;renderShows();return}
-  if(e.target.closest('[data-show-prev]')){api.previous();lastSnapshot='';renderShows();return}
-  if(e.target.closest('[data-show-next]')){api.next();lastSnapshot='';renderShows();return}
+  if(e.target.closest('[data-show-prev]')){api.previous();lastSnapshot='';syncMainFavoriteButtons();renderShows();return}
+  if(e.target.closest('[data-show-next]')){api.next();lastSnapshot='';syncMainFavoriteButtons();renderShows();return}
   if(e.target.closest('[data-show-play]')){api.togglePlay();lastSnapshot='';setTimeout(renderShows,50);return}
   if(activePanel&&e.target.closest('[data-hit="home"]'))closePanel();
 });
 backdrop.addEventListener('click',closePanel);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&activePanel){e.preventDefault();e.stopImmediatePropagation();closePanel()}},true);
-audio.addEventListener('play',()=>{lastSnapshot='';renderOpenPanel()});
-audio.addEventListener('pause',()=>{lastSnapshot='';renderOpenPanel()});
-audio.addEventListener('loadedmetadata',()=>{lastSnapshot='';renderOpenPanel()});
-audio.addEventListener('ended',()=>{lastSnapshot='';setTimeout(renderOpenPanel,40)});
+audio.addEventListener('play',()=>{lastSnapshot='';syncMainFavoriteButtons();renderOpenPanel()});
+audio.addEventListener('pause',()=>{lastSnapshot='';syncMainFavoriteButtons();renderOpenPanel()});
+audio.addEventListener('loadedmetadata',()=>{lastSnapshot='';syncMainFavoriteButtons();renderOpenPanel()});
+audio.addEventListener('ended',()=>{lastSnapshot='';setTimeout(()=>{syncMainFavoriteButtons();renderOpenPanel()},40)});
+installMainFavoriteButtons();
 setInterval(refreshIfNeeded,750);
 loadManifest();
 })();
