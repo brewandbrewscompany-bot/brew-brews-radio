@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageFilter, ImageDraw
 import trimesh
+from trimesh.exchange import gltf
 from trimesh.transformations import translation_matrix, rotation_matrix, scale_matrix
 from trimesh.visual.material import PBRMaterial
 
@@ -82,7 +83,9 @@ def T(pos=(0,0,0), rot=None, scale=None):
     return Mx
 
 def export_scene(scene, filename):
-    data=scene.export(file_type='glb')
+    # Explicit vertex normals keep moonlight, chrome and cloth shading deterministic
+    # across PlayCanvas/WebGL devices instead of relying on generated flat normals.
+    data=gltf.export_glb(scene, include_normals=True, unitize_normals=True)
     (OUT/filename).write_bytes(data)
     return {'file':filename,'bytes':len(data),'nodes':len(scene.graph.nodes_geometry)}
 
