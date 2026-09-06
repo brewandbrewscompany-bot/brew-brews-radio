@@ -43,6 +43,9 @@ jobs:
       - name: Build road and environment material pass
         run: |
           if [ -f halloween-radio/games/witch-ride-3d/tools/build_environment_pass4.py ]; then python halloween-radio/games/witch-ride-3d/tools/build_environment_pass4.py; fi
+      - name: Merge static environment meshes for mobile
+        run: |
+          if [ -f halloween-radio/games/witch-ride-3d/tools/optimize_environment_pass4.py ]; then python halloween-radio/games/witch-ride-3d/tools/optimize_environment_pass4.py; fi
       - name: Build realism matte and fog assets
         run: python halloween-radio/games/witch-ride-3d/tools/build_realism_assets.py
       - name: Validate generated cinematic pack
@@ -57,7 +60,6 @@ jobs:
           grep -a -q 'hair_05' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
           grep -a -q 'cape_lining' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
           grep -a -q 'whitewall' halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
-          grep -a -q 'jack_eye' halloween-radio/games/witch-ride-3d/assets/models/jack-o-lantern.glb
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-albedo.png
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-normal.png
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-gloss.png
@@ -81,9 +83,12 @@ jobs:
           fi
           if [ -f halloween-radio/games/witch-ride-3d/assets/environment-material-pass.json ]; then
             grep -q 'environment-material-pass-v4' halloween-radio/games/witch-ride-3d/assets/environment-material-pass.json
-            grep -a -q 'root_flare_' halloween-radio/games/witch-ride-3d/assets/models/dead-tree.glb
-            grep -a -q 'broken_splinter' halloween-radio/games/witch-ride-3d/assets/models/haunted-fence.glb
-            grep -a -q 'pumpkin_lobe_' halloween-radio/games/witch-ride-3d/assets/models/jack-o-lantern.glb
+            grep -q 'merged-static-material-batches' halloween-radio/games/witch-ride-3d/assets/environment-material-pass.json
+            grep -a -q 'root_flare_bark_knot_combined' halloween-radio/games/witch-ride-3d/assets/models/dead-tree.glb
+            grep -a -q 'broken_splinter_wood_combined' halloween-radio/games/witch-ride-3d/assets/models/haunted-fence.glb
+            grep -a -q 'nail_rusted_combined' halloween-radio/games/witch-ride-3d/assets/models/haunted-fence.glb
+            grep -a -q 'pumpkin_lobe_combined' halloween-radio/games/witch-ride-3d/assets/models/jack-o-lantern.glb
+            grep -a -q 'jack_eye_jack_mouth_glow_combined' halloween-radio/games/witch-ride-3d/assets/models/jack-o-lantern.glb
             test -s halloween-radio/games/witch-ride-3d/assets/textures/shoulder-mud-albedo.png
             test -s halloween-radio/games/witch-ride-3d/assets/textures/shoulder-mud-normal.png
             test -s halloween-radio/games/witch-ride-3d/assets/textures/dead-bark-normal.png
@@ -95,4 +100,4 @@ jobs:
           git config user.name "brewandbrewscompany-bot"
           git config user.email "brewandbrewscompany@gmail.com"
           git add halloween-radio/games/witch-ride-3d/assets
-          if git diff --cached --quiet; then echo "Asset pack already current"; else git commit -m "Build Witch Ride 3D production material assets" && git push origin HEAD:${{ github.ref_name }}; fi
+          if git diff --cached --quiet; then echo "Asset pack already current"; else git commit -m "Build Witch Ride 3D optimized environment assets" && git push origin HEAD:${{ github.ref_name }}; fi
