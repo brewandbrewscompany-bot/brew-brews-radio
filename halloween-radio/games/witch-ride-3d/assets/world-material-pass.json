@@ -1,0 +1,81 @@
+{
+  "version": "world-material-pass-v3",
+  "authoritativeWitch": "witch-material-pass-v2",
+  "textureSize": 192,
+  "textures": [
+    "bark-albedo.png",
+    "bark-normal.png",
+    "brick-albedo.png",
+    "brick-normal.png",
+    "carpaint-albedo.png",
+    "carpaint-metalrough.png",
+    "carpaint-normal.png",
+    "chrome-metalrough.png",
+    "coffee-albedo.png",
+    "coffee-normal.png",
+    "fence-albedo.png",
+    "fence-normal.png",
+    "iron-metalrough.png",
+    "pumpkin-albedo.png",
+    "pumpkin-normal.png",
+    "tire-metalrough.png",
+    "whitewall-albedo.png",
+    "whitewall-normal.png"
+  ],
+  "models": [
+    {
+      "file": "vintage-car.glb",
+      "patched": 56,
+      "materials": {
+        "carpaint": 15,
+        "chrome": 31,
+        "tire": 4,
+        "whitewall": 5,
+        "iron": 1
+      },
+      "bytes": 490436
+    },
+    {
+      "file": "dead-tree.glb",
+      "patched": 44,
+      "materials": {
+        "bark": 44
+      },
+      "bytes": 231248
+    },
+    {
+      "file": "coffee-bean.glb",
+      "patched": 1,
+      "materials": {
+        "coffee": 1
+      },
+      "bytes": 133160
+    },
+    {
+      "file": "haunted-fence.glb",
+      "patched": 14,
+      "materials": {
+        "fence": 10,
+        "iron": 4
+      },
+      "bytes": 213704
+    },
+    {
+      "file": "jack-o-lantern.glb",
+      "patched": 9,
+      "materials": {
+        "pumpkin": 9
+      },
+      "bytes": 111516
+    },
+    {
+      "file": "haunted-roastery.glb",
+      "patched": 7,
+      "materials": {
+        "brick": 4,
+        "iron": 3
+      },
+      "bytes": 162436
+    }
+  ]
+}
