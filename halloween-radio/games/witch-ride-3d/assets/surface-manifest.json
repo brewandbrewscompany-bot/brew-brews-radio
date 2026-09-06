@@ -1,0 +1,64 @@
+{
+  "version": "surface-realism-v1",
+  "textures": [
+    "bark-albedo.png",
+    "bark-normal.png",
+    "brick-albedo.png",
+    "brick-normal.png",
+    "bristle-albedo.png",
+    "bristle-normal.png",
+    "burgundy-albedo.png",
+    "burgundy-normal.png",
+    "carpaint-albedo.png",
+    "carpaint-metalrough.png",
+    "carpaint-normal.png",
+    "chrome-metalrough.png",
+    "fence-albedo.png",
+    "fence-normal.png",
+    "hair-albedo.png",
+    "hair-normal.png",
+    "leather-albedo.png",
+    "leather-normal.png",
+    "pumpkin-albedo.png",
+    "pumpkin-normal.png",
+    "tire-metalrough.png",
+    "whitewall-albedo.png",
+    "whitewall-normal.png",
+    "wood-albedo.png",
+    "wood-normal.png",
+    "wool-albedo.png",
+    "wool-normal.png"
+  ],
+  "models": [
+    {
+      "file": "witch-rider.glb",
+      "patched": 33,
+      "bytes": 1122656
+    },
+    {
+      "file": "vintage-car.glb",
+      "patched": 55,
+      "bytes": 639344
+    },
+    {
+      "file": "dead-tree.glb",
+      "patched": 44,
+      "bytes": 264016
+    },
+    {
+      "file": "haunted-fence.glb",
+      "patched": 10,
+      "bytes": 199456
+    },
+    {
+      "file": "jack-o-lantern.glb",
+      "patched": 9,
+      "bytes": 195672
+    },
+    {
+      "file": "haunted-roastery.glb",
+      "patched": 4,
+      "bytes": 229580
+    }
+  ]
+}
