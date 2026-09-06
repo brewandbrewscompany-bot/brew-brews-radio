@@ -3,37 +3,37 @@
   "assets": [
     {
       "file": "witch-rider.glb",
-      "bytes": 77296,
+      "bytes": 103528,
       "nodes": 27
     },
     {
       "file": "vintage-car.glb",
-      "bytes": 58788,
+      "bytes": 74052,
       "nodes": 40
     },
     {
       "file": "dead-tree.glb",
-      "bytes": 13808,
+      "bytes": 19424,
       "nodes": 15
     },
     {
       "file": "coffee-bean.glb",
-      "bytes": 28616,
+      "bytes": 37924,
       "nodes": 2
     },
     {
       "file": "haunted-fence.glb",
-      "bytes": 3816,
+      "bytes": 4524,
       "nodes": 6
     },
     {
       "file": "jack-o-lantern.glb",
-      "bytes": 10720,
+      "bytes": 13468,
       "nodes": 9
     },
     {
       "file": "haunted-roastery.glb",
-      "bytes": 6776,
+      "bytes": 7284,
       "nodes": 14
     }
   ],
