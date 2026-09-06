@@ -24,15 +24,17 @@ function box(app,name,scale,pos,material){
 function plane(app,name,scale,pos,material){
   const e=new pc.Entity(name);e.addComponent('render',{type:'plane'});e.setLocalScale(...scale);e.setPosition(...pos);e.render.material=material;e.render.castShadows=false;e.render.receiveShadows=false;app.root.addChild(e);return e;
 }
-function softenExistingFog(app){
-  for(let i=0;i<20;i++){const e=app.root.findByName(`Fog Bank ${i}`);if(e)e.enabled=false}
-}
+function softenExistingFog(app){for(let i=0;i<20;i++){const e=app.root.findByName(`Fog Bank ${i}`);if(e)e.enabled=false}}
 function widenRoad(app){
   for(let i=0;i<9;i++){
     const root=app.root.findByName(`Road Segment ${i}`);if(!root)continue;
     const road=root.findByName('Road');if(road)road.setLocalScale(15,.18,28);
-    const sl=root.findByName('Shoulder L'),sr=root.findByName('Shoulder R');if(sl){sl.setLocalScale(9,.15,28);sl.setLocalPosition(-12.1,-.18,0)}if(sr){sr.setLocalScale(9,.15,28);sr.setLocalPosition(12.1,-.18,0)}
-    const sheens=root.children.filter(c=>c.name==='Wet sheen');if(sheens[0]){sheens[0].setLocalPosition(-4.5,0,-4);sheens[0].setLocalScale(1.45,.006,11)}if(sheens[1]){sheens[1].setLocalPosition(4.5,0,-4);sheens[1].setLocalScale(1.45,.006,11)}
+    const sl=root.findByName('Shoulder L'),sr=root.findByName('Shoulder R');
+    if(sl){sl.setLocalScale(9,.15,28);sl.setLocalPosition(-12.1,-.18,0)}
+    if(sr){sr.setLocalScale(9,.15,28);sr.setLocalPosition(12.1,-.18,0)}
+    const sheens=root.children.filter(c=>c.name==='Wet sheen');
+    if(sheens[0]){sheens[0].setLocalPosition(-4.5,0,-4);sheens[0].setLocalScale(1.45,.006,11)}
+    if(sheens[1]){sheens[1].setLocalPosition(4.5,0,-4);sheens[1].setLocalScale(1.45,.006,11)}
   }
 }
 function tuneLights(app){
@@ -43,18 +45,40 @@ function tuneLights(app){
   const rim=new pc.Entity('Realism Cool Rim');rim.addComponent('light',{type:'directional',color:new pc.Color(.21,.34,.55),intensity:.31,castShadows:false});rim.setEulerAngles(28,36,-8);app.root.addChild(rim);
 }
 function tuneModels(app){
-  const witch=app.root.findByName('Witch Rig')||app.root.findByName('Witch Rig Fallback');if(witch){witch.setLocalScale(.91,.91,.91);const rim=new pc.Entity('Witch Rim Glow');rim.addComponent('light',{type:'point',color:new pc.Color(.20,.34,.58),intensity:.46,range:7.5,castShadows:false});rim.setLocalPosition(0,2.3,1.5);witch.addChild(rim);const ember=witch.findByName('Broom Ember Light');if(ember?.light){ember.light.intensity=.88;ember.light.range=10.5}}
+  const witch=app.root.findByName('Witch Rig')||app.root.findByName('Witch Rig Fallback');
+  if(witch){witch.setLocalScale(.91,.91,.91);const rim=new pc.Entity('Witch Rim Glow');rim.addComponent('light',{type:'point',color:new pc.Color(.20,.34,.58),intensity:.46,range:7.5,castShadows:false});rim.setLocalPosition(0,2.3,1.5);witch.addChild(rim);const ember=witch.findByName('Broom Ember Light');if(ember?.light){ember.light.intensity=.88;ember.light.range=10.5}}
   for(let i=0;i<7;i++){const car=app.root.findByName(`1938 Coupe ${i}`);if(!car)continue;car.setLocalScale(1.02,1.02,1.02);for(const c of car.children){if(c.name?.startsWith('Headlight Glow')&&c.light){c.light.intensity=.52;c.light.range=13}}}
+}
+function setRepeat(texture){if(!texture)return;texture.addressU=pc.ADDRESS_REPEAT;texture.addressV=pc.ADDRESS_REPEAT}
+function surfaceMaterial(diffuse,normal,gloss,tiling,offset,{base=[.1,.1,.1],glossiness=.5,bump=.5}={}){
+  const m=new pc.StandardMaterial();m.diffuse=new pc.Color(...base);m.diffuseMap=diffuse;m.normalMap=normal;m.glossMap=gloss;m.glossMapChannel='r';m.gloss=glossiness;m.bumpiness=bump;m.useMetalness=true;m.metalness=.015;
+  for(const p of ['diffuseMap','normalMap','glossMap']){m[`${p}Tiling`]=new pc.Vec2(...tiling);m[`${p}Offset`]=new pc.Vec2(...offset)}
+  m.update();return m;
+}
+function puddleMaterial(texture,tiling,offset){
+  const m=new pc.StandardMaterial();m.diffuse=new pc.Color(.055,.07,.08);m.diffuseMap=texture;m.opacityMap=texture;m.opacityMapChannel='r';m.opacity=.2;m.gloss=.96;m.useMetalness=true;m.metalness=.03;m.blendType=pc.BLEND_NORMAL;m.depthWrite=false;m.cull=pc.CULLFACE_NONE;
+  m.diffuseMapTiling=new pc.Vec2(...tiling);m.diffuseMapOffset=new pc.Vec2(...offset);m.opacityMapTiling=new pc.Vec2(...tiling);m.opacityMapOffset=new pc.Vec2(...offset);m.update();return m;
+}
+function applyEnvironmentMaterials(app,t){
+  Object.values(t).forEach(setRepeat);
+  for(let i=0;i<9;i++){
+    const root=app.root.findByName(`Road Segment ${i}`);if(!root)continue;
+    const offset=[(i%3)*.173,(i*.277)%1],tiling=[1.18+(i%2)*.07,2.7+(i%3)*.16];
+    const road=root.findByName('Road');
+    if(road?.render)road.render.material=surfaceMaterial(t.roadAlbedo,t.roadNormal,t.roadGloss,tiling,offset,{base:[.07,.075,.08],glossiness:.7,bump:.64});
+    const mudOffset=[((i+1)%4)*.19,(i*.193)%1],mudTiling=[1.45,2.35+(i%2)*.2];
+    for(const shoulderName of ['Shoulder L','Shoulder R']){
+      const shoulder=root.findByName(shoulderName);if(shoulder?.render)shoulder.render.material=surfaceMaterial(t.mudAlbedo,t.mudNormal,t.mudGloss,mudTiling,mudOffset,{base:[.11,.075,.045],glossiness:.3,bump:.72});
+    }
+    const puddle=new pc.Entity(`Puddle Variation ${i}`);puddle.addComponent('render',{type:'plane'});puddle.setLocalScale(14.55,1,27.45);puddle.setLocalPosition(0,.145,0);puddle.render.material=puddleMaterial(t.puddles,[1.08,2.45],[(offset[0]+.11)%1,(offset[1]+.29)%1]);puddle.render.castShadows=false;puddle.render.receiveShadows=false;root.addChild(puddle);
+  }
 }
 function addAtmosphere(app,fogTexture){
   softenExistingFog(app);const mat=transparentMaterial(fogTexture,.30);const banks=[];
   for(let i=0;i<12;i++){const side=i%3===0?0:(i%2?-1:1),e=plane(app,`Realism Fog ${i}`,[11+(i%4)*2.2,1,5.2+(i%3)*1.3],[side*(4.5+(i%3)*1.4),.11,-12-i*21],mat);e.__baseX=e.getPosition().x;e.__reset=245+(i%3)*14;e.__phase=i*.77;banks.push(e)}
   let t=0;app.on('update',dt=>{t+=dt;for(const e of banks){const p=e.getPosition();p.z+=dt*7.3;p.x=e.__baseX+Math.sin(t*.26+e.__phase)*.75;e.setPosition(p);if(p.z>18)e.setPosition(e.__baseX,.11,-e.__reset)}});
 }
-function addBackdrop(app,texture){
-  for(const n of ['Moon Halo Outer','Moon Halo Inner','Moon']){const e=app.root.findByName(n);if(e)e.enabled=false}
-  const m=imageMaterial(texture);const e=box(app,'Cinematic Haunted Horizon',[108,52,.08],[0,20,-139],m);e.setEulerAngles(0,0,0);return e;
-}
+function addBackdrop(app,texture){for(const n of ['Moon Halo Outer','Moon Halo Inner','Moon']){const e=app.root.findByName(n);if(e)e.enabled=false}const m=imageMaterial(texture);const e=box(app,'Cinematic Haunted Horizon',[108,52,.08],[0,20,-139],m);e.setEulerAngles(0,0,0);return e}
 function addRoadReflections(app){
   const m=new pc.StandardMaterial();m.diffuse=new pc.Color(.20,.105,.035);m.emissive=new pc.Color(.17,.055,.006);m.emissiveIntensity=.75;m.opacity=.12;m.blendType=pc.BLEND_ADDITIVE;m.depthWrite=false;m.cull=pc.CULLFACE_NONE;m.update();
   for(let i=0;i<10;i++){const x=i%2?-4.3:4.3,z=-8-i*24;const e=plane(app,`Warm Road Reflection ${i}`,[.68,1,4.6],[x,.035,z],m);e.__z0=z}
@@ -65,18 +89,18 @@ async function install(){
     if(app&&window.WitchRide3D?.ready){
       try{
         tuneLights(app);widenRoad(app);tuneModels(app);
-        const [backdrop,fog,materialPass,vehiclePass]=await Promise.all([
-          textureAsset(app,'assets/textures/cinematic-backdrop.jpg','cinematic-backdrop.jpg'),
-          textureAsset(app,'assets/textures/fog-sheet.png','fog-sheet.png'),
-          loadPassManifest('assets/witch-material-pass.json','base-materials'),
-          loadPassManifest('assets/vehicle-material-pass.json','base-vehicle')
+        const [backdrop,fog,materialPass,vehiclePass,environmentPass,roadAlbedo,roadNormal,roadGloss,puddles,mudAlbedo,mudNormal,mudGloss]=await Promise.all([
+          textureAsset(app,'assets/textures/cinematic-backdrop.jpg','cinematic-backdrop.jpg'),textureAsset(app,'assets/textures/fog-sheet.png','fog-sheet.png'),
+          loadPassManifest('assets/witch-material-pass.json','base-materials'),loadPassManifest('assets/vehicle-material-pass.json','base-vehicle'),loadPassManifest('assets/environment-material-pass.json','base-environment'),
+          textureAsset(app,'assets/textures/asphalt-albedo.png','environment-asphalt-albedo.png'),textureAsset(app,'assets/textures/asphalt-normal.png','environment-asphalt-normal.png'),textureAsset(app,'assets/textures/asphalt-gloss.png','environment-asphalt-gloss.png'),textureAsset(app,'assets/textures/asphalt-puddles.png','environment-asphalt-puddles.png'),
+          textureAsset(app,'assets/textures/shoulder-mud-albedo.png','environment-mud-albedo.png'),textureAsset(app,'assets/textures/shoulder-mud-normal.png','environment-mud-normal.png'),textureAsset(app,'assets/textures/shoulder-mud-gloss.png','environment-mud-gloss.png')
         ]);
+        if(environmentPass==='environment-material-pass-v4')applyEnvironmentMaterials(app,{roadAlbedo,roadNormal,roadGloss,puddles,mudAlbedo,mudNormal,mudGloss});
         addBackdrop(app,backdrop);addAtmosphere(app,fog);addRoadReflections(app);
-        document.body.classList.add('realism-pass-ready');window.WitchRide3D.realismPass=VERSION;window.WitchRide3D.materialPass=materialPass;window.WitchRide3D.vehiclePass=vehiclePass;
-        if(materialPass==='witch-material-pass-v2')document.body.classList.add('witch-material-pass-ready');
-        if(vehiclePass==='vehicle-material-pass-v3')document.body.classList.add('vehicle-material-pass-ready');
-        console.info('Witch Ride realism pass ready',VERSION,materialPass,vehiclePass);return;
-      }catch(err){console.error('Witch Ride realism pass failed',err);window.WitchRide3D.realismPass='fallback';window.WitchRide3D.materialPass='fallback';window.WitchRide3D.vehiclePass='fallback'}
+        document.body.classList.add('realism-pass-ready');window.WitchRide3D.realismPass=VERSION;window.WitchRide3D.materialPass=materialPass;window.WitchRide3D.vehiclePass=vehiclePass;window.WitchRide3D.environmentPass=environmentPass;
+        if(materialPass==='witch-material-pass-v2')document.body.classList.add('witch-material-pass-ready');if(vehiclePass==='vehicle-material-pass-v3')document.body.classList.add('vehicle-material-pass-ready');if(environmentPass==='environment-material-pass-v4')document.body.classList.add('environment-material-pass-ready');
+        console.info('Witch Ride realism pass ready',VERSION,materialPass,vehiclePass,environmentPass);return;
+      }catch(err){console.error('Witch Ride realism pass failed',err);window.WitchRide3D.realismPass='fallback';window.WitchRide3D.materialPass='fallback';window.WitchRide3D.vehiclePass='fallback';window.WitchRide3D.environmentPass='fallback'}
     }
     await wait(50);
   }
