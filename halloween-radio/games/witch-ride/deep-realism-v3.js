@@ -9,10 +9,11 @@ const FRAMES={
   legs:{x:4,y:175,w:90,h:160},
   carHD:{x:100,y:175,w:220,h:165}
 };
+const ATLAS_DATA='data:image/webp;base64,'+(window.__WR_DEEP_ATLAS||'');
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function spring(s,target,dt,k=26,d=6){s.v+=(target-s.x)*k*dt;s.v*=Math.exp(-d*dt);s.x+=s.v*dt;return s.x}
 function sceneNow(){try{for(const game of Phaser.GAMES||[]){const s=game?.scene?.keys?.WitchRide||game?.scene?.getScene?.('WitchRide');if(s?.player)return s}}catch{}return null}
-function load(scene){return new Promise((resolve,reject)=>{if(scene.textures.exists(KEY)){resolve();return}const im=new Image();im.decoding='async';im.onload=()=>{try{const tex=scene.textures.addImage(KEY,im);for(const [name,f] of Object.entries(FRAMES))tex.add(name,0,f.x,f.y,f.w,f.h);resolve()}catch(e){reject(e)}};im.onerror=()=>reject(new Error('Deep realism texture failed to load'));im.src='deep-realism.webp?v=3'})}
+function load(scene){return new Promise((resolve,reject)=>{if(scene.textures.exists(KEY)){resolve();return}const im=new Image();im.decoding='async';im.onload=()=>{try{const tex=scene.textures.addImage(KEY,im);for(const [name,f] of Object.entries(FRAMES))tex.add(name,0,f.x,f.y,f.w,f.h);resolve()}catch(e){reject(e)}};im.onerror=()=>reject(new Error('Deep realism texture failed to load'));im.src=ATLAS_DATA})}
 function img(scene,frame,x,y,w,h,ox=.5,oy=.5){return scene.add.image(x,y,KEY,frame).setDisplaySize(w,h).setOrigin(ox,oy)}
 function hide(o){try{o?.setVisible?.(false)}catch{}}
 function installWitch(scene){
@@ -29,6 +30,7 @@ function installWitch(scene){
   right.add(img(scene,'clothR',0,0,77,141,.44,.12));
   back.add([legs,left,mid,right]);front.add(body);
   r.add([back,front]);
+  // Preserve the already-working moving hair, hat, ribbon and broom above the new material body.
   for(const h of p.parts?.hair||[])try{r.bringToTop(h)}catch{}
   for(const part of [p.parts?.broom,p.parts?.bristles,p.parts?.hat,p.parts?.ribbon,p.parts?.glow])try{r.bringToTop(part)}catch{}
   p.__deepHD={back,front,left,mid,right,body,legs};
@@ -57,6 +59,6 @@ function motion(scene){
     d.right.rotation=spring(d.right.spring,clamp(-bank*1.08-vel*1.16+Math.sin(now*.0059)*(.017+wind*.030),-.49,.49),dt,20,4.7);d.right.x=27-bank*12-vel*17;d.right.scaleY=1+wind*.12+Math.max(0,acc)*.19;
   }const a=scene.__deepRoadLight;if(a){a.haze.alpha=.72+Math.sin(now*.0008)*.14;a.refl.alpha=.80+Math.sin(now*.0011)*.08}})
 }
-async function install(){const scene=sceneNow();if(!scene){setTimeout(install,90);return}if(scene.__deepHDInstalled)return;scene.__deepHDInstalled=true;try{await load(scene);installWitch(scene);installCars(scene);addRoadLight(scene);motion(scene);window.WitchRideDeepRealism={active:true,version:3,refresh:()=>installCars(scene)}}catch(e){scene.__deepHDInstalled=false;console.warn('Deep Witch Ride realism unavailable; v2 remains active.',e)}}
+async function install(){const scene=sceneNow();if(!scene||!scene.player?.__realismSkin){setTimeout(install,90);return}if(scene.__deepHDInstalled)return;scene.__deepHDInstalled=true;try{await load(scene);installWitch(scene);installCars(scene);addRoadLight(scene);motion(scene);window.WitchRideDeepRealism={active:true,version:3,refresh:()=>installCars(scene)};try{delete window.__WR_DEEP_ATLAS}catch{}}catch(e){scene.__deepHDInstalled=false;console.warn('Deep Witch Ride realism unavailable; v2 remains active.',e)}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
