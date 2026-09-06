@@ -1,6 +1,7 @@
 import * as pc from 'playcanvas';
 
 const VERSION='realism-pass-v1';
+const SURFACE_VERSION='surface-realism-v1';
 const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
 
 function textureAsset(app,url,name){
@@ -56,6 +57,17 @@ function addRoadReflections(app){
   const m=new pc.StandardMaterial();m.diffuse=new pc.Color(.20,.105,.035);m.emissive=new pc.Color(.17,.055,.006);m.emissiveIntensity=.75;m.opacity=.12;m.blendType=pc.BLEND_ADDITIVE;m.depthWrite=false;m.cull=pc.CULLFACE_NONE;m.update();
   for(let i=0;i<10;i++){const x=i%2?-4.3:4.3,z=-8-i*24;const e=plane(app,`Warm Road Reflection ${i}`,[.68,1,4.6],[x,.035,z],m);e.__z0=z}
 }
+function materialStats(root){
+  const out={meshInstances:0,textured:0,normalMapped:0,metalRoughMapped:0,names:[]};if(!root)return out;
+  const seen=new Set();for(const render of root.findComponents?.('render')||[]){for(const mi of render.meshInstances||[]){out.meshInstances++;const m=mi.material;if(!m)continue;const key=m.id??m.name;if(!seen.has(key)){seen.add(key);if(out.names.length<16)out.names.push(m.name||'material')}if(m.diffuseMap||m.emissiveMap)out.textured++;if(m.normalMap)out.normalMapped++;if(m.metalnessMap||m.glossMap)out.metalRoughMapped++}}
+  return out;
+}
+function auditSurfaceMaterials(app){
+  const witch=app.root.findByName('Witch Rig')||app.root.findByName('Witch Rig Fallback');const car=app.root.findByName('1938 Coupe 0');const tree=app.root.findByName('Dead Tree 0');
+  const stats={version:SURFACE_VERSION,witch:materialStats(witch),car:materialStats(car),tree:materialStats(tree)};
+  const production=stats.witch.textured>=6&&stats.witch.normalMapped>=6&&stats.car.textured>=6&&stats.car.normalMapped>=4;
+  stats.ready=production;window.WitchRide3D.surfaceStats=stats;window.WitchRide3D.surfacePass=production?SURFACE_VERSION:'fallback';document.body.classList.toggle('surface-realism-ready',production);return stats;
+}
 async function install(){
   for(let i=0;i<240;i++){
     const app=pc.app;
@@ -63,10 +75,10 @@ async function install(){
       try{
         tuneLights(app);widenRoad(app);tuneModels(app);
         const [backdrop,fog]=await Promise.all([textureAsset(app,'assets/textures/cinematic-backdrop.jpg','cinematic-backdrop.jpg'),textureAsset(app,'assets/textures/fog-sheet.png','fog-sheet.png')]);
-        addBackdrop(app,backdrop);addAtmosphere(app,fog);addRoadReflections(app);
+        addBackdrop(app,backdrop);addAtmosphere(app,fog);addRoadReflections(app);const surfaceStats=auditSurfaceMaterials(app);
         document.body.classList.add('realism-pass-ready');window.WitchRide3D.realismPass=VERSION;
-        console.info('Witch Ride realism pass ready',VERSION);return;
-      }catch(err){console.error('Witch Ride realism pass failed',err);window.WitchRide3D.realismPass='fallback'}
+        console.info('Witch Ride realism pass ready',VERSION,'surface',surfaceStats);return;
+      }catch(err){console.error('Witch Ride realism pass failed',err);window.WitchRide3D.realismPass='fallback';window.WitchRide3D.surfacePass='fallback'}
     }
     await wait(50);
   }
