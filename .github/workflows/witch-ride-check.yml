@@ -1,0 +1,91 @@
+name: Witch Ride Check
+
+on:
+  push:
+    paths:
+      - 'halloween-radio/games/witch-ride/**'
+      - 'halloween-radio/assets/js/witch-ride-launcher.js'
+      - 'halloween-radio/index.html'
+      - '.github/workflows/witch-ride-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  game:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate game source
+        run: |
+          node --check halloween-radio/games/witch-ride/game.js
+          node --check halloween-radio/assets/js/witch-ride-launcher.js
+          test -f halloween-radio/games/witch-ride/index.html
+          test -f halloween-radio/games/witch-ride/game.css
+          grep -q "phaser@3.90.0" halloween-radio/games/witch-ride/index.html
+          grep -q "springStep" halloween-radio/games/witch-ride/game.js
+          grep -q "data-hit=\"menu\"" halloween-radio/index.html
+          grep -q "witch-ride-launcher.js" halloween-radio/index.html
+
+      - name: Install browser helper
+        run: npm install --no-save puppeteer-core@24.16.0
+
+      - name: Run WebGL game smoke test
+        run: |
+          python3 -m http.server 8000 --directory . >/tmp/witch-ride-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_BIN"
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const puppeteer=require('puppeteer-core');
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          (async()=>{
+            const browser=await puppeteer.launch({
+              executablePath:process.env.CHROME_BIN,
+              headless:true,
+              args:[
+                '--no-sandbox','--disable-dev-shm-usage','--mute-audio',
+                '--enable-webgl','--ignore-gpu-blocklist','--use-gl=swiftshader'
+              ]
+            });
+            const page=await browser.newPage();
+            await page.setViewport({width:430,height:932,deviceScaleFactor:1});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e)));
+            page.on('console',msg=>{if(msg.type()==='error')errors.push('console: '+msg.text())});
+            await page.goto('http://127.0.0.1:8000/halloween-radio/games/witch-ride/',{waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForFunction(()=>window.WitchRide&&document.querySelector('#game canvas')&&document.body.classList.contains('ready'),{timeout:30000});
+            const before=await page.evaluate(()=>({
+              titleOpen:document.querySelector('#title-screen').classList.contains('open'),
+              hudHidden:document.querySelector('#hud').classList.contains('hidden'),
+              canvas:!!document.querySelector('#game canvas')
+            }));
+            if(!before.titleOpen||!before.hudHidden||!before.canvas)throw new Error('Title/canvas initial state is wrong: '+JSON.stringify(before));
+            await page.click('#play-btn');
+            await page.waitForFunction(()=>!document.querySelector('#hud').classList.contains('hidden')&&!document.querySelector('#title-screen').classList.contains('open'),{timeout:5000});
+            await page.keyboard.down('ArrowRight');
+            await sleep(450);
+            await page.keyboard.up('ArrowRight');
+            await sleep(1600);
+            const running=await page.evaluate(()=>({
+              score:Number((document.querySelector('#hud-score').textContent||'0').replace(/,/g,'')),
+              distance:document.querySelector('#hud-distance').textContent,
+              speed:document.querySelector('#hud-speed').textContent,
+              hudVisible:!document.querySelector('#hud').classList.contains('hidden')
+            }));
+            if(!running.hudVisible||!(running.score>0))throw new Error('Game did not advance: '+JSON.stringify(running));
+            await page.click('#pause-btn');
+            await page.waitForFunction(()=>document.querySelector('#pause-screen').classList.contains('open'),{timeout:3000});
+            await page.click('#resume-btn');
+            await page.waitForFunction(()=>!document.querySelector('#pause-screen').classList.contains('open'),{timeout:3000});
+            if(errors.length)throw new Error('Game page errors: '+errors.join(' | '));
+            console.log('Witch Ride WebGL vertical slice passed:',running);
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
