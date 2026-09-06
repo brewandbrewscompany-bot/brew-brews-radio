@@ -9,7 +9,7 @@ const FRAMES={
   legs:{x:4,y:175,w:90,h:160},
   carHD:{x:100,y:175,w:220,h:165}
 };
-const ATLAS_DATA='data:image/webp;base64,'+(window.__WR_DEEP_ATLAS||'');
+const ATLAS_DATA='data:image/png;base64,'+(window.__WR_DEEP_ATLAS||'');
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function spring(s,target,dt,k=26,d=6){s.v+=(target-s.x)*k*dt;s.v*=Math.exp(-d*dt);s.x+=s.v*dt;return s.x}
 function sceneNow(){try{for(const game of Phaser.GAMES||[]){const s=game?.scene?.keys?.WitchRide||game?.scene?.getScene?.('WitchRide');if(s?.player)return s}}catch{}return null}
