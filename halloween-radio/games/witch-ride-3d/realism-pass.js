@@ -6,8 +6,8 @@ const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
 function textureAsset(app,url,name){
   return new Promise((resolve,reject)=>app.assets.loadFromUrlAndFilename(url,name,'texture',(err,asset)=>err?reject(err):resolve(asset.resource)));
 }
-async function loadMaterialPass(){
-  try{const r=await fetch('assets/witch-material-pass.json',{cache:'no-store'});if(!r.ok)return 'base-materials';const j=await r.json();return j.version||'base-materials'}catch{return 'base-materials'}
+async function loadPassManifest(path,fallback){
+  try{const r=await fetch(path,{cache:'no-store'});if(!r.ok)return fallback;const j=await r.json();return j.version||fallback}catch{return fallback}
 }
 function transparentMaterial(texture,opacity=.24){
   const m=new pc.StandardMaterial();
@@ -65,12 +65,18 @@ async function install(){
     if(app&&window.WitchRide3D?.ready){
       try{
         tuneLights(app);widenRoad(app);tuneModels(app);
-        const [backdrop,fog,materialPass]=await Promise.all([textureAsset(app,'assets/textures/cinematic-backdrop.jpg','cinematic-backdrop.jpg'),textureAsset(app,'assets/textures/fog-sheet.png','fog-sheet.png'),loadMaterialPass()]);
+        const [backdrop,fog,materialPass,vehiclePass]=await Promise.all([
+          textureAsset(app,'assets/textures/cinematic-backdrop.jpg','cinematic-backdrop.jpg'),
+          textureAsset(app,'assets/textures/fog-sheet.png','fog-sheet.png'),
+          loadPassManifest('assets/witch-material-pass.json','base-materials'),
+          loadPassManifest('assets/vehicle-material-pass.json','base-vehicle')
+        ]);
         addBackdrop(app,backdrop);addAtmosphere(app,fog);addRoadReflections(app);
-        document.body.classList.add('realism-pass-ready');window.WitchRide3D.realismPass=VERSION;window.WitchRide3D.materialPass=materialPass;
+        document.body.classList.add('realism-pass-ready');window.WitchRide3D.realismPass=VERSION;window.WitchRide3D.materialPass=materialPass;window.WitchRide3D.vehiclePass=vehiclePass;
         if(materialPass==='witch-material-pass-v2')document.body.classList.add('witch-material-pass-ready');
-        console.info('Witch Ride realism pass ready',VERSION,materialPass);return;
-      }catch(err){console.error('Witch Ride realism pass failed',err);window.WitchRide3D.realismPass='fallback';window.WitchRide3D.materialPass='fallback'}
+        if(vehiclePass==='vehicle-material-pass-v3')document.body.classList.add('vehicle-material-pass-ready');
+        console.info('Witch Ride realism pass ready',VERSION,materialPass,vehiclePass);return;
+      }catch(err){console.error('Witch Ride realism pass failed',err);window.WitchRide3D.realismPass='fallback';window.WitchRide3D.materialPass='fallback';window.WitchRide3D.vehiclePass='fallback'}
     }
     await wait(50);
   }
