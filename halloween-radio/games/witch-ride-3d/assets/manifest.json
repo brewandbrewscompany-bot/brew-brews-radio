@@ -1,54 +1,59 @@
 {
-  "generated": "Witch Ride 3D PBR starter assets",
+  "generated": "Witch Ride 3D cinematic detail assets",
+  "version": "cinematic-detail-v2",
   "assets": [
     {
       "file": "witch-rider.glb",
-      "bytes": 103528,
-      "nodes": 27
+      "bytes": 183096,
+      "nodes": 44
     },
     {
       "file": "vintage-car.glb",
-      "bytes": 74052,
-      "nodes": 40
+      "bytes": 146532,
+      "nodes": 64
     },
     {
       "file": "dead-tree.glb",
-      "bytes": 19424,
-      "nodes": 15
+      "bytes": 67384,
+      "nodes": 44
     },
     {
       "file": "coffee-bean.glb",
-      "bytes": 37924,
+      "bytes": 37964,
       "nodes": 2
     },
     {
       "file": "haunted-fence.glb",
-      "bytes": 4524,
-      "nodes": 6
+      "bytes": 9768,
+      "nodes": 14
     },
     {
       "file": "jack-o-lantern.glb",
-      "bytes": 13468,
-      "nodes": 9
+      "bytes": 18688,
+      "nodes": 17
     },
     {
       "file": "haunted-roastery.glb",
-      "bytes": 7284,
-      "nodes": 14
+      "bytes": 27468,
+      "nodes": 38
     }
   ],
   "textures": [
     {
       "file": "asphalt-albedo.png",
-      "bytes": 67818
+      "bytes": 284957
     },
     {
       "file": "asphalt-normal.png",
-      "bytes": 66226
+      "bytes": 296365
     },
     {
       "file": "asphalt-gloss.png",
-      "bytes": 4692
+      "bytes": 18953
+    },
+    {
+      "file": "asphalt-puddles.png",
+      "bytes": 9658
     }
   ]
 }
