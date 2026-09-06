@@ -33,6 +33,8 @@ let favorites=readFavorites();
 let activePanel=null;
 let showsTab='signal';
 let lastSnapshot='';
+let renderTimer=null;
+let selectionBusy=false;
 
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function fmt(sec){sec=Number(sec)||0;const m=Math.floor(sec/60),s=String(Math.floor(sec%60)).padStart(2,'0');return`${m}:${s}`}
@@ -74,18 +76,32 @@ function toggleFavorite(id){
   renderOpenPanel();
 }
 function preservedState(){const s=api.snapshot();return{currentFreq:s.currentFreq,trackId:s.trackId,volume:s.volume,autoTune:s.autoTune,shuffle:s.shuffle,repeat:s.repeat,playbackIntent:s.playbackIntent}}
+function queueRender(delay=65){
+  if(selectionBusy)return;
+  clearTimeout(renderTimer);
+  renderTimer=setTimeout(()=>{
+    renderTimer=null;
+    renderOpenPanel();
+  },delay);
+}
 function chooseTrack(track,{forcePlay=false}={}){
   if(!track)return;
   const before=preservedState();
+  selectionBusy=true;
+  clearTimeout(renderTimer);renderTimer=null;
   api.restore({currentFreq:track.station,trackId:track.id,volume:before.volume,autoTune:before.autoTune,shuffle:before.shuffle,repeat:before.repeat});
   if(before.playbackIntent||forcePlay)api.togglePlay();
   lastSnapshot='';
   syncMainFavoriteButtons();
-  renderOpenPanel();
+  setTimeout(()=>{
+    selectionBusy=false;
+    renderOpenPanel();
+  },90);
 }
 function closeDrawer(){const drawer=document.getElementById('drawer');drawer?.classList.remove('open');drawer?.setAttribute('aria-hidden','true')}
 function openPanel(which){
   closeDrawer();
+  clearTimeout(renderTimer);renderTimer=null;
   activePanel=which;
   const panel=which==='schedule'?schedulePanel:showsPanel;
   const other=which==='schedule'?showsPanel:schedulePanel;
@@ -97,6 +113,7 @@ function openPanel(which){
   panel.querySelector('.library-close')?.focus({preventScroll:true});
 }
 function closePanel(){
+  clearTimeout(renderTimer);renderTimer=null;
   activePanel=null;
   schedulePanel.classList.remove('open');showsPanel.classList.remove('open');
   schedulePanel.setAttribute('aria-hidden','true');showsPanel.setAttribute('aria-hidden','true');
@@ -158,15 +175,22 @@ function renderShows(){
     <section class="shows-section${showsTab==='signal'?' active':''}" data-shows-section="signal"><div class="favorites-summary"><span>${Number(st.frequency).toFixed(1)} FM · ${esc(st.name)}</span><span>${tracksFor(st.frequency).length} songs</span></div><div class="show-list">${signalRows}</div></section>
     <section class="shows-section${showsTab==='favorites'?' active':''}" data-shows-section="favorites"><div class="favorites-summary"><span>Your saved Halloween rotation</span><span>${favTracks.length} saved</span></div>${favTracks.length?`<div class="favorites-list">${favoriteRows}</div>`:'<div class="favorite-empty">Tap the haunted heart beside any song to build your favorites list. It will still be here the next time you open the radio.</div>'}</section>`;
 }
+function updateShowsClock(){
+  if(activePanel!=='shows'||selectionBusy)return;
+  const meta=showsBody.querySelector('.now-meta');
+  if(!meta)return;
+  const s=api.snapshot(),st=stationFor(s.currentFreq),current=trackById(s.trackId);
+  const total=Number.isFinite(audio.duration)&&audio.duration>0?audio.duration:(current?.durationSec||0);
+  meta.textContent=`${Number(st.frequency).toFixed(1)} FM · ${st.name} · ${fmt(audio.currentTime)} / ${fmt(total)}`;
+}
 
-function currentFingerprint(){const s=api.snapshot();return[s.currentFreq,s.trackId,s.playbackIntent,s.shuffle,s.repeat,Math.floor(audio.currentTime),favorites.join(',')].join('|')}
+function currentFingerprint(){const s=api.snapshot();return[s.currentFreq,s.trackId,s.playbackIntent,s.shuffle,s.repeat,favorites.join(',')].join('|')}
 function refreshIfNeeded(){
   syncMainFavoriteButtons();
-  if(!activePanel)return;
+  if(!activePanel||selectionBusy)return;
   const f=currentFingerprint();
-  if(f===lastSnapshot)return;
-  lastSnapshot=f;
-  renderOpenPanel();
+  if(f===lastSnapshot){updateShowsClock();return}
+  queueRender(50);
 }
 
 async function loadManifest(){
@@ -188,18 +212,24 @@ document.addEventListener('click',e=>{
   const start=e.target.closest('[data-start-track]');if(start){chooseTrack(trackById(start.dataset.startTrack),{forcePlay:false});return}
   const play=e.target.closest('[data-play-track]');if(play){chooseTrack(trackById(play.dataset.playTrack),{forcePlay:true});return}
   const favorite=e.target.closest('[data-favorite]');if(favorite){toggleFavorite(favorite.dataset.favorite);return}
-  const tab=e.target.closest('[data-shows-tab]');if(tab){showsTab=tab.dataset.showsTab;renderShows();return}
-  if(e.target.closest('[data-show-prev]')){api.previous();lastSnapshot='';syncMainFavoriteButtons();renderShows();return}
-  if(e.target.closest('[data-show-next]')){api.next();lastSnapshot='';syncMainFavoriteButtons();renderShows();return}
-  if(e.target.closest('[data-show-play]')){api.togglePlay();lastSnapshot='';setTimeout(renderShows,50);return}
+  const tab=e.target.closest('[data-shows-tab]');if(tab){showsTab=tab.dataset.showsTab;renderShows();lastSnapshot=currentFingerprint();return}
+  if(e.target.closest('[data-show-prev]')){api.previous();lastSnapshot='';syncMainFavoriteButtons();queueRender(70);return}
+  if(e.target.closest('[data-show-next]')){api.next();lastSnapshot='';syncMainFavoriteButtons();queueRender(70);return}
+  if(e.target.closest('[data-show-play]')){api.togglePlay();lastSnapshot='';queueRender(70);return}
   if(activePanel&&e.target.closest('[data-hit="home"]'))closePanel();
 });
 backdrop.addEventListener('click',closePanel);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&activePanel){e.preventDefault();e.stopImmediatePropagation();closePanel()}},true);
-audio.addEventListener('play',()=>{lastSnapshot='';syncMainFavoriteButtons();renderOpenPanel()});
-audio.addEventListener('pause',()=>{lastSnapshot='';syncMainFavoriteButtons();renderOpenPanel()});
-audio.addEventListener('loadedmetadata',()=>{lastSnapshot='';syncMainFavoriteButtons();renderOpenPanel()});
-audio.addEventListener('ended',()=>{lastSnapshot='';setTimeout(()=>{syncMainFavoriteButtons();renderOpenPanel()},40)});
+function handleAudioState(){
+  lastSnapshot='';
+  syncMainFavoriteButtons();
+  queueRender(70);
+}
+audio.addEventListener('play',handleAudioState);
+audio.addEventListener('pause',handleAudioState);
+audio.addEventListener('loadedmetadata',handleAudioState);
+audio.addEventListener('timeupdate',updateShowsClock);
+audio.addEventListener('ended',()=>{lastSnapshot='';setTimeout(()=>{syncMainFavoriteButtons();queueRender(20)},40)});
 installMainFavoriteButtons();
 setInterval(refreshIfNeeded,750);
 loadManifest();
