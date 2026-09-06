@@ -29,12 +29,13 @@ function cloneSurface(base,name,color,metalness,gloss,emissive=null){
   m.update();return m
 }
 function materialMatches(mi,terms){const n=(mi.material?.name||'').toLowerCase();return terms.some(t=>n.includes(t))}
+function materialInventory(instances){return [...new Set(instances.map(mi=>mi.material?.name||'(unnamed)').filter(Boolean))].sort()}
 function applyCarVariants(app){
   const preserved=new Set(),detail={cars:0,paintAssignments:0,wornAssignments:0,palettes:[],headlightTunes:0,preservedTrimKinds:0};
   for(let i=0;i<7;i++){
     const car=app.root.findByName(`1938 Coupe ${i}`);if(!car)continue;const spec=CAR_PALETTES[i],instances=meshInstances(car),main=[],worn=[];
     for(const mi of instances){const n=(mi.material?.name||'').toLowerCase();for(const trim of PRESERVED_TRIM)if(n.includes(trim))preserved.add(trim);if(n.includes('aged black lacquer'))main.push(mi);else if(n.includes('worn lacquer'))worn.push(mi)}
-    if(!main.length)throw new Error(`car ${i} production lacquer material not found`);
+    if(!main.length)throw new Error(`car ${i} production lacquer material not found; materials=${materialInventory(instances).join(' | ')}`);
     const mainMat=cloneSurface(main[0].material,`v8 ${spec.name} lacquer`,spec.color,spec.metal,spec.gloss);
     const wornBase=worn[0]?.material||main[0].material,wornMat=cloneSurface(wornBase,`v8 ${spec.name} weathering`,spec.worn,Math.max(.16,spec.metal-.17),Math.max(.31,spec.gloss-.25));
     main.forEach(mi=>{mi.material=mainMat;detail.paintAssignments++});worn.forEach(mi=>{mi.material=wornMat;detail.wornAssignments++});
@@ -73,11 +74,11 @@ async function install(){
       try{
         const cars=applyCarVariants(app),scenery=applyScenerySilhouettes(app),beans=applyBeanRoastDepth(app);
         const detail={...cars,...scenery,...beans,uniqueCarPalettes:new Set(cars.palettes).size};
-        w.variationPass=VERSION;w.variationDetail=detail;document.body.classList.add('variation-pass-ready');console.info('Witch Ride variation pass ready',VERSION,detail);return;
-      }catch(err){console.error('Witch Ride variation pass failed',err);w.variationPass='fallback';w.variationDetail={};return}
+        w.variationError='';w.variationPass=VERSION;w.variationDetail=detail;document.body.classList.add('variation-pass-ready');console.info('Witch Ride variation pass ready',VERSION,detail);return;
+      }catch(err){const detail=err?.stack||err?.message||String(err);console.error('Witch Ride variation pass failed',err);w.variationError=detail;w.variationPass='fallback';w.variationDetail={};return}
     }
     await wait(50);
   }
-  console.warn('Witch Ride variation pass timed out waiting for cinematic pass');
+  const w=window.WitchRide3D;if(w){w.variationError='timed out waiting for cinematic pass';w.variationPass='fallback';w.variationDetail={}}console.warn('Witch Ride variation pass timed out waiting for cinematic pass');
 }
 install();
