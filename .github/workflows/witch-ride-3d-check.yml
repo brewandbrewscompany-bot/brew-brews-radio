@@ -37,6 +37,10 @@ jobs:
           grep -a -q '"NORMAL"' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
           grep -a -q 'cape_lining' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
           grep -a -q 'hair_05' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
+          grep -a -q 'coat_back_seam' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
+          grep -a -q 'epaulette_' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
+          grep -a -q 'woven black wool' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
+          grep -a -q 'auburn strand cluster' halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
           grep -a -q 'whitewall' halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
           grep -a -q 'jack_eye' halloween-radio/games/witch-ride-3d/assets/models/jack-o-lantern.glb
           test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-albedo.png
@@ -46,8 +50,16 @@ jobs:
           test -s halloween-radio/games/witch-ride-3d/assets/textures/cinematic-backdrop.jpg
           test -s halloween-radio/games/witch-ride-3d/assets/textures/fog-sheet.png
           test -s halloween-radio/games/witch-ride-3d/assets/textures/cinematic-vignette.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/witch-cloth-albedo.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/witch-cloth-normal.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/witch-burgundy-albedo.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/witch-leather-normal.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/witch-hair-albedo.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/witch-hair-normal.png
+          test -s halloween-radio/games/witch-ride-3d/assets/textures/broom-wood-normal.png
           grep -q 'cinematic-detail-v2' halloween-radio/games/witch-ride-3d/assets/manifest.json
           grep -q 'realism-pass-v1' halloween-radio/games/witch-ride-3d/assets/realism-manifest.json
+          grep -q 'witch-material-pass-v2' halloween-radio/games/witch-ride-3d/assets/witch-material-pass.json
       - name: Install browser helper
         run: npm install --no-save puppeteer-core@24.16.0
       - name: Run realism 3D renderer smoke test
@@ -70,11 +82,11 @@ jobs:
             page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
             await page.goto('http://127.0.0.1:8000/halloween-radio/games/witch-ride-3d/',{waitUntil:'domcontentloaded',timeout:30000});
             await page.waitForFunction(()=>window.WitchRide3D?.ready&&document.body.classList.contains('ready'),{timeout:30000});
-            await page.waitForFunction(()=>window.WitchRide3D?.realismPass==='realism-pass-v1'&&document.body.classList.contains('realism-pass-ready'),{timeout:30000});
-            const before=await page.evaluate(()=>({canvas:!!document.querySelector('canvas'),title:document.querySelector('#title').classList.contains('open'),engine:window.WitchRide3D.engine,assetMode:window.WitchRide3D.assetMode,detailMode:window.WitchRide3D.detailMode,realismPass:window.WitchRide3D.realismPass,tech:document.querySelector('#tech')?.textContent||''}));
+            await page.waitForFunction(()=>window.WitchRide3D?.realismPass==='realism-pass-v1'&&window.WitchRide3D?.materialPass==='witch-material-pass-v2'&&document.body.classList.contains('realism-pass-ready')&&document.body.classList.contains('witch-material-pass-ready'),{timeout:30000});
+            const before=await page.evaluate(()=>({canvas:!!document.querySelector('canvas'),title:document.querySelector('#title').classList.contains('open'),engine:window.WitchRide3D.engine,assetMode:window.WitchRide3D.assetMode,detailMode:window.WitchRide3D.detailMode,realismPass:window.WitchRide3D.realismPass,materialPass:window.WitchRide3D.materialPass,tech:document.querySelector('#tech')?.textContent||''}));
             if(!before.canvas||!before.title||before.engine!=='PlayCanvas')throw new Error('3D boot failed '+JSON.stringify(before));
             if(before.assetMode!=='glb-pbr')throw new Error('Production GLB/PBR assets did not fully load '+JSON.stringify(before));
-            if(before.detailMode!=='cinematic-detail-v2'||before.realismPass!=='realism-pass-v1')throw new Error('Realism pass did not boot '+JSON.stringify(before));
+            if(before.detailMode!=='cinematic-detail-v2'||before.realismPass!=='realism-pass-v1'||before.materialPass!=='witch-material-pass-v2')throw new Error('Textured realism pass did not boot '+JSON.stringify(before));
             if(errors.length)throw new Error('Browser errors during asset boot: '+errors.join(' | '));
             await page.click('#play');await sleep(1800);
             const running=await page.evaluate(()=>({score:Number((document.querySelector('#score').textContent||'0').replace(/,/g,'')),distance:document.querySelector('#distance').textContent,hud:!document.querySelector('#hud').classList.contains('hidden'),mode:window.WitchRide3D.state.mode,x:window.WitchRide3D.state.x,targetX:window.WitchRide3D.state.targetX,speed:window.WitchRide3D.state.speed}));
@@ -87,6 +99,6 @@ jobs:
             const keyboardMove=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,x:window.WitchRide3D.state.x,targetX:window.WitchRide3D.state.targetX}));
             if(keyboardMove.mode!=='playing'||!(keyboardMove.targetX<keyStart-.15))throw new Error('3D keyboard steering target did not respond '+JSON.stringify({keyStart,keyboardMove}));
             if(errors.length)throw new Error('Browser errors: '+errors.join(' | '));
-            console.log('Witch Ride 3D realism pass passed',JSON.stringify({before,running,pointerMove,keyboardMove}));await browser.close();
+            console.log('Witch Ride 3D textured realism pass passed',JSON.stringify({before,running,pointerMove,keyboardMove}));await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
