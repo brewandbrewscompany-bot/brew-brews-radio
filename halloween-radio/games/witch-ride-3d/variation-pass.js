@@ -20,7 +20,7 @@ const BEAN_TONES=[
 ];
 const BARK_TONES=[[.155,.105,.080],[.120,.080,.062],[.185,.128,.095],[.105,.073,.060]];
 const PUMPKIN_TONES=[[.36,.105,.018],[.44,.145,.024],[.30,.082,.014],[.39,.118,.017]];
-const PRESERVED_TRIM=['pitted chrome','smoky glass','period rubber','aged whitewall','warm headlamp','ruby tail lamp'];
+const PRESERVED_TRIM=['pitted period chrome','smoky laminated glass','dirty bias ply rubber','aged ivory whitewall','warm tungsten lens','ruby tail lens'];
 
 function meshInstances(root){const out=[];for(const r of root.findComponents?.('render')||[])for(const mi of r.meshInstances||[])out.push(mi);return out}
 function cloneSurface(base,name,color,metalness,gloss,emissive=null){
@@ -34,7 +34,7 @@ function applyCarVariants(app){
   const preserved=new Set(),detail={cars:0,paintAssignments:0,wornAssignments:0,palettes:[],headlightTunes:0,preservedTrimKinds:0};
   for(let i=0;i<7;i++){
     const car=app.root.findByName(`1938 Coupe ${i}`);if(!car)continue;const spec=CAR_PALETTES[i],instances=meshInstances(car),main=[],worn=[];
-    for(const mi of instances){const n=(mi.material?.name||'').toLowerCase();for(const trim of PRESERVED_TRIM)if(n.includes(trim))preserved.add(trim);if(n.includes('aged black lacquer'))main.push(mi);else if(n.includes('worn lacquer'))worn.push(mi)}
+    for(const mi of instances){const n=(mi.material?.name||'').toLowerCase();for(const trim of PRESERVED_TRIM)if(n.includes(trim))preserved.add(trim);if(n.includes('weathered black lacquer'))main.push(mi);else if(n.includes('oxidized worn lacquer'))worn.push(mi)}
     if(!main.length)throw new Error(`car ${i} production lacquer material not found; materials=${materialInventory(instances).join(' | ')}`);
     const mainMat=cloneSurface(main[0].material,`v8 ${spec.name} lacquer`,spec.color,spec.metal,spec.gloss);
     const wornBase=worn[0]?.material||main[0].material,wornMat=cloneSurface(wornBase,`v8 ${spec.name} weathering`,spec.worn,Math.max(.16,spec.metal-.17),Math.max(.31,spec.gloss-.25));
