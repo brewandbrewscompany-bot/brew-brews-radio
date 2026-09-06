@@ -1,9 +1,26 @@
-/* Visible Shuffle/Repeat controls live only in the dynamic Now Brewing area.
-   The approved radio skin artwork is untouched. */
-.mode-controls{position:absolute;z-index:38;display:flex;align-items:center;justify-content:flex-end;gap:4px;pointer-events:auto}
-.mode-button{flex:1;min-width:0;height:100%;padding:0 4px;border:1px solid rgba(136,91,49,.52);border-radius:4px;background:linear-gradient(180deg,rgba(20,13,9,.84),rgba(7,5,4,.9));color:#8f6b47;font-family:Georgia,"Times New Roman",serif;font-weight:700;line-height:1;letter-spacing:.08em;text-align:center;text-shadow:0 1px 2px #000;box-shadow:inset 0 1px rgba(255,255,255,.025);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:color .16s ease,border-color .16s ease,box-shadow .16s ease,background .16s ease}
+/* Dynamic controls only. The approved radio skin artwork is untouched. */
+.mode-controls{position:absolute;inset:0;z-index:38;pointer-events:none}
+.mode-button{position:absolute;min-width:0;padding:0;border:1px solid rgba(136,91,49,.52);border-radius:999px;background:linear-gradient(180deg,rgba(20,13,9,.9),rgba(7,5,4,.94));color:#8f6b47;font-family:Georgia,"Times New Roman",serif;font-weight:700;line-height:1;letter-spacing:.08em;text-align:center;text-shadow:0 1px 2px #000;box-shadow:inset 0 1px rgba(255,255,255,.025);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:color .16s ease,border-color .16s ease,box-shadow .16s ease,background .16s ease;pointer-events:auto}
 .mode-button.on{color:#ffc168;border-color:rgba(238,150,55,.78);background:linear-gradient(180deg,rgba(80,42,15,.86),rgba(22,12,7,.94));box-shadow:0 0 8px rgba(255,139,37,.32),inset 0 0 7px rgba(255,147,42,.12);text-shadow:0 0 5px rgba(255,157,55,.42),0 1px 2px #000}
-.desktop .mode-controls{left:62.1%;top:53.35%;width:11.5%;height:2.25%}
-.desktop .mode-button{font-size:9px}
-.phone .mode-controls{left:63.0%;top:40.25%;width:25.5%;height:2.7%}
-.phone .mode-button{font-size:8px}
+
+/* User-approved placement: SHF just below between Prev + Play; RPT just below between Play + Next. */
+.desktop .mode-button[data-mode-button="shuffle"]{left:43.0%;top:77.15%;width:5.7%;height:2.85%;font-size:9px}
+.desktop .mode-button[data-mode-button="repeat"]{left:60.0%;top:77.15%;width:5.7%;height:2.85%;font-size:9px}
+.phone .mode-button[data-mode-button="shuffle"]{left:28.2%;top:62.0%;width:11.5%;height:3.25%;font-size:8px}
+.phone .mode-button[data-mode-button="repeat"]{left:60.4%;top:62.0%;width:11.5%;height:3.25%;font-size:8px}
+
+/* Main Now Brewing favorite: haunted-radio heart, empty until selected. */
+.main-favorite-button{position:absolute;z-index:46;display:flex;align-items:center;justify-content:center;padding:0;border:1px solid rgba(121,83,48,.38);border-radius:50%;background:radial-gradient(circle at 45% 35%,rgba(69,44,25,.32),rgba(9,7,5,.88) 72%);color:#765a3e;cursor:pointer;pointer-events:auto;-webkit-tap-highlight-color:transparent;box-shadow:inset 0 1px rgba(255,255,255,.025),0 2px 7px rgba(0,0,0,.35);transition:color .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease}
+.main-favorite-button:hover{transform:scale(1.05)}
+.main-favorite-button.active{color:#f29b32;border-color:rgba(242,155,50,.6);box-shadow:0 0 12px rgba(255,143,34,.23),inset 0 0 8px rgba(255,150,43,.08)}
+.favorite-heart{position:relative;display:inline-flex;align-items:center;justify-content:center;font-family:Georgia,"Times New Roman",serif;font-size:1em;line-height:1}
+.favorite-heart::after{content:"⚡";position:absolute;right:-.48em;top:-.3em;font-family:Arial,sans-serif;font-size:.36em;color:#684d34;opacity:.85;text-shadow:none}
+.main-favorite-button.active .favorite-heart::after,body .radio-library-panel .favorite-button.active .favorite-heart::after{color:#f1a247}
+.desktop .main-favorite-button{left:71.0%;top:51.25%;width:3.6%;height:3.9%;font-size:17px}
+.phone .main-favorite-button{left:83.2%;top:39.0%;width:7.2%;height:3.9%;font-size:15px}
+
+/* Replace the old pink emoji treatment with the same haunted-radio favorite language in Schedule + Shows. */
+body .radio-library-panel .favorite-button{display:flex;align-items:center;justify-content:center;width:38px;height:36px;padding:0;border:1px solid rgba(121,83,48,.26);border-radius:50%;background:rgba(10,7,5,.72);color:#765a3e;font-size:20px;cursor:pointer;filter:none;text-shadow:none;transition:transform .15s ease,color .15s ease,border-color .15s ease,box-shadow .15s ease}
+body .radio-library-panel .favorite-button:hover{transform:scale(1.07);border-color:rgba(199,128,59,.42)}
+body .radio-library-panel .favorite-button.active{color:#f29b32;border-color:rgba(242,155,50,.56);filter:none;text-shadow:0 0 9px rgba(255,145,40,.24);box-shadow:0 0 10px rgba(255,143,34,.14),inset 0 0 7px rgba(255,145,40,.06)}
+@media(max-width:760px){body .radio-library-panel .favorite-button{width:32px;height:32px;font-size:18px}}
