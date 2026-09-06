@@ -1,9 +1,9 @@
 {
   "version": "environment-material-pass-v4",
   "models": {
-    "dead-tree.glb": 27,
-    "haunted-fence.glb": 23,
-    "jack-o-lantern.glb": 16
+    "dead-tree.glb": 1,
+    "haunted-fence.glb": 2,
+    "jack-o-lantern.glb": 3
   },
   "textures": [
     "asphalt-albedo.png",
@@ -30,6 +30,25 @@
     "splintered fence rails",
     "rusted nails",
     "ribbed pumpkin geometry",
-    "emissive carved face"
-  ]
+    "emissive carved face",
+    "static geometry merged for mobile draw calls"
+  ],
+  "optimization": {
+    "mode": "merged-static-material-batches",
+    "goal": "preserve detailed geometry while reducing mobile draw calls and shadow cost",
+    "materials": {
+      "dead-tree.glb": [
+        "split dead bark"
+      ],
+      "haunted-fence.glb": [
+        "rain silvered fence wood",
+        "rusted square nail"
+      ],
+      "jack-o-lantern.glb": [
+        "carved pumpkin glow",
+        "dry pumpkin stem",
+        "weathered pumpkin skin"
+      ]
+    }
+  }
 }
