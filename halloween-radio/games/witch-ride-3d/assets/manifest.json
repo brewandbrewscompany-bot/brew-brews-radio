@@ -1,0 +1,54 @@
+{
+  "generated": "Witch Ride 3D PBR starter assets",
+  "assets": [
+    {
+      "file": "witch-rider.glb",
+      "bytes": 77296,
+      "nodes": 27
+    },
+    {
+      "file": "vintage-car.glb",
+      "bytes": 58788,
+      "nodes": 40
+    },
+    {
+      "file": "dead-tree.glb",
+      "bytes": 13808,
+      "nodes": 15
+    },
+    {
+      "file": "coffee-bean.glb",
+      "bytes": 28616,
+      "nodes": 2
+    },
+    {
+      "file": "haunted-fence.glb",
+      "bytes": 3816,
+      "nodes": 6
+    },
+    {
+      "file": "jack-o-lantern.glb",
+      "bytes": 10720,
+      "nodes": 9
+    },
+    {
+      "file": "haunted-roastery.glb",
+      "bytes": 6776,
+      "nodes": 14
+    }
+  ],
+  "textures": [
+    {
+      "file": "asphalt-albedo.png",
+      "bytes": 67818
+    },
+    {
+      "file": "asphalt-normal.png",
+      "bytes": 66226
+    },
+    {
+      "file": "asphalt-gloss.png",
+      "bytes": 4692
+    }
+  ]
+}
