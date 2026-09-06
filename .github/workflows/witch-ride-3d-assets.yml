@@ -7,6 +7,7 @@ on:
       - witch-ride-3d-cinematic-detail
       - witch-ride-3d-realism-pass-1
       - witch-ride-3d-material-pass-2
+      - witch-ride-3d-vehicle-pass-3
     paths:
       - halloween-radio/games/witch-ride-3d/tools/**
       - .github/workflows/witch-ride-3d-assets.yml
@@ -36,6 +37,11 @@ jobs:
         run: |
           if [ -f halloween-radio/games/witch-ride-3d/tools/build_witch_pass2.py ]; then
             python halloween-radio/games/witch-ride-3d/tools/build_witch_pass2.py
+          fi
+      - name: Build period vehicle material pass
+        run: |
+          if [ -f halloween-radio/games/witch-ride-3d/tools/build_vehicle_pass3.py ]; then
+            python halloween-radio/games/witch-ride-3d/tools/build_vehicle_pass3.py
           fi
       - name: Build realism matte and fog assets
         run: python halloween-radio/games/witch-ride-3d/tools/build_realism_assets.py
@@ -72,6 +78,17 @@ jobs:
             test -s halloween-radio/games/witch-ride-3d/assets/textures/witch-hair-albedo.png
             test -s halloween-radio/games/witch-ride-3d/assets/textures/witch-hair-normal.png
             test -s halloween-radio/games/witch-ride-3d/assets/textures/broom-wood-normal.png
+          fi
+          if [ -f halloween-radio/games/witch-ride-3d/assets/vehicle-material-pass.json ]; then
+            grep -q 'vehicle-material-pass-v3' halloween-radio/games/witch-ride-3d/assets/vehicle-material-pass.json
+            grep -a -q 'hood_center_ridge' halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
+            grep -a -q 'spokes_' halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
+            grep -a -q 'weathered black lacquer' halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
+            test -s halloween-radio/games/witch-ride-3d/assets/textures/car-paint-albedo.png
+            test -s halloween-radio/games/witch-ride-3d/assets/textures/car-paint-normal.png
+            test -s halloween-radio/games/witch-ride-3d/assets/textures/car-paint-metalrough.png
+            test -s halloween-radio/games/witch-ride-3d/assets/textures/car-chrome-normal.png
+            test -s halloween-radio/games/witch-ride-3d/assets/textures/car-tire-normal.png
           fi
       - name: Commit generated production assets
         run: |
