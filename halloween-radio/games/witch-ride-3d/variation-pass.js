@@ -56,7 +56,7 @@ function applyScenerySilhouettes(app){
   fences.forEach((e,i)=>{scaleEntity(e,.91+(i%4)*.055,.96+((i+2)%3)*.035,.94+(i%2)*.05);const r=e.getLocalEulerAngles();e.setLocalEulerAngles(r.x,r.y+((i%5)-2)*2.1,r.z+((i%4)-1.5)*1.7)});
   pumpkins.forEach((e,i)=>{
     scaleEntity(e,.78+(i%5)*.09,.83+((i*2)%5)*.072,.80+((i*3)%5)*.065);const r=e.getLocalEulerAngles();e.setLocalEulerAngles(r.x,r.y+((i*47)%91)-45,r.z+((i%3)-1)*2.2);
-    for(const mi of meshInstances(e)){if(!materialMatches(mi,['old pumpkin']))continue;const k=i%4;if(!pumpkinPool.has(k))pumpkinPool.set(k,cloneSurface(mi.material,`v8 pumpkin skin ${k}`,PUMPKIN_TONES[k],0,.23));mi.material=pumpkinPool.get(k);pumpkinAssignments++}
+    for(const mi of meshInstances(e)){if(!materialMatches(mi,['weathered pumpkin skin']))continue;const k=i%4;if(!pumpkinPool.has(k))pumpkinPool.set(k,cloneSurface(mi.material,`v8 pumpkin skin ${k}`,PUMPKIN_TONES[k],0,.23));mi.material=pumpkinPool.get(k);pumpkinAssignments++}
   });
   return {treeSilhouettes:trees.length,fenceSilhouettes:fences.length,pumpkinSilhouettes:pumpkins.length,barkAssignments,pumpkinAssignments};
 }
