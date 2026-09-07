@@ -27,16 +27,17 @@ function buildForeground(app){
 }
 function installMotion(app,camera,foreground,grain){
   let lag=0,lagV=0,roll=0,rollV=0,grainClock=0,grainStep=0;
-  const diag=window.WitchRide3D.cinematicMotion={cameraLagX:0,cameraRoll:0,foregroundTravel:0};
+  const baseFov=61;
+  const diag=window.WitchRide3D.cinematicMotion={cameraLagX:0,cameraRoll:0,foregroundTravel:0,cameraFov:baseFov};
   app.on('update',dt=>{
     dt=Math.min(dt,.04);const s=window.WitchRide3D?.state||{},playing=s.mode==='playing',vel=s.velocityX||0,targetErr=(s.targetX||0)-(s.x||0),speed=s.speed||1;
     const targetLag=playing?clamp(-vel*.072-targetErr*.025,-.34,.34):0;lagV+=(targetLag-lag)*18*dt;lagV*=Math.exp(-7.6*dt);lag+=lagV*dt;
     const targetRoll=playing?clamp(-vel*.19,-1.45,1.45):0;rollV+=(targetRoll-roll)*15*dt;rollV*=Math.exp(-7.1*dt);roll+=rollV*dt;
     const base=camera.getPosition();camera.setPosition(base.x+lag,base.y+Math.min(.045,Math.abs(vel)*.012),base.z);
-    camera.lookAt((s.x||0)*.42+lag*.38,1.25+Math.min(.035,Math.abs(vel)*.008),-18);camera.rotateLocal(0,0,roll);camera.camera.fov+=Math.min(1.05,Math.max(0,speed-1)*.48);
+    camera.lookAt((s.x||0)*.42+lag*.38,1.25+Math.min(.035,Math.abs(vel)*.008),-18);camera.rotateLocal(0,0,roll);camera.camera.fov=baseFov+Math.min(1.05,Math.max(0,speed-1)*.48);
     const travel=(playing?11.2*speed:.16)*dt;for(const e of [...foreground.trees,...foreground.fences]){e.translate(0,0,travel*e.__speed);const p=e.getPosition();if(p.z>24)e.setPosition(e.__side*(e.name.includes('Tree')?12.0+(Number(e.name.split(' ').pop())%3)*.72:9.75),p.y,p.z-e.__reset)}
     grainClock+=dt;if(grainClock>.115){grainClock=0;grainStep=(grainStep+1)%8;grain.style.backgroundPosition=`${(grainStep*17)%79}px ${(grainStep*29)%83}px`}
-    diag.cameraLagX=lag;diag.cameraRoll=roll;diag.foregroundTravel+=travel;
+    diag.cameraLagX=lag;diag.cameraRoll=roll;diag.foregroundTravel+=travel;diag.cameraFov=camera.camera.fov;
   });
 }
 async function install(){
