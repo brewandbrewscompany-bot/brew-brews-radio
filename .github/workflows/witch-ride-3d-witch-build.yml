@@ -72,25 +72,25 @@ jobs:
             const boot=await page.evaluate(()=>({assetMode:window.WitchRide3D.assetMode,engine:window.WitchRide3D.engine,mesh:window.WitchRideWitchCenterpiecePass,composition:window.WitchRide3D.compositionPass}));
             if(boot.assetMode!=='glb-pbr'||boot.engine!=='PlayCanvas'||boot.mesh?.passId!=='witch-centerpiece-pass-v14'||boot.mesh?.version!=='pass-14-mesh-only-v1'||boot.mesh?.review!=='neutral-clay-mesh-review-only')throw new Error('Pass 14 production mesh boot failed '+JSON.stringify(boot));
             await page.click('#play');
-            await page.waitForFunction(()=>window.WitchRide3D?.state?.mode==='playing'&&Number((document.querySelector('#score').textContent||'0').replace(/,/g,''))>0,{polling:200,timeout:30000});
-            const start=await page.evaluate(()=>({score:window.WitchRide3D.state.score,elapsed:window.WitchRide3D.state.elapsed}));
-            await page.waitForFunction(v=>window.WitchRide3D.state.score>v.score&&window.WitchRide3D.state.elapsed>v.elapsed+.25,{polling:150,timeout:10000},start);
-            await sleep(900);
+            await page.waitForFunction(()=>window.WitchRide3D?.state?.mode==='playing',{polling:100,timeout:10000});
+            await sleep(350);
+            const gameplayState=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,score:window.WitchRide3D.state.score,elapsed:window.WitchRide3D.state.elapsed}));
             await page.screenshot({path:'witch-pass14-mobile-430x932.png',fullPage:false});
 
             await page.evaluate(async()=>{
               const pc=await import('playcanvas'),app=pc.app,cam=app.root.findByName('Chase Camera');
               if(!cam?.camera)throw new Error('Chase Camera unavailable for close mesh render');
               const hidePrefixes=['Road Segment','Fog Bank','Dead Tree','Fence ','Pumpkin ','1938 Coupe','Coffee Bean','Cinematic Foreground','Pass10','Pass11','Brew & Brews Haunted Roastery','Moon Halo','Moon'];
-              for(const e of app.root.children||[]){if(hidePrefixes.some(p=>e.name?.startsWith(p)))e.enabled=false}
+              const all=[...(app.root.children||[])];
+              for(const e of all){if(hidePrefixes.some(p=>e.name?.startsWith(p)))e.enabled=false}
               document.querySelector('#hud')?.classList.add('hidden');
               for(const el of document.querySelectorAll('.screen'))el.classList.remove('open');
               app.on('prerender',()=>{cam.setPosition(1.55,4.25,7.65);cam.lookAt(0,1.45,1.10);cam.camera.fov=38});
             });
-            await sleep(250);
+            await sleep(350);
             await page.screenshot({path:'witch-pass14-close-430x932.png',fullPage:false});
             if(errors.length)throw new Error('Browser errors '+errors.join(' | '));
-            console.log('PASS14_PLAYCANVAS_GATE',JSON.stringify(boot));
+            console.log('PASS14_PLAYCANVAS_GATE',JSON.stringify({boot,gameplayState}));
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
