@@ -1,0 +1,70 @@
+name: Witch Ride 3D Illumination Check
+
+on:
+  push:
+    paths:
+      - 'halloween-radio/games/witch-ride-3d/**'
+      - '.github/workflows/witch-ride-3d-illumination-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  illumination:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate illumination source
+        run: |
+          cp halloween-radio/games/witch-ride-3d/illumination-pass.js /tmp/witch-ride-illumination.mjs
+          node --check /tmp/witch-ride-illumination.mjs
+          grep -q 'illumination-pass-v9' halloween-radio/games/witch-ride-3d/illumination-pass.js
+          grep -q 'disabledHardCones' halloween-radio/games/witch-ride-3d/illumination-pass.js
+          grep -q 'illumination-pass.js' halloween-radio/games/witch-ride-3d/index.html
+      - name: Install browser helpers
+        run: npm install --no-save puppeteer-core@24.16.0 pngjs@7.0.0
+      - name: Run illumination renderer and brightness gate
+        run: |
+          python3 -m http.server 8000 --directory . >/tmp/wr3d-illum-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_BIN"
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const puppeteer=require('puppeteer-core');
+          const {PNG}=require('pngjs');
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--mute-audio','--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader']});
+            const page=await browser.newPage();
+            await page.setViewport({width:430,height:932,deviceScaleFactor:1});
+            const errors=[];page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+            await page.goto('http://127.0.0.1:8000/halloween-radio/games/witch-ride-3d/',{waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForFunction(()=>window.WitchRide3D?.ready&&document.body.classList.contains('ready'),{timeout:30000});
+            await page.waitForFunction(()=>!!window.WitchRide3D?.illuminationPass,{timeout:30000});
+            const before=await page.evaluate(()=>({engine:window.WitchRide3D.engine,assetMode:window.WitchRide3D.assetMode,variationPass:window.WitchRide3D.variationPass,illuminationPass:window.WitchRide3D.illuminationPass,illuminationDetail:window.WitchRide3D.illuminationDetail,illuminationError:window.WitchRide3D.illuminationError||'',ready:document.body.classList.contains('illumination-pass-ready')}));
+            if(before.engine!=='PlayCanvas'||before.assetMode!=='glb-pbr'||before.variationPass!=='variation-pass-v8')throw new Error('Production chain before illumination is invalid '+JSON.stringify(before));
+            if(before.illuminationPass!=='illumination-pass-v9'||!before.ready)throw new Error('Illumination pass failed '+JSON.stringify(before));
+            const d=before.illuminationDetail||{};
+            const expected={skyFill:1,backdropBoost:1,roadSegments:9,coolRoadSheens:9,warmRoadPools:9,disabledHardCones:7,softHeadlightSpills:7,headlightPoints:14,witchFill:1,roasteryWindows:6,pumpkinGlows:10,roadsideLanterns:10};
+            for(const [k,v] of Object.entries(expected))if(d[k]!==v)throw new Error('Illumination detail '+k+' expected '+v+' got '+d[k]+' '+JSON.stringify(d));
+            if(!(d.exposure>=1.55&&d.exposure<=1.62))throw new Error('Exposure target missing '+JSON.stringify(d));
+            if(errors.length)throw new Error('Browser errors during illumination boot '+errors.join(' | '));
+            await page.click('#play');
+            await page.waitForFunction(()=>window.WitchRide3D?.state?.mode==='playing'&&Number((document.querySelector('#score').textContent||'0').replace(/,/g,''))>0,{timeout:5000});
+            await sleep(1800);
+            const canvas=await page.$('#game-canvas');const shot=await canvas.screenshot({type:'png'});const png=PNG.sync.read(shot);
+            let sum=0,dark=0,count=0;for(let y=80;y<png.height;y++){for(let x=0;x<png.width;x++){const i=(y*png.width+x)*4,r=png.data[i]/255,g=png.data[i+1]/255,b=png.data[i+2]/255,l=.2126*r+.7152*g+.0722*b;sum+=l;if(l<.05)dark++;count++}}
+            const luminance={mean:sum/count,darkFraction:dark/count};console.log('Witch Ride illumination luminance',JSON.stringify(luminance));
+            if(luminance.mean<.070||luminance.darkFraction>.68)throw new Error('Rendered scene remains too dark '+JSON.stringify(luminance));
+            const box=await page.$eval('#game-canvas',e=>{const r=e.getBoundingClientRect();return{x:r.left,y:r.top,w:r.width,h:r.height}});await page.mouse.move(box.x+box.w*.82,box.y+box.h*.64);await page.mouse.down();await page.waitForFunction(()=>window.WitchRide3D.state.targetX>.5&&window.WitchRide3D.state.x>.03,{timeout:2500});await page.mouse.up();
+            const keyStart=await page.evaluate(()=>window.WitchRide3D.state.targetX);await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keydown',{code:'ArrowLeft',key:'ArrowLeft',bubbles:true})));await page.waitForFunction(start=>window.WitchRide3D.state.targetX<start-.15,{timeout:2500},keyStart);await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keyup',{code:'ArrowLeft',key:'ArrowLeft',bubbles:true})));
+            await page.click('#pause');await sleep(120);if(await page.evaluate(()=>window.WitchRide3D.state.mode)!=='paused')throw new Error('Pause failed');await page.click('#resume');await sleep(120);if(await page.evaluate(()=>window.WitchRide3D.state.mode)!=='playing')throw new Error('Resume failed');
+            if(errors.length)throw new Error('Browser errors '+errors.join(' | '));
+            await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded',timeout:10000}),page.evaluate(()=>document.querySelector('#paused .back').click())]);if(!page.url().endsWith('/halloween-radio/'))throw new Error('Back to Radio failed '+page.url());
+            console.log('Witch Ride illumination pass passed',JSON.stringify({before,luminance,backUrl:page.url()}));await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
