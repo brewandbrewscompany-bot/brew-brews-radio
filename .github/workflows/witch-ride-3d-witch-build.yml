@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   build-witch:
-    if: github.ref == 'refs/heads/witch-ride-3d-witch-rebuild-pass-12'
+    if: github.ref == 'refs/heads/witch-ride-3d-witch-rebuild-pass-13'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -28,17 +28,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Record safety baseline, build and validate Pass 12
+      - name: Record safety baseline, build and validate Pass 13
         shell: bash
         run: |
-          git fetch origin main witch-ride-3d-witch-rebuild-pass-12
+          git fetch origin main witch-ride-3d-witch-rebuild-pass-13
           echo "BASE_MAIN=$(git rev-parse origin/main)" >> "$GITHUB_ENV"
-          echo "BASE_TARGET=$(git rev-parse origin/witch-ride-3d-witch-rebuild-pass-12)" >> "$GITHUB_ENV"
-          test "$(git rev-parse origin/witch-ride-3d-witch-rebuild-pass-12)" = "$GITHUB_SHA"
-          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-12 halloween-radio/games/witch-ride-3d/tools/build_witch_pass3.py
-          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-12 halloween-radio/games/witch-ride-3d/tools/validate_witch_pass3.py
-          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-12 halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
-          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-12 halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
+          echo "BASE_TARGET=$(git rev-parse origin/witch-ride-3d-witch-rebuild-pass-13)" >> "$GITHUB_ENV"
+          test "$(git rev-parse origin/witch-ride-3d-witch-rebuild-pass-13)" = "$GITHUB_SHA"
+          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-13 halloween-radio/games/witch-ride-3d/tools/build_witch_pass3.py
+          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-13 halloween-radio/games/witch-ride-3d/tools/validate_witch_pass3.py
+          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-13 halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
+          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-13 halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
           python -m py_compile halloween-radio/games/witch-ride-3d/tools/build_witch_pass3.py halloween-radio/games/witch-ride-3d/tools/validate_witch_pass3.py
           python -m pip install --disable-pip-version-check 'numpy>=2,<3' 'Pillow>=11,<12' 'scipy>=1.15,<2' 'trimesh==4.11.1'
           python halloween-radio/games/witch-ride-3d/tools/build_witch_pass3.py
@@ -49,18 +49,18 @@ jobs:
           from pathlib import Path
           m=json.loads(Path('halloween-radio/games/witch-ride-3d/assets/witch-material-pass.json').read_text())
           assert m['build_version']=='witch-realism-pass-v3', m
-          assert m['build']=='pass-12-witch-silhouette-correction', m
+          assert m['build']=='pass-13-rear-silhouette-rebuild', m
           assert m['broom_bristle_count']>=72, m
           assert m['cape_panel_count']==3, m
           assert m['hair_lock_count']==5, m
           assert m['hair_root_tube_count']>=24, m
           PY
           grep -q "import \* as pc from 'playcanvas';" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
-          grep -q "witch-centerpiece-pass-v12" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
-          grep -q "pass-12-silhouette-correction-v1" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
+          grep -q "witch-centerpiece-pass-v13" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
+          grep -q "pass-13-rear-silhouette-v1" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           grep -q "composition-pass-v11-reference-match" halloween-radio/games/witch-ride-3d/composition-pass.js
           grep -q 'witch-centerpiece-pass.js' halloween-radio/games/witch-ride-3d/index.html
-      - name: Mobile gameplay and Pass 12 reference-render gate
+      - name: Mobile gameplay and Pass 13 reference-render gate
         shell: bash
         run: |
           npm install --no-save puppeteer-core@24.16.0
@@ -92,8 +92,8 @@ jobs:
               compositionDetail:window.WitchRide3D.compositionDetail
             }));
             console.log('gate boot',JSON.stringify(boot));
-            if(boot.assetMode!=='glb-pbr'||boot.engine!=='PlayCanvas'||!boot.title)throw new Error('Pass 12 production boot failed '+JSON.stringify(boot));
-            if(boot.centerpiece?.passId!=='witch-centerpiece-pass-v12'||boot.centerpiece?.version!=='pass-12-silhouette-correction-v1'||boot.centerpiece?.requiredNodes?.length!==12)throw new Error('Pass 12 centerpiece runtime failed '+JSON.stringify(boot.centerpiece));
+            if(boot.assetMode!=='glb-pbr'||boot.engine!=='PlayCanvas'||!boot.title)throw new Error('Pass 13 production boot failed '+JSON.stringify(boot));
+            if(boot.centerpiece?.passId!=='witch-centerpiece-pass-v13'||boot.centerpiece?.version!=='pass-13-rear-silhouette-v1'||boot.centerpiece?.requiredNodes?.length!==12)throw new Error('Pass 13 centerpiece runtime failed '+JSON.stringify(boot.centerpiece));
             if(boot.composition!=='composition-pass-v11-reference-match'||boot.compositionDetail?.readableBeanSurfaces<1||boot.compositionDetail?.wetMicroReflections!==24)throw new Error('Preserved composition gate failed '+JSON.stringify(boot.compositionDetail));
             await page.click('#play');
             await page.waitForFunction(()=>window.WitchRide3D?.state?.mode==='playing'&&Number((document.querySelector('#score').textContent||'0').replace(/,/g,''))>0,{polling:250,timeout:30000});
@@ -115,7 +115,7 @@ jobs:
             const score1=progressStart.uiScore,score2=progressEnd.uiScore;
             console.log('gate score',JSON.stringify({progressStart,progressEnd}));
             await sleep(850);
-            await page.screenshot({path:'witch-pass12-mobile.png',fullPage:false});
+            await page.screenshot({path:'witch-pass13-mobile.png',fullPage:false});
 
             const box=await page.$eval('#game-canvas',e=>{const r=e.getBoundingClientRect();return{x:r.left,y:r.top,w:r.width,h:r.height}});
             const y=box.y+box.h*.62,x1=box.x+box.w*.50,x2=box.x+box.w*.84;
@@ -145,33 +145,33 @@ jobs:
             await page.click('#pause');
             await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded',timeout:10000}),page.evaluate(()=>document.querySelector('#paused .back').click())]);
             if(!page.url().endsWith('/halloween-radio/'))throw new Error('Back to Radio failed '+page.url());
-            console.log('Generated Witch Pass 12 gameplay passed',JSON.stringify({boot,score1,score2,touch,keyboard,backUrl:page.url()}));
+            console.log('Generated Witch Pass 13 gameplay passed',JSON.stringify({boot,score1,score2,touch,keyboard,backUrl:page.url()}));
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
-      - name: Upload Pass 12 mobile reference render
+      - name: Upload Pass 13 mobile reference render
         uses: actions/upload-artifact@v4
         with:
-          name: witch-pass12-mobile-reference
-          path: witch-pass12-mobile.png
+          name: witch-pass13-mobile-reference
+          path: witch-pass13-mobile.png
           if-no-files-found: error
           retention-days: 7
       - name: Re-fetch main and branch before generated-asset write
         shell: bash
         run: |
-          git fetch origin main witch-ride-3d-witch-rebuild-pass-12
+          git fetch origin main witch-ride-3d-witch-rebuild-pass-13
           MAIN_NOW="$(git rev-parse origin/main)"
-          TARGET_NOW="$(git rev-parse origin/witch-ride-3d-witch-rebuild-pass-12)"
+          TARGET_NOW="$(git rev-parse origin/witch-ride-3d-witch-rebuild-pass-13)"
           echo "main before write: $MAIN_NOW"
           echo "target before write: $TARGET_NOW"
-          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-12 halloween-radio/games/witch-ride-3d/tools/build_witch_pass3.py
-          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-12 halloween-radio/games/witch-ride-3d/tools/validate_witch_pass3.py
-          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-12 halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
-          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-12 halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
+          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-13 halloween-radio/games/witch-ride-3d/tools/build_witch_pass3.py
+          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-13 halloween-radio/games/witch-ride-3d/tools/validate_witch_pass3.py
+          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-13 halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
+          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-13 halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
           test "$MAIN_NOW" = "$BASE_MAIN"
           test "$TARGET_NOW" = "$BASE_TARGET"
           test "$TARGET_NOW" = "$GITHUB_SHA"
-      - name: Commit validated Witch Pass 12 assets
+      - name: Commit validated Witch Pass 13 assets
         shell: bash
         run: |
           git config user.name 'brewandbrewscompany-bot'
@@ -182,5 +182,5 @@ jobs:
                   halloween-radio/games/witch-ride-3d/assets/textures/witch-cape-lining-*.png halloween-radio/games/witch-ride-3d/assets/textures/witch-leather-v3-*.png \
                   halloween-radio/games/witch-ride-3d/assets/textures/witch-hair-v3-*.png halloween-radio/games/witch-ride-3d/assets/textures/broom-wood-v3-*.png halloween-radio/games/witch-ride-3d/assets/textures/broom-straw-v3-*.png
           git diff --cached --quiet && { echo 'Generated assets already current'; exit 0; }
-          git commit -m 'Build Witch Ride Pass 12 silhouette asset'
-          git push origin HEAD:witch-ride-3d-witch-rebuild-pass-12
+          git commit -m 'Build Witch Ride Pass 13 rear silhouette asset'
+          git push origin HEAD:witch-ride-3d-witch-rebuild-pass-13
