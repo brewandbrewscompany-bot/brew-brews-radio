@@ -1,9 +1,9 @@
 {
   "version": "witch-material-pass-v2",
   "build_version": "witch-realism-pass-v3",
-  "build": "pass-12-witch-silhouette-correction",
+  "build": "pass-13-rear-silhouette-rebuild",
   "file": "witch-rider.glb",
-  "bytes": 1572260,
+  "bytes": 1397908,
   "required_motion_nodes": [
     "cape",
     "cape_left",
@@ -20,28 +20,29 @@
   ],
   "hair_lock_count": 5,
   "hair_root_tube_count": 28,
-  "broom_bristle_count": 96,
+  "broom_bristle_count": 112,
   "cape_panel_count": 3,
   "features": [
-    "broad overlapping auburn lock clusters",
+    "broad overlapping auburn mane volumes",
     "dense crown nape and shoulder hair coverage",
     "five animated hair roots",
     "restrained flyaways",
-    "broader asymmetrical warped felt brim",
+    "smaller asymmetrical warped felt brim",
     "crooked tapered crown",
     "drooping twisted tip",
-    "heavy narrow wool cape",
-    "deep vertical folds",
+    "heavy short wool cape",
+    "physical cape yoke",
+    "broad vertical folds",
     "true outer and lining thickness",
     "weighted irregular hem",
     "physical shoulder clasps",
-    "human rider proportions",
+    "human rear riding posture",
     "hands aligned to broom grip",
-    "crooked thick wood handle",
+    "crooked thicker wood handle",
     "wood knots and grip wear",
-    "96 layered individual straw bristles",
+    "112 layered individual straw bristles",
     "restrained ember coals",
-    "high-roughness PBR hierarchy"
+    "low-specular PBR hierarchy"
   ],
   "textures": [
     "broom-straw-v3-albedo.png",
@@ -68,6 +69,6 @@
   ],
   "glb_magic": "glTF",
   "glb_version": 2,
-  "scene_nodes": 233,
-  "geometry_nodes": 220
+  "scene_nodes": 249,
+  "geometry_nodes": 236
 }
