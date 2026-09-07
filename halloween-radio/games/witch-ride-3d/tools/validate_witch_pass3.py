@@ -8,7 +8,7 @@ RUNTIME=ROOT/'witch-centerpiece-pass.js'
 
 
 def fail(msg):
-    raise SystemExit('WITCH PASS 12 VALIDATION FAILED: '+msg)
+    raise SystemExit('WITCH PASS 13 VALIDATION FAILED: '+msg)
 
 if not MODEL.is_file() or MODEL.stat().st_size < 900_000:
     fail('production witch GLB missing or unexpectedly small')
@@ -28,7 +28,7 @@ for i,n in enumerate(nodes):
     for c in n.get('children',[]): parents[c]=i
 
 required=[
-    'cape','cape_left','cape_center','cape_right','cape_weighted_hem',
+    'cape','cape_left','cape_center','cape_right','cape_yoke','cape_weighted_hem',
     'hair_01','hair_02','hair_03','hair_04','hair_05',
     'hat_tip','hat_tip_mesh','hat_brim','hat_brim_edge','hat_crown','hat_band',
     'high_collar','head_shadow','body_core','torso_taper','coat_skirt',
@@ -77,8 +77,8 @@ if manifest.get('version')!='witch-material-pass-v2':
     fail('compatibility manifest version changed unexpectedly')
 if manifest.get('build_version')!='witch-realism-pass-v3':
     fail('production witch build_version missing')
-if manifest.get('build')!='pass-12-witch-silhouette-correction':
-    fail('Pass 12 silhouette build marker missing')
+if manifest.get('build')!='pass-13-rear-silhouette-rebuild':
+    fail('Pass 13 rear silhouette build marker missing')
 if manifest.get('broom_bristle_count',0)<72:
     fail('manifest broom bristle count below 72')
 if manifest.get('cape_panel_count')!=3 or manifest.get('hair_lock_count')!=5:
@@ -89,21 +89,21 @@ if manifest.get('bytes') != len(b):
     fail('manifest GLB byte count does not match production file')
 features=set(manifest.get('features',[]))
 for feature in [
-    'broad overlapping auburn lock clusters','heavy narrow wool cape',
-    'weighted irregular hem','human rider proportions','crooked thick wood handle'
+    'broad overlapping auburn mane volumes','heavy short wool cape','physical cape yoke',
+    'weighted irregular hem','human rear riding posture','crooked thicker wood handle'
 ]:
-    if feature not in features: fail('missing Pass 12 silhouette feature marker: '+feature)
+    if feature not in features: fail('missing Pass 13 silhouette feature marker: '+feature)
 
 if not RUNTIME.is_file(): fail('centerpiece runtime missing')
 rt=RUNTIME.read_text()
-for marker in ['witch-centerpiece-pass-v12','witch-realism-pass-v3','pass-12-silhouette-correction-v1']:
+for marker in ['witch-centerpiece-pass-v13','witch-realism-pass-v3','pass-13-rear-silhouette-v1']:
     if marker not in rt: fail('runtime pass version marker missing: '+marker)
 for banned in ['localStorage','sessionStorage','Audio(','new Audio','playback','shuffle','favorites','Ghost Tune','Haunted Auto Tune']:
     if banned in rt: fail('runtime pass must not touch radio behavior: '+banned)
 
 print(json.dumps({
     'ok':True,
-    'pass':'12-silhouette-correction',
+    'pass':'13-rear-silhouette-rebuild',
     'glb_bytes':len(b),
     'nodes':len(nodes),
     'meshes':len(gltf.get('meshes',[])),
