@@ -40,7 +40,6 @@ function flattenMaterial(m,n){
   if('normalMap' in m)m.normalMap=null;
   if('clearCoat' in m)m.clearCoat=0;
   if('clearCoatGloss' in m)m.clearCoatGloss=0;
-  if('sheen' in m)m.sheen=null;
   if(n.includes('felt')){
     m.gloss=0;m.bumpiness=0;m.specular=new pc.Color(.012,.012,.014);
   }else if(n.includes('charcoal wool')){
