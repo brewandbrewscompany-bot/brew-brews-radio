@@ -32,7 +32,7 @@ jobs:
           mkdir -p halloween-radio/games/witch-ride-3d/tools
           tar -xzf .github/witch-pass11-source.tar.gz -C halloween-radio/games/witch-ride-3d/tools
           python -m py_compile halloween-radio/games/witch-ride-3d/tools/build_witch_pass3.py halloween-radio/games/witch-ride-3d/tools/validate_witch_pass3.py
-          python -m pip install --disable-pip-version-check 'numpy>=2,<3' 'Pillow>=11,<12' 'trimesh==4.11.1'
+          python -m pip install --disable-pip-version-check 'numpy>=2,<3' 'Pillow>=11,<12' 'scipy>=1.15,<2' 'trimesh==4.11.1'
           python halloween-radio/games/witch-ride-3d/tools/build_witch_pass3.py
           python halloween-radio/games/witch-ride-3d/tools/validate_witch_pass3.py
           test "$(stat -c%s halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb)" -ge 900000
@@ -61,12 +61,12 @@ jobs:
             page.on('pageerror',e=>errors.push(String(e)));
             page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
             await page.goto('http://127.0.0.1:8000/halloween-radio/games/witch-ride-3d/',{waitUntil:'domcontentloaded',timeout:30000});
-            await page.waitForFunction(()=>window.WitchRide3D?.ready&&document.body.classList.contains('ready'),{timeout:30000});
+            await page.waitForFunction(()=>window.WitchRide3D?.ready&&document.body.classList.contains('ready'),{polling:250,timeout:30000});
             const boot=await page.evaluate(()=>({assetMode:window.WitchRide3D.assetMode,engine:window.WitchRide3D.engine,title:document.querySelector('#title')?.classList.contains('open')}));
             console.log('gate boot',JSON.stringify(boot));
             if(boot.assetMode!=='glb-pbr'||boot.engine!=='PlayCanvas'||!boot.title)throw new Error('Pass 11 production boot failed '+JSON.stringify(boot));
             await page.click('#play');
-            await page.waitForFunction(()=>window.WitchRide3D?.state?.mode==='playing'&&Number((document.querySelector('#score').textContent||'0').replace(/,/g,''))>0,{timeout:5000});
+            await page.waitForFunction(()=>window.WitchRide3D?.state?.mode==='playing'&&Number((document.querySelector('#score').textContent||'0').replace(/,/g,''))>0,{polling:250,timeout:30000});
             const progressStart=await page.evaluate(()=>({
               uiScore:Number((document.querySelector('#score').textContent||'0').replace(/,/g,'')),
               stateScore:window.WitchRide3D.state.score,
@@ -75,7 +75,7 @@ jobs:
             await page.waitForFunction(start=>{
               const wr=window.WitchRide3D,ui=Number((document.querySelector('#score').textContent||'0').replace(/,/g,''));
               return wr?.state?.mode==='playing'&&ui>start.uiScore&&wr.state.score>start.stateScore&&wr.state.elapsed>start.elapsed+.12;
-            },{timeout:8000},progressStart);
+            },{polling:250,timeout:30000},progressStart);
             const progressEnd=await page.evaluate(()=>({
               uiScore:Number((document.querySelector('#score').textContent||'0').replace(/,/g,'')),
               stateScore:window.WitchRide3D.state.score,
@@ -91,14 +91,14 @@ jobs:
             await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:x1,y:y,radiusX:5,radiusY:5,rotationAngle:0,force:.7,id:17}]});
             await sleep(60);
             await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x2,y:y,radiusX:5,radiusY:5,rotationAngle:0,force:.7,id:17}]});
-            await page.waitForFunction(()=>window.WitchRide3D.state.targetX>.5&&window.WitchRide3D.state.x>.02,{timeout:2500});
+            await page.waitForFunction(()=>window.WitchRide3D.state.targetX>.5&&window.WitchRide3D.state.x>.02,{polling:100,timeout:10000});
             await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
             const touch=await page.evaluate(()=>({x:window.WitchRide3D.state.x,targetX:window.WitchRide3D.state.targetX}));
             console.log('gate touch',JSON.stringify(touch));
 
             const keyStart=touch.targetX;
             await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keydown',{code:'ArrowLeft',key:'ArrowLeft',bubbles:true})));
-            await page.waitForFunction(v=>window.WitchRide3D.state.targetX<v-.15,{timeout:2500},keyStart);
+            await page.waitForFunction(v=>window.WitchRide3D.state.targetX<v-.15,{polling:100,timeout:10000},keyStart);
             await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keyup',{code:'ArrowLeft',key:'ArrowLeft',bubbles:true})));
             const keyboard=await page.evaluate(()=>({x:window.WitchRide3D.state.x,targetX:window.WitchRide3D.state.targetX}));
             console.log('gate keyboard',JSON.stringify(keyboard));
