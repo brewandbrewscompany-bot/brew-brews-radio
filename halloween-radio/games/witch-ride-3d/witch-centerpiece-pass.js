@@ -1,3 +1,5 @@
+import * as pc from 'playcanvas';
+
 // Witch Ride 3D — Pass 11 centerpiece runtime motion / material restraint.
 // Visual-only: no scoring, collision, radio, station, shuffle or playback state is touched.
 const VERSION='pass-11-reference-match-v1';
