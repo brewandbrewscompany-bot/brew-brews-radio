@@ -1,7 +1,9 @@
 import * as pc from 'playcanvas';
 
 // Witch Ride 3D — Pass 11 centerpiece runtime motion / material restraint.
-// Visual-only: no scoring, collision, radio, station, shuffle or playback state is touched.
+// Visual-only: no scoring, collision, station selection, or radio control state is touched.
+const PASS_ID='witch-centerpiece-pass-v11';
+const ASSET_BUILD='witch-realism-pass-v3';
 const VERSION='pass-11-reference-match-v1';
 const REQUIRED=['cape','cape_left','cape_center','cape_right','hair_01','hair_02','hair_03','hair_04','hair_05','hat_tip','broom_handle','broom_bristles'];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -133,7 +135,7 @@ function install(){
     }
   });
 
-  window.WitchRideWitchCenterpiecePass={version:VERSION,active:true,requiredNodes:REQUIRED.slice(),missing:[],visualOnly:true};
+  window.WitchRideWitchCenterpiecePass={passId:PASS_ID,assetBuild:ASSET_BUILD,version:VERSION,active:true,requiredNodes:REQUIRED.slice(),missing:[],visualOnly:true,sparkCount:sparks.length};
   return true;
 }
 function boot(attempt=0){
