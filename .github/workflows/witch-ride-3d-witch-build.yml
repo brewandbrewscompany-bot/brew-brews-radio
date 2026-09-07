@@ -4,6 +4,13 @@ on:
   push:
     paths:
       - '.github/workflows/witch-ride-3d-witch-build.yml'
+      - 'halloween-radio/games/witch-ride-3d/tools/build_witch_pass3.py'
+      - 'halloween-radio/games/witch-ride-3d/tools/validate_witch_pass3.py'
+      - 'halloween-radio/games/witch-ride-3d/game.js'
+      - 'halloween-radio/games/witch-ride-3d/index.html'
+      - 'halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js'
+      - 'halloween-radio/games/witch-ride-3d/composition-pass.js'
+      - 'halloween-radio/games/witch-ride-3d/illumination-pass.js'
   workflow_dispatch:
 
 permissions:
@@ -30,7 +37,9 @@ jobs:
           test "$(git rev-parse origin/witch-ride-3d-witch-rebuild-pass-11)" = "$GITHUB_SHA"
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-11 halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
           mkdir -p halloween-radio/games/witch-ride-3d/tools
-          tar -xzf .github/witch-pass11-source.tar.gz -C halloween-radio/games/witch-ride-3d/tools
+          if [ ! -f halloween-radio/games/witch-ride-3d/tools/build_witch_pass3.py ] || [ ! -f halloween-radio/games/witch-ride-3d/tools/validate_witch_pass3.py ]; then
+            tar -xzf .github/witch-pass11-source.tar.gz -C halloween-radio/games/witch-ride-3d/tools
+          fi
           python -m py_compile halloween-radio/games/witch-ride-3d/tools/build_witch_pass3.py halloween-radio/games/witch-ride-3d/tools/validate_witch_pass3.py
           python -m pip install --disable-pip-version-check 'numpy>=2,<3' 'Pillow>=11,<12' 'scipy>=1.15,<2' 'trimesh==4.11.1'
           python halloween-radio/games/witch-ride-3d/tools/build_witch_pass3.py
@@ -40,7 +49,10 @@ jobs:
           grep -q '"broom_bristle_count": 72' halloween-radio/games/witch-ride-3d/assets/witch-material-pass.json
           grep -q '"cape_panel_count": 3' halloween-radio/games/witch-ride-3d/assets/witch-material-pass.json
           grep -q '"hair_lock_count": 5' halloween-radio/games/witch-ride-3d/assets/witch-material-pass.json
-      - name: Mobile gameplay gate for generated GLB
+          grep -q "import \* as pc from 'playcanvas';" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
+          grep -q "composition-pass-v11-reference-match" halloween-radio/games/witch-ride-3d/composition-pass.js
+          grep -q 'witch-centerpiece-pass.js' halloween-radio/games/witch-ride-3d/index.html
+      - name: Mobile gameplay and reference-render gate
         shell: bash
         run: |
           npm install --no-save puppeteer-core@24.16.0
@@ -62,9 +74,19 @@ jobs:
             page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
             await page.goto('http://127.0.0.1:8000/halloween-radio/games/witch-ride-3d/',{waitUntil:'domcontentloaded',timeout:30000});
             await page.waitForFunction(()=>window.WitchRide3D?.ready&&document.body.classList.contains('ready'),{polling:250,timeout:30000});
-            const boot=await page.evaluate(()=>({assetMode:window.WitchRide3D.assetMode,engine:window.WitchRide3D.engine,title:document.querySelector('#title')?.classList.contains('open')}));
+            await page.waitForFunction(()=>window.WitchRideWitchCenterpiecePass?.active===true&&window.WitchRideWitchCenterpiecePass?.visualOnly===true&&window.WitchRideWitchCenterpiecePass?.missing?.length===0&&window.WitchRide3D?.compositionPass==='composition-pass-v11-reference-match'&&document.body.classList.contains('composition-pass-ready'),{polling:250,timeout:30000});
+            const boot=await page.evaluate(()=>({
+              assetMode:window.WitchRide3D.assetMode,
+              engine:window.WitchRide3D.engine,
+              title:document.querySelector('#title')?.classList.contains('open'),
+              centerpiece:window.WitchRideWitchCenterpiecePass,
+              composition:window.WitchRide3D.compositionPass,
+              compositionDetail:window.WitchRide3D.compositionDetail
+            }));
             console.log('gate boot',JSON.stringify(boot));
             if(boot.assetMode!=='glb-pbr'||boot.engine!=='PlayCanvas'||!boot.title)throw new Error('Pass 11 production boot failed '+JSON.stringify(boot));
+            if(boot.centerpiece?.version!=='pass-11-reference-match-v1'||boot.centerpiece?.requiredNodes?.length!==12)throw new Error('Pass 11 centerpiece runtime failed '+JSON.stringify(boot.centerpiece));
+            if(boot.composition!=='composition-pass-v11-reference-match'||boot.compositionDetail?.readableBeanSurfaces<1||boot.compositionDetail?.wetMicroReflections!==24)throw new Error('Pass 11 composition gate failed '+JSON.stringify(boot.compositionDetail));
             await page.click('#play');
             await page.waitForFunction(()=>window.WitchRide3D?.state?.mode==='playing'&&Number((document.querySelector('#score').textContent||'0').replace(/,/g,''))>0,{polling:250,timeout:30000});
             const progressStart=await page.evaluate(()=>({
@@ -84,6 +106,7 @@ jobs:
             if(!(progressEnd.uiScore>progressStart.uiScore&&progressEnd.stateScore>progressStart.stateScore&&progressEnd.elapsed>progressStart.elapsed))throw new Error('Score simulation did not advance');
             const score1=progressStart.uiScore,score2=progressEnd.uiScore;
             console.log('gate score',JSON.stringify({progressStart,progressEnd}));
+            await page.screenshot({path:'witch-pass11-mobile.png',fullPage:false});
 
             const box=await page.$eval('#game-canvas',e=>{const r=e.getBoundingClientRect();return{x:r.left,y:r.top,w:r.width,h:r.height}});
             const y=box.y+box.h*.62,x1=box.x+box.w*.50,x2=box.x+box.w*.84;
@@ -117,6 +140,13 @@ jobs:
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
+      - name: Upload Pass 11 mobile reference render
+        uses: actions/upload-artifact@v4
+        with:
+          name: witch-pass11-mobile-reference
+          path: witch-pass11-mobile.png
+          if-no-files-found: error
+          retention-days: 7
       - name: Re-fetch main and branch before generated-asset write
         shell: bash
         run: |
