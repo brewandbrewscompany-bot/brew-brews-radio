@@ -160,7 +160,7 @@ def tapered_tube(points,radii,radial=8,cap=True):
     if cap:
         a0=len(verts); verts.append(p[0]); a1=len(verts); verts.append(p[-1])
         for j in range(radial):
-            k=(j+1)%radial; faces += [[a0,rings[0][k],rings[0][j]],[a1,rings[-1][j],rings[-1][k]]
+            k=(j+1)%radial; faces += [[a0,rings[0][k],rings[0][j]],[a1,rings[-1][j],rings[-1][k]]]
     return trimesh.Trimesh(np.array(verts),np.array(faces),process=True)
 
 def frustum(r0,r1,h,sections=32):
