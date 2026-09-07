@@ -87,17 +87,12 @@ jobs:
 
             const box=await page.$eval('#game-canvas',e=>{const r=e.getBoundingClientRect();return{x:r.left,y:r.top,w:r.width,h:r.height}});
             const y=box.y+box.h*.62,x1=box.x+box.w*.50,x2=box.x+box.w*.84;
-            await page.evaluate(({x1,x2,y})=>{
-              const c=document.querySelector('#game-canvas');
-              const base={bubbles:true,cancelable:true,pointerId:17,pointerType:'touch',isPrimary:true,width:10,height:10,pressure:.7};
-              c.dispatchEvent(new PointerEvent('pointerdown',{...base,buttons:1,clientX:x1,clientY:y}));
-              c.dispatchEvent(new PointerEvent('pointermove',{...base,buttons:1,clientX:x2,clientY:y}));
-            },{x1,x2,y});
+            const client=await page.target().createCDPSession();
+            await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:x1,y:y,radiusX:5,radiusY:5,rotationAngle:0,force:.7,id:17}]});
+            await sleep(60);
+            await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x2,y:y,radiusX:5,radiusY:5,rotationAngle:0,force:.7,id:17}]});
             await page.waitForFunction(()=>window.WitchRide3D.state.targetX>.5&&window.WitchRide3D.state.x>.02,{timeout:2500});
-            await page.evaluate(({x2,y})=>{
-              const c=document.querySelector('#game-canvas');
-              c.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,cancelable:true,pointerId:17,pointerType:'touch',isPrimary:true,buttons:0,clientX:x2,clientY:y}));
-            },{x2,y});
+            await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
             const touch=await page.evaluate(()=>({x:window.WitchRide3D.state.x,targetX:window.WitchRide3D.state.targetX}));
             console.log('gate touch',JSON.stringify(touch));
 
