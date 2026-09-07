@@ -1,8 +1,8 @@
 {
   "version": "witch-mesh-pass-v14",
-  "build": "pass-14-human-seated-rebuild-v7",
+  "build": "pass-14-human-seated-rebuild-v8",
   "file": "witch-rider.glb",
-  "bytes": 556180,
+  "bytes": 535132,
   "material_phase": "neutral-clay-mesh-review-only",
   "required_motion_nodes": [
     "cape",
@@ -25,24 +25,19 @@
   "cape_motion_roots": 3,
   "cape_panel_meshes": 6,
   "features": [
-    "elongated ribcage waist pelvis torso",
-    "forward upper body riding lean",
-    "pelvis centered over broom shaft",
-    "both hands visibly grip broom",
+    "continuous elongated ribcage waist pelvis torso",
+    "forward upper body riding lean built into geometry",
+    "pelvis centered directly over broom shaft",
+    "both arms bend forward inward to visible grip",
     "connected seated straddle thighs knees calves",
-    "boots follow leg angles",
-    "overlapping shoulder to hip cape panels",
-    "waist remains readable",
-    "broad layered nape shoulder mane",
-    "reduced irregular drooping hat",
-    "broom shaft routed through seated position",
-    "thicker crooked broom shaft",
+    "boots continue calf riding angles",
+    "six overlapping shoulder-to-hip cape panels",
+    "waist stays readable before lower cape flare",
+    "broad layered nape shoulder mane with tapered clumps",
+    "reduced irregular drooping witch hat",
+    "thick crooked shaft routed through seated position",
     "large dense long straw bundle",
-    "144 individual straw bristles",
+    "144 individually modeled tapered bristles",
     "neutral clay mesh review only"
-  ],
-  "glb_magic": "glTF",
-  "glb_version": 2,
-  "scene_nodes": 246,
-  "geometry_nodes": 233
+  ]
 }
