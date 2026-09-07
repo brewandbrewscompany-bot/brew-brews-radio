@@ -23,24 +23,27 @@ jobs:
           cp halloween-radio/games/witch-ride-3d/atmosphere-pass.js /tmp/witch-ride-atmosphere.mjs
           cp halloween-radio/games/witch-ride-3d/world-detail-pass.js /tmp/witch-ride-world.mjs
           cp halloween-radio/games/witch-ride-3d/cinematic-camera-pass.js /tmp/witch-ride-cinematic.mjs
+          cp halloween-radio/games/witch-ride-3d/variation-pass.js /tmp/witch-ride-variation.mjs
           node --check /tmp/witch-ride-3d.mjs
           node --check /tmp/witch-ride-realism.mjs
           node --check /tmp/witch-ride-atmosphere.mjs
           node --check /tmp/witch-ride-world.mjs
           node --check /tmp/witch-ride-cinematic.mjs
+          node --check /tmp/witch-ride-variation.mjs
           grep -q "playcanvas@2.22.0" halloween-radio/games/witch-ride-3d/index.html
-          grep -q "realism-pass.js" halloween-radio/games/witch-ride-3d/index.html
-          grep -q "atmosphere-pass.js" halloween-radio/games/witch-ride-3d/index.html
-          grep -q "world-detail-pass.js" halloween-radio/games/witch-ride-3d/index.html
-          grep -q "cinematic-camera-pass.js" halloween-radio/games/witch-ride-3d/index.html
+          for f in realism-pass.js atmosphere-pass.js world-detail-pass.js cinematic-camera-pass.js variation-pass.js; do grep -q "$f" halloween-radio/games/witch-ride-3d/index.html; done
           grep -q "new pc.Application" halloween-radio/games/witch-ride-3d/game.js
           grep -q "cinematic-detail-v2" halloween-radio/games/witch-ride-3d/game.js
           grep -q "realism-pass-v1" halloween-radio/games/witch-ride-3d/realism-pass.js
           grep -q "atmosphere-pass-v5" halloween-radio/games/witch-ride-3d/atmosphere-pass.js
           grep -q "world-detail-pass-v6" halloween-radio/games/witch-ride-3d/world-detail-pass.js
           grep -q "cinematic-camera-pass-v7" halloween-radio/games/witch-ride-3d/cinematic-camera-pass.js
-          grep -q "Cinematic Foreground Tree" halloween-radio/games/witch-ride-3d/cinematic-camera-pass.js
-          grep -q "cinematic-grain-v7" halloween-radio/games/witch-ride-3d/cinematic-camera-pass.js
+          grep -q "camera.camera.fov=baseFov" halloween-radio/games/witch-ride-3d/cinematic-camera-pass.js
+          grep -q "variation-pass-v8" halloween-radio/games/witch-ride-3d/variation-pass.js
+          grep -q "variationError" halloween-radio/games/witch-ride-3d/variation-pass.js
+          grep -q "Midnight Black" halloween-radio/games/witch-ride-3d/variation-pass.js
+          grep -q "Oxblood" halloween-radio/games/witch-ride-3d/variation-pass.js
+          grep -q "pitted period chrome" halloween-radio/games/witch-ride-3d/variation-pass.js
           test -s halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
           test -s halloween-radio/games/witch-ride-3d/assets/models/vintage-car.glb
           test -s halloween-radio/games/witch-ride-3d/assets/models/dead-tree.glb
@@ -53,14 +56,7 @@ jobs:
           grep -a -q 'root_flare_bark_knot_combined' halloween-radio/games/witch-ride-3d/assets/models/dead-tree.glb
           grep -a -q 'broken_splinter_wood_combined' halloween-radio/games/witch-ride-3d/assets/models/haunted-fence.glb
           grep -a -q 'pumpkin_lobe_combined' halloween-radio/games/witch-ride-3d/assets/models/jack-o-lantern.glb
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-albedo.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-normal.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-gloss.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/asphalt-puddles.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/shoulder-mud-albedo.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/shoulder-mud-normal.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/fog-sheet.png
-          test -s halloween-radio/games/witch-ride-3d/assets/textures/cinematic-backdrop.jpg
+          for f in asphalt-albedo.png asphalt-normal.png asphalt-gloss.png asphalt-puddles.png shoulder-mud-albedo.png shoulder-mud-normal.png fog-sheet.png cinematic-backdrop.jpg; do test -s "halloween-radio/games/witch-ride-3d/assets/textures/$f"; done
           grep -q 'cinematic-detail-v2' halloween-radio/games/witch-ride-3d/assets/manifest.json
           grep -q 'realism-pass-v1' halloween-radio/games/witch-ride-3d/assets/realism-manifest.json
           grep -q 'witch-material-pass-v2' halloween-radio/games/witch-ride-3d/assets/witch-material-pass.json
@@ -68,7 +64,7 @@ jobs:
           grep -q 'environment-material-pass-v4' halloween-radio/games/witch-ride-3d/assets/environment-material-pass.json
       - name: Install browser helper
         run: npm install --no-save puppeteer-core@24.16.0
-      - name: Run cinematic 3D renderer smoke test
+      - name: Run variation 3D renderer smoke test
         run: |
           python3 -m http.server 8000 --directory . >/tmp/wr3d-http.log 2>&1 &
           SERVER_PID=$!
@@ -83,38 +79,34 @@ jobs:
             const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--mute-audio','--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader']});
             const page=await browser.newPage();
             await page.setViewport({width:430,height:932,deviceScaleFactor:1});
-            const errors=[];
-            page.on('pageerror',e=>errors.push(String(e)));
-            page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+            const errors=[];page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
             await page.goto('http://127.0.0.1:8000/halloween-radio/games/witch-ride-3d/',{waitUntil:'domcontentloaded',timeout:30000});
             await page.waitForFunction(()=>window.WitchRide3D?.ready&&document.body.classList.contains('ready'),{timeout:30000});
-            await page.waitForFunction(()=>window.WitchRide3D?.cinematicPass==='cinematic-camera-pass-v7'&&document.body.classList.contains('cinematic-camera-pass-ready'),{timeout:30000});
-            const before=await page.evaluate(()=>({canvas:!!document.querySelector('canvas'),title:document.querySelector('#title').classList.contains('open'),engine:window.WitchRide3D.engine,assetMode:window.WitchRide3D.assetMode,detailMode:window.WitchRide3D.detailMode,realismPass:window.WitchRide3D.realismPass,materialPass:window.WitchRide3D.materialPass,vehiclePass:window.WitchRide3D.vehiclePass,environmentPass:window.WitchRide3D.environmentPass,environmentDetail:window.WitchRide3D.environmentDetail,atmospherePass:window.WitchRide3D.atmospherePass,atmosphereDetail:window.WitchRide3D.atmosphereDetail,worldDetailPass:window.WitchRide3D.worldDetailPass,worldDetail:window.WitchRide3D.worldDetail,cinematicPass:window.WitchRide3D.cinematicPass,cinematicDetail:window.WitchRide3D.cinematicDetail,grade:!!document.querySelector('#cinematic-grade-v7'),grain:!!document.querySelector('#cinematic-grain-v7')}));
-            if(!before.canvas||!before.title||before.engine!=='PlayCanvas')throw new Error('3D boot failed '+JSON.stringify(before));
-            if(before.assetMode!=='glb-pbr')throw new Error('Production GLB/PBR assets did not fully load '+JSON.stringify(before));
-            if(before.detailMode!=='cinematic-detail-v2'||before.realismPass!=='realism-pass-v1'||before.materialPass!=='witch-material-pass-v2'||before.vehiclePass!=='vehicle-material-pass-v3'||before.environmentPass!=='environment-material-pass-v4'||before.atmospherePass!=='atmosphere-pass-v5'||before.worldDetailPass!=='world-detail-pass-v6'||before.cinematicPass!=='cinematic-camera-pass-v7')throw new Error('Cinematic realism chain did not boot '+JSON.stringify(before));
+            await page.waitForFunction(()=>!!window.WitchRide3D?.variationPass,{timeout:30000});
+            const before=await page.evaluate(()=>({canvas:!!document.querySelector('canvas'),title:document.querySelector('#title').classList.contains('open'),engine:window.WitchRide3D.engine,assetMode:window.WitchRide3D.assetMode,detailMode:window.WitchRide3D.detailMode,realismPass:window.WitchRide3D.realismPass,materialPass:window.WitchRide3D.materialPass,vehiclePass:window.WitchRide3D.vehiclePass,environmentPass:window.WitchRide3D.environmentPass,environmentDetail:window.WitchRide3D.environmentDetail,atmospherePass:window.WitchRide3D.atmospherePass,atmosphereDetail:window.WitchRide3D.atmosphereDetail,worldDetailPass:window.WitchRide3D.worldDetailPass,worldDetail:window.WitchRide3D.worldDetail,cinematicPass:window.WitchRide3D.cinematicPass,cinematicDetail:window.WitchRide3D.cinematicDetail,variationPass:window.WitchRide3D.variationPass,variationDetail:window.WitchRide3D.variationDetail,variationError:window.WitchRide3D.variationError||'',variationReady:document.body.classList.contains('variation-pass-ready'),grade:!!document.querySelector('#cinematic-grade-v7'),grain:!!document.querySelector('#cinematic-grain-v7')}));
+            if(before.variationPass!=='variation-pass-v8'||!before.variationReady)throw new Error('Variation pass failed to initialize '+JSON.stringify({variationPass:before.variationPass,variationError:before.variationError,variationDetail:before.variationDetail,errors}));
+            if(!before.canvas||!before.title||before.engine!=='PlayCanvas'||before.assetMode!=='glb-pbr')throw new Error('3D production boot failed '+JSON.stringify(before));
+            const chain={detailMode:'cinematic-detail-v2',realismPass:'realism-pass-v1',materialPass:'witch-material-pass-v2',vehiclePass:'vehicle-material-pass-v3',environmentPass:'environment-material-pass-v4',atmospherePass:'atmosphere-pass-v5',worldDetailPass:'world-detail-pass-v6',cinematicPass:'cinematic-camera-pass-v7',variationPass:'variation-pass-v8'};for(const [k,v] of Object.entries(chain))if(before[k]!==v)throw new Error('Realism chain '+k+' expected '+v+' got '+before[k]);
             const env=before.environmentDetail||{};if(env.segments!==9||env.roadMaterials!==9||env.shoulderMaterials!==18||env.puddles!==9)throw new Error('Environment materials missing '+JSON.stringify(env));
-            const a=before.atmosphereDetail||{};const atmospheric={groundMist:8,distanceFog:4,headlightBeams:7,headlightSpills:7,leaves:10,embers:7,roasterySmoke:5};for(const [k,v] of Object.entries(atmospheric))if(a[k]!==v)throw new Error('Atmosphere layer '+k+' expected '+v+' got '+a[k]+' '+JSON.stringify(a));
-            const w=before.worldDetail||{};const worldExpected={roasteryWindows:6,roasteryLights:2,roasteryGroundSpills:2,furnaceGlow:1,roadsideSigns:3,beanHalos:16,beanSteam:32};for(const [k,v] of Object.entries(worldExpected))if(w[k]!==v)throw new Error('World-detail layer '+k+' expected '+v+' got '+w[k]+' '+JSON.stringify(w));
-            const c=before.cinematicDetail||{};const cinematicExpected={foregroundTrees:6,foregroundFences:4,cameraInertia:1,filmicGrade:1,filmGrain:1};for(const [k,v] of Object.entries(cinematicExpected))if(c[k]!==v)throw new Error('Cinematic layer '+k+' expected '+v+' got '+c[k]+' '+JSON.stringify(c));
-            if(!before.grade||!before.grain)throw new Error('Filmic overlays were not installed '+JSON.stringify(before));
-            if(errors.length)throw new Error('Browser errors during cinematic boot: '+errors.join(' | '));
-            await page.click('#play');
-            await page.waitForFunction(()=>window.WitchRide3D?.state?.mode==='playing'&&Number((document.querySelector('#score').textContent||'0').replace(/,/g,''))>0,{timeout:4000});
-            const running=await page.evaluate(()=>({score:Number((document.querySelector('#score').textContent||'0').replace(/,/g,'')),distance:document.querySelector('#distance').textContent,hud:!document.querySelector('#hud').classList.contains('hidden'),mode:window.WitchRide3D.state.mode,x:window.WitchRide3D.state.x,targetX:window.WitchRide3D.state.targetX,speed:window.WitchRide3D.state.speed,cinematicMotion:window.WitchRide3D.cinematicMotion}));
-            if(!running.hud||running.mode!=='playing'||!(running.score>0)||!(running.speed>=1)||!(running.cinematicMotion?.foregroundTravel>0))throw new Error('3D ride/cinematic depth did not advance '+JSON.stringify(running));
-            const box=await page.$eval('#game-canvas',e=>{const r=e.getBoundingClientRect();return{x:r.left,y:r.top,w:r.width,h:r.height}});
-            await page.mouse.move(box.x+box.w*.84,box.y+box.h*.64);await page.mouse.down();
-            await page.waitForFunction(()=>window.WitchRide3D.state.targetX>.5&&window.WitchRide3D.state.x>.03,{timeout:2000});
-            await page.waitForFunction(()=>{const m=window.WitchRide3D.cinematicMotion;return m&&(Math.abs(m.cameraLagX)>.002||Math.abs(m.cameraRoll)>.02)},{timeout:2000});
-            const pointerMove=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,x:window.WitchRide3D.state.x,targetX:window.WitchRide3D.state.targetX,cinematicMotion:{...window.WitchRide3D.cinematicMotion}}));await page.mouse.up();
-            if(pointerMove.mode!=='playing'||!(pointerMove.x>.03)||!(Math.abs(pointerMove.cinematicMotion.cameraLagX)>.002||Math.abs(pointerMove.cinematicMotion.cameraRoll)>.02))throw new Error('Cinematic steering inertia did not respond '+JSON.stringify(pointerMove));
+            const a=before.atmosphereDetail||{};for(const [k,v] of Object.entries({groundMist:8,distanceFog:4,headlightBeams:7,headlightSpills:7,leaves:10,embers:7,roasterySmoke:5}))if(a[k]!==v)throw new Error('Atmosphere '+k+' '+JSON.stringify(a));
+            const w=before.worldDetail||{};for(const [k,v] of Object.entries({roasteryWindows:6,roasteryLights:2,roasteryGroundSpills:2,furnaceGlow:1,roadsideSigns:3,beanHalos:16,beanSteam:32}))if(w[k]!==v)throw new Error('World detail '+k+' '+JSON.stringify(w));
+            const c=before.cinematicDetail||{};for(const [k,v] of Object.entries({foregroundTrees:6,foregroundFences:4,cameraInertia:1,filmicGrade:1,filmGrain:1}))if(c[k]!==v)throw new Error('Cinematic '+k+' '+JSON.stringify(c));
+            const v=before.variationDetail||{};if(v.cars!==7||v.uniqueCarPalettes!==7||v.headlightTunes!==14||v.preservedTrimKinds!==6||v.treeSilhouettes!==24||v.fenceSilhouettes!==10||v.pumpkinSilhouettes!==10||v.beanVariants!==16||v.beanRoastTones!==4||!(v.paintAssignments>=7)||!(v.barkAssignments>=24)||!(v.pumpkinAssignments>=10)||!(v.beanAssignments>=16))throw new Error('Production variation incomplete '+JSON.stringify(v));
+            if(new Set(v.palettes||[]).size!==7)throw new Error('Car palettes are not actually unique '+JSON.stringify(v.palettes));
+            if(!before.grade||!before.grain||errors.length)throw new Error('Cinematic boot errors '+JSON.stringify({grade:before.grade,grain:before.grain,errors}));
+            await page.click('#play');await page.waitForFunction(()=>window.WitchRide3D?.state?.mode==='playing'&&Number((document.querySelector('#score').textContent||'0').replace(/,/g,''))>0,{timeout:4000});
+            await sleep(2200);
+            const sustained=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,score:Number((document.querySelector('#score').textContent||'0').replace(/,/g,'')),fov:window.WitchRide3D.cinematicMotion?.cameraFov,travel:window.WitchRide3D.cinematicMotion?.foregroundTravel}));
+            if(sustained.mode!=='playing'||!(sustained.score>0)||!(sustained.travel>0)||!(sustained.fov>=60.9&&sustained.fov<=62.1))throw new Error('Sustained ride/FOV cap failed '+JSON.stringify(sustained));
+            const box=await page.$eval('#game-canvas',e=>{const r=e.getBoundingClientRect();return{x:r.left,y:r.top,w:r.width,h:r.height}});await page.mouse.move(box.x+box.w*.84,box.y+box.h*.64);await page.mouse.down();
+            await page.waitForFunction(()=>window.WitchRide3D.state.targetX>.5&&window.WitchRide3D.state.x>.03,{timeout:2000});await page.waitForFunction(()=>{const m=window.WitchRide3D.cinematicMotion;return m&&(Math.abs(m.cameraLagX)>.002||Math.abs(m.cameraRoll)>.02)},{timeout:2000});
+            const pointerMove=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,x:window.WitchRide3D.state.x,targetX:window.WitchRide3D.state.targetX,cinematicMotion:{...window.WitchRide3D.cinematicMotion}}));await page.mouse.up();if(pointerMove.mode!=='playing'||!(pointerMove.x>.03))throw new Error('Pointer steering failed '+JSON.stringify(pointerMove));
             const keyStart=await page.evaluate(()=>window.WitchRide3D.state.targetX);await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keydown',{code:'ArrowLeft',key:'ArrowLeft',bubbles:true})));await page.waitForFunction(start=>window.WitchRide3D.state.targetX<start-.15,{timeout:2000},keyStart);await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keyup',{code:'ArrowLeft',key:'ArrowLeft',bubbles:true})));
             const keyboardMove=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,x:window.WitchRide3D.state.x,targetX:window.WitchRide3D.state.targetX}));
             await page.click('#pause');await sleep(120);const paused=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,open:document.querySelector('#paused').classList.contains('open')}));if(paused.mode!=='paused'||!paused.open)throw new Error('Pause failed '+JSON.stringify(paused));
             await page.click('#resume');await sleep(120);const resumed=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,pausedOpen:document.querySelector('#paused').classList.contains('open')}));if(resumed.mode!=='playing'||resumed.pausedOpen)throw new Error('Resume failed '+JSON.stringify(resumed));
             if(errors.length)throw new Error('Browser errors: '+errors.join(' | '));
             await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded',timeout:10000}),page.evaluate(()=>document.querySelector('#paused .back').click())]);if(!page.url().endsWith('/halloween-radio/'))throw new Error('Back to Radio failed '+page.url());
-            console.log('Witch Ride 3D cinematic camera pass passed',JSON.stringify({before,running,pointerMove,keyboardMove,paused,resumed,backUrl:page.url()}));await browser.close();
+            console.log('Witch Ride 3D variation pass passed',JSON.stringify({before,sustained,pointerMove,keyboardMove,paused,resumed,backUrl:page.url()}));await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
