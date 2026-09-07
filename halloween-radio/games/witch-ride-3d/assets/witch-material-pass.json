@@ -3,7 +3,7 @@
   "build_version": "witch-realism-pass-v3",
   "build": "pass-13-rear-silhouette-rebuild",
   "file": "witch-rider.glb",
-  "bytes": 1397908,
+  "bytes": 1223184,
   "required_motion_nodes": [
     "cape",
     "cape_left",
