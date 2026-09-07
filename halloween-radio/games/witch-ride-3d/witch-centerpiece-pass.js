@@ -23,33 +23,51 @@ function setDelta(part,dx,dy,dz){
   if(!part?.node)return;
   part.node.setLocalEulerAngles(part.base.x+dx,part.base.y+dy,part.base.z+dz);
 }
+function multiplyScale(node,x=1,y=1,z=1){
+  if(!node)return;
+  const s=node.getLocalScale();
+  node.setLocalScale(s.x*x,s.y*y,s.z*z);
+}
 function tuneWitchMaterials(witch){
   const seen=new Set();
   for(const render of witch.findComponents?.('render')||[]){
     for(const mi of render.meshInstances||[]){
       const m=mi.material;if(!m||seen.has(m))continue;seen.add(m);
       const n=(m.name||'').toLowerCase();
-      if(n.includes('felt')){m.gloss=.045;m.bumpiness=.90}
-      else if(n.includes('charcoal wool')){m.gloss=.035;m.bumpiness=.98}
-      else if(n.includes('oxblood')||n.includes('lining')){m.gloss=.075;m.bumpiness=.95}
-      else if(n.includes('cape seam')){m.gloss=.045;m.bumpiness=.96}
-      else if(n.includes('auburn hair')){m.gloss=.24;m.bumpiness=.82}
-      else if(n.includes('leather')||n.includes('riding boot')){m.gloss=.24;m.bumpiness=.88}
-      else if(n.includes('broom')&&n.includes('ash')){m.gloss=.12;m.bumpiness=.96}
-      else if(n.includes('broom straw')){m.gloss=.025;m.bumpiness=1.0}
-      else if(n.includes('brass')){m.gloss=.42}
+      if(n.includes('felt')){m.gloss=.018;m.bumpiness=.40}
+      else if(n.includes('charcoal wool')){m.gloss=.006;m.bumpiness=.22}
+      else if(n.includes('oxblood')||n.includes('lining')){m.gloss=.016;m.bumpiness=.27}
+      else if(n.includes('cape seam')){m.gloss=.012;m.bumpiness=.30}
+      else if(n.includes('auburn hair')){m.gloss=.105;m.bumpiness=.38}
+      else if(n.includes('leather')||n.includes('riding boot')){m.gloss=.14;m.bumpiness=.56}
+      else if(n.includes('broom')&&n.includes('ash')){m.gloss=.065;m.bumpiness=.54}
+      else if(n.includes('broom straw')){m.gloss=.010;m.bumpiness=.42}
+      else if(n.includes('brass')){m.gloss=.34}
+      if(!n.includes('brass')){m.metalness=0;m.reflectivity=.025}
       m.update?.();
     }
   }
+}
+function applySilhouetteScales(witch,parts){
+  // Shorten the cloak vertically and keep it close to the rider so legs/boots remain human-readable.
+  multiplyScale(parts.cape?.node,1.08,.78,.94);
+  // Each animated hair root carries broad geometry; widen the mane rather than lengthening it.
+  for(const name of ['hair_01','hair_02','hair_03','hair_04','hair_05'])multiplyScale(parts[name]?.node,1.28,.98,.96);
+  // Make the production broom unmistakable at 430 px without turning it into a flame plume.
+  multiplyScale(parts.broom_bristles?.node,1.62,1.48,1.34);
+  multiplyScale(witch.findByName('broom_shaft'),1.28,1.28,1.0);
+  multiplyScale(witch.findByName('torso_taper'),1.05,1.0,1.0);
+  multiplyScale(witch.findByName('shoulder_-1'),1.10,1.0,1.0);
+  multiplyScale(witch.findByName('shoulder_1'),1.10,1.0,1.0);
 }
 function makeSparks(witch){
   const out=[];
   for(let i=0;i<4;i++){
     const mat=new pc.StandardMaterial();
-    mat.name=`Pass12 ember spark ${i}`;mat.diffuse=new pc.Color(.12,.025,.004);mat.emissive=new pc.Color(.92,.12,.012);mat.emissiveIntensity=.58;
-    mat.opacity=.62;mat.blendType=pc.BLEND_ADDITIVE;mat.depthWrite=false;mat.useLighting=false;mat.update();
+    mat.name=`Pass12 ember spark ${i}`;mat.diffuse=new pc.Color(.10,.020,.003);mat.emissive=new pc.Color(.90,.11,.010);mat.emissiveIntensity=.50;
+    mat.opacity=.56;mat.blendType=pc.BLEND_ADDITIVE;mat.depthWrite=false;mat.useLighting=false;mat.update();
     const e=new pc.Entity(`Pass12 Broom Spark ${i}`);e.addComponent('render',{type:'sphere'});e.render.material=mat;e.render.castShadows=false;e.render.receiveShadows=false;
-    e.setLocalScale(.016,.016,.023);e.setLocalPosition(0,-.84,4.12+i*.09);witch.addChild(e);out.push({e,mat,phase:i*1.71});
+    e.setLocalScale(.014,.014,.021);e.setLocalPosition(0,-.84,4.12+i*.09);witch.addChild(e);out.push({e,mat,phase:i*1.71});
   }
   return out;
 }
@@ -60,20 +78,21 @@ function install(){
   const missing=REQUIRED.filter(n=>!parts[n]);
   if(missing.length){console.error('Pass 12 centerpiece missing motion nodes:',missing.join(', '));return false}
   tuneWitchMaterials(witch);
+  applySilhouetteScales(witch,parts);
   const sparks=makeSparks(witch);
   let t=0,prevSpeed=wr.state?.speed||1,lightClock=0;
   const capeCfg=[
-    ['cape_left',10.8,7.15,1.05,-.42],
-    ['cape_center',12.6,8.05,.72,0],
-    ['cape_right',11.1,7.35,.98,.40]
+    ['cape_left',9.8,7.7,1.05,-.42],
+    ['cape_center',11.4,8.6,.72,0],
+    ['cape_right',10.1,7.9,.98,.40]
   ];
   const hairNames=['hair_01','hair_02','hair_03','hair_04','hair_05'];
 
   function tuneLights(){
-    const rim=witch.findByName('Witch Rim Glow');if(rim?.light){rim.light.intensity=.64;rim.light.range=8.6;rim.light.color=new pc.Color(.28,.36,.52)}
-    const ember=witch.findByName('Broom Ember Light');if(ember?.light){ember.light.intensity=.31;ember.light.range=5.7;ember.light.color=new pc.Color(.92,.18,.025)}
-    const warm=witch.findByName('Witch Warm Underfill');if(warm?.light){warm.light.intensity=.15;warm.light.range=4.8;warm.light.color=new pc.Color(.88,.16,.025)}
-    const broom=witch.findByName('Broom Warm Underfill');if(broom?.light){broom.light.intensity=.18;broom.light.range=4.9;broom.light.color=new pc.Color(.94,.18,.022)}
+    const rim=witch.findByName('Witch Rim Glow');if(rim?.light){rim.light.intensity=.39;rim.light.range=8.0;rim.light.color=new pc.Color(.24,.30,.40)}
+    const ember=witch.findByName('Broom Ember Light');if(ember?.light){ember.light.intensity=.27;ember.light.range=5.5;ember.light.color=new pc.Color(.92,.17,.022)}
+    const warm=witch.findByName('Witch Warm Underfill');if(warm?.light){warm.light.intensity=.12;warm.light.range=4.5;warm.light.color=new pc.Color(.86,.14,.020)}
+    const broom=witch.findByName('Broom Warm Underfill');if(broom?.light){broom.light.intensity=.17;broom.light.range=5.1;broom.light.color=new pc.Color(.94,.17,.020)}
   }
   tuneLights();
 
@@ -82,58 +101,58 @@ function install(){
     if(lightClock>1){lightClock=0;tuneLights()}
     const s=wr.state,playing=s.mode==='playing';
     const speed=s.speed||1,speedN=playing?clamp((speed-1)/2.8,0,1):0;
-    const accel=playing?clamp((speed-prevSpeed)/Math.max(dt,.008),-3.2,3.2):0;prevSpeed=speed;
+    const accel=playing?clamp((speed-prevSpeed)/Math.max(dt,.008),-3.0,3.0):0;prevSpeed=speed;
     const steer=playing?clamp((s.velocityX||0)/4.8,-1,1):0;
     const demand=playing?clamp(((s.targetX||0)-(s.x||0))/4.4,-1,1):0;
-    const air=playing?(.12+speedN*.88):.05;
+    const air=playing?(.10+speedN*.90):.04;
 
-    // Cape behaves as weighted wool: lower-frequency response, steering lag and small overshoot only.
+    // Cape behaves as weighted wool: lower-frequency response, steering lag and restrained overshoot.
     const root=parts.cape;
-    const rootX=spring(root.x,.7+speedN*3.7+Math.max(0,accel)*.17,dt,10.2,7.4);
-    const rootY=spring(root.y,Math.sin(t*.70)*.14*air,dt,8.5,7.8);
-    const rootZ=spring(root.z,-steer*2.4-demand*1.35,dt,10.5,7.2);
+    const rootX=spring(root.x,.45+speedN*2.7+Math.max(0,accel)*.11,dt,9.2,8.1);
+    const rootY=spring(root.y,Math.sin(t*.60)*.08*air,dt,7.8,8.4);
+    const rootZ=spring(root.z,-steer*1.75-demand*.92,dt,9.4,7.9);
     setDelta(root,rootX,rootY,rootZ);
 
     for(let i=0;i<capeCfg.length;i++){
       const [name,k,d,lag,side]=capeCfg[i],p=parts[name];
-      const clothRoll=Math.sin(t*(.76+i*.07)+i*1.7)*(.12+.14*air);
-      const x=spring(p.x,.6+speedN*(3.8+i*.22)+Math.max(0,accel)*.18+clothRoll,dt,k,d);
-      const y=spring(p.y,side*steer*.75+Math.sin(t*.54+i)*.10*air,dt,k*.72,d+.9);
-      const z=spring(p.z,-steer*(3.55*lag)-demand*(1.95*lag)+side*speedN*.38,dt,k,d);
+      const clothRoll=Math.sin(t*(.62+i*.055)+i*1.7)*(.055+.075*air);
+      const x=spring(p.x,.38+speedN*(2.45+i*.14)+Math.max(0,accel)*.10+clothRoll,dt,k,d);
+      const y=spring(p.y,side*steer*.43+Math.sin(t*.47+i)*.055*air,dt,k*.72,d+.9);
+      const z=spring(p.z,-steer*(2.5*lag)-demand*(1.34*lag)+side*speedN*.22,dt,k,d);
       setDelta(p,x,y,z);
     }
 
     // Hair stays soft and delayed, with slightly different timing per broad lock group.
     for(let i=0;i<hairNames.length;i++){
       const p=parts[hairNames[i]],delay=.84+i*.08;
-      const soft=Math.sin(t*(1.34+i*.045)+i*.89)*(.24+i*.045)*air;
-      const x=spring(p.x,speedN*(1.0+i*.26)+air*.25+soft,dt,15.5+i*.8,7.15+i*.10);
-      const y=spring(p.y,Math.sin(t*(.72+i*.025)+i*.66)*.14*air,dt,12.8+i*.6,7.4);
-      const z=spring(p.z,-steer*(1.8+i*.38)-demand*(.82+i*.20)*delay+soft*.34,dt,14.8+i*.7,6.95+i*.11);
+      const soft=Math.sin(t*(1.12+i*.042)+i*.89)*(.17+i*.030)*air;
+      const x=spring(p.x,speedN*(.72+i*.18)+air*.17+soft,dt,14.2+i*.72,7.5+i*.10);
+      const y=spring(p.y,Math.sin(t*(.64+i*.023)+i*.66)*.09*air,dt,12.0+i*.55,7.7);
+      const z=spring(p.z,-steer*(1.45+i*.28)-demand*(.61+i*.16)*delay+soft*.25,dt,13.8+i*.62,7.3+i*.10);
       setDelta(p,x,y,z);
     }
 
     const tip=parts.hat_tip;
     setDelta(tip,
-      spring(tip.x,speedN*.72+Math.sin(t*.78)*.20*air,dt,10.2,6.8),
-      spring(tip.y,Math.sin(t*.47)*.10*air,dt,9.6,7.0),
-      spring(tip.z,-steer*.82-demand*.38+Math.sin(t*.59+1.3)*.22*air,dt,10.0,6.7));
+      spring(tip.x,speedN*.55+Math.sin(t*.70)*.14*air,dt,9.8,7.2),
+      spring(tip.y,Math.sin(t*.43)*.07*air,dt,9.2,7.4),
+      spring(tip.z,-steer*.64-demand*.28+Math.sin(t*.53+1.3)*.15*air,dt,9.6,7.1));
 
     const br=parts.broom_bristles;
     setDelta(br,
-      spring(br.x,speedN*.74+Math.sin(t*1.65)*.15*air,dt,24,9.0),
-      spring(br.y,0,dt,25,9.4),
-      spring(br.z,-steer*.48-demand*.19+Math.sin(t*1.35+.6)*.13*air,dt,24,8.8));
+      spring(br.x,speedN*.48+Math.sin(t*1.42)*.09*air,dt,25,9.6),
+      spring(br.y,0,dt,26,9.8),
+      spring(br.z,-steer*.34-demand*.13+Math.sin(t*1.18+.6)*.08*air,dt,25,9.4));
 
-    const sparkDrive=playing?(.20+.80*air):.08;
+    const sparkDrive=playing?(.18+.82*air):.06;
     for(let i=0;i<sparks.length;i++){
-      const sp=sparks[i],pulse=Math.sin(t*(5.2+i*.31)+sp.phase);
-      sp.e.enabled=pulse>.46&&sparkDrive>.18;
+      const sp=sparks[i],pulse=Math.sin(t*(5.0+i*.29)+sp.phase);
+      sp.e.enabled=pulse>.52&&sparkDrive>.17;
       if(!sp.e.enabled)continue;
-      const life=(pulse-.46)/.54;
-      sp.e.setLocalPosition((i-1.5)*.032+Math.sin(t*4.1+sp.phase)*.018,-.84-Math.abs(Math.sin(t*2.7+sp.phase))*.065,4.10+i*.10+speedN*.20);
-      const size=.007+.014*life;sp.e.setLocalScale(size,size,size*1.45);
-      sp.mat.emissiveIntensity=.28+life*.34;sp.mat.opacity=.24+life*.30;sp.mat.update();
+      const life=(pulse-.52)/.48;
+      sp.e.setLocalPosition((i-1.5)*.030+Math.sin(t*4.0+sp.phase)*.015,-.84-Math.abs(Math.sin(t*2.6+sp.phase))*.055,4.10+i*.10+speedN*.18);
+      const size=.006+.012*life;sp.e.setLocalScale(size,size,size*1.4);
+      sp.mat.emissiveIntensity=.24+life*.28;sp.mat.opacity=.20+life*.27;sp.mat.update();
     }
   });
 
