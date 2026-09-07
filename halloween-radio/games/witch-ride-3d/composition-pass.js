@@ -47,16 +47,16 @@ function buildRoadTexture(app,fogTex){
   for(let i=0;i<30;i++){const x=(((i*53)%97)/96*2-1)*6.1,z=8-i*7.3,e=primitive(`Pass10 Road Leaf ${i}`,'sphere',[.055+(i%3)*.018,.012,.11+(i%4)*.018],[x,.185,z],leafMats[i%3],app.root);e.setEulerAngles((i*17)%40,(i*73)%360,(i%5-2)*6);e.__reset=226;e.__baseX=x;debris.push(e)}return {streaks,debris};
 }
 
-function buildForegroundFill(app){const l=new pc.Entity('Pass10 Foreground Moon Fill');l.addComponent('light',{type:'point',color:new pc.Color(.24,.34,.49),intensity:.28,range:34,castShadows:false});l.setPosition(0,4.2,7.5);app.root.addChild(l);return l}
+function buildForegroundFill(app){const l=new pc.Entity('Pass10 Foreground Moon Fill');l.addComponent('light',{type:'point',color:new pc.Color(.27,.38,.55),intensity:.38,range:38,castShadows:false});l.setPosition(0,4.2,7.5);app.root.addChild(l);return l}
 function animate(app,parts){app.on('update',dt=>{dt=Math.min(.04,dt);const s=window.WitchRide3D?.state||{},travel=(s.mode==='playing'?11.2*(s.speed||1):.18)*dt;for(const e of [...parts.buildings,...parts.trees,...parts.fences]){e.translate(0,0,travel);const p=e.getPosition();if(p.z>30)e.setPosition(e.__x,p.y,p.z-e.__reset)}for(const e of [...parts.streaks,...parts.debris]){e.translate(0,0,travel);const p=e.getPosition();if(p.z>18)e.setPosition(e.__baseX,p.y,p.z-e.__reset)}})}
 
 async function install(){
   for(let i=0;i<360;i++){
     const app=pc.app,w=window.WitchRide3D;if(app&&w?.ready&&w?.illuminationPass==='illumination-pass-v9'){
       try{
-        const fogTex=app.assets.find('fog-sheet.png','texture')?.resource;if(!fogTex)throw new Error('fog-sheet unavailable');app.scene.exposure=1.68;
+        const fogTex=app.assets.find('fog-sheet.png','texture')?.resource;if(!fogTex)throw new Error('fog-sheet unavailable');app.scene.ambientLight=new pc.Color(.155,.170,.205);app.scene.exposure=1.82;
         const beans=calmCollectibles(app),hamlet=buildHamlet(app),roadside=buildRoadsideDensity(app),road=buildRoadTexture(app,fogTex),fill=buildForegroundFill(app);animate(app,{...hamlet,...roadside,...road});
-        const detail={...beans,hauntedOutbuildings:hamlet.buildings.length,hamletWindows:hamlet.windows.length,hamletLights:hamlet.lights.length,midgroundTrees:roadside.trees.length,midgroundFences:roadside.fences.length,wetMicroReflections:road.streaks.length,roadDebris:road.debris.length,foregroundFill:fill?1:0,compositionExposure:1.68};w.compositionPass=VERSION;w.compositionDetail=detail;w.compositionError='';document.body.classList.add('composition-pass-ready');console.info('Witch Ride composition pass ready',VERSION,detail);return
+        const detail={...beans,hauntedOutbuildings:hamlet.buildings.length,hamletWindows:hamlet.windows.length,hamletLights:hamlet.lights.length,midgroundTrees:roadside.trees.length,midgroundFences:roadside.fences.length,wetMicroReflections:road.streaks.length,roadDebris:road.debris.length,foregroundFill:fill?1:0,compositionExposure:1.82,compositionAmbient:[.155,.170,.205]};w.compositionPass=VERSION;w.compositionDetail=detail;w.compositionError='';document.body.classList.add('composition-pass-ready');console.info('Witch Ride composition pass ready',VERSION,detail);return
       }catch(err){console.error('Witch Ride composition pass failed',err);w.compositionPass='fallback';w.compositionDetail={};w.compositionError=err?.stack||err?.message||String(err);return}
     }await wait(50)
   }const w=window.WitchRide3D;if(w){w.compositionPass='fallback';w.compositionDetail={};w.compositionError='timed out waiting for illumination pass'}
