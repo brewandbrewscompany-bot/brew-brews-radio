@@ -67,12 +67,23 @@ jobs:
             if(boot.assetMode!=='glb-pbr'||boot.engine!=='PlayCanvas'||!boot.title)throw new Error('Pass 11 production boot failed '+JSON.stringify(boot));
             await page.click('#play');
             await page.waitForFunction(()=>window.WitchRide3D?.state?.mode==='playing'&&Number((document.querySelector('#score').textContent||'0').replace(/,/g,''))>0,{timeout:5000});
-            await sleep(800);
-            const score1=await page.evaluate(()=>Number((document.querySelector('#score').textContent||'0').replace(/,/g,'')));
-            await sleep(800);
-            const score2=await page.evaluate(()=>Number((document.querySelector('#score').textContent||'0').replace(/,/g,'')));
-            if(!(score2>score1))throw new Error('Score did not advance');
-            console.log('gate score',score1,score2);
+            const progressStart=await page.evaluate(()=>({
+              uiScore:Number((document.querySelector('#score').textContent||'0').replace(/,/g,'')),
+              stateScore:window.WitchRide3D.state.score,
+              elapsed:window.WitchRide3D.state.elapsed
+            }));
+            await page.waitForFunction(start=>{
+              const wr=window.WitchRide3D,ui=Number((document.querySelector('#score').textContent||'0').replace(/,/g,''));
+              return wr?.state?.mode==='playing'&&ui>start.uiScore&&wr.state.score>start.stateScore&&wr.state.elapsed>start.elapsed+.12;
+            },{timeout:8000},progressStart);
+            const progressEnd=await page.evaluate(()=>({
+              uiScore:Number((document.querySelector('#score').textContent||'0').replace(/,/g,'')),
+              stateScore:window.WitchRide3D.state.score,
+              elapsed:window.WitchRide3D.state.elapsed
+            }));
+            if(!(progressEnd.uiScore>progressStart.uiScore&&progressEnd.stateScore>progressStart.stateScore&&progressEnd.elapsed>progressStart.elapsed))throw new Error('Score simulation did not advance');
+            const score1=progressStart.uiScore,score2=progressEnd.uiScore;
+            console.log('gate score',JSON.stringify({progressStart,progressEnd}));
 
             const box=await page.$eval('#game-canvas',e=>{const r=e.getBoundingClientRect();return{x:r.left,y:r.top,w:r.width,h:r.height}});
             const y=box.y+box.h*.62,x1=box.x+box.w*.50,x2=box.x+box.w*.84;
