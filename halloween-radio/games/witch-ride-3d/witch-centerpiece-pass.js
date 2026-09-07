@@ -28,44 +28,109 @@ function multiplyScale(node,x=1,y=1,z=1){
   const s=node.getLocalScale();
   node.setLocalScale(s.x*x,s.y*y,s.z*z);
 }
+function offsetPosition(node,x=0,y=0,z=0){
+  if(!node)return;
+  const p=node.getLocalPosition();
+  node.setLocalPosition(p.x+x,p.y+y,p.z+z);
+}
+function flattenMaterial(m,n){
+  m.metalness=0;
+  m.reflectivity=0;
+  m.useSkybox=false;
+  if('normalMap' in m)m.normalMap=null;
+  if('clearCoat' in m)m.clearCoat=0;
+  if('clearCoatGloss' in m)m.clearCoatGloss=0;
+  if('sheen' in m)m.sheen=null;
+  if(n.includes('felt')){
+    m.gloss=0;m.bumpiness=0;m.specular=new pc.Color(.012,.012,.014);
+  }else if(n.includes('charcoal wool')){
+    m.gloss=0;m.bumpiness=0;m.specular=new pc.Color(.010,.010,.012);
+  }else if(n.includes('oxblood')||n.includes('lining')){
+    m.gloss=0;m.bumpiness=0;m.specular=new pc.Color(.012,.006,.007);
+  }else if(n.includes('cape seam')){
+    m.gloss=0;m.bumpiness=0;m.specular=new pc.Color(.012,.010,.011);
+  }else if(n.includes('auburn hair')){
+    m.gloss=.006;m.bumpiness=0;m.specular=new pc.Color(.025,.008,.004);m.diffuse=new pc.Color(.36,.085,.028);
+  }else if(n.includes('broom straw')){
+    m.gloss=0;m.bumpiness=.03;m.specular=new pc.Color(.012,.008,.004);
+  }else if(n.includes('broom')&&n.includes('ash')){
+    m.gloss=.012;m.bumpiness=.12;m.specular=new pc.Color(.030,.018,.009);
+  }else if(n.includes('leather')||n.includes('riding boot')){
+    m.gloss=.018;m.bumpiness=.08;m.specular=new pc.Color(.035,.031,.032);
+  }else if(n.includes('brass')){
+    m.gloss=.14;m.reflectivity=.12;
+  }
+}
 function tuneWitchMaterials(witch){
   const seen=new Set();
   for(const render of witch.findComponents?.('render')||[]){
     for(const mi of render.meshInstances||[]){
       const m=mi.material;if(!m||seen.has(m))continue;seen.add(m);
       const n=(m.name||'').toLowerCase();
-      if(n.includes('felt')){m.gloss=.008;m.bumpiness=.24}
-      else if(n.includes('charcoal wool')){m.gloss=.002;m.bumpiness=.10}
-      else if(n.includes('oxblood')||n.includes('lining')){m.gloss=.006;m.bumpiness=.14}
-      else if(n.includes('cape seam')){m.gloss=.004;m.bumpiness=.16}
-      else if(n.includes('auburn hair')){m.gloss=.040;m.bumpiness=.22}
-      else if(n.includes('leather')||n.includes('riding boot')){m.gloss=.070;m.bumpiness=.34}
-      else if(n.includes('broom')&&n.includes('ash')){m.gloss=.030;m.bumpiness=.36}
-      else if(n.includes('broom straw')){m.gloss=.003;m.bumpiness=.20}
-      else if(n.includes('brass')){m.gloss=.22}
-      if(!n.includes('brass')){m.metalness=0;m.reflectivity=.008}
+      flattenMaterial(m,n);
       m.update?.();
     }
   }
 }
+function tuneStaticHair(witch){
+  // Break the flat fringe: roots remain dense at the skull but end at staggered lengths.
+  for(const side of [-1,1]){
+    for(let row=0;row<3;row++){
+      for(let k=0;k<4;k++){
+        const n=witch.findByName(`hair_root_${side}_${row}_${k}`);
+        const y=[.78,.92,1.04,.85][(k+row*2)%4];
+        const x=[.96,1.03,.94,1.00][(k+row)%4];
+        multiplyScale(n,x,y,.88);
+        offsetPosition(n,0,(k%2?-.018:.018)+(row-1)*.012,0);
+      }
+    }
+    for(let k=0;k<2;k++){
+      const n=witch.findByName(`hair_under_${side}_${k}`);
+      multiplyScale(n,k===0?1.02:.94,k===0?.92:1.05,.88);
+      offsetPosition(n,0,k===0?.015:-.025,0);
+    }
+  }
+}
 function applySilhouetteScales(witch,parts){
-  // Geometry now carries the proportions; runtime only makes small camera-readability corrections.
-  multiplyScale(parts.cape?.node,1.02,.98,.96);
-  for(const name of ['hair_01','hair_02','hair_03','hair_04','hair_05'])multiplyScale(parts[name]?.node,1.08,.98,.96);
-  multiplyScale(parts.broom_bristles?.node,1.18,1.12,1.08);
-  multiplyScale(witch.findByName('broom_shaft'),1.10,1.10,1.0);
-  multiplyScale(witch.findByName('torso_taper'),1.03,1.0,1.0);
-  multiplyScale(witch.findByName('shoulder_-1'),1.06,1.0,1.0);
-  multiplyScale(witch.findByName('shoulder_1'),1.06,1.0,1.0);
+  // Phone-camera correction: stronger shoulders, compact irregular mane, shorter/wider wool cape.
+  multiplyScale(parts.cape?.node,1.24,.92,.90);
+  const hairScale={
+    hair_01:[1.02,.78,.88],hair_02:[1.10,.94,.86],hair_03:[1.04,1.04,.84],hair_04:[1.12,.90,.86],hair_05:[1.00,.75,.90]
+  };
+  const hairLift={hair_01:.055,hair_02:.005,hair_03:-.055,hair_04:.018,hair_05:.070};
+  for(const name of Object.keys(hairScale)){
+    const [x,y,z]=hairScale[name];multiplyScale(parts[name]?.node,x,y,z);offsetPosition(parts[name]?.node,0,hairLift[name],0);
+  }
+  tuneStaticHair(witch);
+
+  // Hat brim stays witch-like without overpowering the shoulders.
+  multiplyScale(witch.findByName('hat_brim'),.80,1,.86);
+  multiplyScale(witch.findByName('hat_brim_edge'),.80,1,.86);
+  multiplyScale(witch.findByName('hat_band'),.90,1,.90);
+
+  multiplyScale(witch.findByName('body_core'),1.10,1.0,.96);
+  multiplyScale(witch.findByName('torso_taper'),1.13,.98,.94);
+  multiplyScale(witch.findByName('coat_skirt'),1.08,.94,.96);
+  multiplyScale(witch.findByName('cape_yoke'),1.18,1.0,.94);
+  multiplyScale(witch.findByName('shoulder_-1'),1.18,1.02,.96);
+  multiplyScale(witch.findByName('shoulder_1'),1.18,1.02,.96);
+
+  // A full straw fan must remain readable behind the rider at 430 px.
+  multiplyScale(parts.broom_bristles?.node,1.58,1.16,.90);
+  multiplyScale(witch.findByName('broom_shaft'),1.14,1.14,1.0);
+  if(parts.broom_handle?.node){
+    parts.broom_handle.base.y+=4.0;
+    parts.broom_handle.node.setLocalEulerAngles(parts.broom_handle.base.x,parts.broom_handle.base.y,parts.broom_handle.base.z);
+  }
 }
 function makeSparks(witch){
   const out=[];
   for(let i=0;i<4;i++){
     const mat=new pc.StandardMaterial();
-    mat.name=`Pass13 ember spark ${i}`;mat.diffuse=new pc.Color(.08,.014,.002);mat.emissive=new pc.Color(.78,.075,.006);mat.emissiveIntensity=.36;
-    mat.opacity=.44;mat.blendType=pc.BLEND_ADDITIVE;mat.depthWrite=false;mat.useLighting=false;mat.update();
+    mat.name=`Pass13 ember spark ${i}`;mat.diffuse=new pc.Color(.06,.010,.001);mat.emissive=new pc.Color(.66,.050,.003);mat.emissiveIntensity=.24;
+    mat.opacity=.34;mat.blendType=pc.BLEND_ADDITIVE;mat.depthWrite=false;mat.useLighting=false;mat.update();
     const e=new pc.Entity(`Pass13 Broom Spark ${i}`);e.addComponent('render',{type:'sphere'});e.render.material=mat;e.render.castShadows=false;e.render.receiveShadows=false;
-    e.setLocalScale(.010,.010,.016);e.setLocalPosition(0,-.76,4.05+i*.08);witch.addChild(e);out.push({e,mat,phase:i*1.71});
+    e.setLocalScale(.008,.008,.012);e.setLocalPosition(0,-.66,3.25+i*.06);witch.addChild(e);out.push({e,mat,phase:i*1.71});
   }
   return out;
 }
@@ -80,17 +145,17 @@ function install(){
   const sparks=makeSparks(witch);
   let t=0,prevSpeed=wr.state?.speed||1,lightClock=0;
   const capeCfg=[
-    ['cape_left',8.6,8.8,.92,-.36],
-    ['cape_center',9.8,9.6,.70,0],
-    ['cape_right',8.8,9.0,.90,.36]
+    ['cape_left',8.6,9.4,.90,-.36],
+    ['cape_center',10.2,10.0,.68,0],
+    ['cape_right',8.8,9.5,.88,.36]
   ];
   const hairNames=['hair_01','hair_02','hair_03','hair_04','hair_05'];
 
   function tuneLights(){
-    const rim=witch.findByName('Witch Rim Glow');if(rim?.light){rim.light.intensity=.28;rim.light.range=7.2;rim.light.color=new pc.Color(.20,.24,.31)}
-    const ember=witch.findByName('Broom Ember Light');if(ember?.light){ember.light.intensity=.22;ember.light.range=4.8;ember.light.color=new pc.Color(.82,.12,.012)}
-    const warm=witch.findByName('Witch Warm Underfill');if(warm?.light){warm.light.intensity=.085;warm.light.range=4.0;warm.light.color=new pc.Color(.72,.10,.010)}
-    const broom=witch.findByName('Broom Warm Underfill');if(broom?.light){broom.light.intensity=.13;broom.light.range=4.6;broom.light.color=new pc.Color(.82,.12,.010)}
+    const rim=witch.findByName('Witch Rim Glow');if(rim?.light){rim.light.intensity=.19;rim.light.range=6.6;rim.light.color=new pc.Color(.16,.19,.25)}
+    const ember=witch.findByName('Broom Ember Light');if(ember?.light){ember.light.intensity=.16;ember.light.range=4.2;ember.light.color=new pc.Color(.72,.085,.006)}
+    const warm=witch.findByName('Witch Warm Underfill');if(warm?.light){warm.light.intensity=.055;warm.light.range=3.7;warm.light.color=new pc.Color(.62,.065,.005)}
+    const broom=witch.findByName('Broom Warm Underfill');if(broom?.light){broom.light.intensity=.09;broom.light.range=4.1;broom.light.color=new pc.Color(.70,.075,.005)}
   }
   tuneLights();
 
@@ -106,55 +171,55 @@ function install(){
 
     // Cape behaves as short weighted wool attached at the shoulders, not a flag.
     const root=parts.cape;
-    const rootX=spring(root.x,.26+speedN*1.80+Math.max(0,accel)*.07,dt,8.4,9.2);
-    const rootY=spring(root.y,Math.sin(t*.52)*.045*air,dt,7.2,9.6);
-    const rootZ=spring(root.z,-steer*1.14-demand*.54,dt,8.6,9.0);
+    const rootX=spring(root.x,.20+speedN*1.35+Math.max(0,accel)*.05,dt,8.2,9.8);
+    const rootY=spring(root.y,Math.sin(t*.48)*.030*air,dt,7.0,10.0);
+    const rootZ=spring(root.z,-steer*.90-demand*.40,dt,8.4,9.7);
     setDelta(root,rootX,rootY,rootZ);
 
     for(let i=0;i<capeCfg.length;i++){
       const [name,k,d,lag,side]=capeCfg[i],p=parts[name];
-      const clothRoll=Math.sin(t*(.48+i*.045)+i*1.7)*(.025+.035*air);
-      const x=spring(p.x,.22+speedN*(1.35+i*.10)+Math.max(0,accel)*.06+clothRoll,dt,k,d);
-      const y=spring(p.y,side*steer*.22+Math.sin(t*.41+i)*.030*air,dt,k*.70,d+1.0);
-      const z=spring(p.z,-steer*(1.45*lag)-demand*(.72*lag)+side*speedN*.10,dt,k,d);
+      const clothRoll=Math.sin(t*(.44+i*.04)+i*1.7)*(.018+.026*air);
+      const x=spring(p.x,.16+speedN*(.92+i*.07)+Math.max(0,accel)*.04+clothRoll,dt,k,d);
+      const y=spring(p.y,side*steer*.16+Math.sin(t*.38+i)*.022*air,dt,k*.70,d+1.0);
+      const z=spring(p.z,-steer*(1.05*lag)-demand*(.48*lag)+side*speedN*.07,dt,k,d);
       setDelta(p,x,y,z);
     }
 
-    // Hair trails softly as five broad lock groups with slight timing offsets.
+    // Broad hair masses move softly; each group keeps a separate delay without rope-like flapping.
     for(let i=0;i<hairNames.length;i++){
       const p=parts[hairNames[i]],delay=.78+i*.07;
-      const soft=Math.sin(t*(.92+i*.035)+i*.89)*(.10+i*.018)*air;
-      const x=spring(p.x,speedN*(.44+i*.11)+air*.09+soft,dt,13.2+i*.60,8.0+i*.10);
-      const y=spring(p.y,Math.sin(t*(.56+i*.020)+i*.66)*.050*air,dt,11.4+i*.48,8.2);
-      const z=spring(p.z,-steer*(.92+i*.17)-demand*(.34+i*.09)*delay+soft*.20,dt,12.8+i*.55,7.9+i*.10);
+      const soft=Math.sin(t*(.82+i*.03)+i*.89)*(.060+i*.010)*air;
+      const x=spring(p.x,speedN*(.30+i*.075)+air*.055+soft,dt,12.8+i*.55,8.6+i*.12);
+      const y=spring(p.y,Math.sin(t*(.50+i*.018)+i*.66)*.032*air,dt,11.2+i*.45,8.8);
+      const z=spring(p.z,-steer*(.64+i*.11)-demand*(.24+i*.055)*delay+soft*.14,dt,12.5+i*.50,8.5+i*.12);
       setDelta(p,x,y,z);
     }
 
     const tip=parts.hat_tip;
     setDelta(tip,
-      spring(tip.x,speedN*.34+Math.sin(t*.60)*.075*air,dt,9.0,8.0),
-      spring(tip.y,Math.sin(t*.39)*.040*air,dt,8.7,8.2),
-      spring(tip.z,-steer*.38-demand*.16+Math.sin(t*.47+1.3)*.075*air,dt,8.9,7.9));
+      spring(tip.x,speedN*.26+Math.sin(t*.56)*.050*air,dt,9.0,8.5),
+      spring(tip.y,Math.sin(t*.36)*.025*air,dt,8.7,8.7),
+      spring(tip.z,-steer*.28-demand*.11+Math.sin(t*.43+1.3)*.050*air,dt,8.9,8.4));
 
     const br=parts.broom_bristles;
     setDelta(br,
-      spring(br.x,speedN*.28+Math.sin(t*1.18)*.050*air,dt,24,10.2),
-      spring(br.y,0,dt,25,10.5),
-      spring(br.z,-steer*.20-demand*.07+Math.sin(t*.98+.6)*.045*air,dt,24,10.0));
+      spring(br.x,speedN*.18+Math.sin(t*1.08)*.035*air,dt,25,10.8),
+      spring(br.y,0,dt,26,11.0),
+      spring(br.z,-steer*.14-demand*.05+Math.sin(t*.90+.6)*.030*air,dt,25,10.6));
 
-    const sparkDrive=playing?(.15+.72*air):.04;
+    const sparkDrive=playing?(.13+.60*air):.03;
     for(let i=0;i<sparks.length;i++){
-      const sp=sparks[i],pulse=Math.sin(t*(4.6+i*.25)+sp.phase);
-      sp.e.enabled=pulse>.60&&sparkDrive>.14;
+      const sp=sparks[i],pulse=Math.sin(t*(4.2+i*.22)+sp.phase);
+      sp.e.enabled=pulse>.68&&sparkDrive>.13;
       if(!sp.e.enabled)continue;
-      const life=(pulse-.60)/.40;
-      sp.e.setLocalPosition((i-1.5)*.025+Math.sin(t*3.6+sp.phase)*.010,-.76-Math.abs(Math.sin(t*2.3+sp.phase))*.040,4.04+i*.08+speedN*.12);
-      const size=.004+.008*life;sp.e.setLocalScale(size,size,size*1.35);
-      sp.mat.emissiveIntensity=.16+life*.18;sp.mat.opacity=.15+life*.20;sp.mat.update();
+      const life=(pulse-.68)/.32;
+      sp.e.setLocalPosition((i-1.5)*.020+Math.sin(t*3.2+sp.phase)*.008,-.66-Math.abs(Math.sin(t*2.1+sp.phase))*.030,3.24+i*.06+speedN*.08);
+      const size=.003+.006*life;sp.e.setLocalScale(size,size,size*1.30);
+      sp.mat.emissiveIntensity=.10+life*.12;sp.mat.opacity=.10+life*.14;sp.mat.update();
     }
   });
 
-  window.WitchRideWitchCenterpiecePass={passId:PASS_ID,assetBuild:ASSET_BUILD,version:VERSION,active:true,requiredNodes:REQUIRED.slice(),missing:[],visualOnly:true,sparkCount:sparks.length};
+  window.WitchRideWitchCenterpiecePass={passId:PASS_ID,assetBuild:ASSET_BUILD,version:VERSION,active:true,requiredNodes:REQUIRED.slice(),missing:[],visualOnly:true,sparkCount:sparks.length,phoneSilhouette:'staggered-mane-matte-wool'};
   return true;
 }
 function boot(attempt=0){
