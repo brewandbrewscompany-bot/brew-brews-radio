@@ -31,12 +31,13 @@ assert 3<=meta['cape_primary_folds']<=5
 assert meta['broom_bristles']==240,meta['broom_bristles']
 assert meta['broom_straw_clumps']==56,meta['broom_straw_clumps']
 assert meta['lower_body_workflow']=='reference-matched compact seated straddle authored in mesh; no runtime pose correction'
-assert meta['lower_body_pose']=='pelvis centered on broom; inner thighs grip; knees compact; calves and boots tuck inward'
+assert meta['lower_body_pose']=='pelvis centered on broom; thighs grip; knees compact; two calves and boots remain readable beside broom'
 assert meta['lower_body_leg_mass']=='full thighs with tapered knees and calves; no column silhouette'
 assert meta['lower_body_runtime_physics'] is False
-assert meta['lower_body_max_knee_center_x']<=.36,meta['lower_body_max_knee_center_x']
-assert meta['lower_body_ankle_center_x']<=.30,meta['lower_body_ankle_center_x']
-assert 'compact centered rider' in meta['lower_body_reference']
+assert meta['lower_body_max_knee_center_x']<=.37,meta['lower_body_max_knee_center_x']
+assert meta['lower_body_ankle_center_x']<=.38,meta['lower_body_ankle_center_x']
+assert .39<=meta['lower_body_boot_center_x']<=.43,meta['lower_body_boot_center_x']
+assert 'two distinct close parallel boots' in meta['lower_body_reference']
 
 scene=trimesh.load(GLB,force='scene')
 nodes=set(scene.graph.nodes)
@@ -88,17 +89,17 @@ for side,sgn in [('L',-1),('R',1)]:
     h=center(f'hand_{side}')
     assert abs(h[0])<0.32 and .45<h[1]<.82 and h[2]<-1.48,h
 
-# Reference-matched compact lower body. Reject both the original wide straddle
-# and the interim oversized column legs. The leg mass must cluster around the
-# broom, shorten under the cape, then taper cleanly into close parallel boots.
+# Reference-matched compact lower body. Upper legs must stay close to the broom,
+# while the lower legs separate only enough for both boots to read around the
+# central shaft and straw bundle in the real chase camera.
 leg_meshes={side:mw(f'leg_{side}') for side in ('L','R')}
 boot_meshes={side:mw(f'boot_{side}') for side in ('L','R')}
 all_legs=np.vstack([leg_meshes['L'].vertices,leg_meshes['R'].vertices])
 all_boots=np.vstack([boot_meshes['L'].vertices,boot_meshes['R'].vertices])
 leg_span=np.ptp(all_legs,axis=0)
 boot_span=np.ptp(all_boots,axis=0)
-assert 1.20<=leg_span[0]<=1.34,leg_span
-assert .88<=boot_span[0]<=1.00,boot_span
+assert 1.22<=leg_span[0]<=1.34,leg_span
+assert 1.16<=boot_span[0]<=1.26,boot_span
 assert leg_span[1]<=1.38,leg_span
 assert boot_span[1]<=.58,boot_span
 assert all_legs[:,0].min()>-.70 and all_legs[:,0].max()<.70,(all_legs[:,0].min(),all_legs[:,0].max())
@@ -108,35 +109,39 @@ boot_centers={}
 for side,sgn in [('L',-1),('R',1)]:
     lm=leg_meshes[side]; lv=lm.vertices; ld=dims(f'leg_{side}'); lc=center(f'leg_{side}')
     leg_centers[side]=lc
-    assert .30<=abs(lc[0])<=.37,(side,lc)
-    assert .56<=ld[0]<=.65 and 1.24<=ld[1]<=1.38 and .90<=ld[2]<=1.05,(side,ld)
-    assert abs(float(lm.volume))>=.24,(side,lm.volume)
+    assert .31<=abs(lc[0])<=.36,(side,lc)
+    assert .58<=ld[0]<=.64 and 1.28<=ld[1]<=1.37 and .94<=ld[2]<=1.02,(side,ld)
+    assert abs(float(lm.volume))>=.23,(side,lm.volume)
     assert (lv[:,0].min()>-.70 if sgn==-1 else lv[:,0].max()<.70),(side,lm.bounds)
-    assert (lv[:,0].max()>-.08 if sgn==-1 else lv[:,0].min()<.08),(side,lm.bounds)
+    assert (lv[:,0].max()>-.07 if sgn==-1 else lv[:,0].min()<.07),(side,lm.bounds)
 
+    # Thighs must reach the broom/seat corridor: the straddle is still tight.
     seat_band=lv[(lv[:,1]>=.46)&(lv[:,1]<=.82)&(lv[:,2]>=-.20)&(lv[:,2]<=.32)]
     assert len(seat_band)>30,(side,len(seat_band))
-    assert float(np.abs(seat_band[:,0]).min())<.08,(side,float(np.abs(seat_band[:,0]).min()))
+    assert float(np.abs(seat_band[:,0]).min())<.07,(side,float(np.abs(seat_band[:,0]).min()))
 
     knee_band=lv[(lv[:,1]>=.08)&(lv[:,1]<=.40)&(lv[:,2]>=.12)&(lv[:,2]<=.52)]
     assert len(knee_band)>30,(side,len(knee_band))
     knee_center=float(np.mean(knee_band[:,0]))
-    assert .24<=abs(knee_center)<=.40,(side,knee_center)
+    assert .30<=abs(knee_center)<=.39,(side,knee_center)
 
     calf_band=lv[(lv[:,1]>=-.36)&(lv[:,1]<=-.05)&(lv[:,2]>=.34)&(lv[:,2]<=.70)]
     assert len(calf_band)>20,(side,len(calf_band))
     calf_center=float(np.mean(calf_band[:,0]))
-    assert abs(calf_center)<=.37,(side,calf_center)
+    assert .35<=abs(calf_center)<=.40,(side,calf_center)
 
     bm=boot_meshes[side]; bd=dims(f'boot_{side}'); bc=center(f'boot_{side}')
     boot_centers[side]=bc
-    assert .24<=abs(bc[0])<=.31 and -.76<=bc[1]<=-.62,(side,bc)
-    assert .38<=bd[0]<=.45 and .48<=bd[1]<=.58 and .50<=bd[2]<=.59,(side,bd)
-    assert (bm.vertices[:,0].max()>-.08 if sgn==-1 else bm.vertices[:,0].min()<.08),(side,bm.bounds)
+    assert .38<=abs(bc[0])<=.43 and -.76<=bc[1]<=-.62,(side,bc)
+    assert .39<=bd[0]<=.43 and .49<=bd[1]<=.55 and .52<=bd[2]<=.57,(side,bd)
+    # Keep an actual center gap for the broom. This is what prevents the two
+    # boots from visually collapsing into a single leg in chase view.
+    assert (bm.vertices[:,0].max()<-.15 if sgn==-1 else bm.vertices[:,0].min()>.15),(side,bm.bounds)
 
 assert abs(leg_centers['L'][0]+leg_centers['R'][0])<.03,leg_centers
 assert abs(boot_centers['L'][0]+boot_centers['R'][0])<.03,boot_centers
-assert abs(boot_centers['L'][0])<abs(leg_centers['L'][0]) and abs(boot_centers['R'][0])<abs(leg_centers['R'][0]),(leg_centers,boot_centers)
+assert abs(boot_centers['L'][0])>abs(leg_centers['L'][0]) and abs(boot_centers['R'][0])>abs(leg_centers['R'][0]),(leg_centers,boot_centers)
+assert abs(boot_centers['L'][0]-boot_centers['R'][0])>=.76,boot_centers
 
 sv=mw('broom_shaft').vertices
 for side in ('L','R'):
@@ -144,6 +149,7 @@ for side in ('L','R'):
     d=float(np.linalg.norm(hv[:,None,:]-sv[None,:,:],axis=2).min())
     assert d<.16,(side,d)
 
+# Preserve the approved pre-swept hair silhouette exactly.
 hair_names=main+overlap+['hair_cap']
 allh=np.vstack([mw(n).vertices for n in hair_names]); hs=np.ptp(allh,axis=0)
 assert hs[0]>=2.28 and .86<=hs[1]<=1.08 and hs[2]>=3.25,hs
