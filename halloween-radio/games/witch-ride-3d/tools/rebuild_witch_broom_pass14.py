@@ -157,9 +157,6 @@ def main() -> None:
         ):
             remove_named(scene, name)
 
-    # PRIMARY MASS: eight overlapping hidden-ish flattened cores build one continuous,
-    # packed broom body. They terminate before the final third so they never become
-    # the visible paintbrush fingers that failed the previous render.
     lane_x = np.array([-0.96, -0.70, -0.45, -0.17, 0.12, 0.40, 0.69, 0.98], dtype=float)
     lane_drift = np.array([-0.08, 0.05, -0.06, 0.04, -0.03, 0.07, -0.04, 0.09], dtype=float)
     for i, (lane, drift) in enumerate(zip(lane_x, lane_drift), start=1):
@@ -177,16 +174,13 @@ def main() -> None:
         depths = np.array([0.016, 0.020, 0.028, 0.038, 0.044, 0.032, 0.010])
         add(scene, ribbon_shell(path, widths, depths), f'straw_primary_{i:02d}')
 
-    # SECONDARY CLUMPS: 56 continuously distributed flattened ribbons cover the core.
-    # They do not share eight visible branch axes. Six terminal length families create
-    # a broken handmade edge while each ribbon tapers to a tiny point.
     length_y = np.array([-2.92, -3.18, -3.47, -3.78, -4.08, -4.40], dtype=float)
     family_counts = np.zeros(6, dtype=int)
     full_root_clumps = 0
     for i in range(56):
         u = -1.0 + 2.0 * (i + 0.5) / 56.0
         phase = i * 1.173
-        family = (i * 5 + (i // 8) * 2) % 6
+        family = i % 6
         family_counts[family] += 1
         curve = 0.18 * math.sin(phase * 0.73) + 0.06 * math.sin(phase * 1.91)
         tip_x = 0.14 + 1.30 * u + 0.11 * math.sin(phase)
@@ -207,9 +201,6 @@ def main() -> None:
             f'straw_mass_{i + 1:02d}',
         )
 
-    # TERTIARY STRAW: exact 240 fine bristles. Only 48 start at the bound root and 40
-    # are permitted to escape as perimeter flyaways; the rest emerge from inside the
-    # packed body so the fine detail cannot become a wire cloud.
     full_root_bristles = 0
     flyaway_bristles = 0
     for i in range(240):
