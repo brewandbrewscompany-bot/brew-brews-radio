@@ -26,9 +26,9 @@
     "broom_handle",
     "broom_bristles"
   ],
-  "bytes": 856208,
-  "nodes": 364,
-  "geometries": 348,
+  "bytes": 861432,
+  "nodes": 365,
+  "geometries": 349,
   "hair_main_locks": 14,
   "hair_overlap_locks": 8,
   "hair_cap": true,
@@ -44,5 +44,9 @@
   "lower_body_max_knee_center_x": 0.37,
   "lower_body_ankle_center_x": 0.38,
   "lower_body_boot_center_x": 0.403,
-  "lower_body_reference": "approved rear chase reference: tight upper straddle with two distinct close parallel boots around central broom"
+  "lower_body_reference": "approved rear chase reference: tight upper straddle with two distinct close parallel boots around central broom",
+  "broom_bundle_clearance": "dense bundle tie begins below visible legs; density unchanged",
+  "broom_bundle_shift_y": -0.7,
+  "broom_bundle_shift_z": 0.1,
+  "broom_bundle_connector": true
 }
