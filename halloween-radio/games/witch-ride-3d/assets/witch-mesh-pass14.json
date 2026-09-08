@@ -26,7 +26,7 @@
     "broom_handle",
     "broom_bristles"
   ],
-  "bytes": 856192,
+  "bytes": 856208,
   "nodes": 364,
   "geometries": 348,
   "hair_main_locks": 14,
@@ -38,10 +38,11 @@
   "hair_tip_motion": "highest secondary motion",
   "hat_motion": "locked",
   "lower_body_workflow": "reference-matched compact seated straddle authored in mesh; no runtime pose correction",
-  "lower_body_pose": "pelvis centered on broom; inner thighs grip; knees compact; calves and boots tuck inward",
+  "lower_body_pose": "pelvis centered on broom; thighs grip; knees compact; two calves and boots remain readable beside broom",
   "lower_body_leg_mass": "full thighs with tapered knees and calves; no column silhouette",
   "lower_body_runtime_physics": false,
-  "lower_body_max_knee_center_x": 0.36,
-  "lower_body_ankle_center_x": 0.3,
-  "lower_body_reference": "approved rear chase reference: compact centered rider with close parallel boots"
+  "lower_body_max_knee_center_x": 0.37,
+  "lower_body_ankle_center_x": 0.38,
+  "lower_body_boot_center_x": 0.403,
+  "lower_body_reference": "approved rear chase reference: tight upper straddle with two distinct close parallel boots around central broom"
 }
