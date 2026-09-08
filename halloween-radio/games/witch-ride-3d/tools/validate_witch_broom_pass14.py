@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 from pathlib import Path
 
@@ -17,6 +18,7 @@ meta = json.loads(MANIFEST.read_text(encoding='utf-8'))
 assert meta['broom_bristles'] == 240, meta['broom_bristles']
 assert meta['broom_straw_clumps'] == 56, meta['broom_straw_clumps']
 assert meta['broom_primary_groups'] == 8, meta['broom_primary_groups']
+assert meta['broom_straw_substrands_per_clump'] == 4, meta['broom_straw_substrands_per_clump']
 assert 0.26 <= meta['broom_root_compression_fraction'] <= 0.30, meta['broom_root_compression_fraction']
 assert meta['broom_material_ready'] is False
 assert meta['broom_straw_workflow'] == 'grouped authored straw mass first; fine bristles are secondary breakup only'
@@ -46,11 +48,31 @@ def mesh_world(name: str) -> trimesh.Trimesh:
 straw_meshes = [mesh_world(name) for name in straw_names]
 bristle_meshes = [mesh_world(name) for name in bristle_names]
 
+# Every named straw clump must now be a real clustered bundle of four separate slim
+# closed straw bodies. This specifically rejects the previous thick rounded finger form.
+component_radii = []
 for name, mesh in zip(straw_names, straw_meshes):
     assert mesh.is_watertight, name
-    assert len(mesh.vertices) >= 80, (name, len(mesh.vertices))
-    assert len(mesh.faces) >= 150, (name, len(mesh.faces))
+    assert len(mesh.vertices) >= 200, (name, len(mesh.vertices))
+    assert len(mesh.faces) >= 350, (name, len(mesh.faces))
     assert np.isfinite(mesh.vertices).all(), name
+    parts = mesh.split(only_watertight=False)
+    assert len(parts) == 4, (name, len(parts))
+    for part in parts:
+        assert part.is_watertight, name
+        dims = np.ptp(part.vertices, axis=0)
+        length = float(np.max(dims))
+        volume = abs(float(part.volume))
+        assert length >= 1.45, (name, dims)
+        equiv_radius = math.sqrt(max(volume, 1e-12) / (math.pi * max(length, 1e-9)))
+        component_radii.append(equiv_radius)
+        assert equiv_radius <= 0.034, (name, equiv_radius, volume, length)
+        # The visible trailing end must be a tiny taper, not a rounded plug.
+        ymin = float(part.vertices[:, 1].min())
+        tip_slice = part.vertices[part.vertices[:, 1] <= ymin + 0.035]
+        assert len(tip_slice) >= 3, (name, len(tip_slice))
+        assert float(np.ptp(tip_slice[:, 0])) <= 0.065, (name, np.ptp(tip_slice[:, 0]))
+        assert float(np.ptp(tip_slice[:, 2])) <= 0.065, (name, np.ptp(tip_slice[:, 2]))
 
 for name, mesh in zip(bristle_names, bristle_meshes):
     assert mesh.is_watertight, name
@@ -75,21 +97,21 @@ assert bristle_span[2] >= 1.55, bristle_span
 # Root compression gate: directly below the binding, the tail stays narrow so the
 # legs and two boots remain readable before the straw fan opens.
 root_band = straw[(straw[:, 2] >= 1.48) & (straw[:, 2] <= 1.96)]
-assert len(root_band) > 500, len(root_band)
+assert len(root_band) > 1200, len(root_band)
 root_width = float(np.ptp(root_band[:, 0]))
 assert root_width <= 0.48, root_width
 
-# The middle body must become substantial after the compact root. This prevents the
-# previous cone/tassel result and forces a strong broom-shaped body.
+# The middle body becomes substantial after the compact root. This forces a strong
+# broom-shaped mass without relying on thick individual pieces.
 mid_band = straw[(straw[:, 2] >= 2.20) & (straw[:, 2] <= 2.72)]
-assert len(mid_band) > 600, len(mid_band)
+assert len(mid_band) > 1400, len(mid_band)
 mid_width = float(np.ptp(mid_band[:, 0]))
 assert mid_width >= 1.15, mid_width
 assert mid_width >= root_width * 3.5, (root_width, mid_width)
 
-# Tips remain broad, but their lengths are intentionally irregular and clustered.
+# Tips remain broad, irregular, and clustered in length.
 tip_band = straw[straw[:, 2] >= 2.88]
-assert len(tip_band) > 400, len(tip_band)
+assert len(tip_band) > 1000, len(tip_band)
 tip_width = float(np.ptp(tip_band[:, 0]))
 assert tip_width >= 1.60, tip_width
 assert tip_width >= mid_width * 1.18, (mid_width, tip_width)
@@ -97,7 +119,8 @@ clump_low_y = np.asarray([float(mesh.vertices[:, 1].min()) for mesh in straw_mes
 assert float(np.ptp(clump_low_y)) >= 0.34, np.ptp(clump_low_y)
 assert float(np.std(clump_low_y)) >= 0.10, np.std(clump_low_y)
 
-# Broad straw clumps must carry the visible mass. Fine bristles are secondary breakup.
+# Clustered medium straw still carries more visual mass than the 240 fine breakup
+# bristles, but no individual medium component may become a fat tube.
 straw_volumes = np.asarray([abs(float(mesh.volume)) for mesh in straw_meshes])
 bristle_volumes = np.asarray([abs(float(mesh.volume)) for mesh in bristle_meshes])
 assert np.median(straw_volumes) >= np.median(bristle_volumes) * 14.0, (
@@ -105,10 +128,11 @@ assert np.median(straw_volumes) >= np.median(bristle_volumes) * 14.0, (
     float(np.median(bristle_volumes)),
 )
 assert np.percentile(straw_volumes, 25) > 0.0025, np.percentile(straw_volumes, 25)
+assert float(np.percentile(component_radii, 95)) <= 0.033, np.percentile(component_radii, 95)
 
 # Protect lower-body chase readability: only the compressed root occupies this zone.
 readability_band = straw[(straw[:, 1] >= -0.50) & (straw[:, 1] <= -0.15) & (straw[:, 2] <= 2.08)]
-assert len(readability_band) > 300, len(readability_band)
+assert len(readability_band) > 700, len(readability_band)
 readability_width = float(np.ptp(readability_band[:, 0]))
 assert readability_width <= 0.52, readability_width
 
@@ -129,6 +153,7 @@ print(json.dumps({
     'broom_bristles': len(bristle_names),
     'broom_straw_clumps': len(straw_names),
     'broom_primary_groups': meta['broom_primary_groups'],
+    'broom_straw_substrands_per_clump': meta['broom_straw_substrands_per_clump'],
     'root_width': root_width,
     'mid_width': mid_width,
     'tip_width': tip_width,
@@ -138,5 +163,6 @@ print(json.dumps({
     'bristle_span': bristle_span.tolist(),
     'median_straw_volume': float(np.median(straw_volumes)),
     'median_bristle_volume': float(np.median(bristle_volumes)),
+    'p95_component_equiv_radius': float(np.percentile(component_radii, 95)),
     'readability_width': readability_width,
 }, indent=2))
