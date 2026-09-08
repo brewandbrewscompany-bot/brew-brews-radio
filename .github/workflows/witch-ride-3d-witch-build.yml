@@ -9,6 +9,7 @@ on:
       - 'halloween-radio/games/witch-ride-3d/tools/rebuild_witch_hair_pass14.py'
       - 'halloween-radio/games/witch-ride-3d/tools/rebuild_witch_lower_body_pass14.py'
       - 'halloween-radio/games/witch-ride-3d/tools/rebuild_witch_broom_pass14.py'
+      - 'halloween-radio/games/witch-ride-3d/tools/prepare_witch_material_uv_pass14.py'
       - 'halloween-radio/games/witch-ride-3d/tools/patch_witch_hair_runtime_pass14.py'
       - 'halloween-radio/games/witch-ride-3d/tools/validate_witch_pass14.py'
       - 'halloween-radio/games/witch-ride-3d/tools/validate_witch_broom_pass14.py'
@@ -43,6 +44,7 @@ jobs:
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/rebuild_witch_hair_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/rebuild_witch_lower_body_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/rebuild_witch_broom_pass14.py
+          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/prepare_witch_material_uv_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/patch_witch_hair_runtime_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/validate_witch_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/validate_witch_broom_pass14.py
@@ -52,7 +54,7 @@ jobs:
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/witch-material-pass14.js
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
-      - name: Build and validate Pass 14 grouped broom straw mesh
+      - name: Build, UV and validate Pass 14 production witch
         shell: bash
         run: |
           python -m pip install --disable-pip-version-check 'numpy>=2,<3' 'scipy>=1.15,<2' 'trimesh==4.11.1' 'networkx>=3.4,<4'
@@ -61,6 +63,7 @@ jobs:
             halloween-radio/games/witch-ride-3d/tools/rebuild_witch_hair_pass14.py \
             halloween-radio/games/witch-ride-3d/tools/rebuild_witch_lower_body_pass14.py \
             halloween-radio/games/witch-ride-3d/tools/rebuild_witch_broom_pass14.py \
+            halloween-radio/games/witch-ride-3d/tools/prepare_witch_material_uv_pass14.py \
             halloween-radio/games/witch-ride-3d/tools/patch_witch_hair_runtime_pass14.py \
             halloween-radio/games/witch-ride-3d/tools/validate_witch_pass14.py \
             halloween-radio/games/witch-ride-3d/tools/validate_witch_broom_pass14.py
@@ -69,6 +72,7 @@ jobs:
           python halloween-radio/games/witch-ride-3d/tools/rebuild_witch_hair_pass14.py
           python halloween-radio/games/witch-ride-3d/tools/rebuild_witch_lower_body_pass14.py
           python halloween-radio/games/witch-ride-3d/tools/rebuild_witch_broom_pass14.py
+          python halloween-radio/games/witch-ride-3d/tools/prepare_witch_material_uv_pass14.py
           python halloween-radio/games/witch-ride-3d/tools/patch_witch_hair_runtime_pass14.py
           python halloween-radio/games/witch-ride-3d/tools/validate_witch_pass14.py
           python halloween-radio/games/witch-ride-3d/tools/validate_witch_broom_pass14.py
@@ -86,13 +90,16 @@ jobs:
           grep -q '"broom_root_compression_fraction": 0.28' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           grep -q '"broom_material_ready": false' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           grep -q '"broom_straw_shape": "tight bound root; dense middle body; rearward flare toward player; clustered tapered tips; shallow secondary sag"' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
+          grep -q '"material_uv_ready": true' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
+          grep -q '"material_uv_workflow": "largest-axis-planar-uv-v1"' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
+          grep -q '"material_uv_preserves_geometry": true' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           grep -q "witch-centerpiece-pass-v14" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           grep -q "pass-14-mesh-only-v1" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           grep -q "neutral-clay-mesh-review-only" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           ! grep -Eq "tuneWitchMaterials|flattenMaterial|normalMap=|clearCoat|metalness=|gloss=" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           grep -q 'src="witch-material-pass14.js"' halloween-radio/games/witch-ride-3d/index.html
-          grep -q "pass-14-production-materials-v2" halloween-radio/games/witch-ride-3d/witch-material-pass14.js
-      - name: Actual PlayCanvas 430x932 material gate
+          grep -q "pass-14-production-materials-v3-textured" halloween-radio/games/witch-ride-3d/witch-material-pass14.js
+      - name: Actual PlayCanvas 430x932 textured material gate
         shell: bash
         run: |
           npm install --no-save puppeteer-core@24.16.0
@@ -116,10 +123,11 @@ jobs:
             await page.waitForFunction(()=>window.WitchRideWitchMaterialPass14?.active===true&&window.WitchRideWitchMaterialPass14?.production===true,{polling:200,timeout:30000});
             const boot=await page.evaluate(()=>({assetMode:window.WitchRide3D.assetMode,engine:window.WitchRide3D.engine,mesh:window.WitchRideWitchCenterpiecePass,material:window.WitchRideWitchMaterialPass14,composition:window.WitchRide3D.compositionPass}));
             if(boot.assetMode!=='glb-pbr'||boot.engine!=='PlayCanvas'||boot.mesh?.passId!=='witch-centerpiece-pass-v14'||boot.mesh?.version!=='pass-14-mesh-only-v1'||boot.mesh?.review!=='neutral-clay-mesh-review-only')throw new Error('Pass 14 production mesh boot failed '+JSON.stringify(boot));
-            if(boot.material?.passId!=='witch-material-pass14'||boot.material?.version!=='pass-14-production-materials-v2'||boot.material?.production!==true||boot.material?.counts?.straw<300||boot.material?.counts?.hair<20)throw new Error('Pass 14 production material boot failed '+JSON.stringify(boot.material));
+            const expected=['cape','cloth','hair','hat','leather','straw','wood'];
+            if(boot.material?.passId!=='witch-material-pass14'||boot.material?.version!=='pass-14-production-materials-v3-textured'||boot.material?.production!==true||boot.material?.uvRequired!==true||boot.material?.textureAssetCount!==14||JSON.stringify(boot.material?.texturedCategories)!==JSON.stringify(expected)||boot.material?.counts?.straw<300||boot.material?.counts?.hair<20)throw new Error('Pass 14 textured material boot failed '+JSON.stringify(boot.material));
             await page.click('#play');
             await page.waitForFunction(()=>window.WitchRide3D?.state?.mode==='playing',{polling:100,timeout:10000});
-            await sleep(350);
+            await sleep(500);
             const gameplayState=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,score:window.WitchRide3D.state.score,elapsed:window.WitchRide3D.state.elapsed}));
             await page.screenshot({path:'witch-pass14-material-mobile-430x932.png',fullPage:false});
 
@@ -133,14 +141,14 @@ jobs:
               for(const el of document.querySelectorAll('.screen'))el.classList.remove('open');
               app.on('prerender',()=>{cam.setPosition(2.15,3.55,10.25);cam.lookAt(0,3.05,1.80);cam.camera.fov=42});
             });
-            await sleep(350);
+            await sleep(500);
             await page.screenshot({path:'witch-pass14-material-close-430x932.png',fullPage:false});
             if(errors.length)throw new Error('Browser errors '+errors.join(' | '));
-            console.log('PASS14_PLAYCANVAS_MATERIAL_GATE',JSON.stringify({boot,gameplayState}));
+            console.log('PASS14_PLAYCANVAS_TEXTURED_MATERIAL_GATE',JSON.stringify({boot,gameplayState}));
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
-      - name: Upload Pass 14 material renders
+      - name: Upload Pass 14 textured material renders
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -162,6 +170,7 @@ jobs:
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/rebuild_witch_hair_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/rebuild_witch_lower_body_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/rebuild_witch_broom_pass14.py
+          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/prepare_witch_material_uv_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/patch_witch_hair_runtime_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/validate_witch_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/validate_witch_broom_pass14.py
@@ -174,7 +183,7 @@ jobs:
           test "$MAIN_NOW" = "$BASE_MAIN"
           test "$TARGET_NOW" = "$BASE_TARGET"
           test "$TARGET_NOW" = "$GITHUB_SHA"
-      - name: Commit validated Pass 14 grouped broom straw asset
+      - name: Commit validated Pass 14 textured mesh asset
         shell: bash
         run: |
           git config user.name 'brewandbrewscompany-bot'
@@ -183,6 +192,6 @@ jobs:
             halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb \
             halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json \
             halloween-radio/games/witch-ride-3d/game.js
-          git diff --cached --quiet && { echo 'Generated Pass 14 grouped broom straw asset already current'; exit 0; }
-          git commit -m 'Build Witch Ride Pass 14 grouped broom straw mesh'
+          git diff --cached --quiet && { echo 'Generated Pass 14 textured mesh asset already current'; exit 0; }
+          git commit -m 'Prepare Witch Ride Pass 14 mesh for textured materials'
           git push origin HEAD:witch-ride-3d-witch-rebuild-pass-14
