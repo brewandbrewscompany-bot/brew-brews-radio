@@ -38,12 +38,16 @@ assert meta['lower_body_max_knee_center_x']<=.37,meta['lower_body_max_knee_cente
 assert meta['lower_body_ankle_center_x']<=.38,meta['lower_body_ankle_center_x']
 assert .39<=meta['lower_body_boot_center_x']<=.43,meta['lower_body_boot_center_x']
 assert 'two distinct close parallel boots' in meta['lower_body_reference']
+assert meta['broom_bundle_clearance']=='dense bundle tie begins below visible legs; density unchanged'
+assert meta['broom_bundle_shift_y']==-.70,meta['broom_bundle_shift_y']
+assert meta['broom_bundle_shift_z']==.10,meta['broom_bundle_shift_z']
+assert meta['broom_bundle_connector'] is True
 
 scene=trimesh.load(GLB,force='scene')
 nodes=set(scene.graph.nodes)
 required={'hair_01','hair_02','hair_03','hair_04','hair_05','cape','cape_left','cape_center','cape_right','hat_tip','broom_handle','broom_bristles'}
 assert not(required-nodes),sorted(required-nodes)
-for n in ['torso_core','arm_L','arm_R','leg_L','leg_R','boot_L','boot_R','hand_L','hand_R','hat_brim','hat_crown','broom_shaft','seat_wrap','hair_cap']:
+for n in ['torso_core','arm_L','arm_R','leg_L','leg_R','boot_L','boot_R','hand_L','hand_R','hat_brim','hat_crown','broom_shaft','broom_bundle_neck','seat_wrap','hair_cap']:
     assert n in nodes,n
 
 main=sorted(n for n in nodes if re.fullmatch(r'hair_main_\d{2}',n)); assert len(main)==14,main
@@ -66,7 +70,7 @@ def dims(n):
     b=mw(n).bounds
     return b[1]-b[0]
 
-solid_names=['torso_core','arm_L','arm_R','leg_L','leg_R','boot_L','boot_R','hat_brim','hat_crown','broom_shaft','hair_cap']+main+overlap+folds
+solid_names=['torso_core','arm_L','arm_R','leg_L','leg_R','boot_L','boot_R','hat_brim','hat_crown','broom_shaft','broom_bundle_neck','hair_cap']+main+overlap+folds
 for n in solid_names:
     m=mw(n)
     assert len(m.vertices)>30 and len(m.faces)>40,n
@@ -89,9 +93,6 @@ for side,sgn in [('L',-1),('R',1)]:
     h=center(f'hand_{side}')
     assert abs(h[0])<0.32 and .45<h[1]<.82 and h[2]<-1.48,h
 
-# Reference-matched compact lower body. Upper legs must stay close to the broom,
-# while the lower legs separate only enough for both boots to read around the
-# central shaft and straw bundle in the real chase camera.
 leg_meshes={side:mw(f'leg_{side}') for side in ('L','R')}
 boot_meshes={side:mw(f'boot_{side}') for side in ('L','R')}
 all_legs=np.vstack([leg_meshes['L'].vertices,leg_meshes['R'].vertices])
@@ -104,8 +105,7 @@ assert leg_span[1]<=1.38,leg_span
 assert boot_span[1]<=.58,boot_span
 assert all_legs[:,0].min()>-.70 and all_legs[:,0].max()<.70,(all_legs[:,0].min(),all_legs[:,0].max())
 
-leg_centers={}
-boot_centers={}
+leg_centers={}; boot_centers={}
 for side,sgn in [('L',-1),('R',1)]:
     lm=leg_meshes[side]; lv=lm.vertices; ld=dims(f'leg_{side}'); lc=center(f'leg_{side}')
     leg_centers[side]=lc
@@ -114,30 +114,20 @@ for side,sgn in [('L',-1),('R',1)]:
     assert abs(float(lm.volume))>=.23,(side,lm.volume)
     assert (lv[:,0].min()>-.70 if sgn==-1 else lv[:,0].max()<.70),(side,lm.bounds)
     assert (lv[:,0].max()>-.07 if sgn==-1 else lv[:,0].min()<.07),(side,lm.bounds)
-
-    # Thighs must reach the broom/seat corridor: the straddle is still tight.
     seat_band=lv[(lv[:,1]>=.46)&(lv[:,1]<=.82)&(lv[:,2]>=-.20)&(lv[:,2]<=.32)]
     assert len(seat_band)>30,(side,len(seat_band))
     assert float(np.abs(seat_band[:,0]).min())<.07,(side,float(np.abs(seat_band[:,0]).min()))
-
     knee_band=lv[(lv[:,1]>=.08)&(lv[:,1]<=.40)&(lv[:,2]>=.12)&(lv[:,2]<=.52)]
     assert len(knee_band)>30,(side,len(knee_band))
-    knee_center=float(np.mean(knee_band[:,0]))
-    assert .30<=abs(knee_center)<=.39,(side,knee_center)
-
+    knee_center=float(np.mean(knee_band[:,0])); assert .30<=abs(knee_center)<=.39,(side,knee_center)
     calf_band=lv[(lv[:,1]>=-.36)&(lv[:,1]<=-.05)&(lv[:,2]>=.34)&(lv[:,2]<=.70)]
     assert len(calf_band)>20,(side,len(calf_band))
-    calf_center=float(np.mean(calf_band[:,0]))
-    assert .35<=abs(calf_center)<=.40,(side,calf_center)
-
+    calf_center=float(np.mean(calf_band[:,0])); assert .35<=abs(calf_center)<=.40,(side,calf_center)
     bm=boot_meshes[side]; bd=dims(f'boot_{side}'); bc=center(f'boot_{side}')
     boot_centers[side]=bc
     assert .38<=abs(bc[0])<=.43 and -.76<=bc[1]<=-.62,(side,bc)
     assert .39<=bd[0]<=.43 and .49<=bd[1]<=.55 and .52<=bd[2]<=.57,(side,bd)
-    # Keep an actual center gap for the broom. This is what prevents the two
-    # boots from visually collapsing into a single leg in chase view.
     assert (bm.vertices[:,0].max()<-.15 if sgn==-1 else bm.vertices[:,0].min()>.15),(side,bm.bounds)
-
 assert abs(leg_centers['L'][0]+leg_centers['R'][0])<.03,leg_centers
 assert abs(boot_centers['L'][0]+boot_centers['R'][0])<.03,boot_centers
 assert abs(boot_centers['L'][0])>abs(leg_centers['L'][0]) and abs(boot_centers['R'][0])>abs(leg_centers['R'][0]),(leg_centers,boot_centers)
@@ -149,60 +139,52 @@ for side in ('L','R'):
     d=float(np.linalg.norm(hv[:,None,:]-sv[None,:,:],axis=2).min())
     assert d<.16,(side,d)
 
-# Preserve the approved pre-swept hair silhouette exactly.
 hair_names=main+overlap+['hair_cap']
 allh=np.vstack([mw(n).vertices for n in hair_names]); hs=np.ptp(allh,axis=0)
 assert hs[0]>=2.28 and .86<=hs[1]<=1.08 and hs[2]>=3.25,hs
 assert hs[2]>=hs[1]*3.0,hs
 cap=dims('hair_cap')
 assert cap[0]>=1.15 and cap[1]>=.68 and cap[2]>=.66,cap
-cap_bounds=mw('hair_cap').bounds
-hat_bounds=mw('hat_brim').bounds
+cap_bounds=mw('hair_cap').bounds; hat_bounds=mw('hat_brim').bounds
 assert cap_bounds[1,1]<=hat_bounds[1,1]+.04,(cap_bounds,hat_bounds)
 assert cap_bounds[0,1]>=2.42,cap_bounds
-
 for n in main:
     m=mw(n); d=dims(n); b=m.bounds
     assert len(m.vertices)>700 and len(m.faces)>1300,(n,len(m.vertices),len(m.faces))
     assert .32<=d[0]<=.62 and .56<=d[1]<=.78 and d[2]>=2.42,(n,d)
-    assert d[2]>=d[1]*3.20,(n,d)
-    assert b[0,2]<-.60 and b[1,2]>1.70,(n,b)
+    assert d[2]>=d[1]*3.20,(n,d); assert b[0,2]<-.60 and b[1,2]>1.70,(n,b)
 for n in overlap:
     m=mw(n); d=dims(n); b=m.bounds
     assert len(m.vertices)>500 and len(m.faces)>900,(n,len(m.vertices),len(m.faces))
     assert .25<=d[0]<=.50 and .47<=d[1]<=.59 and d[2]>=1.70,(n,d)
-    assert d[2]>=d[1]*2.90,(n,d)
-    assert b[0,2]<-.60 and b[1,2]>.95,(n,b)
-
+    assert d[2]>=d[1]*2.90,(n,d); assert b[0,2]<-.60 and b[1,2]>.95,(n,b)
 mainv=np.vstack([mw(n).vertices for n in main])
-shoulder_band=mainv[(mainv[:,2]>=-.38)&(mainv[:,2]<=.30)]
-tip_band=mainv[mainv[:,2]>=1.45]
+shoulder_band=mainv[(mainv[:,2]>=-.38)&(mainv[:,2]<=.30)]; tip_band=mainv[mainv[:,2]>=1.45]
 assert len(shoulder_band)>200 and len(tip_band)>100,(len(shoulder_band),len(tip_band))
 shoulder_w=float(np.ptp(shoulder_band[:,0])); tip_w=float(np.ptp(tip_band[:,0]))
-assert shoulder_w>=2.28,(shoulder_w,tip_w)
-assert shoulder_w>=tip_w*1.18,(shoulder_w,tip_w)
+assert shoulder_w>=2.28,(shoulder_w,tip_w); assert shoulder_w>=tip_w*1.18,(shoulder_w,tip_w)
 roots=mainv[(mainv[:,1]>=2.88)&(mainv[:,2]<=-.55)]
-assert len(roots)>120,len(roots)
-assert mainv[:,2].max()>=2.18,mainv[:,2].max()
-assert 2.20<=mainv[:,1].min()<=2.30,mainv[:,1].min()
+assert len(roots)>120,len(roots); assert mainv[:,2].max()>=2.18,mainv[:,2].max(); assert 2.20<=mainv[:,1].min()<=2.30,mainv[:,1].min()
 
 allc=np.vstack([mw(n).vertices for n in folds]); cs=np.ptp(allc,axis=0)
 assert cs[0]>=2.35 and cs[1]>=1.60 and cs[2]>=.55,cs
 for n in folds:
-    d=dims(n)
-    assert d[0]>=.54 and d[1]>=1.35 and d[2]>=.18,(n,d)
+    d=dims(n); assert d[0]>=.54 and d[1]>=1.35 and d[2]>=.18,(n,d)
 hd=dims('hat_brim'); assert hd[0]>=2.45 and hd[1]>=.30 and hd[2]>=1.45,hd
 sb=mw('broom_shaft').bounds; assert sb[0,2]<-3.1 and sb[1,2]>1.50,sb
+neck=dims('broom_bundle_neck'); nb=mw('broom_bundle_neck').bounds
+assert neck[0]>=.28 and neck[1]>=.68 and neck[2]>=.32,(neck,nb)
+assert nb[0,1]<-.35 and nb[1,1]>.34,nb
 
 st=np.vstack([mw(n).vertices for n in straw_names]); ss=np.ptp(st,axis=0)
 assert ss[0]>=1.25 and ss[1]>=.85 and ss[2]>=1.35,ss
-assert st[:,1].min()<-0.90 and st[:,1].max()<0.50,'bundle must visibly trail downward'
+assert st[:,1].min()<-1.55 and st[:,1].max()<-.15,'dense bundle must begin below visible legs and trail downward'
 assert len(bristles)==240 and len(straw_names)==56
 for n in folds+['torso_core','arm_L','arm_R']:
     assert mw(n).bounds[1,2] < 1.10,(n,mw(n).bounds[1,2])
 for n in main:
     assert mw(n).bounds[1,2] < 2.30,(n,mw(n).bounds[1,2])
-bounds=np.asarray(scene.bounds,float); assert bounds[1,2]<3.65,bounds
+bounds=np.asarray(scene.bounds,float); assert bounds[1,2]<3.75,bounds
 
 for g in scene.geometry.values():
     mat=getattr(getattr(g,'visual',None),'material',None)
@@ -221,26 +203,11 @@ assert 'springRoll(hatTip' not in runtime
 assert 'wind*(3.2+i*.42)' not in runtime
 
 print(json.dumps({
-    'ok':True,
-    'pass':meta['pass'],
-    'bytes':GLB.stat().st_size,
-    'nodes':len(nodes),
-    'geometries':len(scene.geometry),
-    'hair_main_locks':len(main),
-    'hair_overlap_locks':len(overlap),
-    'hair_cap':True,
-    'hair_span':hs.tolist(),
-    'hair_shoulder_width':shoulder_w,
-    'hair_tip_width':tip_w,
-    'hair_lowest_chase_y':float(mainv[:,1].min()),
-    'lower_body_leg_span':leg_span.tolist(),
-    'lower_body_boot_span':boot_span.tolist(),
-    'lower_body_leg_centers':{k:v.tolist() for k,v in leg_centers.items()},
-    'lower_body_boot_centers':{k:v.tolist() for k,v in boot_centers.items()},
-    'bristles':len(bristles),
-    'straw_clumps':len(straw_names),
-    'torso_widths':[pelvis_w,waist_w,rib_w],
-    'cape_span':cs.tolist(),
-    'straw_span':ss.tolist(),
-    'bounds':bounds.tolist(),
+    'ok':True,'pass':meta['pass'],'bytes':GLB.stat().st_size,'nodes':len(nodes),'geometries':len(scene.geometry),
+    'hair_main_locks':len(main),'hair_overlap_locks':len(overlap),'hair_cap':True,'hair_span':hs.tolist(),
+    'hair_shoulder_width':shoulder_w,'hair_tip_width':tip_w,'hair_lowest_chase_y':float(mainv[:,1].min()),
+    'lower_body_leg_span':leg_span.tolist(),'lower_body_boot_span':boot_span.tolist(),
+    'lower_body_leg_centers':{k:v.tolist() for k,v in leg_centers.items()},'lower_body_boot_centers':{k:v.tolist() for k,v in boot_centers.items()},
+    'broom_bundle_neck_span':neck.tolist(),'bristles':len(bristles),'straw_clumps':len(straw_names),
+    'torso_widths':[pelvis_w,waist_w,rib_w],'cape_span':cs.tolist(),'straw_span':ss.tolist(),'bounds':bounds.tolist(),
 },indent=2))
