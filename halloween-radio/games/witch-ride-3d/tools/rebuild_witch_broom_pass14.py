@@ -35,7 +35,7 @@ def clean(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
     return mesh
 
 
-def add(scene: trimesh.Scene, mesh: trimesh.Trimesh, name: str, parent: str) -> trimesh.Trimesh:
+def add(scene: trimesh.Scene, mesh: trimesh.Trimesh, name: str, parent: str = 'broom_bristles') -> trimesh.Trimesh:
     clean(mesh)
     scene.add_geometry(mesh, node_name=name, geom_name=name, parent_node_name=parent)
     return mesh
@@ -51,23 +51,47 @@ def remove_named(scene: trimesh.Scene, name: str) -> None:
         pass
 
 
-def tube_mesh(points, rx, rz, sections: int = 10) -> trimesh.Trimesh:
+def ribbon_shell(points, widths, depths) -> trimesh.Trimesh:
     pts = np.asarray(points, dtype=float)
-    count = len(pts)
-    rx = np.asarray(rx if hasattr(rx, '__len__') else [rx] * count, dtype=float)
-    rz = np.asarray(rz if hasattr(rz, '__len__') else [rz] * count, dtype=float)
+    widths = np.asarray(widths, dtype=float)
+    depths = np.asarray(depths, dtype=float)
+    assert len(pts) == len(widths) == len(depths)
+    verts = []
+    for p, w, d in zip(pts, widths, depths):
+        x, y, z = p
+        verts.extend([
+            [x - w, y, z - d],
+            [x + w, y, z - d],
+            [x + w, y, z + d],
+            [x - w, y, z + d],
+        ])
+    faces = []
+    for i in range(len(pts) - 1):
+        a = i * 4
+        b = (i + 1) * 4
+        for j in range(4):
+            n = (j + 1) % 4
+            faces.extend([[a + j, b + j, a + n], [a + n, b + j, b + n]])
+    faces.extend([[0, 2, 1], [0, 3, 2]])
+    q = (len(pts) - 1) * 4
+    faces.extend([[q, q + 1, q + 2], [q, q + 2, q + 3]])
+    return trimesh.Trimesh(vertices=np.asarray(verts), faces=np.asarray(faces), process=True)
+
+
+def tube_mesh(points, radii, sections: int = 8) -> trimesh.Trimesh:
+    pts = np.asarray(points, dtype=float)
+    radii = np.asarray(radii, dtype=float)
     verts = []
     previous_normal = None
-
     for i, point in enumerate(pts):
         if i == 0:
             tangent = pts[1] - pts[0]
-        elif i == count - 1:
+        elif i == len(pts) - 1:
             tangent = pts[-1] - pts[-2]
         else:
             tangent = pts[i + 1] - pts[i - 1]
         tangent /= np.linalg.norm(tangent)
-        ref = np.array([0.0, 0.0, 1.0]) if abs(tangent[2]) < 0.82 else np.array([1.0, 0.0, 0.0])
+        ref = np.array([0.0, 0.0, 1.0]) if abs(tangent[2]) < 0.84 else np.array([1.0, 0.0, 0.0])
         n1 = np.cross(tangent, ref)
         n1 /= np.linalg.norm(n1)
         if previous_normal is not None and np.dot(n1, previous_normal) < 0:
@@ -75,276 +99,167 @@ def tube_mesh(points, rx, rz, sections: int = 10) -> trimesh.Trimesh:
         n2 = np.cross(tangent, n1)
         n2 /= np.linalg.norm(n2)
         previous_normal = n1
-
         for j in range(sections):
-            angle = 2.0 * math.pi * j / sections
-            scallop = 1.0 + 0.012 * math.sin(3.0 * angle + i * 0.51)
-            verts.append(
-                point
-                + math.cos(angle) * rx[i] * scallop * n1
-                + math.sin(angle) * rz[i] * n2
-            )
-
+            a = 2.0 * math.pi * j / sections
+            verts.append(point + radii[i] * (math.cos(a) * n1 + math.sin(a) * n2))
     faces = []
-    for i in range(count - 1):
+    for i in range(len(pts) - 1):
         a0 = i * sections
         b0 = (i + 1) * sections
         for j in range(sections):
-            nxt = (j + 1) % sections
-            faces += [
-                [a0 + j, b0 + j, a0 + nxt],
-                [a0 + nxt, b0 + j, b0 + nxt],
-            ]
-
-    first_cap = len(verts)
+            n = (j + 1) % sections
+            faces.extend([[a0 + j, b0 + j, a0 + n], [a0 + n, b0 + j, b0 + n]])
+    first = len(verts)
     verts.append(pts[0])
-    last_cap = len(verts)
+    last = len(verts)
     verts.append(pts[-1])
     for j in range(sections):
-        nxt = (j + 1) % sections
-        faces.append([first_cap, nxt, j])
-        base = (count - 1) * sections
-        faces.append([last_cap, base + j, base + nxt])
-
+        n = (j + 1) % sections
+        faces.append([first, n, j])
+        base = (len(pts) - 1) * sections
+        faces.append([last, base + j, base + n])
     return trimesh.Trimesh(vertices=np.asarray(verts), faces=np.asarray(faces), process=True)
 
 
-def organic_tube(scene, points, rx, rz, name, parent='broom_bristles', sections=10):
-    return add(scene, tube_mesh(points, rx, rz, sections), name, parent)
-
-
-def clump_role(local: int) -> str:
-    if local == 3:
-        return 'primary'
-    if local in (1, 2, 4, 5):
-        return 'secondary'
-    return 'edge'
+def flow_points(tip_x: float, tip_y: float, tip_z: float, curve: float, root_jitter: float = 0.0):
+    root_x = 0.14 + root_jitter
+    delta = tip_x - root_x
+    return np.asarray([
+        [root_x, -0.34, 1.58],
+        [root_x + 0.08 * delta, -0.51, 1.82],
+        [root_x + 0.25 * delta + 0.03 * curve, -0.77, 2.08],
+        [root_x + 0.50 * delta + 0.08 * curve, -1.14, 2.35],
+        [root_x + 0.73 * delta + 0.12 * curve, -1.62, 2.64],
+        [root_x + 0.90 * delta + 0.10 * curve, 0.47 * tip_y - 1.08, 0.53 * tip_z + 1.31],
+        [tip_x, tip_y, tip_z],
+    ], dtype=float)
 
 
 def main() -> None:
     assert MODEL.exists(), MODEL
     assert MANIFEST.exists(), MANIFEST
-
     scene = trimesh.load(MODEL, force='scene', process=False)
-    nodes_before = set(scene.graph.nodes)
+    before = set(scene.graph.nodes)
 
-    assert 'broom_bristles' in nodes_before
-    assert 'broom_shaft' in nodes_before
-    assert len([n for n in nodes_before if re.fullmatch(r'bristle_\d{3}', n)]) == 240
-    assert len([n for n in nodes_before if re.fullmatch(r'straw_mass_\d{2}', n)]) == 56
-    assert len([n for n in nodes_before if re.fullmatch(r'hair_main_\d{2}', n)]) == 14
-    assert len([n for n in nodes_before if re.fullmatch(r'hair_overlap_\d{2}', n)]) == 8
+    assert 'broom_bristles' in before and 'broom_shaft' in before
+    assert len([n for n in before if re.fullmatch(r'bristle_\d{3}', n)]) == 240
+    assert len([n for n in before if re.fullmatch(r'straw_mass_\d{2}', n)]) == 56
+    assert len([n for n in before if re.fullmatch(r'hair_main_\d{2}', n)]) == 14
+    assert len([n for n in before if re.fullmatch(r'hair_overlap_\d{2}', n)]) == 8
     for required in ('leg_L', 'leg_R', 'boot_L', 'boot_R', 'hat_tip', 'cape'):
-        assert required in nodes_before, required
+        assert required in before, required
 
-    for name in list(nodes_before):
-        if re.fullmatch(r'bristle_\d{3}', name) or re.fullmatch(r'straw_mass_\d{2}', name):
+    for name in list(before):
+        if (
+            re.fullmatch(r'bristle_\d{3}', name)
+            or re.fullmatch(r'straw_mass_\d{2}', name)
+            or re.fullmatch(r'straw_primary_\d{2}', name)
+        ):
             remove_named(scene, name)
 
-    base = np.array([0.14, -0.34, 1.58], dtype=float)
-    group_x = np.array([-1.12, -0.84, -0.61, -0.30, 0.09, 0.41, 0.74, 1.04], dtype=float)
-    group_drift = np.array([-0.24, 0.10, -0.18, 0.12, -0.07, 0.18, -0.10, 0.23], dtype=float)
-    group_curve = np.array([-0.15, 0.09, -0.17, 0.11, -0.08, 0.15, -0.09, 0.17], dtype=float)
-    group_tip_z = np.array([3.38, 3.14, 3.48, 3.22, 3.52, 3.18, 3.43, 3.28], dtype=float)
-    length_y = np.array([-2.74, -2.96, -3.25, -3.56, -3.90, -4.26], dtype=float)
-    length_family = np.array([
-        [1, 2, 3, 4, 2, 5, 3],
-        [2, 1, 4, 3, 5, 2, 0],
-        [4, 3, 5, 2, 1, 4, 3],
-        [0, 2, 3, 5, 4, 1, 2],
-        [3, 4, 1, 2, 5, 3, 0],
-        [5, 2, 4, 1, 3, 0, 2],
-        [2, 5, 3, 4, 1, 2, 5],
-        [1, 3, 0, 5, 2, 4, 3],
-    ], dtype=int)
-    local_length = np.array([-0.05, 0.04, -0.03, 0.00, 0.07, -0.04, 0.10], dtype=float)
-    sub_length = np.array([-0.16, -0.05, 0.07, 0.16], dtype=float)
+    # PRIMARY MASS: eight overlapping hidden-ish flattened cores build one continuous,
+    # packed broom body. They terminate before the final third so they never become
+    # the visible paintbrush fingers that failed the previous render.
+    lane_x = np.array([-0.96, -0.70, -0.45, -0.17, 0.12, 0.40, 0.69, 0.98], dtype=float)
+    lane_drift = np.array([-0.08, 0.05, -0.06, 0.04, -0.03, 0.07, -0.04, 0.09], dtype=float)
+    for i, (lane, drift) in enumerate(zip(lane_x, lane_drift), start=1):
+        zoff = 0.055 * math.sin(i * 0.91)
+        path = np.asarray([
+            [0.14 + 0.018 * lane, -0.34, 1.58 + zoff * 0.10],
+            [0.14 + 0.070 * lane, -0.52, 1.82 + zoff * 0.20],
+            [0.14 + 0.26 * lane, -0.78, 2.08 + zoff * 0.35],
+            [0.14 + 0.56 * lane + 0.03 * drift, -1.14, 2.35 + zoff * 0.55],
+            [0.14 + 0.82 * lane + 0.07 * drift, -1.60, 2.62 + zoff * 0.75],
+            [0.14 + 0.98 * lane + 0.11 * drift, -2.05, 2.86 + zoff],
+            [0.14 + 1.02 * lane + 0.13 * drift, -2.38 + 0.05 * math.sin(i), 2.98 + zoff],
+        ])
+        widths = np.array([0.050, 0.075, 0.135, 0.220, 0.260, 0.205, 0.055])
+        depths = np.array([0.016, 0.020, 0.028, 0.038, 0.044, 0.032, 0.010])
+        add(scene, ribbon_shell(path, widths, depths), f'straw_primary_{i:02d}')
 
-    role_counts = {'primary': 0, 'secondary': 0, 'edge': 0}
-    straw_index = 0
-    for group in range(8):
-        gx = float(group_x[group])
-        drift = float(group_drift[group])
-        curve = float(group_curve[group])
-        for local in range(7):
-            straw_index += 1
-            role = clump_role(local)
-            role_counts[role] += 1
-            spread = (local - 3) / 3.0
-            phase = group * 0.81 + local * 0.97
-            family = int(length_family[group, local])
+    # SECONDARY CLUMPS: 56 continuously distributed flattened ribbons cover the core.
+    # They do not share eight visible branch axes. Six terminal length families create
+    # a broken handmade edge while each ribbon tapers to a tiny point.
+    length_y = np.array([-2.92, -3.18, -3.47, -3.78, -4.08, -4.40], dtype=float)
+    family_counts = np.zeros(6, dtype=int)
+    full_root_clumps = 0
+    for i in range(56):
+        u = -1.0 + 2.0 * (i + 0.5) / 56.0
+        phase = i * 1.173
+        family = (i * 5 + (i // 8) * 2) % 6
+        family_counts[family] += 1
+        curve = 0.18 * math.sin(phase * 0.73) + 0.06 * math.sin(phase * 1.91)
+        tip_x = 0.14 + 1.30 * u + 0.11 * math.sin(phase)
+        tip_y = length_y[family] + 0.08 * math.sin(phase * 1.29) + 0.035 * ((i % 3) - 1)
+        tip_z = 3.16 + 0.18 * (1.0 - abs(u)) + 0.10 * math.sin(phase * 0.61)
+        path = flow_points(tip_x, tip_y, tip_z, curve, root_jitter=0.012 * math.sin(phase))
+        start_mode = i % 7
+        start_index = 0 if start_mode == 0 else (1 if start_mode in (1, 2) else (2 if start_mode in (3, 4) else 3))
+        if start_index == 0:
+            full_root_clumps += 1
+        path = path[start_index:]
+        full_w = np.array([0.020, 0.030, 0.046, 0.058, 0.052, 0.030, 0.0026])
+        full_d = np.array([0.006, 0.008, 0.011, 0.014, 0.013, 0.008, 0.0015])
+        width_bias = 0.88 + 0.18 * (1.0 - abs(u)) + 0.05 * math.sin(phase)
+        add(
+            scene,
+            ribbon_shell(path, full_w[start_index:] * width_bias, full_d[start_index:] * width_bias),
+            f'straw_mass_{i + 1:02d}',
+        )
 
-            if role == 'primary':
-                lateral_scale = 0.070
-                radii_x = np.array([0.018, 0.022, 0.029, 0.036, 0.034, 0.024, 0.010, 0.0012])
-                radii_z = np.array([0.012, 0.015, 0.019, 0.023, 0.022, 0.016, 0.007, 0.0009])
-            elif role == 'secondary':
-                lateral_scale = 0.105
-                radii_x = np.array([0.016, 0.020, 0.027, 0.033, 0.031, 0.022, 0.009, 0.0011])
-                radii_z = np.array([0.011, 0.014, 0.018, 0.021, 0.020, 0.015, 0.006, 0.0008])
-            else:
-                lateral_scale = 0.145
-                radii_x = np.array([0.014, 0.018, 0.024, 0.029, 0.027, 0.019, 0.008, 0.0010])
-                radii_z = np.array([0.010, 0.013, 0.016, 0.019, 0.018, 0.013, 0.0055, 0.00075])
-
-            target_y_center = float(length_y[family] + local_length[local] + 0.025 * math.sin(phase * 1.17))
-            target_x_center = base[0] + gx + drift + lateral_scale * spread + 0.030 * math.sin(phase * 1.39)
-            target_z_center = float(group_tip_z[group] + 0.095 * spread + 0.045 * math.cos(phase))
-
-            root = np.array([
-                base[0] + 0.045 * gx + 0.018 * spread + 0.008 * math.sin(phase),
-                -0.34 + 0.010 * math.cos(phase),
-                1.58 + 0.035 * math.sin(group * 0.88) + 0.018 * spread,
-            ])
-            neck = np.array([
-                base[0] + 0.090 * gx + 0.025 * spread + 0.010 * curve,
-                -0.48 + 0.015 * math.sin(phase),
-                1.82 + 0.040 * math.cos(phase),
-            ])
-            shoulder = np.array([
-                base[0] + 0.42 * gx + 0.075 * drift + 0.090 * curve + 0.055 * spread,
-                -0.68 + 0.025 * math.cos(phase),
-                2.08 + 0.040 * math.sin(phase),
-            ])
-            body1 = np.array([
-                base[0] + 0.77 * gx + 0.22 * drift + 0.16 * curve + 0.070 * spread,
-                -0.96 + 0.040 * math.sin(phase * 1.11),
-                2.38 + 0.050 * math.cos(phase * 0.93),
-            ])
-            body2 = np.array([
-                base[0] + 0.98 * gx + 0.52 * drift + 0.26 * curve + 0.085 * spread,
-                -1.42 + 0.055 * math.cos(phase * 0.89),
-                2.72 + 0.055 * math.sin(phase * 1.05),
-            ])
-            pretip = np.array([
-                0.62 * body2[0] + 0.38 * target_x_center + 0.075 * curve,
-                0.58 * body2[1] + 0.42 * target_y_center + 0.045 * math.sin(phase),
-                0.60 * body2[2] + 0.40 * target_z_center + 0.045 * math.cos(phase),
-            ])
-
-            components = []
-            for sub in range(4):
-                sub_spread = (sub - 1.5) / 1.5
-                sub_phase = phase + sub * 0.67
-                target_y = target_y_center + float(sub_length[sub]) + 0.025 * math.sin(sub_phase * 1.21)
-                target_x = target_x_center + 0.075 * sub_spread + 0.022 * math.sin(sub_phase)
-                target_z = target_z_center + 0.045 * sub_spread + 0.025 * math.cos(sub_phase)
-                tip = np.array([target_x, target_y, target_z])
-                taper = np.array([
-                    0.28 * pretip[0] + 0.72 * tip[0] + 0.022 * sub_spread,
-                    0.32 * pretip[1] + 0.68 * tip[1],
-                    0.34 * pretip[2] + 0.66 * tip[2],
-                ])
-                p0 = root + np.array([0.004 * sub_spread, 0.003 * math.sin(sub_phase), 0.004 * math.cos(sub_phase)])
-                p1 = neck + np.array([0.007 * sub_spread, 0.005 * math.sin(sub_phase), 0.006 * math.cos(sub_phase)])
-                p2 = shoulder + np.array([0.016 * sub_spread, 0.008 * math.sin(sub_phase), 0.008 * math.cos(sub_phase)])
-                p3 = body1 + np.array([0.025 * sub_spread, 0.012 * math.sin(sub_phase), 0.011 * math.cos(sub_phase)])
-                p4 = body2 + np.array([0.036 * sub_spread, 0.020 * math.sin(sub_phase), 0.015 * math.cos(sub_phase)])
-                p5 = pretip + np.array([0.048 * sub_spread, 0.030 * math.sin(sub_phase), 0.020 * math.cos(sub_phase)])
-                p6 = taper
-                p7 = tip
-                size_bias = 1.0 + 0.060 * math.sin(sub_phase)
-                components.append(tube_mesh(
-                    [tuple(p0), tuple(p1), tuple(p2), tuple(p3), tuple(p4), tuple(p5), tuple(p6), tuple(p7)],
-                    radii_x * size_bias,
-                    radii_z * size_bias,
-                    sections=10,
-                ))
-            bundle = trimesh.util.concatenate(components)
-            add(scene, bundle, f'straw_mass_{straw_index:02d}', 'broom_bristles')
-
-    assert role_counts == {'primary': 8, 'secondary': 32, 'edge': 16}, role_counts
-
-    bristle_index = 0
+    # TERTIARY STRAW: exact 240 fine bristles. Only 48 start at the bound root and 40
+    # are permitted to escape as perimeter flyaways; the rest emerge from inside the
+    # packed body so the fine detail cannot become a wire cloud.
     full_root_bristles = 0
     flyaway_bristles = 0
-    for group in range(8):
-        gx = float(group_x[group])
-        drift = float(group_drift[group])
-        curve = float(group_curve[group])
-        for local in range(30):
-            bristle_index += 1
-            phase = group * 0.73 + local * 0.53
-            spread = (local - 14.5) / 14.5
-            start_mode = local % 5
-            flyaway = (local % 6) == 0
-            family = int(length_family[group, local % 7])
-            if start_mode == 0:
-                full_root_bristles += 1
-            if flyaway:
-                flyaway_bristles += 1
+    for i in range(240):
+        perm = (i * 97) % 240
+        u = -1.0 + 2.0 * (perm + 0.5) / 240.0
+        phase = i * 0.437
+        family = (i * 7 + i // 17) % 6
+        start_mode = i % 5
+        flyaway = (i % 6) == 0
+        if start_mode == 0:
+            full_root_bristles += 1
+        if flyaway:
+            flyaway_bristles += 1
+        curve = 0.13 * math.sin(phase * 0.83) + 0.04 * math.sin(phase * 1.77)
+        edge_push = (0.08 + 0.035 * (i % 3)) * (1.0 if u >= 0 else -1.0) if flyaway else 0.0
+        tip_x = 0.14 + 1.28 * u + edge_push + 0.045 * math.sin(phase)
+        tip_y = length_y[family] + 0.15 + 0.07 * (i % 4) + 0.035 * math.sin(phase * 1.31)
+        if flyaway:
+            tip_y -= 0.20 + 0.035 * (i % 3)
+        tip_z = 3.14 + 0.17 * (1.0 - abs(u)) + 0.075 * math.sin(phase * 0.71)
+        path = flow_points(tip_x, tip_y, tip_z, curve, root_jitter=0.008 * math.sin(phase))
+        start_index = 0 if start_mode == 0 else (1 if start_mode == 1 else (2 if start_mode == 2 else 3))
+        path = path[start_index:]
+        radii = np.linspace(0.0036 if start_index <= 1 else 0.0030, 0.00055, len(path))
+        add(scene, tube_mesh(path, radii, sections=8), f'bristle_{i + 1:03d}')
 
-            tip_y = float(length_y[family] + 0.16 + 0.06 * (local % 4))
-            edge_push = 0.0
-            if flyaway:
-                tip_y -= 0.22 + 0.045 * (local % 3)
-                edge_push = 0.14 * (1.0 if spread >= 0 else -1.0)
-
-            tip_x = base[0] + gx + 0.88 * drift + 0.150 * spread + edge_push + 0.035 * math.sin(phase * 1.31)
-            tip_z = float(group_tip_z[group] + 0.100 * spread + 0.055 * math.sin(phase))
-            root = np.array([base[0] + 0.042 * gx + 0.015 * spread, -0.34, 1.58 + 0.025 * math.sin(group)])
-            neck = np.array([base[0] + 0.085 * gx + 0.022 * spread, -0.48, 1.82])
-            shoulder = np.array([
-                base[0] + 0.42 * gx + 0.070 * drift + 0.075 * curve + 0.050 * spread,
-                -0.68 + 0.018 * math.sin(phase),
-                2.08,
-            ])
-            body1 = np.array([
-                base[0] + 0.77 * gx + 0.21 * drift + 0.14 * curve + 0.065 * spread,
-                -0.96 + 0.030 * math.sin(phase),
-                2.38 + 0.030 * math.cos(phase),
-            ])
-            body2 = np.array([
-                base[0] + 0.98 * gx + 0.50 * drift + 0.23 * curve + 0.080 * spread,
-                -1.42 + 0.040 * math.cos(phase),
-                2.72 + 0.038 * math.sin(phase),
-            ])
-            pretip = np.array([
-                0.60 * body2[0] + 0.40 * tip_x + 0.050 * curve,
-                0.56 * body2[1] + 0.44 * tip_y,
-                0.58 * body2[2] + 0.42 * tip_z,
-            ])
-            taper = np.array([
-                0.30 * pretip[0] + 0.70 * tip_x,
-                0.30 * pretip[1] + 0.70 * tip_y,
-                0.32 * pretip[2] + 0.68 * tip_z,
-            ])
-            tip = np.array([tip_x, tip_y, tip_z])
-            full_path = [root, neck, shoulder, body1, body2, pretip, taper, tip]
-            if start_mode == 0:
-                path = full_path
-            elif start_mode == 1:
-                path = full_path[1:]
-            elif start_mode == 2:
-                path = full_path[2:]
-            else:
-                path = full_path[3:]
-            count = len(path)
-            rx = np.linspace(0.0072, 0.00070, count)
-            rz = np.linspace(0.0052, 0.00052, count)
-            organic_tube(scene, [tuple(p) for p in path], rx, rz, f'bristle_{bristle_index:03d}', sections=8)
-
-    assert straw_index == 56
-    assert bristle_index == 240
+    assert int(family_counts.sum()) == 56
+    assert np.all(family_counts >= 8), family_counts
+    assert full_root_clumps == 8, full_root_clumps
     assert full_root_bristles == 48
     assert flyaway_bristles == 40
 
-    nodes_after = set(scene.graph.nodes)
-    assert len([n for n in nodes_after if re.fullmatch(r'straw_mass_\d{2}', n)]) == 56
-    assert len([n for n in nodes_after if re.fullmatch(r'bristle_\d{3}', n)]) == 240
-    assert len([n for n in nodes_after if re.fullmatch(r'hair_main_\d{2}', n)]) == 14
-    assert len([n for n in nodes_after if re.fullmatch(r'hair_overlap_\d{2}', n)]) == 8
+    after = set(scene.graph.nodes)
+    assert len([n for n in after if re.fullmatch(r'straw_primary_\d{2}', n)]) == 8
+    assert len([n for n in after if re.fullmatch(r'straw_mass_\d{2}', n)]) == 56
+    assert len([n for n in after if re.fullmatch(r'bristle_\d{3}', n)]) == 240
+    assert len([n for n in after if re.fullmatch(r'hair_main_\d{2}', n)]) == 14
+    assert len([n for n in after if re.fullmatch(r'hair_overlap_\d{2}', n)]) == 8
 
-    hierarchy = {'primary': 8, 'secondary': 32, 'edge': 16}
     scene.metadata.update({
         'broom_straw_workflow': 'grouped authored straw mass first; fine bristles are secondary breakup only',
+        'broom_geometry_workflow_version': 'hierarchy-v3-core-ribbons',
         'broom_primary_groups': 8,
         'broom_root_compression_fraction': 0.28,
         'broom_straw_shape': 'tight bound root; dense middle body; gradual flare; clustered tapered tips',
-        'broom_straw_substrands_per_clump': 4,
-        'broom_straw_role_counts': hierarchy,
+        'broom_straw_substrands_per_clump': 1,
+        'broom_straw_role_counts': {'primary': 8, 'secondary': 56, 'tertiary': 240},
         'broom_length_clusters': 6,
-        'broom_length_family_matrix': length_family.tolist(),
+        'broom_length_family_counts': family_counts.tolist(),
+        'broom_full_root_clumps': full_root_clumps,
         'broom_full_root_bristles': 48,
         'broom_flyaway_bristles': 40,
         'broom_material_ready': False,
@@ -357,35 +272,33 @@ def main() -> None:
         'broom_bristles': 240,
         'broom_straw_clumps': 56,
         'broom_straw_workflow': 'grouped authored straw mass first; fine bristles are secondary breakup only',
+        'broom_geometry_workflow_version': 'hierarchy-v3-core-ribbons',
         'broom_primary_groups': 8,
         'broom_root_compression_fraction': 0.28,
         'broom_straw_shape': 'tight bound root; dense middle body; gradual flare; clustered tapered tips',
-        'broom_straw_substrands_per_clump': 4,
-        'broom_straw_role_counts': hierarchy,
+        'broom_straw_substrands_per_clump': 1,
+        'broom_straw_role_counts': {'primary': 8, 'secondary': 56, 'tertiary': 240},
         'broom_length_clusters': 6,
-        'broom_length_family_matrix': length_family.tolist(),
+        'broom_length_family_counts': family_counts.tolist(),
+        'broom_full_root_clumps': full_root_clumps,
         'broom_full_root_bristles': 48,
         'broom_flyaway_bristles': 40,
         'broom_material_ready': False,
         'bytes': len(blob),
-        'nodes': len(nodes_after),
+        'nodes': len(after),
         'geometries': len(scene.geometry),
     })
     MANIFEST.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
-
     print(json.dumps({
         'ok': True,
         'bytes': len(blob),
-        'broom_bristles': 240,
-        'broom_straw_clumps': 56,
         'broom_primary_groups': 8,
-        'broom_straw_role_counts': hierarchy,
-        'broom_length_clusters': 6,
-        'broom_full_root_bristles': 48,
-        'broom_flyaway_bristles': 40,
-        'broom_straw_substrands_per_clump': 4,
-        'broom_root_compression_fraction': 0.28,
-        'broom_straw_shape': manifest['broom_straw_shape'],
+        'broom_straw_clumps': 56,
+        'broom_bristles': 240,
+        'broom_length_family_counts': family_counts.tolist(),
+        'broom_full_root_clumps': full_root_clumps,
+        'broom_full_root_bristles': full_root_bristles,
+        'broom_flyaway_bristles': flyaway_bristles,
         'hair_main_locks': 14,
         'hair_overlap_locks': 8,
     }, indent=2))
