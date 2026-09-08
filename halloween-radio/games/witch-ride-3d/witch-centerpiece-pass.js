@@ -5,6 +5,7 @@ import * as pc from 'playcanvas';
 const PASS_ID='witch-centerpiece-pass-v14';
 const VERSION='pass-14-mesh-only-v1';
 const REVIEW='neutral-clay-mesh-review-only';
+const GAMEPLAY_SCALE=.40;
 const REQUIRED=['cape','cape_left','cape_center','cape_right','hair_01','hair_02','hair_03','hair_04','hair_05','hat_tip','broom_handle','broom_bristles'];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
@@ -21,6 +22,7 @@ function setDelta(p,x,y,z){if(p?.node)p.node.setLocalEulerAngles(p.base.x+x,p.ba
 function install(){
   const app=pc.app,wr=window.WitchRide3D;if(!app||!wr?.ready)return false;
   const witch=app.root.findByName('Witch Rig');if(!witch)return false;
+  witch.setLocalScale(GAMEPLAY_SCALE,GAMEPLAY_SCALE,GAMEPLAY_SCALE);
   const parts={};for(const n of REQUIRED)parts[n]=part(app,n);
   const missing=REQUIRED.filter(n=>!parts[n]);
   if(missing.length){console.error('Pass 14 mesh roots missing:',missing.join(', '));return false}
@@ -56,17 +58,14 @@ function install(){
         spring(p.z,-steer*(.32+i*.055)-demand*.10+Math.sin(t*.58+phase)*.018*air,dt,12.0,9.0));
     }
     const tip=parts.hat_tip;
-    setDelta(tip,
-      spring(tip.x,speedN*.14+Math.sin(t*.48)*.028*air,dt,9.2,8.8),
-      spring(tip.y,Math.sin(t*.34)*.016*air,dt,9.0,9.0),
-      spring(tip.z,-steer*.18-demand*.07,dt,9.2,8.8));
+    setDelta(tip,0,0,0);
     const br=parts.broom_bristles;
     setDelta(br,
-      spring(br.x,speedN*.10+Math.sin(t*.96)*.022*air,dt,24,11),
+      spring(br.x,speedN*.025+Math.sin(t*.96)*.008*air,dt,24,11),
       spring(br.y,0,dt,25,11),
-      spring(br.z,-steer*.09-demand*.03,dt,24,11));
+      spring(br.z,-steer*.045-demand*.015,dt,24,11));
   });
-  window.WitchRideWitchCenterpiecePass={passId:PASS_ID,version:VERSION,review:REVIEW,active:true,visualOnly:true,meshOnly:true,requiredNodes:REQUIRED.slice(),missing:[]};
+  window.WitchRideWitchCenterpiecePass={passId:PASS_ID,version:VERSION,review:REVIEW,active:true,visualOnly:true,meshOnly:true,gameplayScale:GAMEPLAY_SCALE,hatLocked:true,broomFlowAxis:'+Z toward chase camera/player',requiredNodes:REQUIRED.slice(),missing:[]};
   return true;
 }
 function boot(attempt=0){if(install())return;if(attempt<180)setTimeout(()=>boot(attempt+1),100);else console.error('Pass 14 mesh-only centerpiece runtime did not initialize')}
