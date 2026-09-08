@@ -65,6 +65,10 @@ function makeMaterial(name,tint,spec,textures){
   if(textures?.albedo){
     m.diffuseMap=textures.albedo;
     m.diffuseMapTiling=new pc.Vec2(...spec.tiling);
+    if(spec.emissiveIntensity>0){
+      m.emissiveMap=textures.albedo;
+      m.emissiveMapTiling=new pc.Vec2(...spec.tiling);
+    }
   }
   if(textures?.normal){
     m.normalMap=textures.normal;
