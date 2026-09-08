@@ -97,13 +97,30 @@ def organic_tube(scene: trimesh.Scene, points, rx, rz, name: str, sections: int 
     return add(scene, trimesh.Trimesh(vertices=np.asarray(verts), faces=np.asarray(faces), process=True), name)
 
 
+def shift_bundle_geometry(scene: trimesh.Scene, delta: np.ndarray) -> None:
+    shifted = set()
+    for node in list(scene.graph.nodes):
+        if not (re.fullmatch(r'bristle_\d{3}', node) or re.fullmatch(r'straw_mass_\d{2}', node)):
+            continue
+        try:
+            _transform, geom_name = scene.graph[node]
+        except Exception:
+            continue
+        if geom_name is None or geom_name in shifted:
+            continue
+        scene.geometry[geom_name].apply_translation(delta)
+        shifted.add(geom_name)
+    assert len(shifted) == 296, len(shifted)
+
+
 def main() -> None:
     assert MODEL.exists(), MODEL
     assert MANIFEST.exists(), MANIFEST
     scene = trimesh.load(MODEL, force='scene', process=False)
     nodes_before = set(scene.graph.nodes)
 
-    # Preserve every approved Pass 14 system. This pass touches lower-body geometry only.
+    # Preserve every approved Pass 14 system. This pass changes only lower-body
+    # seating/readability and broom bundle clearance; broom density is immutable.
     assert len([n for n in nodes_before if re.fullmatch(r'hair_main_\d{2}', n)]) == 14
     assert len([n for n in nodes_before if re.fullmatch(r'hair_overlap_\d{2}', n)]) == 8
     assert len([n for n in nodes_before if re.fullmatch(r'bristle_\d{3}', n)]) == 240
@@ -115,39 +132,24 @@ def main() -> None:
     }
     assert not (required_roots - nodes_before), sorted(required_roots - nodes_before)
 
-    for name in ('leg_L', 'leg_R', 'boot_L', 'boot_R'):
+    for name in ('leg_L', 'leg_R', 'boot_L', 'boot_R', 'broom_bundle_neck'):
         remove_named(scene, name)
 
-    # Match the supplied rear chase reference: thighs still grip the central broom,
-    # knees are compact, but the calves and boots open only enough to remain visibly
-    # distinct on both sides of the shaft/bundle in the actual gameplay camera.
+    # Match the supplied rear chase reference: thighs grip the central broom,
+    # knees remain compact, while calves and boots separate only enough for two
+    # distinct legs to remain readable on each side of the shaft.
     legs = {
         'L': [
-            (-0.30, 0.70, -0.01),
-            (-0.31, 0.63, 0.03),
-            (-0.33, 0.53, 0.10),
-            (-0.35, 0.39, 0.19),
-            (-0.37, 0.23, 0.30),
-            (-0.38, 0.05, 0.40),
-            (-0.39, -0.15, 0.50),
-            (-0.39, -0.34, 0.56),
-            (-0.38, -0.48, 0.57),
+            (-0.30, 0.70, -0.01), (-0.31, 0.63, 0.03), (-0.33, 0.53, 0.10),
+            (-0.35, 0.39, 0.19), (-0.37, 0.23, 0.30), (-0.38, 0.05, 0.40),
+            (-0.39, -0.15, 0.50), (-0.39, -0.34, 0.56), (-0.38, -0.48, 0.57),
         ],
         'R': [
-            (0.30, 0.70, -0.01),
-            (0.31, 0.63, 0.03),
-            (0.33, 0.53, 0.10),
-            (0.35, 0.39, 0.19),
-            (0.37, 0.23, 0.30),
-            (0.38, 0.05, 0.40),
-            (0.39, -0.15, 0.50),
-            (0.39, -0.34, 0.56),
-            (0.38, -0.48, 0.57),
+            (0.30, 0.70, -0.01), (0.31, 0.63, 0.03), (0.33, 0.53, 0.10),
+            (0.35, 0.39, 0.19), (0.37, 0.23, 0.30), (0.38, 0.05, 0.40),
+            (0.39, -0.15, 0.50), (0.39, -0.34, 0.56), (0.38, -0.48, 0.57),
         ],
     }
-
-    # Full upper-leg mass with a clear knee and tapered calf. Keep the silhouette
-    # human, not inflated tubes, while preserving the tight riding posture.
     leg_rx = [0.270, 0.282, 0.292, 0.286, 0.270, 0.246, 0.216, 0.186, 0.162]
     leg_rz = [0.258, 0.270, 0.280, 0.275, 0.260, 0.236, 0.208, 0.180, 0.158]
 
@@ -156,9 +158,6 @@ def main() -> None:
         organic_tube(scene, points, leg_rx, leg_rz, f'leg_{side}', sections=40)
         ankle = np.asarray(points[-1], dtype=float)
         sign = -1.0 if side == 'L' else 1.0
-
-        # Do not tuck the boots behind the broom. They trail close and parallel,
-        # but offset slightly outward so both remain readable from the chase camera.
         heel = ankle + np.array([0.030 * sign, -0.195, 0.050])
         sole = heel + np.array([0.018 * sign, -0.080, -0.060])
         toe = sole + np.array([0.012 * sign, 0.000, -0.285])
@@ -172,15 +171,31 @@ def main() -> None:
         )
         boot_centers[side] = float(boot.bounds.mean(axis=0)[0])
 
+    # The reference shows the straw tie beginning below the visible legs instead
+    # of a cone covering them. Preserve all 240 bristles and 56 straw clumps, move
+    # the entire dense bundle downward/aft, and bridge the original shaft to the
+    # new tie location with a thick continuous broom neck.
+    bundle_shift = np.array([0.0, -0.70, 0.10])
+    shift_bundle_geometry(scene, bundle_shift)
+    organic_tube(
+        scene,
+        [(0.14, 0.35, 1.54), (0.14, 0.12, 1.57), (0.14, -0.10, 1.60), (0.14, -0.35, 1.64)],
+        [0.125, 0.132, 0.142, 0.155],
+        [0.115, 0.122, 0.132, 0.145],
+        'broom_bundle_neck',
+        sections=30,
+    )
+
     scene.metadata.update({
         'lower_body_workflow': 'reference-matched compact seated straddle authored in mesh; no runtime pose correction',
         'lower_body_pose': 'pelvis centered on broom; thighs grip; knees compact; two calves and boots remain readable beside broom',
         'lower_body_leg_mass': 'full thighs with tapered knees and calves; no column silhouette',
         'lower_body_runtime_physics': False,
+        'broom_bundle_clearance': 'dense bundle tie begins below visible legs; density unchanged',
     })
 
     nodes_after = set(scene.graph.nodes)
-    assert all(name in nodes_after for name in ('leg_L', 'leg_R', 'boot_L', 'boot_R'))
+    assert all(name in nodes_after for name in ('leg_L', 'leg_R', 'boot_L', 'boot_R', 'broom_bundle_neck'))
     assert len([n for n in nodes_after if re.fullmatch(r'hair_main_\d{2}', n)]) == 14
     assert len([n for n in nodes_after if re.fullmatch(r'hair_overlap_\d{2}', n)]) == 8
     assert len([n for n in nodes_after if re.fullmatch(r'bristle_\d{3}', n)]) == 240
@@ -199,6 +214,10 @@ def main() -> None:
         'lower_body_ankle_center_x': 0.38,
         'lower_body_boot_center_x': round(max(abs(v) for v in boot_centers.values()), 3),
         'lower_body_reference': 'approved rear chase reference: tight upper straddle with two distinct close parallel boots around central broom',
+        'broom_bundle_clearance': 'dense bundle tie begins below visible legs; density unchanged',
+        'broom_bundle_shift_y': -0.70,
+        'broom_bundle_shift_z': 0.10,
+        'broom_bundle_connector': True,
         'bytes': len(blob),
         'nodes': len(nodes_after),
         'geometries': len(scene.geometry),
@@ -214,6 +233,7 @@ def main() -> None:
         'max_knee_center_x': manifest['lower_body_max_knee_center_x'],
         'ankle_center_x': manifest['lower_body_ankle_center_x'],
         'boot_center_x': manifest['lower_body_boot_center_x'],
+        'broom_bundle_shift_y': manifest['broom_bundle_shift_y'],
         'hair_main_locks': 14,
         'hair_overlap_locks': 8,
         'broom_bristles': 240,
