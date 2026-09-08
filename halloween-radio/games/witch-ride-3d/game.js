@@ -80,7 +80,14 @@ function configureWitch(root){
   witch=root;witch.setPosition(0,1.55,2);witch.setLocalScale(1,1,1);app.root.addChild(witch);
   const capeNode=witch.findByName?.('cape')||cape;
   cape=rememberMotionPart(capeNode,.15);bristles=rememberMotionPart(witch.findByName?.('broom_bristles'),1.7);hatTip=rememberMotionPart(witch.findByName?.('hat_tip'),2.3);broomHandle=rememberMotionPart(witch.findByName?.('broom_handle'),2.9);
-  hairRig=[];for(let i=1;i<=5;i++){const p=rememberMotionPart(witch.findByName?.(`hair_${String(i).padStart(2,'0')}`),i*.73);if(p)hairRig.push(p)}
+  const hairMotion=[
+    {bank:.02,kick:.04,wind:.10,wobble:.08,stiff:38,damp:11.5},
+    {bank:.04,kick:.08,wind:.20,wobble:.18,stiff:35,damp:10.5},
+    {bank:.07,kick:.14,wind:.34,wobble:.30,stiff:31,damp:9.5},
+    {bank:.10,kick:.22,wind:.55,wobble:.48,stiff:27,damp:8.2},
+    {bank:.14,kick:.30,wind:.82,wobble:.72,stiff:23,damp:7.1}
+  ];
+  hairRig=[];for(let i=1;i<=5;i++){const p=rememberMotionPart(witch.findByName?.(`hair_${String(i).padStart(2,'0')}`),i*.73);if(p){p.motion=hairMotion[i-1];hairRig.push(p)}}
   emberLight=new pc.Entity('Broom Ember Light');emberLight.addComponent('light',{type:'point',color:new pc.Color(1,.31,.055),intensity:.45,range:8,castShadows:false});emberLight.setLocalPosition(0,-.8,3.8);witch.addChild(emberLight);
 }
 function configureCar(e){
@@ -120,9 +127,16 @@ const keys=new Set();addEventListener('keydown',e=>keys.add(e.code));addEventLis
 function animateSecondary(dt,time,bank,steerAccel,wind){
   const kick=clamp(-steerAccel*.013,-10.5,10.5);
   if(cape?.node){const r=springRoll(cape,-bank*.46+kick,dt,20,5.8),b=cape.base;cape.node.setLocalEulerAngles(b.x+2.0+wind*5.2+Math.sin(time*1.7)*2.1,b.y+Math.sin(time*.85)*.8,b.z+r)}
-  for(let i=0;i<hairRig.length;i++){const h=hairRig[i],strength=.25+i*.028,target=-bank*strength+kick*(.88+i*.055)+Math.sin(time*(3.2+i*.18)+h.phase)*(2.0+i*.15),r=springRoll(h,target,dt,25+i*1.8,6.2+i*.15),b=h.base;h.node.setLocalEulerAngles(b.x+wind*(3.2+i*.42)+Math.sin(time*(4.0+i*.12)+h.phase)*3.1,b.y+Math.sin(time*1.8+h.phase)*.8,b.z+r)}
+  for(let i=0;i<hairRig.length;i++){
+    const h=hairRig[i],m=h.motion||{bank:.06,kick:.12,wind:.28,wobble:.24,stiff:30,damp:9};
+    const target=-bank*m.bank+kick*m.kick+Math.sin(time*(2.2+i*.12)+h.phase)*m.wobble;
+    const r=springRoll(h,target,dt,m.stiff,m.damp),b=h.base;
+    const pitch=wind*m.wind+Math.sin(time*(2.6+i*.10)+h.phase)*m.wobble*.55;
+    const yaw=Math.sin(time*1.45+h.phase)*m.wobble*.18;
+    h.node.setLocalEulerAngles(b.x+pitch,b.y+yaw,b.z+r)
+  }
   if(bristles?.node){const r=springRoll(bristles,-bank*.17+kick*.32+Math.sin(time*6.4)*1.0,dt,34,7.3),b=bristles.base;bristles.node.setLocalEulerAngles(b.x+wind*2.4+Math.sin(time*5.2)*1.2,b.y,b.z+r)}
-  if(hatTip?.node){const r=springRoll(hatTip,-bank*.08+kick*.18+Math.sin(time*1.55)*.9,dt,17,5.2),b=hatTip.base;hatTip.node.setLocalEulerAngles(b.x+Math.sin(time*1.3)*.7,b.y+Math.sin(time*.9)*.5,b.z+r)}
+  if(hatTip?.node){const b=hatTip.base;hatTip.roll=0;hatTip.rollV=0;hatTip.node.setLocalEulerAngles(b.x,b.y,b.z)}
   if(broomHandle?.node){const r=springRoll(broomHandle,-bank*.045+kick*.08+Math.sin(time*7.5)*.18,dt,42,9.5),b=broomHandle.base;broomHandle.node.setLocalEulerAngles(b.x+Math.sin(time*8.1)*.12,b.y,b.z+r)}
 }
 

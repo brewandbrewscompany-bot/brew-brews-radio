@@ -5,8 +5,8 @@
   "torso": "single pelvis-waist-ribcage-shoulder shell with forward lean",
   "arms": "continuous bent organic lofts to visible central grip",
   "legs": "continuous seated straddle with bent knees and aligned boots",
-  "mane_primary_locks": 9,
-  "mane_shoulder_locks": 7,
+  "mane_primary_locks": 14,
+  "mane_shoulder_locks": 8,
   "cape_primary_folds": 4,
   "broom_bristles": 240,
   "broom_straw_clumps": 56,
@@ -26,7 +26,15 @@
     "broom_handle",
     "broom_bristles"
   ],
-  "bytes": 590644,
-  "nodes": 357,
-  "geometries": 341
+  "bytes": 642380,
+  "nodes": 364,
+  "geometries": 348,
+  "hair_main_locks": 14,
+  "hair_overlap_locks": 8,
+  "hair_cap": true,
+  "hair_workflow": "pre-swept backward cards; physics/runtime only adds secondary trailing motion",
+  "hair_root_motion": "anchored",
+  "hair_mid_motion": "mild lag",
+  "hair_tip_motion": "highest secondary motion",
+  "hat_motion": "locked"
 }
