@@ -20,7 +20,7 @@ assert meta['broom_primary_groups'] == 8, meta['broom_primary_groups']
 assert 0.26 <= meta['broom_root_compression_fraction'] <= 0.30, meta['broom_root_compression_fraction']
 assert meta['broom_material_ready'] is False
 assert meta['broom_straw_workflow'] == 'grouped authored straw mass first; fine bristles are secondary breakup only'
-assert meta['broom_straw_shape'] == 'tight bound root; full dense middle body; broad gradual flare; irregular clustered tapered tips'
+assert meta['broom_straw_shape'] == 'tight bound root; dense middle body; gradual flare; clustered tapered tips'
 
 scene = trimesh.load(MODEL, force='scene')
 nodes = set(scene.graph.nodes)
