@@ -90,12 +90,13 @@ for side in ('L','R'):
     d=float(np.linalg.norm(hv[:,None,:]-sv[None,:,:],axis=2).min())
     assert d<.16,(side,d)
 
-# Hair is authored in the wind-swept pose.  It must be much longer rearward than
-# downward so runtime motion cannot be responsible for creating the silhouette.
+# The hair pose must exist in the authored mesh.  Rearward travel stays dominant,
+# but the cards must also cross the upper-back silhouette.  These gates reject
+# both dangling vertical hair and the chase-view "flat shelf" failure mode.
 hair_names=main+overlap+['hair_cap']
 allh=np.vstack([mw(n).vertices for n in hair_names]); hs=np.ptp(allh,axis=0)
-assert hs[0]>=2.35 and hs[1]>=.68 and hs[2]>=2.75,hs
-assert hs[2]>=hs[1]*3.75,hs
+assert hs[0]>=2.35 and hs[1]>=1.20 and hs[2]>=3.00,hs
+assert hs[2]>=hs[1]*2.25,hs
 cap=dims('hair_cap')
 assert cap[0]>=1.05 and cap[1]>=.60 and cap[2]>=.60,cap
 cap_bounds=mw('hair_cap').bounds
@@ -105,27 +106,28 @@ assert cap_bounds[0,1]>=2.42,cap_bounds
 
 for n in main:
     d=dims(n); b=mw(n).bounds
-    assert d[0]>=.46 and d[1]>=.38 and d[2]>=2.10,(n,d)
-    assert d[2]>=d[1]*4.0,(n,d)
-    assert b[0,2]<-.60 and b[1,2]>1.35,(n,b)
+    assert d[0]>=.44 and d[1]>=.78 and d[2]>=2.38,(n,d)
+    assert d[2]>=d[1]*2.15,(n,d)
+    assert b[0,2]<-.60 and b[1,2]>1.60,(n,b)
 for n in overlap:
     d=dims(n); b=mw(n).bounds
-    assert d[0]>=.35 and d[1]>=.40 and d[2]>=1.45,(n,d)
-    assert d[2]>=d[1]*3.20,(n,d)
-    assert b[0,2]<-.60 and b[1,2]>.70,(n,b)
+    assert d[0]>=.34 and d[1]>=.59 and d[2]>=1.60,(n,d)
+    assert d[2]>=d[1]*2.20,(n,d)
+    assert b[0,2]<-.60 and b[1,2]>.85,(n,b)
 
 mainv=np.vstack([mw(n).vertices for n in main])
-shoulder_band=mainv[(mainv[:,2]>=-.42)&(mainv[:,2]<=.25)]
-tip_band=mainv[mainv[:,2]>=1.25]
+shoulder_band=mainv[(mainv[:,2]>=-.38)&(mainv[:,2]<=.28)]
+tip_band=mainv[mainv[:,2]>=1.35]
 assert len(shoulder_band)>100 and len(tip_band)>60,(len(shoulder_band),len(tip_band))
 shoulder_w=float(np.ptp(shoulder_band[:,0])); tip_w=float(np.ptp(tip_band[:,0]))
 assert shoulder_w>=2.40,(shoulder_w,tip_w)
-assert shoulder_w>=tip_w*1.35,(shoulder_w,tip_w)
-# Roots start immediately below the brim; tips remain lifted while travelling aft.
+assert shoulder_w>=tip_w*1.45,(shoulder_w,tip_w)
+# Roots begin immediately beneath the brim.  The far tips are aft and visibly
+# lower on screen than the crown so the mane remains readable from the chase view.
 roots=mainv[(mainv[:,1]>=2.88)&(mainv[:,2]<=-.55)]
 assert len(roots)>80,len(roots)
-assert mainv[:,2].max()>=1.70,mainv[:,2].max()
-assert mainv[:,1].min()>=2.42,mainv[:,1].min()
+assert mainv[:,2].max()>=2.00,mainv[:,2].max()
+assert 1.88<=mainv[:,1].min()<=2.02,mainv[:,1].min()
 
 allc=np.vstack([mw(n).vertices for n in folds]); cs=np.ptp(allc,axis=0)
 assert cs[0]>=2.35 and cs[1]>=1.60 and cs[2]>=.55,cs
@@ -143,7 +145,7 @@ assert len(bristles)==240 and len(straw_names)==56
 for n in folds+['torso_core','arm_L','arm_R']:
     assert mw(n).bounds[1,2] < 1.10,(n,mw(n).bounds[1,2])
 for n in main:
-    assert mw(n).bounds[1,2] < 1.90,(n,mw(n).bounds[1,2])
+    assert mw(n).bounds[1,2] < 2.15,(n,mw(n).bounds[1,2])
 bounds=np.asarray(scene.bounds,float); assert bounds[1,2]<3.65,bounds
 
 for g in scene.geometry.values():
@@ -174,6 +176,7 @@ print(json.dumps({
     'hair_span':hs.tolist(),
     'hair_shoulder_width':shoulder_w,
     'hair_tip_width':tip_w,
+    'hair_lowest_chase_y':float(mainv[:,1].min()),
     'bristles':len(bristles),
     'straw_clumps':len(straw_names),
     'torso_widths':[pelvis_w,waist_w,rib_w],
