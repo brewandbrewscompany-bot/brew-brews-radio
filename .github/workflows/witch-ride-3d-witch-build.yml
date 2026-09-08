@@ -39,7 +39,7 @@ jobs:
       - name: Build and validate Pass 14 mesh only
         shell: bash
         run: |
-          python -m pip install --disable-pip-version-check 'numpy>=2,<3' 'scipy>=1.15,<2' 'trimesh==4.11.1'
+          python -m pip install --disable-pip-version-check 'numpy>=2,<3' 'scipy>=1.15,<2' 'trimesh==4.11.1' 'networkx>=3.4,<4'
           python -m py_compile halloween-radio/games/witch-ride-3d/tools/build_witch_pass14.py halloween-radio/games/witch-ride-3d/tools/validate_witch_pass14.py
           python halloween-radio/games/witch-ride-3d/tools/build_witch_pass14.py
           python halloween-radio/games/witch-ride-3d/tools/validate_witch_pass14.py
