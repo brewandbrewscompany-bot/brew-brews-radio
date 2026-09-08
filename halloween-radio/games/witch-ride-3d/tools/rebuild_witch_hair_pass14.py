@@ -126,39 +126,39 @@ def add_hair_cap():
     return add(mesh, 'hair_cap', 'hair_01')
 
 def add_main_locks():
-    # Five tip clusters form an already-wind-swept mane.  The center groups lift
-    # slightly higher and travel farther rearward so the chase view reads airflow,
-    # while the shoulder region remains the widest part of the mass.
+    # The chase camera looks almost straight into the rearward flow.  These locks
+    # therefore travel strongly aft while also crossing the upper-back silhouette.
+    # That keeps the pose physically wind-swept without collapsing into a flat shelf.
     cluster_centers = [
-        (-0.76, 2.48, 1.40),
-        (-0.38, 2.54, 1.60),
-        (0.00, 2.60, 1.78),
-        (0.38, 2.54, 1.62),
-        (0.76, 2.48, 1.42),
+        (-0.72, 1.92, 1.66),
+        (-0.36, 2.04, 1.84),
+        (0.00, 2.18, 2.04),
+        (0.36, 2.05, 1.86),
+        (0.72, 1.94, 1.68),
     ]
-    root_xs = np.linspace(-0.76, 0.76, 14)
+    root_xs = np.linspace(-0.74, 0.74, 14)
     for i, root_x in enumerate(root_xs):
-        s = root_x / 0.76 if abs(root_x) > 0.001 else 0.0
+        s = root_x / 0.74 if abs(root_x) > 0.001 else 0.0
         sign = -1.0 if root_x < 0 else 1.0
         group = round(i * 4 / 13)
         cluster_x, tip_y, tip_z = cluster_centers[group]
         tip_x = cluster_x + (-0.035, 0.0, 0.035)[i % 3]
-        shoulder_x = root_x * 1.28 + sign * (0.045 + 0.025 * (1.0 - abs(s)))
-        mid_x = shoulder_x + (tip_x - shoulder_x) * 0.30
+        shoulder_x = root_x * 1.30 + sign * (0.045 + 0.022 * (1.0 - abs(s)))
+        mid_x = shoulder_x + (tip_x - shoulder_x) * 0.28
 
         path = [
             (root_x * 0.90, 2.99 - 0.025 * abs(s), -0.73 + 0.018 * math.cos(i * 0.70)),
-            (root_x * 0.98, 2.83 - 0.020 * abs(s), -0.50 + 0.018 * math.sin(i * 0.80)),
-            (shoulder_x, 2.67 - 0.022 * abs(s), -0.18 + 0.018 * math.cos(i * 0.55)),
-            (shoulder_x * 0.99, 2.60 - 0.018 * abs(s), 0.30 + 0.028 * math.sin(i * 0.60)),
-            (mid_x, 2.57 + (tip_y - 2.57) * 0.35, 0.82 + (tip_z - 0.82) * 0.42),
+            (root_x * 0.98, 2.80 - 0.020 * abs(s), -0.48 + 0.018 * math.sin(i * 0.80)),
+            (shoulder_x, 2.57 - 0.025 * abs(s), -0.12 + 0.018 * math.cos(i * 0.55)),
+            (shoulder_x * 0.99, 2.40 - 0.020 * abs(s), 0.36 + 0.028 * math.sin(i * 0.60)),
+            (mid_x, 2.26 + (tip_y - 2.26) * 0.32, 1.00 + (tip_z - 1.00) * 0.38),
             (tip_x, tip_y, tip_z),
         ]
         parent = 'hair_05' if abs(s) < 0.34 else ('hair_04' if abs(s) < 0.72 else 'hair_03')
         leaf_shell(
             path,
-            [0.095, 0.145, 0.230, 0.190, 0.105, 0.026],
-            [0.042, 0.058, 0.078, 0.064, 0.042, 0.016],
+            [0.090, 0.140, 0.215, 0.185, 0.095, 0.025],
+            [0.040, 0.055, 0.075, 0.062, 0.040, 0.015],
             f'hair_main_{i + 1:02d}',
             parent,
             across=19,
@@ -166,26 +166,27 @@ def add_main_locks():
         )
 
 def add_overlap_locks():
-    # Shorter cards fill the cap/shoulder transition without becoming a second
-    # dangling layer.  They terminate early in the same rearward flow.
-    root_xs = np.array([-0.68, -0.49, -0.29, -0.09, 0.10, 0.30, 0.50, 0.69])
+    # Short overlap cards keep the crown-to-shoulder mass dense but end well before
+    # the main tips so the silhouette reads as layered hair rather than a second skirt.
+    root_xs = np.array([-0.67, -0.48, -0.28, -0.09, 0.10, 0.29, 0.49, 0.68])
     for i, root_x in enumerate(root_xs):
-        s = root_x / 0.70
+        s = root_x / 0.69
         sign = -1.0 if root_x < 0 else 1.0
-        shoulder_x = root_x * 1.24 + sign * 0.04
-        tip_x = root_x * 1.02 + 0.025 * math.sin(i * 1.30)
-        tip_z = 0.78 + 0.10 * (i % 3) + 0.035 * math.cos(i * 0.90)
+        shoulder_x = root_x * 1.25 + sign * 0.04
+        tip_x = root_x * 0.98 + 0.025 * math.sin(i * 1.30)
+        tip_z = 0.92 + 0.12 * (i % 3) + 0.035 * math.cos(i * 0.90)
+        tip_y = 2.30 + 0.045 * (i % 3) + 0.018 * math.cos(i * 0.70)
         path = [
             (root_x * 0.92, 3.00 - 0.022 * abs(s), -0.74 + 0.015 * math.sin(i)),
-            (root_x, 2.84 - 0.018 * abs(s), -0.48),
-            (shoulder_x, 2.68 - 0.022 * abs(s), -0.16 + 0.018 * math.cos(i)),
-            (shoulder_x * 0.98, 2.61, 0.31 + 0.022 * math.sin(i * 1.10)),
-            (tip_x, 2.56 + 0.018 * math.cos(i * 0.70), tip_z),
+            (root_x, 2.82 - 0.018 * abs(s), -0.46),
+            (shoulder_x, 2.60 - 0.023 * abs(s), -0.10 + 0.018 * math.cos(i)),
+            (shoulder_x * 0.98, 2.43, 0.38 + 0.022 * math.sin(i * 1.10)),
+            (tip_x, tip_y, tip_z),
         ]
         leaf_shell(
             path,
-            [0.085, 0.125, 0.175, 0.125, 0.024],
-            [0.038, 0.052, 0.066, 0.046, 0.014],
+            [0.080, 0.120, 0.165, 0.115, 0.023],
+            [0.036, 0.050, 0.064, 0.045, 0.013],
             f'hair_overlap_{i + 1:02d}',
             'hair_02',
             across=17,
@@ -200,7 +201,7 @@ add_overlap_locks()
 
 scene.metadata.update({
     'hair_workflow': 'pre-swept backward mane authored in mesh; runtime motion is secondary only',
-    'hair_shape': 'widest at upper back and shoulders, lifted clustered tips traveling rearward',
+    'hair_shape': 'widest at upper back and shoulders, diagonal aft flow to clustered tapered tips',
     'hair_main_locks': 14,
     'hair_overlap_locks': 8,
     'hair_cap': 'dense hidden cap under locked hat brim',
