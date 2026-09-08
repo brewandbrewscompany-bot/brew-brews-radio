@@ -74,5 +74,18 @@
   "broom_full_root_clumps": 8,
   "broom_full_root_bristles": 48,
   "broom_flyaway_bristles": 40,
-  "broom_material_ready": false
+  "broom_material_ready": false,
+  "material_uv_ready": true,
+  "material_uv_workflow": "largest-axis-planar-uv-v1",
+  "material_uv_geometry_count": 357,
+  "material_uv_vertex_count": 43586,
+  "material_uv_axis_counts": {
+    "01": 4,
+    "10": 16,
+    "20": 211,
+    "02": 2,
+    "21": 121,
+    "12": 3
+  },
+  "material_uv_preserves_geometry": true
 }
