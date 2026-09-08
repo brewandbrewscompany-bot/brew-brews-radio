@@ -177,8 +177,10 @@ assert neck[0]>=.28 and neck[1]>=.68 and neck[2]>=.32,(neck,nb)
 assert nb[0,1]<-.35 and nb[1,1]>.34,nb
 
 st=np.vstack([mw(n).vertices for n in straw_names]); ss=np.ptp(st,axis=0)
-assert ss[0]>=1.25 and ss[1]>=.85 and ss[2]>=1.35,ss
-assert st[:,1].min()<-1.55 and st[:,1].max()<-.15,'dense bundle must begin below visible legs and trail downward'
+assert ss[0]>=1.25 and ss[2]>=5.0 and ss[1]<=.90,ss
+assert ss[2]>=ss[1]*6.0,ss
+assert st[:,2].min()<1.70 and st[:,2].max()>6.55,'dense bundle must begin at the bound root and trail rearward toward the player/camera'
+assert st[:,1].min()>-1.10 and st[:,1].max()<-.15,'vertical motion must remain secondary sag, not a hanging tassel'
 assert len(bristles)==240 and len(straw_names)==56
 for n in folds+['torso_core','arm_L','arm_R']:
     assert mw(n).bounds[1,2] < 1.10,(n,mw(n).bounds[1,2])
