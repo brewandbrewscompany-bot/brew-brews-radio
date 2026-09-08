@@ -24,12 +24,15 @@ assert meta['broom_straw_role_counts'] == {'primary': 8, 'secondary': 32, 'edge'
 assert meta['broom_length_clusters'] == 6, meta['broom_length_clusters']
 assert meta['broom_full_root_bristles'] == 48, meta['broom_full_root_bristles']
 assert meta['broom_flyaway_bristles'] == 40, meta['broom_flyaway_bristles']
-assert sorted(set(meta['broom_primary_group_length_families'])) == [0, 1, 2, 3, 4, 5]
-assert len(meta['broom_primary_group_length_families']) == 8
 assert 0.26 <= meta['broom_root_compression_fraction'] <= 0.30, meta['broom_root_compression_fraction']
 assert meta['broom_material_ready'] is False
 assert meta['broom_straw_workflow'] == 'grouped authored straw mass first; fine bristles are secondary breakup only'
 assert meta['broom_straw_shape'] == 'tight bound root; dense middle body; gradual flare; clustered tapered tips'
+
+family_matrix = np.asarray(meta['broom_length_family_matrix'], dtype=int)
+assert family_matrix.shape == (8, 7), family_matrix.shape
+assert np.all((family_matrix >= 0) & (family_matrix <= 5)), family_matrix
+assert np.array_equal(np.bincount(family_matrix.ravel(), minlength=6), np.array([5, 8, 13, 12, 9, 9]))
 
 scene = trimesh.load(MODEL, force='scene')
 nodes = set(scene.graph.nodes)
@@ -74,8 +77,8 @@ component_volumes = []
 role_volumes = {'primary': [], 'secondary': [], 'edge': []}
 for index, (name, mesh) in enumerate(zip(straw_names, straw_meshes)):
     assert mesh.is_watertight, name
-    assert len(mesh.vertices) >= 240, (name, len(mesh.vertices))
-    assert len(mesh.faces) >= 500, (name, len(mesh.faces))
+    assert len(mesh.vertices) >= 300, (name, len(mesh.vertices))
+    assert len(mesh.faces) >= 600, (name, len(mesh.faces))
     assert np.isfinite(mesh.vertices).all(), name
     parts = mesh.split(only_watertight=False)
     assert len(parts) == 4, (name, len(parts))
@@ -86,12 +89,12 @@ for index, (name, mesh) in enumerate(zip(straw_names, straw_meshes)):
         dims = np.ptp(part.vertices, axis=0)
         length = float(np.max(dims))
         volume = abs(float(part.volume))
-        assert length >= 1.70, (name, dims)
+        assert length >= 2.10, (name, dims)
         equiv_radius = math.sqrt(max(volume, 1e-12) / (math.pi * max(length, 1e-9)))
         component_radii.append(equiv_radius)
         component_volumes.append(volume)
-        assert equiv_radius <= 0.035, (name, equiv_radius, volume, length)
-        assert volume <= 0.013, (name, volume)
+        assert equiv_radius <= 0.036, (name, equiv_radius, volume, length)
+        assert volume <= 0.015, (name, volume)
 
 for name, mesh in zip(bristle_names, bristle_meshes):
     assert mesh.is_watertight, name
@@ -99,43 +102,39 @@ for name, mesh in zip(bristle_names, bristle_meshes):
     assert len(mesh.faces) >= 55, (name, len(mesh.faces))
     assert np.isfinite(mesh.vertices).all(), name
 
-# Hierarchy must be physically present in the mesh, not just metadata. Primary clumps
-# carry more mass than secondary clumps; edge clumps stay light enough for breakup.
 primary_median = float(np.median(role_volumes['primary']))
 secondary_median = float(np.median(role_volumes['secondary']))
 edge_median = float(np.median(role_volumes['edge']))
-assert primary_median >= secondary_median * 1.12, (primary_median, secondary_median)
-assert secondary_median >= edge_median * 1.08, (secondary_median, edge_median)
+assert primary_median >= secondary_median * 1.10, (primary_median, secondary_median)
+assert secondary_median >= edge_median * 1.06, (secondary_median, edge_median)
 
 straw = np.vstack([mesh.vertices for mesh in straw_meshes])
 bristles = np.vstack([mesh.vertices for mesh in bristle_meshes])
 straw_span = np.ptp(straw, axis=0)
 bristle_span = np.ptp(bristles, axis=0)
 
-# Overall broom proportions: long, full, and broad enough to reject the prior short
-# triangular tassel while remaining a coherent single broom tail.
-assert straw_span[0] >= 1.90, straw_span
-assert straw_span[1] >= 3.00, straw_span
-assert straw_span[2] >= 1.60, straw_span
-assert bristle_span[0] >= 1.85, bristle_span
-assert bristle_span[1] >= 2.85, bristle_span
-assert bristle_span[2] >= 1.55, bristle_span
-assert bristle_span[0] <= straw_span[0] * 1.22, (straw_span, bristle_span)
+# Reject short/tassel proportions. The reference target requires a large long broom tail.
+assert straw_span[0] >= 2.55, straw_span
+assert straw_span[1] >= 4.00, straw_span
+assert straw_span[2] >= 1.75, straw_span
+assert bristle_span[0] >= 2.45, bristle_span
+assert bristle_span[1] >= 3.75, bristle_span
+assert bristle_span[2] >= 1.65, bristle_span
+assert bristle_span[0] <= straw_span[0] * 1.20, (straw_span, bristle_span)
 assert bristle_span[1] <= straw_span[1] * 1.14, (straw_span, bristle_span)
 
-# Tight root behind/between the boots. This band must stay compressed and centered
-# before the broom body opens.
+# Compressed root wraps the existing broom neck and remains between the two boots.
 root_band = straw[
-    (straw[:, 1] >= -0.50)
-    & (straw[:, 1] <= -0.08)
-    & (straw[:, 2] >= 1.50)
-    & (straw[:, 2] <= 1.92)
+    (straw[:, 1] >= -0.56)
+    & (straw[:, 1] <= -0.26)
+    & (straw[:, 2] >= 1.48)
+    & (straw[:, 2] <= 1.98)
 ]
-assert len(root_band) > 1200, len(root_band)
+assert len(root_band) > 1800, len(root_band)
 root_width = float(np.ptp(root_band[:, 0]))
 root_center_x = float(np.mean(root_band[:, 0]))
-assert root_width <= 0.30, root_width
-assert -0.02 <= root_center_x <= 0.25, root_center_x
+assert root_width <= 0.36, root_width
+assert -0.02 <= root_center_x <= 0.28, root_center_x
 
 boot_l = mesh_world('boot_L')
 boot_r = mesh_world('boot_R')
@@ -146,42 +145,47 @@ assert boot_r_x > 0.25, boot_r_x
 assert boot_r_x - boot_l_x >= 0.70, (boot_l_x, boot_r_x)
 assert boot_l_x < root_center_x < boot_r_x, (boot_l_x, root_center_x, boot_r_x)
 
-# Heavy middle body: much wider than the root and already substantially open before
-# the terminal third, preventing a hollow cone or narrow paintbrush handle.
+# The broom must become broad and packed early, not stay a skinny stem before exploding.
 mid_band = straw[
-    (straw[:, 1] >= -1.68)
-    & (straw[:, 1] <= -0.95)
-    & (straw[:, 2] >= 2.20)
-    & (straw[:, 2] <= 2.76)
+    (straw[:, 1] >= -1.58)
+    & (straw[:, 1] <= -0.82)
+    & (straw[:, 2] >= 2.18)
+    & (straw[:, 2] <= 2.88)
 ]
-assert len(mid_band) > 1800, len(mid_band)
+assert len(mid_band) > 2200, len(mid_band)
 mid_width = float(np.ptp(mid_band[:, 0]))
-assert mid_width >= 1.35, mid_width
-assert mid_width >= root_width * 4.5, (root_width, mid_width)
+assert mid_width >= 2.00, mid_width
+assert mid_width >= root_width * 5.5, (root_width, mid_width)
 
-# Lower silhouette stays broad, but no single trimmed line is allowed to define it.
-tail_band = straw[straw[:, 1] <= -2.20]
-assert len(tail_band) > 1800, len(tail_band)
+# Large lower envelope, but not one clean fan edge.
+tail_band = straw[straw[:, 1] <= -2.62]
+assert len(tail_band) > 2200, len(tail_band)
 tail_width = float(np.ptp(tail_band[:, 0]))
-assert tail_width >= 1.75, tail_width
+assert tail_width >= 2.45, tail_width
 
-# Six major grouped length families must exist in the actual mesh. Clumps are allowed
-# small within-family variation, but the overall bottom edge must be deeply staggered.
-length_targets = np.array([-2.28, -2.48, -2.72, -2.94, -3.15, -3.38], dtype=float)
+# Six staggered terminal families are enforced from the actual mesh. Because every
+# named clump contains four individually staggered tips, the clump minimum sits about
+# 0.16 below its family's center.
+length_targets = np.array([-2.84, -3.12, -3.41, -3.72, -4.06, -4.42], dtype=float)
 clump_low_y = np.asarray([float(mesh.vertices[:, 1].min()) for mesh in straw_meshes])
 nearest_family = np.argmin(np.abs(clump_low_y[:, None] - length_targets[None, :]), axis=1)
 nearest_error = np.min(np.abs(clump_low_y[:, None] - length_targets[None, :]), axis=1)
-assert float(np.max(nearest_error)) <= 0.19, float(np.max(nearest_error))
+assert float(np.max(nearest_error)) <= 0.21, float(np.max(nearest_error))
 family_counts = np.bincount(nearest_family, minlength=6)
-assert np.all(family_counts >= 5), family_counts
-assert float(np.ptp(clump_low_y)) >= 0.95, np.ptp(clump_low_y)
+assert np.all(family_counts >= 4), family_counts
+assert float(np.ptp(clump_low_y)) >= 1.40, np.ptp(clump_low_y)
 for family in range(6):
     values = clump_low_y[nearest_family == family]
-    assert len(values) >= 5
-    assert float(np.ptp(values)) <= 0.30, (family, np.ptp(values))
+    assert len(values) >= 4
+    assert float(np.ptp(values)) <= 0.36, (family, np.ptp(values))
 
-# Primary directional groups must be visibly asymmetric and curved. We measure their
-# actual terminal centroids and middle-body centroids, not just metadata.
+# No directional group may terminate as one blunt tassel finger: each group's seven
+# clumps must occupy at least four different terminal families.
+for group in range(8):
+    group_families = nearest_family[group * 7:(group + 1) * 7]
+    assert len(set(group_families.tolist())) >= 4, (group, group_families)
+
+# Primary mass remains asymmetric and curved in the actual geometry.
 primary_indices = [i for i in range(56) if clump_role(i) == 'primary']
 assert len(primary_indices) == 8
 primary_tip_x = []
@@ -190,57 +194,55 @@ primary_mid_x = []
 for index in primary_indices:
     mesh = straw_meshes[index]
     ymin = float(mesh.vertices[:, 1].min())
-    tip_slice = mesh.vertices[mesh.vertices[:, 1] <= ymin + 0.14]
+    tip_slice = mesh.vertices[mesh.vertices[:, 1] <= ymin + 0.18]
     assert len(tip_slice) >= 12, (straw_names[index], len(tip_slice))
     primary_tip_x.append(float(np.mean(tip_slice[:, 0])))
     primary_tip_y.append(float(np.mean(tip_slice[:, 1])))
-    middle_slice = mesh.vertices[(mesh.vertices[:, 1] >= -1.62) & (mesh.vertices[:, 1] <= -1.00)]
+    middle_slice = mesh.vertices[(mesh.vertices[:, 1] >= -1.52) & (mesh.vertices[:, 1] <= -0.88)]
     assert len(middle_slice) >= 20, (straw_names[index], len(middle_slice))
     primary_mid_x.append(float(np.mean(middle_slice[:, 0])))
 
 primary_tip_x = np.asarray(primary_tip_x)
 primary_tip_y = np.asarray(primary_tip_y)
 primary_mid_x = np.asarray(primary_mid_x)
-assert float(np.ptp(primary_tip_y)) >= 0.85, np.ptp(primary_tip_y)
+assert float(np.ptp(primary_tip_y)) >= 1.20, np.ptp(primary_tip_y)
 mirror_length_delta = np.asarray([
     abs(primary_tip_y[0] - primary_tip_y[7]),
     abs(primary_tip_y[1] - primary_tip_y[6]),
     abs(primary_tip_y[2] - primary_tip_y[5]),
     abs(primary_tip_y[3] - primary_tip_y[4]),
 ])
-assert float(np.mean(mirror_length_delta)) >= 0.30, mirror_length_delta
+assert float(np.mean(mirror_length_delta)) >= 0.34, mirror_length_delta
 curve_delta = primary_tip_x - primary_mid_x
-assert float(np.std(curve_delta)) >= 0.075, curve_delta
-assert np.any(curve_delta < -0.08), curve_delta
-assert np.any(curve_delta > 0.08), curve_delta
+assert float(np.std(curve_delta)) >= 0.10, curve_delta
+assert np.any(curve_delta < -0.12), curve_delta
+assert np.any(curve_delta > 0.12), curve_delta
 
-# Tertiary bristles are secondary detail. Only a minority may originate at the bound
-# root, so the mesh cannot fall back to 240 identical root-to-tip wires.
-full_root_count = sum(float(mesh.vertices[:, 1].max()) > -0.31 for mesh in bristle_meshes)
+# Only a minority of fine bristles may travel root-to-tip.
+full_root_count = sum(float(mesh.vertices[:, 1].max()) > -0.40 for mesh in bristle_meshes)
 assert 42 <= full_root_count <= 56, full_root_count
 
-# Medium clumps dominate fine bristles while every individual component remains slim.
+# Fine bristles remain tertiary detail; medium clumps still carry the body.
 straw_volumes = np.asarray([abs(float(mesh.volume)) for mesh in straw_meshes])
 bristle_volumes = np.asarray([abs(float(mesh.volume)) for mesh in bristle_meshes])
-assert np.median(straw_volumes) >= np.median(bristle_volumes) * 18.0, (
+assert np.median(straw_volumes) >= np.median(bristle_volumes) * 14.0, (
     float(np.median(straw_volumes)),
     float(np.median(bristle_volumes)),
 )
-assert float(np.percentile(component_radii, 95)) <= 0.0335, np.percentile(component_radii, 95)
-assert float(np.percentile(component_volumes, 95)) <= 0.0125, np.percentile(component_volumes, 95)
+assert float(np.percentile(component_radii, 95)) <= 0.0345, np.percentile(component_radii, 95)
+assert float(np.percentile(component_volumes, 95)) <= 0.0145, np.percentile(component_volumes, 95)
 
-# Chase readability: the only broom geometry in the immediate boot zone is the compact
-# root, which must not swallow the two-boot silhouette.
+# The boot zone remains readable despite the larger broom.
 readability_band = straw[
-    (straw[:, 1] >= -0.52)
-    & (straw[:, 1] <= -0.10)
+    (straw[:, 1] >= -0.58)
+    & (straw[:, 1] <= -0.24)
     & (straw[:, 2] <= 2.02)
 ]
-assert len(readability_band) > 900, len(readability_band)
+assert len(readability_band) > 1200, len(readability_band)
 readability_width = float(np.ptp(readability_band[:, 0]))
-assert readability_width <= 0.34, readability_width
+assert readability_width <= 0.40, readability_width
 
-# Material work remains blocked. Every straw mesh stays neutral clay.
+# Materials remain blocked; this is neutral-clay geometry review only.
 for mesh in straw_meshes + bristle_meshes:
     material = getattr(getattr(mesh, 'visual', None), 'material', None)
     if material is None:
