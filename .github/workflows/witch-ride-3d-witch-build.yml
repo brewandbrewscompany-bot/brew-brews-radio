@@ -8,8 +8,10 @@ on:
       - 'halloween-radio/games/witch-ride-3d/tools/build_witch_pass14.py'
       - 'halloween-radio/games/witch-ride-3d/tools/rebuild_witch_hair_pass14.py'
       - 'halloween-radio/games/witch-ride-3d/tools/rebuild_witch_lower_body_pass14.py'
+      - 'halloween-radio/games/witch-ride-3d/tools/rebuild_witch_broom_pass14.py'
       - 'halloween-radio/games/witch-ride-3d/tools/patch_witch_hair_runtime_pass14.py'
       - 'halloween-radio/games/witch-ride-3d/tools/validate_witch_pass14.py'
+      - 'halloween-radio/games/witch-ride-3d/tools/validate_witch_broom_pass14.py'
       - 'halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js'
   workflow_dispatch:
 
@@ -38,13 +40,15 @@ jobs:
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/build_witch_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/rebuild_witch_hair_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/rebuild_witch_lower_body_pass14.py
+          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/rebuild_witch_broom_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/patch_witch_hair_runtime_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/validate_witch_pass14.py
+          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/validate_witch_broom_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/game.js
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
-      - name: Build and validate Pass 14 reference-matched lower body mesh
+      - name: Build and validate Pass 14 grouped broom straw mesh
         shell: bash
         run: |
           python -m pip install --disable-pip-version-check 'numpy>=2,<3' 'scipy>=1.15,<2' 'trimesh==4.11.1' 'networkx>=3.4,<4'
@@ -52,13 +56,17 @@ jobs:
             halloween-radio/games/witch-ride-3d/tools/build_witch_pass14.py \
             halloween-radio/games/witch-ride-3d/tools/rebuild_witch_hair_pass14.py \
             halloween-radio/games/witch-ride-3d/tools/rebuild_witch_lower_body_pass14.py \
+            halloween-radio/games/witch-ride-3d/tools/rebuild_witch_broom_pass14.py \
             halloween-radio/games/witch-ride-3d/tools/patch_witch_hair_runtime_pass14.py \
-            halloween-radio/games/witch-ride-3d/tools/validate_witch_pass14.py
+            halloween-radio/games/witch-ride-3d/tools/validate_witch_pass14.py \
+            halloween-radio/games/witch-ride-3d/tools/validate_witch_broom_pass14.py
           python halloween-radio/games/witch-ride-3d/tools/build_witch_pass14.py
           python halloween-radio/games/witch-ride-3d/tools/rebuild_witch_hair_pass14.py
           python halloween-radio/games/witch-ride-3d/tools/rebuild_witch_lower_body_pass14.py
+          python halloween-radio/games/witch-ride-3d/tools/rebuild_witch_broom_pass14.py
           python halloween-radio/games/witch-ride-3d/tools/patch_witch_hair_runtime_pass14.py
           python halloween-radio/games/witch-ride-3d/tools/validate_witch_pass14.py
+          python halloween-radio/games/witch-ride-3d/tools/validate_witch_broom_pass14.py
           test "$(stat -c%s halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb)" -ge 540000
           grep -q "const hairMotion=\[" halloween-radio/games/witch-ride-3d/game.js
           grep -q "hatTip.node.setLocalEulerAngles(b.x,b.y,b.z)" halloween-radio/games/witch-ride-3d/game.js
@@ -69,6 +77,10 @@ jobs:
           grep -q '"lower_body_boot_center_x":' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           grep -q '"broom_bristles": 240' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           grep -q '"broom_straw_clumps": 56' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
+          grep -q '"broom_primary_groups": 8' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
+          grep -q '"broom_root_compression_fraction": 0.28' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
+          grep -q '"broom_material_ready": false' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
+          grep -q '"broom_straw_shape": "tight bound root; dense middle body; gradual flare; clustered tapered tips"' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           grep -q "witch-centerpiece-pass-v14" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           grep -q "pass-14-mesh-only-v1" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           grep -q "neutral-clay-mesh-review-only" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
@@ -140,8 +152,10 @@ jobs:
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/build_witch_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/rebuild_witch_hair_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/rebuild_witch_lower_body_pass14.py
+          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/rebuild_witch_broom_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/patch_witch_hair_runtime_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/validate_witch_pass14.py
+          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/validate_witch_broom_pass14.py
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/game.js
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
@@ -149,7 +163,7 @@ jobs:
           test "$MAIN_NOW" = "$BASE_MAIN"
           test "$TARGET_NOW" = "$BASE_TARGET"
           test "$TARGET_NOW" = "$GITHUB_SHA"
-      - name: Commit validated Pass 14 reference-matched lower body asset
+      - name: Commit validated Pass 14 grouped broom straw asset
         shell: bash
         run: |
           git config user.name 'brewandbrewscompany-bot'
@@ -158,6 +172,6 @@ jobs:
             halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb \
             halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json \
             halloween-radio/games/witch-ride-3d/game.js
-          git diff --cached --quiet && { echo 'Generated Pass 14 reference-matched lower body asset already current'; exit 0; }
-          git commit -m 'Build Witch Ride Pass 14 reference-matched lower body mesh'
+          git diff --cached --quiet && { echo 'Generated Pass 14 grouped broom straw asset already current'; exit 0; }
+          git commit -m 'Build Witch Ride Pass 14 grouped broom straw mesh'
           git push origin HEAD:witch-ride-3d-witch-rebuild-pass-14
