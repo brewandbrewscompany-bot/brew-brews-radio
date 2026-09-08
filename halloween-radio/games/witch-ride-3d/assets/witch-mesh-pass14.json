@@ -26,7 +26,7 @@
     "broom_handle",
     "broom_bristles"
   ],
-  "bytes": 878440,
+  "bytes": 878708,
   "nodes": 373,
   "geometries": 357,
   "hair_main_locks": 14,
@@ -50,10 +50,12 @@
   "broom_bundle_shift_z": 0.1,
   "broom_bundle_connector": true,
   "broom_straw_workflow": "grouped authored straw mass first; fine bristles are secondary breakup only",
-  "broom_geometry_workflow_version": "hierarchy-v3-core-ribbons",
+  "broom_geometry_workflow_version": "hierarchy-v4-rearward-camera-flow",
   "broom_primary_groups": 8,
   "broom_root_compression_fraction": 0.28,
-  "broom_straw_shape": "tight bound root; dense middle body; gradual flare; clustered tapered tips",
+  "broom_straw_shape": "tight bound root; dense middle body; rearward flare toward player; clustered tapered tips; shallow secondary sag",
+  "broom_flow_axis": "+Z toward chase camera/player",
+  "broom_flow_authored": true,
   "broom_straw_substrands_per_clump": 1,
   "broom_straw_role_counts": {
     "primary": 8,
