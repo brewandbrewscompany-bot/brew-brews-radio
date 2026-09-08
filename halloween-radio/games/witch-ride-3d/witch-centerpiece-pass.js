@@ -30,6 +30,7 @@ function install(){
   const capeCfg=[['cape_left',8.8,10.0,-.30],['cape_center',10.4,10.8,0],['cape_right',8.8,10.0,.30]];
   const hair=['hair_01','hair_02','hair_03','hair_04','hair_05'];
   app.on('update',dt=>{
+    witch.setLocalScale(GAMEPLAY_SCALE,GAMEPLAY_SCALE,GAMEPLAY_SCALE);
     if(!wr.state)return;dt=Math.min(dt||0,.05);t+=dt;
     const s=wr.state,playing=s.mode==='playing',speed=s.speed||1;
     const speedN=playing?clamp((speed-1)/2.8,0,1):0;
@@ -65,7 +66,7 @@ function install(){
       spring(br.y,0,dt,25,11),
       spring(br.z,-steer*.045-demand*.015,dt,24,11));
   });
-  window.WitchRideWitchCenterpiecePass={passId:PASS_ID,version:VERSION,review:REVIEW,active:true,visualOnly:true,meshOnly:true,gameplayScale:GAMEPLAY_SCALE,hatLocked:true,broomFlowAxis:'+Z toward chase camera/player',requiredNodes:REQUIRED.slice(),missing:[]};
+  window.WitchRideWitchCenterpiecePass={passId:PASS_ID,version:VERSION,review:REVIEW,active:true,visualOnly:true,meshOnly:true,gameplayScale:GAMEPLAY_SCALE,scaleEnforced:true,hatLocked:true,broomFlowAxis:'+Z toward chase camera/player',requiredNodes:REQUIRED.slice(),missing:[]};
   return true;
 }
 function boot(attempt=0){if(install())return;if(attempt<180)setTimeout(()=>boot(attempt+1),100);else console.error('Pass 14 mesh-only centerpiece runtime did not initialize')}
