@@ -173,8 +173,8 @@ def main() -> None:
 
     # Fuller human leg mass than the earlier thin/splayed version, while still
     # leaving a readable inner-thigh channel around the broom shaft and seat wrap.
-    leg_rx = [0.315, 0.325, 0.330, 0.320, 0.305, 0.285, 0.255, 0.230]
-    leg_rz = [0.285, 0.295, 0.300, 0.290, 0.275, 0.255, 0.230, 0.205]
+    leg_rx = [0.337, 0.348, 0.353, 0.342, 0.326, 0.305, 0.273, 0.246]
+    leg_rz = [0.336, 0.348, 0.354, 0.342, 0.325, 0.301, 0.271, 0.242]
 
     for side, points in legs.items():
         organic_tube(scene, points, leg_rx, leg_rz, f'leg_{side}', sections=38)
