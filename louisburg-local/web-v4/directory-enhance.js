@@ -211,3 +211,49 @@
   s.async=false;
   document.body.appendChild(s);
 })();
+
+// Louisburg Through Time entry points. Visual-only augmentation: no feed, registry,
+// event, deal, navigation-state, collector, or classification behavior is modified.
+(function(){
+  if(document.getElementById('ll-history-entry-style'))return;
+  const style=document.createElement('style');
+  style.id='ll-history-entry-style';
+  style.textContent=`
+    .historyTeaser{position:relative;display:block;min-height:176px;margin:0 0 12px;border-radius:22px;overflow:hidden;text-decoration:none;color:#fff;background:linear-gradient(135deg,#251033 0%,#542a68 43%,#8d5256 70%,#d0a35c 100%);box-shadow:0 12px 30px rgba(44,19,58,.18);isolation:isolate}
+    .historyTeaser:before{content:"";position:absolute;left:-7%;right:-7%;bottom:28px;height:4px;background:#201921;box-shadow:0 10px 0 #6f503d;transform:rotate(.5deg);z-index:-1}
+    .historyTeaser:after{content:"";position:absolute;right:-2%;bottom:31px;width:49%;height:70%;background:linear-gradient(90deg,#714335 0 18%,transparent 18% 21%,#975842 21% 42%,transparent 42% 45%,#6b3d34 45% 65%,transparent 65% 68%,#8b513d 68% 100%);clip-path:polygon(0 35%,10% 35%,10% 20%,27% 20%,27% 2%,47% 2%,47% 23%,61% 23%,61% 10%,80% 10%,80% 25%,100% 25%,100% 100%,0 100%);z-index:-2;opacity:.95}
+    .historyTeaserShade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(24,9,34,.94) 0%,rgba(24,9,34,.67) 51%,rgba(24,9,34,.08) 83%),linear-gradient(0deg,rgba(24,9,34,.45),transparent 65%);z-index:-1}
+    .historyTeaserSun{position:absolute;right:12%;top:18%;width:52px;height:52px;border-radius:50%;background:#f7e0a4;box-shadow:0 0 45px #f1c572;z-index:-3;opacity:.9}
+    .historyTeaserBody{position:relative;padding:21px 20px;max-width:68%}
+    .historyTeaserBody span{font-size:9px;font-weight:900;letter-spacing:1.7px;color:#f0d89f;text-transform:uppercase}
+    .historyTeaserBody b{display:block;font:800 29px/.98 Georgia,serif;margin:8px 0 9px;text-shadow:0 2px 18px rgba(0,0,0,.2)}
+    .historyTeaserBody small{display:block;max-width:430px;font-size:10px;line-height:1.5;color:#f4eaf6}
+    .historyTeaserCta{display:inline-flex;margin-top:12px;align-items:center;gap:6px;padding:7px 9px;border-radius:999px;background:#fff5dc;color:#2b123b;font-size:9px;font-weight:900}
+    .historyMoreItem{position:relative;overflow:hidden;text-decoration:none;background:linear-gradient(145deg,#fffaf2,#f2e5f2)}
+    .historyMoreItem:after{content:"1868 → NOW";position:absolute;right:8px;bottom:7px;color:#6b3f78;font:900 8px Georgia,serif;letter-spacing:.7px;opacity:.65}
+    @media(max-width:520px){.historyTeaser{min-height:166px}.historyTeaserBody{max-width:76%;padding:18px 16px}.historyTeaserBody b{font-size:25px}.historyTeaser:after{right:-12%;width:58%}}
+  `;
+  document.head.appendChild(style);
+
+  const home=document.getElementById('homeScreen');
+  if(home&&!document.getElementById('historyTeaser')){
+    const teaser=document.createElement('a');
+    teaser.id='historyTeaser';
+    teaser.className='historyTeaser';
+    teaser.href='history.html';
+    teaser.setAttribute('aria-label','Explore Louisburg Through Time');
+    teaser.innerHTML='<div class="historyTeaserSun"></div><div class="historyTeaserShade"></div><div class="historyTeaserBody"><span>Louisburg Through Time · 1868 → Now</span><b>Every town has a story. This one is ours.</b><small>Walk from prairie and rail to Broadway, schools, businesses, fires, growth and Louisburg today.</small><i class="historyTeaserCta">Explore the journey →</i></div>';
+    const search=home.querySelector('.searchbar');
+    if(search)home.insertBefore(teaser,search);else home.prepend(teaser);
+  }
+
+  const moreGrid=document.querySelector('#moreScreen .moreGrid');
+  if(moreGrid&&!document.getElementById('historyMoreItem')){
+    const item=document.createElement('a');
+    item.id='historyMoreItem';
+    item.className='moreItem historyMoreItem';
+    item.href='history.html';
+    item.innerHTML='<b>⌛ Louisburg Through Time</b><small>Explore the verified journey from the town\'s beginnings to today</small>';
+    moreGrid.prepend(item);
+  }
+})();
