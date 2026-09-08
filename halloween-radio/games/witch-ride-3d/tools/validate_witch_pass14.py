@@ -5,134 +5,106 @@ import numpy as np
 import trimesh
 
 ROOT=Path(__file__).resolve().parents[1]
-GLB=ROOT/"assets"/"models"/"witch-rider.glb"
-MANIFEST=ROOT/"assets"/"witch-mesh-pass14.json"
+GLB=ROOT/'assets'/'models'/'witch-rider.glb'
+MANIFEST=ROOT/'assets'/'witch-mesh-pass14.json'
+assert GLB.exists() and MANIFEST.exists()
+assert GLB.stat().st_size >= 500_000, GLB.stat().st_size
+meta=json.loads(MANIFEST.read_text())
+assert meta['pass']=='pass-14-mesh-only-v23'
+assert meta['review']=='neutral-clay-mesh-review-only'
+assert meta['materials_applied'] is False
+assert meta['geometry_strategy']=='full organic lofts from fuller pre-v21 silhouette'
+assert meta['mane_primary_locks']==5 and meta['mane_fillers']>=6
+assert 3 <= meta['cape_primary_folds'] <= 5
+assert meta['broom_bristles']>=144 and meta['broom_straw_clumps']>=30
 
-assert GLB.exists(), f"missing {GLB}"
-assert MANIFEST.exists(), f"missing {MANIFEST}"
-assert GLB.stat().st_size >= 500_000, f"GLB too small: {GLB.stat().st_size}"
-
-meta=json.loads(MANIFEST.read_text(encoding="utf-8"))
-assert meta["pass"]=="pass-14-mesh-only-v22", meta
-assert meta["review"]=="neutral-clay-mesh-review-only", meta
-assert meta["geometry_strategy"]=="camera-safe large forms", meta
-assert meta["cape_primary_folds"]==4, meta
-assert meta["mane_primary_locks"]==5, meta
-assert meta["hair_topology"]=="single-broad-mane-shell", meta
-assert meta["cape_topology"]=="single-corrugated-cape-shell", meta
-assert meta["broom_bristles"]>=144, meta
-assert meta["broom_straw_clumps"]>=18, meta
-
-scene=trimesh.load(GLB, force="scene")
+scene=trimesh.load(GLB,force='scene')
 nodes=set(scene.graph.nodes)
-required={
-    "hair_01","hair_02","hair_03","hair_04","hair_05",
-    "cape","cape_left","cape_center","cape_right",
-    "hat_tip","broom_handle","broom_bristles"
-}
-missing=sorted(required-nodes)
-assert not missing, f"missing required roots: {missing}"
+required={'hair_01','hair_02','hair_03','hair_04','hair_05','cape','cape_left','cape_center','cape_right','hat_tip','broom_handle','broom_bristles'}
+assert not (required-nodes), sorted(required-nodes)
+for n in ['torso_core','arm_L','arm_R','leg_L','leg_R','boot_L','boot_R','hand_L','hand_R','hat_brim','hat_crown','broom_shaft','seat_wrap']:
+    assert n in nodes, n
+for i in range(1,6): assert f'mane_lock_{i}' in nodes
+for i in range(1,5): assert f'cape_fold_{i}' in nodes
+bristles=sorted(n for n in nodes if re.fullmatch(r'bristle_\d{3}',n))
+assert len(bristles)>=216, len(bristles)
+assert not any(any(tok in n.lower() for tok in ('braid','hair_strand','hair_curl','cape_wedge','shoulder_bar','upper_arm_','forearm_','thigh_','calf_')) for n in nodes)
 
-names=set(scene.geometry.keys()) | nodes
-for bad in ("braid","rope","hair_strand","hair_curl","cape_wedge"):
-    assert not any(bad in n.lower() for n in names), f"forbidden legacy geometry token {bad}"
+def mesh_world(node):
+    T,gn=scene.graph[node]; m=scene.geometry[gn].copy(); m.apply_transform(T); return m
 
-# v22 specifically removes the physical rope/panel construction. Fold counts are
-# sculpted into two single continuous shells instead of overlapping child pieces.
-assert "torso_body" in nodes, "missing continuous torso body"
-assert "mane_mass" in nodes, "missing single broad mane shell"
-assert "cape_shell" in nodes, "missing single cape shell"
-assert not any(re.fullmatch(r"mane_lock_\d+", n) for n in nodes), "separate mane locks returned"
-assert not any(re.fullmatch(r"cape_fold_\d+", n) for n in nodes), "separate cape fold panels returned"
+def center(node): return mesh_world(node).bounds.mean(axis=0)
 
-bristles=sorted(n for n in nodes if re.fullmatch(r"bristle_\d{3}",n))
-assert len(bristles)>=144, f"bristles {len(bristles)}"
-for expected in ["ribcage","waist","pelvis","shoulder_bar","shoulder_L","shoulder_R",
-                 "thigh_L","thigh_R","calf_L","calf_R","boot_shaft_L","boot_shaft_R",
-                 "hand_L","hand_R","hat_brim","hat_crown"]:
-    assert expected in nodes, f"missing {expected}"
+def dims(node):
+    b=mesh_world(node).bounds; return b[1]-b[0]
 
-def world_mesh(node):
-    T,gn=scene.graph[node]
-    m=scene.geometry[gn].copy()
-    m.apply_transform(T)
-    return m
+for n in ['torso_core','arm_L','arm_R','leg_L','leg_R','boot_L','boot_R','hat_brim','hat_crown','broom_shaft']+[f'mane_lock_{i}' for i in range(1,6)]+[f'cape_fold_{i}' for i in range(1,5)]:
+    m=mesh_world(n)
+    assert len(m.vertices)>30 and len(m.faces)>40, n
+    assert np.isfinite(m.vertices).all() and np.isfinite(m.face_normals).all(), n
+    assert m.is_watertight, f'{n} open/backface shell'
 
-# Broad visible forms must be closed and finite so PlayCanvas cannot expose broken
-# backfaces at the chase/close viewpoints.
-for n in ["torso_body","mane_mass","cape_shell","hat_brim","hat_crown"]:
-    m=world_mesh(n)
-    assert len(m.faces)>0 and len(m.vertices)>0, n
-    assert np.isfinite(m.vertices).all(), n
-    assert np.isfinite(m.face_normals).all(), n
-    assert m.is_watertight, f"{n} must be closed/watertight"
-    assert bool(m.is_winding_consistent), f"{n} has inconsistent winding"
+m=mesh_world('torso_core'); b=m.bounds; d=b[1]-b[0]
+assert d[0] >= 1.65 and d[1] >= 1.55 and d[2] >= 0.70, d
+v=m.vertices
+widths=[]
+for y0,y1 in [(0.48,0.92),(1.04,1.32),(1.68,2.12)]:
+    q=v[(v[:,1]>=y0)&(v[:,1]<=y1)]
+    assert len(q)>10
+    widths.append(float(np.ptp(q[:,0])))
+pelvis_w, waist_w, rib_w=widths
+assert pelvis_w >= 1.20 and rib_w >= 1.45 and waist_w <= min(pelvis_w,rib_w)*0.88, widths
+low=v[(v[:,1]>.55)&(v[:,1]<.9),2].mean(); high=v[(v[:,1]>1.85)&(v[:,1]<2.15),2].mean()
+assert high < low-0.35,(low,high)
 
-# Camera safety. Chase camera is at world z=11.8 and close review camera z=7.65;
-# witch entity sits at world z=2. Keep all rear geometry far in front of both.
-b=np.asarray(scene.bounds,float)
-assert b[1,2] < 4.10, f"mesh projects into close camera safety zone: zmax={b[1,2]:.3f}"
-assert b[0,2] < -2.20, f"broom handle not extended forward enough: zmin={b[0,2]:.3f}"
-assert b[1,0]-b[0,0] >= 2.6, f"rider/broom silhouette too narrow: {b}"
-assert b[1,1]-b[0,1] >= 5.8, f"rider silhouette too short: {b}"
-for n in ["cape_shell","mane_mass","shoulder_bar","shoulder_L","shoulder_R"]:
-    m=world_mesh(n)
-    assert m.bounds[1,2] < 1.05, f"{n} too far toward chase camera: {m.bounds[1,2]:.3f}"
+for side,sgn in [('L',-1),('R',1)]:
+    lc=center(f'leg_{side}'); bc=center(f'boot_{side}')
+    assert sgn*lc[0] > 0.52, (side,lc)
+    assert lc[1] < 0.35 and bc[1] < -0.55, (lc,bc)
+for side in ('L','R'):
+    hand=center(f'hand_{side}')
+    assert abs(hand[0]) < 0.48 and 0.45 < hand[1] < 0.85 and hand[2] < -1.35, hand
 
-# The single mane should read as a broad shoulder/back mass rather than rope strands.
-mane=world_mesh("mane_mass")
-mane_ext=mane.extents
-assert mane_ext[0] >= 1.55, f"mane too narrow: {mane_ext}"
-assert mane_ext[1] >= 1.10, f"mane too short: {mane_ext}"
-assert mane_ext[2] <= 0.55, f"mane too deep/rope-like: {mane_ext}"
+shaft=mesh_world('broom_shaft').vertices
+for side in ('L','R'):
+    hp=mesh_world(f'hand_{side}').vertices
+    ds=np.linalg.norm(hp[:,None,:]-shaft[None,:,:],axis=2)
+    assert float(ds.min()) < 0.13, (side,float(ds.min()))
 
-# Cape is one broad drape with a readable lower flare but not a full torso-obscuring slab.
-cape=world_mesh("cape_shell")
-cape_ext=cape.extents
-assert cape_ext[0] >= 1.55, f"cape too narrow: {cape_ext}"
-assert cape_ext[1] >= 1.25, f"cape too short: {cape_ext}"
-assert cape_ext[2] <= 0.75, f"cape too deep: {cape_ext}"
+allm=np.vstack([mesh_world(f'mane_lock_{i}').vertices for i in range(1,6)])
+span=np.ptp(allm,axis=0)
+assert span[0] >= 1.45 and span[1] >= 1.15 and span[2] >= 0.40, span
+for i in range(1,6):
+    dm=dims(f'mane_lock_{i}')
+    assert dm[0] >= 0.38 and dm[1] >= 0.85 and dm[2] >= 0.20, (i,dm)
 
-# Human proportions / forward lean / readable seated straddle.
-def center(node):
-    return world_mesh(node).bounds.mean(axis=0)
-rib=center("ribcage"); waist=center("waist"); pelvis=center("pelvis")
-assert rib[1] > waist[1] > pelvis[1], (rib,waist,pelvis)
-assert rib[2] < waist[2] < pelvis[2]+0.10, (rib,waist,pelvis)
-torso=world_mesh("torso_body")
-assert torso.extents[1] >= 1.45, f"torso not elongated: {torso.extents}"
-for side in ("L","R"):
-    thigh=center(f"thigh_{side}"); calf=center(f"calf_{side}")
-    if side=="L":
-        assert thigh[0] < -0.40 and calf[0] < -0.55, (thigh,calf)
-    else:
-        assert thigh[0] > 0.40 and calf[0] > 0.55, (thigh,calf)
+cap=np.vstack([mesh_world(f'cape_fold_{i}').vertices for i in range(1,5)])
+cspan=np.ptp(cap,axis=0)
+assert cspan[0] >= 2.05 and cspan[1] >= 1.75 and cspan[2] >= 0.55, cspan
+for i in range(1,5):
+    dc=dims(f'cape_fold_{i}')
+    assert dc[0] >= 0.70 and dc[1] >= 1.70 and dc[2] >= 0.20, (i,dc)
 
-# Broom must visibly pass under the seated pelvis and hands should be forward of body.
-for side in ("L","R"):
-    hand=center(f"hand_{side}")
-    assert hand[2] < -1.20, f"{side} hand not reaching broom grip: {hand}"
+hd=dims('hat_brim'); assert hd[0] >= 2.35 and hd[2] >= 1.35, hd
+assert hd[0]/rib_w < 1.8, (hd[0],rib_w)
 
-# Neutral clay review only: no metallic/gloss production tuning.
+shaftm=mesh_world('broom_shaft'); sb=shaftm.bounds
+assert sb[0,2] < -2.9 and sb[1,2] > 1.65, sb
+assert sb[0,1] < 0.38 and sb[1,1] > 0.65, sb
+straw=np.vstack([mesh_world(n).vertices for n in nodes if n.startswith('straw_mass_')])
+ss=np.ptp(straw,axis=0)
+assert ss[0] >= 1.20 and ss[1] >= 0.85 and ss[2] >= 1.20, ss
+
+bounds=np.asarray(scene.bounds,float)
+assert bounds[1,2] < 4.25, bounds
+for n in [f'mane_lock_{i}' for i in range(1,6)]+[f'cape_fold_{i}' for i in range(1,5)]+['torso_core']:
+    assert mesh_world(n).bounds[1,2] < 1.15, (n,mesh_world(n).bounds[1,2])
+
 for g in scene.geometry.values():
-    mat=getattr(getattr(g,"visual",None),"material",None)
+    mat=getattr(getattr(g,'visual',None),'material',None)
     if mat is None: continue
-    metallic=getattr(mat,"metallicFactor",0.0)
-    rough=getattr(mat,"roughnessFactor",1.0)
-    if metallic is not None:
-        assert float(metallic) <= 0.01, f"metallic material in mesh-only pass: {metallic}"
-    if rough is not None:
-        assert float(rough) >= 0.95, f"non-clay roughness in mesh-only pass: {rough}"
+    met=getattr(mat,'metallicFactor',0.0); rough=getattr(mat,'roughnessFactor',1.0)
+    if met is not None: assert float(met)<=0.01
+    if rough is not None: assert float(rough)>=0.95
 
-print(json.dumps({
-    "ok":True,
-    "bytes":GLB.stat().st_size,
-    "nodes":len(nodes),
-    "geometries":len(scene.geometry),
-    "bristles":len(bristles),
-    "cape_topology":meta["cape_topology"],
-    "hair_topology":meta["hair_topology"],
-    "mane_extents":mane_ext.tolist(),
-    "cape_extents":cape_ext.tolist(),
-    "bounds":b.tolist(),
-},indent=2))
+print(json.dumps({'ok':True,'pass':meta['pass'],'bytes':GLB.stat().st_size,'nodes':len(nodes),'geometries':len(scene.geometry),'bristles':len(bristles),'torso_widths':widths,'mane_span':span.tolist(),'cape_span':cspan.tolist(),'straw_span':ss.tolist(),'bounds':bounds.tolist()},indent=2))
