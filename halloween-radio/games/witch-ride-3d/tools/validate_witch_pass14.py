@@ -30,6 +30,12 @@ assert 'smooth cards' in meta['hair_workflow']
 assert 3<=meta['cape_primary_folds']<=5
 assert meta['broom_bristles']==240,meta['broom_bristles']
 assert meta['broom_straw_clumps']==56,meta['broom_straw_clumps']
+assert meta['lower_body_workflow']=='authored narrow straddle; no runtime physics pose correction'
+assert meta['lower_body_pose']=='pelvis seated; inner thighs grip broom; knees tucked; boots trail close'
+assert meta['lower_body_leg_mass']=='fuller human thighs and calves'
+assert meta['lower_body_runtime_physics'] is False
+assert meta['lower_body_max_knee_center_x']<=.60,meta['lower_body_max_knee_center_x']
+assert meta['lower_body_ankle_center_x']<=.48,meta['lower_body_ankle_center_x']
 
 scene=trimesh.load(GLB,force='scene')
 nodes=set(scene.graph.nodes)
@@ -80,11 +86,43 @@ for side,sgn in [('L',-1),('R',1)]:
     assert (av[:,0].max()>1.05 if sgn==1 else av[:,0].min()<-1.05),side
     h=center(f'hand_{side}')
     assert abs(h[0])<0.32 and .45<h[1]<.82 and h[2]<-1.48,h
+
+# Lower body is authored as a narrow riding straddle.  These gates explicitly
+# reject the old wide-splayed pose while also requiring more human thigh/calf mass.
+leg_meshes={side:mw(f'leg_{side}') for side in ('L','R')}
+boot_meshes={side:mw(f'boot_{side}') for side in ('L','R')}
+all_legs=np.vstack([leg_meshes['L'].vertices,leg_meshes['R'].vertices])
+all_boots=np.vstack([boot_meshes['L'].vertices,boot_meshes['R'].vertices])
+leg_span=np.ptp(all_legs,axis=0)
+boot_span=np.ptp(all_boots,axis=0)
+assert 1.70<=leg_span[0]<=1.90,leg_span
+assert 1.36<=boot_span[0]<=1.50,boot_span
+assert all_legs[:,0].min()>-.95 and all_legs[:,0].max()<.95,(all_legs[:,0].min(),all_legs[:,0].max())
+
+leg_centers={}
+boot_centers={}
 for side,sgn in [('L',-1),('R',1)]:
-    lv=mw(f'leg_{side}').vertices
-    assert (lv[:,0].max()>1.10 if sgn==1 else lv[:,0].min()<-1.10),side
-    b=center(f'boot_{side}')
-    assert b[1]<-0.92 and abs(b[0])>.60,b
+    lm=leg_meshes[side]; lv=lm.vertices; ld=dims(f'leg_{side}'); lc=center(f'leg_{side}')
+    leg_centers[side]=lc
+    assert .47<=abs(lc[0])<=.58,(side,lc)
+    assert .72<=ld[0]<=.84 and 1.58<=ld[1]<=1.75 and ld[2]>=1.00,(side,ld)
+    assert abs(float(lm.volume))>=.49,(side,lm.volume)
+    assert (lv[:,0].min()>-.95 if sgn==-1 else lv[:,0].max()<.95),(side,lm.bounds)
+    assert (lv[:,0].max()>-.18 if sgn==-1 else lv[:,0].min()<.18),(side,lm.bounds)
+    seat_band=lv[(lv[:,1]>=.45)&(lv[:,1]<=.82)&(lv[:,2]>=-.20)&(lv[:,2]<=.28)]
+    assert len(seat_band)>20,(side,len(seat_band))
+    assert float(np.abs(seat_band[:,0]).min())<.18,(side,float(np.abs(seat_band[:,0]).min()))
+
+    bm=boot_meshes[side]; bd=dims(f'boot_{side}'); bc=center(f'boot_{side}')
+    boot_centers[side]=bc
+    assert .40<=abs(bc[0])<=.50 and bc[1]<-.93,(side,bc)
+    assert .48<=bd[0]<=.58 and .54<=bd[1]<=.66 and .54<=bd[2]<=.67,(side,bd)
+    assert (bm.vertices[:,0].max()>-.20 if sgn==-1 else bm.vertices[:,0].min()<.20),(side,bm.bounds)
+
+assert abs(leg_centers['L'][0]+leg_centers['R'][0])<.03,leg_centers
+assert abs(boot_centers['L'][0]+boot_centers['R'][0])<.03,boot_centers
+assert abs(boot_centers['L'][0])<abs(leg_centers['L'][0]) and abs(boot_centers['R'][0])<abs(leg_centers['R'][0]),(leg_centers,boot_centers)
+
 sv=mw('broom_shaft').vertices
 for side in ('L','R'):
     hv=mw(f'hand_{side}').vertices
@@ -181,6 +219,10 @@ print(json.dumps({
     'hair_shoulder_width':shoulder_w,
     'hair_tip_width':tip_w,
     'hair_lowest_chase_y':float(mainv[:,1].min()),
+    'lower_body_leg_span':leg_span.tolist(),
+    'lower_body_boot_span':boot_span.tolist(),
+    'lower_body_leg_centers':{k:v.tolist() for k,v in leg_centers.items()},
+    'lower_body_boot_centers':{k:v.tolist() for k,v in boot_centers.items()},
     'bristles':len(bristles),
     'straw_clumps':len(straw_names),
     'torso_widths':[pelvis_w,waist_w,rib_w],
