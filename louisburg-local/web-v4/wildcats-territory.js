@@ -4,6 +4,7 @@
   const STYLE_ID='wildcat-territory-style';
   const TODAY=()=>lbToday();
   const wt={view:'calendar',town:false,filter:'ALL',month:TODAY().slice(0,7),selected:TODAY()};
+  let renderData=null;
   try{
     const savedView=localStorage.getItem('ll_wildcats_view');
     if(savedView==='calendar'||savedView==='list')wt.view=savedView;
@@ -107,7 +108,7 @@
     const legend=document.querySelector('#wildcatTownLegend');if(legend)legend.hidden=!wt.town;
   }
   function renderWildcats(){
-    syncControls();const data=buildRenderData();
+    syncControls();const data=buildRenderData();renderData=data;
     if(wt.view==='calendar')renderCalendar(data);else renderList(data);
     const meta=document.querySelector('#wildcatMeta');if(meta)meta.textContent=`${data.school.length} upcoming school items${wt.town?` · ${data.town.length} town events overlaid`:''}`;
   }
@@ -146,7 +147,7 @@
     document.querySelectorAll('[data-wt-filter]').forEach(b=>b.onclick=()=>{wt.filter=b.dataset.wtFilter;renderWildcats()});
     const town=document.querySelector('#wildcatTownToggle');if(town)town.onclick=()=>{wt.town=!wt.town;try{localStorage.setItem('ll_wildcats_town_overlay',wt.town?'1':'0')}catch(e){}renderWildcats()};
     const prev=document.querySelector('#wildcatPrevMonth'),next=document.querySelector('#wildcatNextMonth');if(prev)prev.onclick=()=>shiftMonth(-1);if(next)next.onclick=()=>shiftMonth(1);
-    const cal=document.querySelector('#wildcatCalendar');if(cal)cal.onclick=e=>{const d=e.target.closest('[data-wt-date]');if(!d)return;wt.selected=d.dataset.wtDate;renderWildcats()};
+    const cal=document.querySelector('#wildcatCalendar');if(cal)cal.onclick=e=>{const d=e.target.closest('[data-wt-date]');if(!d)return;wt.selected=d.dataset.wtDate;cal.querySelectorAll('.wtCell.selected').forEach(x=>x.classList.remove('selected'));d.classList.add('selected');renderDayPanel(renderData||buildRenderData())};
     const back=document.querySelector('#wildcatTownEvents');if(back)back.onclick=()=>showScreen('events');
     const moreSports=document.querySelector('[data-more-cat="SPORTS"]');if(moreSports){moreSports.removeAttribute('data-more-cat');moreSports.innerHTML='<b>🐾 Wildcat Tracker</b><small>School calendar, athletics and parent schedule</small>';moreSports.onclick=showWildcats}
     document.addEventListener('click',e=>{if(e.target.closest('.wtOfficialLink'))return;const card=e.target.closest('#wildcatsScreen [data-id]');if(card&&card.dataset.id)openDetail(findItem(card.dataset.id))});
