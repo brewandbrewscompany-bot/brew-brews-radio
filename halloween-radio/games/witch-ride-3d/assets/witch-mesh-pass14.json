@@ -26,7 +26,7 @@
     "broom_handle",
     "broom_bristles"
   ],
-  "bytes": 907084,
+  "bytes": 1018896,
   "nodes": 365,
   "geometries": 349,
   "hair_main_locks": 14,
@@ -53,5 +53,6 @@
   "broom_primary_groups": 8,
   "broom_root_compression_fraction": 0.28,
   "broom_straw_shape": "tight bound root; dense middle body; gradual flare; clustered tapered tips",
+  "broom_straw_substrands_per_clump": 4,
   "broom_material_ready": false
 }
