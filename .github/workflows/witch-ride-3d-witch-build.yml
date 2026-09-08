@@ -80,7 +80,7 @@ jobs:
           grep -q '"broom_primary_groups": 8' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           grep -q '"broom_root_compression_fraction": 0.28' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           grep -q '"broom_material_ready": false' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
-          grep -q '"broom_straw_shape": "tight bound root; dense middle body; gradual flare; clustered tapered tips"' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
+          grep -q '"broom_straw_shape": "tight bound root; dense middle body; rearward flare toward player; clustered tapered tips; shallow secondary sag"' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           grep -q "witch-centerpiece-pass-v14" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           grep -q "pass-14-mesh-only-v1" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           grep -q "neutral-clay-mesh-review-only" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
