@@ -139,13 +139,13 @@ def main() -> None:
         if re.fullmatch(r'bristle_\d{3}', name) or re.fullmatch(r'straw_mass_\d{2}', name):
             remove_named(scene, name)
 
-    # Eight primary directional groups define the readable broom silhouette. The first
-    # 28% remains compressed beneath the binding and below the visible boots, then the
-    # mass opens gradually into the fuller straw tail.
+    # Eight overlapping primary groups form one full straw broom. The root stays tight
+    # below the boots for roughly the first quarter, then the mass opens decisively into
+    # a broad middle body like the approved reference instead of a narrow tassel.
     base = np.array([0.14, -0.35, 1.54], dtype=float)
-    group_x = np.array([-0.60, -0.44, -0.28, -0.10, 0.10, 0.28, 0.44, 0.60], dtype=float)
-    group_y = np.array([-1.43, -1.52, -1.58, -1.62, -1.61, -1.56, -1.50, -1.42], dtype=float)
-    group_z = np.array([2.99, 3.08, 3.16, 3.22, 3.20, 3.14, 3.06, 2.97], dtype=float)
+    group_x = np.array([-0.84, -0.63, -0.42, -0.17, 0.14, 0.39, 0.61, 0.82], dtype=float)
+    group_y = np.array([-2.12, -2.30, -2.03, -2.38, -2.18, -2.33, -2.06, -2.24], dtype=float)
+    group_z = np.array([3.02, 3.18, 3.08, 3.28, 3.13, 3.25, 3.04, 3.20], dtype=float)
 
     straw_index = 0
     for group in range(8):
@@ -154,56 +154,85 @@ def main() -> None:
             straw_index += 1
             spread = (local - 3) / 3.0
             phase = group * 0.73 + local * 0.91
-            lateral = 0.026 * spread + 0.010 * math.sin(phase)
-            vertical = 0.035 * math.sin(phase * 1.37)
+            lateral = 0.082 * spread + 0.018 * math.sin(phase)
+            length_jitter = 0.145 * math.sin(phase * 1.37) + 0.055 * spread
+            depth_jitter = 0.055 * math.cos(phase * 0.83)
             tip = np.array([
                 base[0] + gx + lateral,
-                group_y[group] + 0.045 * spread + 0.018 * math.sin(phase * 1.9),
-                group_z[group] + vertical + 0.050 * math.cos(phase * 0.83),
+                group_y[group] + length_jitter,
+                group_z[group] + depth_jitter,
             ])
 
-            root = base + np.array([0.020 * math.sin(phase), 0.010 * math.cos(phase), 0.0])
-            neck = base + np.array([0.055 * gx + 0.012 * spread, -0.105, 0.265 + 0.018 * math.sin(phase)])
-            shoulder = base + np.array([0.18 * gx + 0.018 * spread, -0.225, 0.535 + 0.020 * math.cos(phase)])
-            body = base + np.array([0.52 * gx + 0.020 * spread, -0.455, 0.930 + 0.030 * math.sin(phase * 1.2)])
-            pretip = base + np.array([0.82 * gx + 0.022 * spread, -0.690, 1.315 + 0.040 * math.cos(phase * 0.9)])
+            root = base + np.array([0.018 * math.sin(phase), 0.010 * math.cos(phase), 0.0])
+            neck = np.array([
+                base[0] + 0.055 * gx + 0.010 * spread,
+                -0.56 + 0.018 * math.sin(phase),
+                1.82 + 0.018 * math.sin(phase),
+            ])
+            shoulder = np.array([
+                base[0] + 0.24 * gx + 0.025 * spread,
+                -0.82 + 0.025 * math.cos(phase),
+                2.12 + 0.025 * math.cos(phase),
+            ])
+            body = np.array([
+                base[0] + 0.70 * gx + 0.045 * spread,
+                -1.22 + 0.045 * math.sin(phase * 1.2),
+                2.53 + 0.040 * math.sin(phase * 1.2),
+            ])
+            pretip = np.array([
+                base[0] + 0.96 * gx + 0.065 * spread,
+                -1.72 + 0.070 * math.cos(phase * 0.9),
+                2.88 + 0.055 * math.cos(phase * 0.9),
+            ])
 
-            # Broad clumps carry the form. They swell through the body, then taper into
-            # clustered ends instead of reading as identical wires.
-            size_bias = 1.0 + 0.07 * math.sin(phase)
+            # Broad overlapping bundles carry most of the visible volume. The body is
+            # deliberately full; ends narrow in uneven groups rather than uniform strings.
+            size_bias = 1.0 + 0.09 * math.sin(phase)
             organic_tube(
                 scene,
                 [tuple(root), tuple(neck), tuple(shoulder), tuple(body), tuple(pretip), tuple(tip)],
-                np.array([0.046, 0.052, 0.066, 0.086, 0.062, 0.015]) * size_bias,
-                np.array([0.038, 0.044, 0.056, 0.072, 0.052, 0.012]) * size_bias,
+                np.array([0.046, 0.054, 0.078, 0.112, 0.086, 0.026]) * size_bias,
+                np.array([0.038, 0.046, 0.064, 0.090, 0.068, 0.021]) * size_bias,
                 f'straw_mass_{straw_index:02d}',
                 sections=14,
             )
 
-    # Fine bristles remain at the proven count, but they follow the eight grouped paths
-    # and stay thin enough that the broad straw masses dominate the neutral-clay read.
+    # Fine bristles keep the proven count but sit inside and around the broad grouped
+    # envelope. Varied length tiers break the edge without becoming the dominant form.
     bristle_index = 0
     for group in range(8):
         gx = group_x[group]
         for local in range(30):
             bristle_index += 1
             spread = (local - 14.5) / 14.5
-            ring = local % 6
+            tier = local % 6
             phase = group * 0.67 + local * 0.49
             tip = np.array([
-                base[0] + gx + 0.045 * spread + 0.014 * math.sin(phase),
-                group_y[group] + 0.070 * spread + 0.022 * math.cos(phase * 1.31),
-                group_z[group] + 0.075 * math.sin(phase * 1.17) + 0.018 * ring,
+                base[0] + gx + 0.105 * spread + 0.020 * math.sin(phase),
+                group_y[group] + 0.135 * spread + 0.155 * math.sin(phase * 1.31) + 0.025 * (tier - 2.5),
+                group_z[group] + 0.085 * math.sin(phase * 1.17) + 0.020 * tier,
             ])
-            root = base + np.array([0.018 * math.sin(phase), 0.010 * math.cos(phase), 0.0])
-            compress = base + np.array([0.050 * gx + 0.008 * spread, -0.105, 0.270])
-            middle = base + np.array([0.42 * gx + 0.024 * spread, -0.405, 0.835 + 0.020 * math.sin(phase)])
-            pretip = base + np.array([0.78 * gx + 0.034 * spread, -0.650, 1.245 + 0.030 * math.cos(phase)])
+            root = base + np.array([0.016 * math.sin(phase), 0.009 * math.cos(phase), 0.0])
+            compress = np.array([
+                base[0] + 0.052 * gx + 0.008 * spread,
+                -0.56,
+                1.82,
+            ])
+            middle = np.array([
+                base[0] + 0.66 * gx + 0.052 * spread,
+                -1.18 + 0.035 * math.sin(phase),
+                2.48 + 0.030 * math.sin(phase),
+            ])
+            pretip = np.array([
+                base[0] + 0.94 * gx + 0.075 * spread,
+                -1.70 + 0.060 * math.cos(phase),
+                2.86 + 0.040 * math.cos(phase),
+            ])
             organic_tube(
                 scene,
                 [tuple(root), tuple(compress), tuple(middle), tuple(pretip), tuple(tip)],
-                [0.0072, 0.0075, 0.0078, 0.0060, 0.0028],
-                [0.0060, 0.0063, 0.0065, 0.0050, 0.0023],
+                [0.0068, 0.0070, 0.0072, 0.0056, 0.0026],
+                [0.0057, 0.0059, 0.0060, 0.0047, 0.0022],
                 f'bristle_{bristle_index:03d}',
                 sections=8,
             )
@@ -220,7 +249,7 @@ def main() -> None:
         'broom_straw_workflow': 'grouped authored straw mass first; fine bristles are secondary breakup only',
         'broom_primary_groups': 8,
         'broom_root_compression_fraction': 0.28,
-        'broom_straw_shape': 'tight bound root; dense middle body; gradual flare; clustered tapered tips',
+        'broom_straw_shape': 'tight bound root; full dense middle body; broad gradual flare; irregular clustered tapered tips',
         'broom_material_ready': False,
     })
 
@@ -234,7 +263,7 @@ def main() -> None:
         'broom_straw_workflow': 'grouped authored straw mass first; fine bristles are secondary breakup only',
         'broom_primary_groups': 8,
         'broom_root_compression_fraction': 0.28,
-        'broom_straw_shape': 'tight bound root; dense middle body; gradual flare; clustered tapered tips',
+        'broom_straw_shape': 'tight bound root; full dense middle body; broad gradual flare; irregular clustered tapered tips',
         'broom_material_ready': False,
         'bytes': len(blob),
         'nodes': len(nodes_after),
