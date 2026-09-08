@@ -142,7 +142,7 @@ def main() -> None:
     # Eight primary directional groups define the readable broom silhouette. The first
     # 28% remains compressed beneath the binding, then the mass opens gradually.
     base = np.array([0.14, 0.35, 1.54], dtype=float)
-    group_x = np.array([-0.52, -0.38, -0.24, -0.09, 0.09, 0.24, 0.38, 0.52], dtype=float)
+    group_x = np.array([-0.60, -0.44, -0.28, -0.10, 0.10, 0.28, 0.44, 0.60], dtype=float)
     group_y = np.array([-0.73, -0.82, -0.88, -0.92, -0.91, -0.86, -0.80, -0.72], dtype=float)
     group_z = np.array([2.99, 3.08, 3.16, 3.22, 3.20, 3.14, 3.06, 2.97], dtype=float)
 
