@@ -35,16 +35,19 @@ const textureFiles={
   straw:['broom-straw-v3-albedo.png','broom-straw-v3-normal.png']
 };
 
+// Surface response is tuned for the very dark chase scene. Tiny category-colored
+// emissive terms preserve material identity in moon shadow without turning the
+// rider into a glowing object; albedo + normal maps still provide the visible skin.
 const specs={
-  hair:{prefix:'pass14 textured auburn hair',tints:[[1,.72,.60],[.92,.60,.49],[1,.82,.68],[.86,.53,.43],[1,.90,.74]],gloss:.31,metalness:0,cullNone:true,tiling:[1.15,2.15],bump:.48},
-  hat:{prefix:'pass14 textured charcoal felt',tints:[[.68,.65,.74],[.75,.70,.80],[.60,.58,.68]],gloss:.075,metalness:0,cullNone:true,tiling:[2.1,2.1],bump:.42},
-  cape:{prefix:'pass14 textured burgundy wool',tints:[[1,.74,.79],[.92,.63,.70],[1,.84,.86],[.88,.58,.66]],gloss:.095,metalness:0,cullNone:true,tiling:[1.45,2.25],bump:.52},
-  cloth:{prefix:'pass14 textured black plum cloth',tints:[[.66,.61,.72],[.74,.67,.78],[.58,.55,.66]],gloss:.12,metalness:0,cullNone:true,tiling:[1.8,2.2],bump:.34},
-  leather:{prefix:'pass14 textured worn leather',tints:[[.76,.63,.51],[.88,.70,.54],[.68,.55,.46],[.82,.61,.44]],gloss:.34,metalness:0,cullNone:false,tiling:[1.7,2.0],bump:.46},
-  skin:{prefix:'pass14 warm natural skin',tints:[[.46,.280,.200],[.52,.330,.240],[.41,.245,.175]],gloss:.27,metalness:0,cullNone:false,tiling:[1,1],bump:0},
-  wood:{prefix:'pass14 textured crooked broom wood',tints:[[.82,.66,.50],[.94,.75,.55],[.72,.57,.45],[1,.82,.60]],gloss:.20,metalness:0,cullNone:false,tiling:[1.0,3.0],bump:.58},
-  straw:{prefix:'pass14 textured dry broom straw',tints:[[1,.90,.66],[.94,.80,.54],[1,.98,.76],[.88,.73,.48],[1,.84,.56]],gloss:.050,metalness:0,cullNone:true,tiling:[1.0,2.8],bump:.40},
-  metal:{prefix:'pass14 aged clasp metal',tints:[[.18,.150,.110],[.125,.105,.086]],gloss:.46,metalness:.65,cullNone:false,tiling:[1,1],bump:0}
+  hair:{prefix:'pass14 textured dark chestnut auburn hair',tints:[[.62,.52,.46],[.56,.44,.39],[.70,.59,.52],[.51,.40,.36],[.66,.54,.47]],gloss:.27,metalness:0,cullNone:true,tiling:[1.15,2.15],bump:.42,emissive:[.024,.008,.004],emissiveIntensity:.26},
+  hat:{prefix:'pass14 textured charcoal felt',tints:[[.72,.69,.76],[.79,.74,.82],[.64,.62,.70]],gloss:.060,metalness:0,cullNone:true,tiling:[2.1,2.1],bump:.38,emissive:[.006,.006,.009],emissiveIntensity:.20},
+  cape:{prefix:'pass14 textured deep burgundy wool',tints:[[1,.58,.64],[.94,.49,.56],[1,.67,.70],[.88,.43,.52]],gloss:.080,metalness:0,cullNone:true,tiling:[1.45,2.25],bump:.46,emissive:[.040,.004,.009],emissiveIntensity:.42},
+  cloth:{prefix:'pass14 textured charcoal plum riding cloth',tints:[[.72,.67,.76],[.79,.71,.82],[.63,.61,.70]],gloss:.105,metalness:0,cullNone:true,tiling:[1.8,2.2],bump:.30,emissive:[.008,.008,.014],emissiveIntensity:.30},
+  leather:{prefix:'pass14 textured worn brown black leather',tints:[[.78,.63,.49],[.90,.70,.51],[.69,.54,.43],[.84,.61,.42]],gloss:.31,metalness:0,cullNone:false,tiling:[1.7,2.0],bump:.42,emissive:[.019,.008,.003],emissiveIntensity:.28},
+  skin:{prefix:'pass14 warm natural skin',tints:[[.48,.295,.210],[.54,.345,.250],[.43,.255,.182]],gloss:.24,metalness:0,cullNone:false,tiling:[1,1],bump:0,emissive:[.012,.006,.004],emissiveIntensity:.18},
+  wood:{prefix:'pass14 textured crooked aged broom wood',tints:[[.84,.66,.48],[.96,.75,.52],[.74,.57,.42],[1,.81,.57]],gloss:.18,metalness:0,cullNone:false,tiling:[1.0,3.0],bump:.52,emissive:[.014,.006,.002],emissiveIntensity:.22},
+  straw:{prefix:'pass14 textured dry natural broom straw',tints:[[1,.86,.61],[.95,.76,.48],[1,.94,.70],[.89,.69,.42],[1,.80,.50]],gloss:.040,metalness:0,cullNone:true,tiling:[1.0,2.8],bump:.34,emissive:[.022,.013,.003],emissiveIntensity:.24},
+  metal:{prefix:'pass14 aged clasp metal',tints:[[.18,.150,.110],[.125,.105,.086]],gloss:.44,metalness:.65,cullNone:false,tiling:[1,1],bump:0,emissive:[0,0,0],emissiveIntensity:0}
 };
 
 function makeMaterial(name,tint,spec,textures){
@@ -54,6 +57,10 @@ function makeMaterial(name,tint,spec,textures){
   m.useMetalness=true;
   m.metalness=spec.metalness;
   m.gloss=spec.gloss;
+  if(spec.emissiveIntensity>0){
+    m.emissive=new pc.Color(...spec.emissive);
+    m.emissiveIntensity=spec.emissiveIntensity;
+  }
   if(spec.cullNone)m.cull=pc.CULLFACE_NONE;
   if(textures?.albedo){
     m.diffuseMap=textures.albedo;
@@ -122,7 +129,7 @@ async function install(){
         const texturedCategories=Object.keys(textureSets).sort();
         window.WitchRideWitchMaterialPass14={
           passId:PASS_ID,version:VERSION,active:true,production:true,uvRequired:true,uvIndependent:false,
-          preservesGameplayScale:true,preservesMesh:true,visualBalance:'night-readable-textured-material-separation',
+          preservesGameplayScale:true,preservesMesh:true,visualBalance:'night-readable-textured-material-separation-refined',
           texturedCategories,textureAssetCount:texturedCategories.length*2,counts
         };
         wr.witchMaterialPass=VERSION;
