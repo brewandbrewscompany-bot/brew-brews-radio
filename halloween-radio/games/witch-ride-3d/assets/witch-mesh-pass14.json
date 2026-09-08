@@ -26,9 +26,9 @@
     "broom_handle",
     "broom_bristles"
   ],
-  "bytes": 1106820,
-  "nodes": 365,
-  "geometries": 349,
+  "bytes": 878440,
+  "nodes": 373,
+  "geometries": 357,
   "hair_main_locks": 14,
   "hair_overlap_locks": 8,
   "hair_cap": true,
@@ -50,90 +50,26 @@
   "broom_bundle_shift_z": 0.1,
   "broom_bundle_connector": true,
   "broom_straw_workflow": "grouped authored straw mass first; fine bristles are secondary breakup only",
+  "broom_geometry_workflow_version": "hierarchy-v3-core-ribbons",
   "broom_primary_groups": 8,
   "broom_root_compression_fraction": 0.28,
   "broom_straw_shape": "tight bound root; dense middle body; gradual flare; clustered tapered tips",
-  "broom_straw_substrands_per_clump": 4,
+  "broom_straw_substrands_per_clump": 1,
   "broom_straw_role_counts": {
     "primary": 8,
-    "secondary": 32,
-    "edge": 16
+    "secondary": 56,
+    "tertiary": 240
   },
   "broom_length_clusters": 6,
-  "broom_length_family_matrix": [
-    [
-      1,
-      2,
-      3,
-      4,
-      2,
-      5,
-      3
-    ],
-    [
-      2,
-      1,
-      4,
-      3,
-      5,
-      2,
-      0
-    ],
-    [
-      4,
-      3,
-      5,
-      2,
-      1,
-      4,
-      3
-    ],
-    [
-      0,
-      2,
-      3,
-      5,
-      4,
-      1,
-      2
-    ],
-    [
-      3,
-      4,
-      1,
-      2,
-      5,
-      3,
-      0
-    ],
-    [
-      5,
-      2,
-      4,
-      1,
-      3,
-      0,
-      2
-    ],
-    [
-      2,
-      5,
-      3,
-      4,
-      1,
-      2,
-      5
-    ],
-    [
-      1,
-      3,
-      0,
-      5,
-      2,
-      4,
-      3
-    ]
+  "broom_length_family_counts": [
+    10,
+    10,
+    9,
+    9,
+    9,
+    9
   ],
+  "broom_full_root_clumps": 8,
   "broom_full_root_bristles": 48,
   "broom_flyaway_bristles": 40,
   "broom_material_ready": false
