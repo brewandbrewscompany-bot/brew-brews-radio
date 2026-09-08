@@ -99,8 +99,9 @@ assert np.median(straw_volumes) >= np.median(bristle_volumes) * 10.0, (
 )
 assert np.percentile(straw_volumes, 25) > 0.0015, np.percentile(straw_volumes, 25)
 
-# Protect lower-body chase readability: above the lower broom tail, straw stays centered.
-readability_band = straw[(straw[:, 1] >= 0.00) & (straw[:, 2] <= 2.08)]
+# Protect lower-body chase readability: the compressed broom root lives below the
+# boots and must stay narrow through its first visible section before the tail opens.
+readability_band = straw[(straw[:, 1] >= -0.50) & (straw[:, 1] <= -0.15) & (straw[:, 2] <= 2.08)]
 assert len(readability_band) > 300, len(readability_band)
 readability_width = float(np.ptp(readability_band[:, 0]))
 assert readability_width <= 0.52, readability_width
