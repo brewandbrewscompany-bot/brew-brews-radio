@@ -128,7 +128,6 @@ def main() -> None:
     scene = trimesh.load(MODEL, force='scene', process=False)
     nodes_before = set(scene.graph.nodes)
 
-    # Broom-tail-only pass. Preserve approved witch, hair, lower body, cape and hat.
     assert 'broom_bristles' in nodes_before
     assert 'broom_shaft' in nodes_before
     assert len([n for n in nodes_before if re.fullmatch(r'bristle_\d{3}', n)]) == 240
@@ -142,9 +141,6 @@ def main() -> None:
         if re.fullmatch(r'bristle_\d{3}', name) or re.fullmatch(r'straw_mass_\d{2}', name):
             remove_named(scene, name)
 
-    # Large handmade broom envelope. Eight overlapping directional masses establish
-    # the broad shape, but each of their seven clumps belongs to a different length
-    # family so no directional group terminates as a blunt tassel finger.
     base = np.array([0.14, -0.34, 1.58], dtype=float)
     group_x = np.array([-1.12, -0.84, -0.61, -0.30, 0.09, 0.41, 0.74, 1.04], dtype=float)
     group_drift = np.array([-0.24, 0.10, -0.18, 0.12, -0.07, 0.18, -0.10, 0.23], dtype=float)
@@ -192,22 +188,16 @@ def main() -> None:
                 radii_z = np.array([0.010, 0.013, 0.016, 0.019, 0.018, 0.013, 0.0055, 0.00075])
 
             target_y_center = float(length_y[family] + local_length[local] + 0.025 * math.sin(phase * 1.17))
-            target_x_center = (
-                base[0]
-                + gx
-                + drift
-                + lateral_scale * spread
-                + 0.030 * math.sin(phase * 1.39)
-            )
+            target_x_center = base[0] + gx + drift + lateral_scale * spread + 0.030 * math.sin(phase * 1.39)
             target_z_center = float(group_tip_z[group] + 0.095 * spread + 0.045 * math.cos(phase))
 
             root = np.array([
-                base[0] + 0.055 * gx + 0.026 * spread + 0.010 * math.sin(phase),
+                base[0] + 0.045 * gx + 0.018 * spread + 0.008 * math.sin(phase),
                 -0.34 + 0.010 * math.cos(phase),
                 1.58 + 0.035 * math.sin(group * 0.88) + 0.018 * spread,
             ])
             neck = np.array([
-                base[0] + 0.13 * gx + 0.040 * spread + 0.020 * curve,
+                base[0] + 0.090 * gx + 0.025 * spread + 0.010 * curve,
                 -0.48 + 0.015 * math.sin(phase),
                 1.82 + 0.040 * math.cos(phase),
             ])
@@ -245,9 +235,8 @@ def main() -> None:
                     0.32 * pretip[1] + 0.68 * tip[1],
                     0.34 * pretip[2] + 0.66 * tip[2],
                 ])
-
-                p0 = root + np.array([0.006 * sub_spread, 0.003 * math.sin(sub_phase), 0.004 * math.cos(sub_phase)])
-                p1 = neck + np.array([0.010 * sub_spread, 0.005 * math.sin(sub_phase), 0.006 * math.cos(sub_phase)])
+                p0 = root + np.array([0.004 * sub_spread, 0.003 * math.sin(sub_phase), 0.004 * math.cos(sub_phase)])
+                p1 = neck + np.array([0.007 * sub_spread, 0.005 * math.sin(sub_phase), 0.006 * math.cos(sub_phase)])
                 p2 = shoulder + np.array([0.016 * sub_spread, 0.008 * math.sin(sub_phase), 0.008 * math.cos(sub_phase)])
                 p3 = body1 + np.array([0.025 * sub_spread, 0.012 * math.sin(sub_phase), 0.011 * math.cos(sub_phase)])
                 p4 = body2 + np.array([0.036 * sub_spread, 0.020 * math.sin(sub_phase), 0.015 * math.cos(sub_phase)])
@@ -261,7 +250,6 @@ def main() -> None:
                     radii_z * size_bias,
                     sections=10,
                 ))
-
             bundle = trimesh.util.concatenate(components)
             add(scene, bundle, f'straw_mass_{straw_index:02d}', 'broom_bristles')
 
@@ -292,26 +280,10 @@ def main() -> None:
                 tip_y -= 0.22 + 0.045 * (local % 3)
                 edge_push = 0.14 * (1.0 if spread >= 0 else -1.0)
 
-            tip_x = (
-                base[0]
-                + gx
-                + 0.88 * drift
-                + 0.150 * spread
-                + edge_push
-                + 0.035 * math.sin(phase * 1.31)
-            )
+            tip_x = base[0] + gx + 0.88 * drift + 0.150 * spread + edge_push + 0.035 * math.sin(phase * 1.31)
             tip_z = float(group_tip_z[group] + 0.100 * spread + 0.055 * math.sin(phase))
-
-            root = np.array([
-                base[0] + 0.050 * gx + 0.020 * spread,
-                -0.34,
-                1.58 + 0.025 * math.sin(group),
-            ])
-            neck = np.array([
-                base[0] + 0.13 * gx + 0.032 * spread,
-                -0.48,
-                1.82,
-            ])
+            root = np.array([base[0] + 0.042 * gx + 0.015 * spread, -0.34, 1.58 + 0.025 * math.sin(group)])
+            neck = np.array([base[0] + 0.085 * gx + 0.022 * spread, -0.48, 1.82])
             shoulder = np.array([
                 base[0] + 0.42 * gx + 0.070 * drift + 0.075 * curve + 0.050 * spread,
                 -0.68 + 0.018 * math.sin(phase),
@@ -338,7 +310,6 @@ def main() -> None:
                 0.32 * pretip[2] + 0.68 * tip_z,
             ])
             tip = np.array([tip_x, tip_y, tip_z])
-
             full_path = [root, neck, shoulder, body1, body2, pretip, taper, tip]
             if start_mode == 0:
                 path = full_path
@@ -348,18 +319,10 @@ def main() -> None:
                 path = full_path[2:]
             else:
                 path = full_path[3:]
-
             count = len(path)
             rx = np.linspace(0.0072, 0.00070, count)
             rz = np.linspace(0.0052, 0.00052, count)
-            organic_tube(
-                scene,
-                [tuple(p) for p in path],
-                rx,
-                rz,
-                f'bristle_{bristle_index:03d}',
-                sections=8,
-            )
+            organic_tube(scene, [tuple(p) for p in path], rx, rz, f'bristle_{bristle_index:03d}', sections=8)
 
     assert straw_index == 56
     assert bristle_index == 240
@@ -389,7 +352,6 @@ def main() -> None:
 
     blob = scene.export(file_type='glb')
     MODEL.write_bytes(blob)
-
     manifest = json.loads(MANIFEST.read_text(encoding='utf-8'))
     manifest.update({
         'broom_bristles': 240,
