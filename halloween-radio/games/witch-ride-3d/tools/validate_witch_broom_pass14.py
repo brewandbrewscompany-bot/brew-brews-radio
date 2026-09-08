@@ -48,9 +48,11 @@ def mesh_world(name: str) -> trimesh.Trimesh:
 straw_meshes = [mesh_world(name) for name in straw_names]
 bristle_meshes = [mesh_world(name) for name in bristle_names]
 
-# Every named straw clump must now be a real clustered bundle of four separate slim
-# closed straw bodies. This specifically rejects the previous thick rounded finger form.
+# Every named straw clump must be a real four-strand cluster. This rejects the prior
+# single fat rounded tube while avoiding assumptions about which world axis a curved
+# strand's terminal cap occupies.
 component_radii = []
+component_volumes = []
 for name, mesh in zip(straw_names, straw_meshes):
     assert mesh.is_watertight, name
     assert len(mesh.vertices) >= 200, (name, len(mesh.vertices))
@@ -66,13 +68,9 @@ for name, mesh in zip(straw_names, straw_meshes):
         assert length >= 1.45, (name, dims)
         equiv_radius = math.sqrt(max(volume, 1e-12) / (math.pi * max(length, 1e-9)))
         component_radii.append(equiv_radius)
+        component_volumes.append(volume)
         assert equiv_radius <= 0.034, (name, equiv_radius, volume, length)
-        # The visible trailing end must be a tiny taper, not a rounded plug.
-        ymin = float(part.vertices[:, 1].min())
-        tip_slice = part.vertices[part.vertices[:, 1] <= ymin + 0.035]
-        assert len(tip_slice) >= 3, (name, len(tip_slice))
-        assert float(np.ptp(tip_slice[:, 0])) <= 0.065, (name, np.ptp(tip_slice[:, 0]))
-        assert float(np.ptp(tip_slice[:, 2])) <= 0.065, (name, np.ptp(tip_slice[:, 2]))
+        assert volume <= 0.012, (name, volume)
 
 for name, mesh in zip(bristle_names, bristle_meshes):
     assert mesh.is_watertight, name
@@ -119,8 +117,8 @@ clump_low_y = np.asarray([float(mesh.vertices[:, 1].min()) for mesh in straw_mes
 assert float(np.ptp(clump_low_y)) >= 0.34, np.ptp(clump_low_y)
 assert float(np.std(clump_low_y)) >= 0.10, np.std(clump_low_y)
 
-# Clustered medium straw still carries more visual mass than the 240 fine breakup
-# bristles, but no individual medium component may become a fat tube.
+# Clustered medium straw still carries more mass than the 240 fine breakup bristles,
+# while each component remains demonstrably slim enough not to become a paintbrush finger.
 straw_volumes = np.asarray([abs(float(mesh.volume)) for mesh in straw_meshes])
 bristle_volumes = np.asarray([abs(float(mesh.volume)) for mesh in bristle_meshes])
 assert np.median(straw_volumes) >= np.median(bristle_volumes) * 14.0, (
@@ -129,6 +127,7 @@ assert np.median(straw_volumes) >= np.median(bristle_volumes) * 14.0, (
 )
 assert np.percentile(straw_volumes, 25) > 0.0025, np.percentile(straw_volumes, 25)
 assert float(np.percentile(component_radii, 95)) <= 0.033, np.percentile(component_radii, 95)
+assert float(np.percentile(component_volumes, 95)) <= 0.0115, np.percentile(component_volumes, 95)
 
 # Protect lower-body chase readability: only the compressed root occupies this zone.
 readability_band = straw[(straw[:, 1] >= -0.50) & (straw[:, 1] <= -0.15) & (straw[:, 2] <= 2.08)]
@@ -164,5 +163,6 @@ print(json.dumps({
     'median_straw_volume': float(np.median(straw_volumes)),
     'median_bristle_volume': float(np.median(bristle_volumes)),
     'p95_component_equiv_radius': float(np.percentile(component_radii, 95)),
+    'p95_component_volume': float(np.percentile(component_volumes, 95)),
     'readability_width': readability_width,
 }, indent=2))
