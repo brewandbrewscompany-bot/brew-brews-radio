@@ -1,5 +1,5 @@
 {
-  "pass": "pass-14-mesh-only-v20",
+  "pass": "pass-14-mesh-only-v21",
   "review": "neutral-clay-mesh-review-only",
   "geometry_strategy": "camera-safe large forms",
   "required_roots": [
@@ -16,9 +16,9 @@
     "broom_handle",
     "broom_bristles"
   ],
-  "cape_primary_folds": 4,
+  "cape_primary_folds": 3,
   "mane_primary_locks": 5,
   "broom_bristles": 144,
   "broom_straw_clumps": 18,
-  "file_bytes": 645472
+  "file_bytes": 653688
 }
