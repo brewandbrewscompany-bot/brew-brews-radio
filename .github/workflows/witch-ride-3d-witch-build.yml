@@ -62,10 +62,11 @@ jobs:
           test "$(stat -c%s halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb)" -ge 540000
           grep -q "const hairMotion=\[" halloween-radio/games/witch-ride-3d/game.js
           grep -q "hatTip.node.setLocalEulerAngles(b.x,b.y,b.z)" halloween-radio/games/witch-ride-3d/game.js
-          grep -q '"lower_body_pose": "pelvis centered on broom; inner thighs grip; knees compact; calves and boots tuck inward"' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
+          grep -q '"lower_body_pose": "pelvis centered on broom; thighs grip; knees compact; two calves and boots remain readable beside broom"' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           grep -q '"lower_body_runtime_physics": false' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
-          grep -q '"lower_body_max_knee_center_x": 0.36' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
-          grep -q '"lower_body_ankle_center_x": 0.3' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
+          grep -q '"lower_body_max_knee_center_x": 0.37' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
+          grep -q '"lower_body_ankle_center_x": 0.38' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
+          grep -q '"lower_body_boot_center_x":' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           grep -q '"broom_bristles": 240' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           grep -q '"broom_straw_clumps": 56' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           grep -q "witch-centerpiece-pass-v14" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
