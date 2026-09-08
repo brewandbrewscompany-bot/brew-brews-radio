@@ -186,7 +186,7 @@ for n in folds+['torso_core','arm_L','arm_R']:
     assert mw(n).bounds[1,2] < 1.10,(n,mw(n).bounds[1,2])
 for n in main:
     assert mw(n).bounds[1,2] < 2.30,(n,mw(n).bounds[1,2])
-bounds=np.asarray(scene.bounds,float); assert bounds[1,2]<3.75,bounds
+bounds=np.asarray(scene.bounds,float); assert 6.75<=bounds[1,2]<=7.20,bounds
 
 for g in scene.geometry.values():
     mat=getattr(getattr(g,'visual',None),'material',None)
