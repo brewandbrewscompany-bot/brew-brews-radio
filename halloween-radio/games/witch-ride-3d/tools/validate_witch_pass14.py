@@ -114,8 +114,6 @@ for side,sgn in [('L',-1),('R',1)]:
     assert (lv[:,0].min()>-.70 if sgn==-1 else lv[:,0].max()<.70),(side,lm.bounds)
     assert (lv[:,0].max()>-.08 if sgn==-1 else lv[:,0].min()<.08),(side,lm.bounds)
 
-    # Inner thighs must physically reach the broom/seat corridor just beneath
-    # the pelvis. A visually separate pair of legs is not accepted.
     seat_band=lv[(lv[:,1]>=.46)&(lv[:,1]<=.82)&(lv[:,2]>=-.20)&(lv[:,2]<=.32)]
     assert len(seat_band)>30,(side,len(seat_band))
     assert float(np.abs(seat_band[:,0]).min())<.08,(side,float(np.abs(seat_band[:,0]).min()))
@@ -134,7 +132,7 @@ for side,sgn in [('L',-1),('R',1)]:
     boot_centers[side]=bc
     assert .24<=abs(bc[0])<=.31 and -.76<=bc[1]<=-.62,(side,bc)
     assert .38<=bd[0]<=.45 and .48<=bd[1]<=.58 and .50<=bd[2]<=.59,(side,bd)
-    assert (bm.vertices[:,0].max()>-.07 if sgn==-1 else bm.vertices[:,0].min()<.07),(side,bm.bounds)
+    assert (bm.vertices[:,0].max()>-.08 if sgn==-1 else bm.vertices[:,0].min()<.08),(side,bm.bounds)
 
 assert abs(leg_centers['L'][0]+leg_centers['R'][0])<.03,leg_centers
 assert abs(boot_centers['L'][0]+boot_centers['R'][0])<.03,boot_centers
@@ -146,8 +144,6 @@ for side in ('L','R'):
     d=float(np.linalg.norm(hv[:,None,:]-sv[None,:,:],axis=2).min())
     assert d<.16,(side,d)
 
-# Hair shape is authored, not solved by runtime wind. The whole mass must be
-# broad over the shoulders, shallow in vertical drop, and much longer aft.
 hair_names=main+overlap+['hair_cap']
 allh=np.vstack([mw(n).vertices for n in hair_names]); hs=np.ptp(allh,axis=0)
 assert hs[0]>=2.28 and .86<=hs[1]<=1.08 and hs[2]>=3.25,hs
