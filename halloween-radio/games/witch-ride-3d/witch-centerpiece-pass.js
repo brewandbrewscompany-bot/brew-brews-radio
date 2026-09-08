@@ -5,7 +5,7 @@ import * as pc from 'playcanvas';
 const PASS_ID='witch-centerpiece-pass-v14';
 const VERSION='pass-14-mesh-only-v1';
 const REVIEW='neutral-clay-mesh-review-only';
-const GAMEPLAY_SCALE=.18;
+const GAMEPLAY_SCALE=.24;
 const REQUIRED=['cape','cape_left','cape_center','cape_right','hair_01','hair_02','hair_03','hair_04','hair_05','hat_tip','broom_handle','broom_bristles'];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
