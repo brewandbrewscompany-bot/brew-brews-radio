@@ -150,7 +150,7 @@ def main() -> None:
     group_drift = np.array([-0.24, 0.10, -0.18, 0.12, -0.07, 0.18, -0.10, 0.23], dtype=float)
     group_curve = np.array([-0.15, 0.09, -0.17, 0.11, -0.08, 0.15, -0.09, 0.17], dtype=float)
     group_tip_z = np.array([3.38, 3.14, 3.48, 3.22, 3.52, 3.18, 3.43, 3.28], dtype=float)
-    length_y = np.array([-2.68, -2.96, -3.25, -3.56, -3.90, -4.26], dtype=float)
+    length_y = np.array([-2.74, -2.96, -3.25, -3.56, -3.90, -4.26], dtype=float)
     length_family = np.array([
         [1, 2, 3, 4, 2, 5, 3],
         [2, 1, 4, 3, 5, 2, 0],
@@ -201,8 +201,6 @@ def main() -> None:
             )
             target_z_center = float(group_tip_z[group] + 0.095 * spread + 0.045 * math.cos(phase))
 
-            # Compact but physically distributed root wraps the existing broom neck
-            # rather than stacking all 224 medium straws on the exact same line.
             root = np.array([
                 base[0] + 0.055 * gx + 0.026 * spread + 0.010 * math.sin(phase),
                 -0.34 + 0.010 * math.cos(phase),
@@ -269,9 +267,6 @@ def main() -> None:
 
     assert role_counts == {'primary': 8, 'secondary': 32, 'edge': 16}, role_counts
 
-    # 240 fine bristles fill the grouped mass and provide natural straw breakup. Most
-    # begin inside the middle body; only 48 travel from the bound root and only 40 are
-    # permitted to become perimeter flyaways.
     bristle_index = 0
     full_root_bristles = 0
     flyaway_bristles = 0
