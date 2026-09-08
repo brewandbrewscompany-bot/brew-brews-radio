@@ -26,7 +26,7 @@
     "broom_handle",
     "broom_bristles"
   ],
-  "bytes": 861432,
+  "bytes": 907236,
   "nodes": 365,
   "geometries": 349,
   "hair_main_locks": 14,
@@ -48,5 +48,10 @@
   "broom_bundle_clearance": "dense bundle tie begins below visible legs; density unchanged",
   "broom_bundle_shift_y": -0.7,
   "broom_bundle_shift_z": 0.1,
-  "broom_bundle_connector": true
+  "broom_bundle_connector": true,
+  "broom_straw_workflow": "grouped authored straw mass first; fine bristles are secondary breakup only",
+  "broom_primary_groups": 8,
+  "broom_root_compression_fraction": 0.28,
+  "broom_straw_shape": "tight bound root; dense middle body; gradual flare; clustered tapered tips",
+  "broom_material_ready": false
 }
