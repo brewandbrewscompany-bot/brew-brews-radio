@@ -57,7 +57,7 @@ def organic_tube(
     rx,
     rz,
     name: str,
-    sections: int = 36,
+    sections: int = 40,
 ) -> trimesh.Trimesh:
     pts = np.asarray(points, dtype=float)
     count = len(pts)
@@ -85,8 +85,7 @@ def organic_tube(
 
         for j in range(sections):
             angle = 2.0 * math.pi * j / sections
-            # Keep the same subtle organic surface language as the approved rider.
-            scallop = 1.0 + 0.022 * math.sin(3.0 * angle + i * 0.57)
+            scallop = 1.0 + 0.018 * math.sin(3.0 * angle + i * 0.57)
             verts.append(
                 point
                 + math.cos(angle) * rx[i] * scallop * n1
@@ -114,12 +113,11 @@ def organic_tube(
         base = (count - 1) * sections
         faces.append([last_cap, base + j, base + nxt])
 
-    mesh = trimesh.Trimesh(
-        vertices=np.asarray(verts),
-        faces=np.asarray(faces),
-        process=True,
+    return add(
+        scene,
+        trimesh.Trimesh(vertices=np.asarray(verts), faces=np.asarray(faces), process=True),
+        name,
     )
-    return add(scene, mesh, name)
 
 
 def main() -> None:
@@ -129,7 +127,7 @@ def main() -> None:
     scene = trimesh.load(MODEL, force='scene', process=False)
     nodes_before = set(scene.graph.nodes)
 
-    # Guard the already approved Pass 14 work before touching lower-body geometry.
+    # Preserve every approved Pass 14 system. This pass is lower-body only.
     assert len([n for n in nodes_before if re.fullmatch(r'hair_main_\d{2}', n)]) == 14
     assert len([n for n in nodes_before if re.fullmatch(r'hair_overlap_\d{2}', n)]) == 8
     assert len([n for n in nodes_before if re.fullmatch(r'bristle_\d{3}', n)]) == 240
@@ -144,58 +142,65 @@ def main() -> None:
     for name in ('leg_L', 'leg_R', 'boot_L', 'boot_R'):
         remove_named(scene, name)
 
-    # Authored narrow riding straddle.  The upper legs begin beside the wrapped
-    # broom seat, remain close to the centerline through the knees, then taper
-    # inward again toward the ankles.  This is deliberately solved in mesh,
-    # never by runtime physics.
+    # Reference-matched riding anatomy:
+    # - pelvis remains centered directly over the broom
+    # - inner thighs nearly touch the wrapped shaft
+    # - knees stay only slightly wider than the thighs
+    # - calves taper back inward
+    # - visible leg length is compact under the cape instead of long columns
     legs = {
         'L': [
-            (-0.42, 0.70, -0.02),
-            (-0.46, 0.62, 0.02),
-            (-0.52, 0.48, 0.11),
-            (-0.57, 0.29, 0.23),
-            (-0.60, 0.08, 0.35),
-            (-0.58, -0.18, 0.46),
-            (-0.53, -0.47, 0.56),
-            (-0.48, -0.74, 0.60),
+            (-0.30, 0.70, -0.01),
+            (-0.31, 0.63, 0.03),
+            (-0.33, 0.53, 0.10),
+            (-0.35, 0.39, 0.19),
+            (-0.36, 0.23, 0.30),
+            (-0.35, 0.05, 0.40),
+            (-0.33, -0.15, 0.50),
+            (-0.31, -0.34, 0.56),
+            (-0.30, -0.48, 0.57),
         ],
         'R': [
-            (0.42, 0.70, -0.02),
-            (0.46, 0.62, 0.02),
-            (0.52, 0.48, 0.11),
-            (0.57, 0.29, 0.23),
-            (0.60, 0.08, 0.35),
-            (0.58, -0.18, 0.46),
-            (0.53, -0.47, 0.56),
-            (0.48, -0.74, 0.60),
+            (0.30, 0.70, -0.01),
+            (0.31, 0.63, 0.03),
+            (0.33, 0.53, 0.10),
+            (0.35, 0.39, 0.19),
+            (0.36, 0.23, 0.30),
+            (0.35, 0.05, 0.40),
+            (0.33, -0.15, 0.50),
+            (0.31, -0.34, 0.56),
+            (0.30, -0.48, 0.57),
         ],
     }
 
-    # Fuller human leg mass than the earlier thin/splayed version, while still
-    # leaving a readable inner-thigh channel around the broom shaft and seat wrap.
-    leg_rx = [0.337, 0.348, 0.353, 0.342, 0.326, 0.305, 0.273, 0.246]
-    leg_rz = [0.336, 0.348, 0.354, 0.342, 0.325, 0.301, 0.271, 0.242]
+    # Human mass without the previous inflated cylinder silhouette. The thigh has
+    # the most volume, the knee stays readable, and the calf tapers naturally.
+    leg_rx = [0.270, 0.282, 0.292, 0.286, 0.272, 0.250, 0.222, 0.192, 0.168]
+    leg_rz = [0.258, 0.270, 0.280, 0.275, 0.262, 0.240, 0.214, 0.185, 0.162]
 
     for side, points in legs.items():
-        organic_tube(scene, points, leg_rx, leg_rz, f'leg_{side}', sections=38)
+        organic_tube(scene, points, leg_rx, leg_rz, f'leg_{side}', sections=40)
         ankle = np.asarray(points[-1], dtype=float)
         sign = -1.0 if side == 'L' else 1.0
-        # Boots continue slightly inward instead of peeling away from the broom.
-        heel = ankle + np.array([-0.040 * sign, -0.310, 0.070])
-        toe = heel + np.array([-0.035 * sign, -0.020, -0.440])
+
+        # Compact boot geometry follows the reference: heels remain close to the
+        # broom centerline and the toe projects aft rather than hanging wide.
+        heel = ankle + np.array([-0.030 * sign, -0.195, 0.050])
+        sole = heel + np.array([-0.018 * sign, -0.080, -0.060])
+        toe = sole + np.array([-0.018 * sign, 0.000, -0.285])
         organic_tube(
             scene,
-            [tuple(ankle), tuple(heel), tuple(toe)],
-            [0.245, 0.260, 0.215],
-            [0.205, 0.220, 0.185],
+            [tuple(ankle), tuple(heel), tuple(sole), tuple(toe)],
+            [0.188, 0.205, 0.200, 0.158],
+            [0.180, 0.190, 0.176, 0.138],
             f'boot_{side}',
-            sections=34,
+            sections=36,
         )
 
     scene.metadata.update({
-        'lower_body_workflow': 'authored narrow straddle; no runtime physics pose correction',
-        'lower_body_pose': 'pelvis seated; inner thighs grip broom; knees tucked; boots trail close',
-        'lower_body_leg_mass': 'fuller human thighs and calves',
+        'lower_body_workflow': 'reference-matched compact seated straddle authored in mesh; no runtime pose correction',
+        'lower_body_pose': 'pelvis centered on broom; inner thighs grip; knees compact; calves and boots tuck inward',
+        'lower_body_leg_mass': 'full thighs with tapered knees and calves; no column silhouette',
         'lower_body_runtime_physics': False,
     })
 
@@ -211,12 +216,13 @@ def main() -> None:
 
     manifest = json.loads(MANIFEST.read_text(encoding='utf-8'))
     manifest.update({
-        'lower_body_workflow': 'authored narrow straddle; no runtime physics pose correction',
-        'lower_body_pose': 'pelvis seated; inner thighs grip broom; knees tucked; boots trail close',
-        'lower_body_leg_mass': 'fuller human thighs and calves',
+        'lower_body_workflow': 'reference-matched compact seated straddle authored in mesh; no runtime pose correction',
+        'lower_body_pose': 'pelvis centered on broom; inner thighs grip; knees compact; calves and boots tuck inward',
+        'lower_body_leg_mass': 'full thighs with tapered knees and calves; no column silhouette',
         'lower_body_runtime_physics': False,
-        'lower_body_max_knee_center_x': 0.60,
-        'lower_body_ankle_center_x': 0.48,
+        'lower_body_max_knee_center_x': 0.36,
+        'lower_body_ankle_center_x': 0.30,
+        'lower_body_reference': 'approved rear chase reference: compact centered rider with close parallel boots',
         'bytes': len(blob),
         'nodes': len(nodes_after),
         'geometries': len(scene.geometry),
