@@ -1,2 +1,303 @@
-import base64,zlib
-exec(compile(zlib.decompress(base64.b64decode('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')).decode(),'build_witch_pass14_v14_payload','exec'))
+from __future__ import annotations
+import json, math
+from pathlib import Path
+import numpy as np
+import trimesh
+from trimesh.visual.material import PBRMaterial
+
+ROOT = Path(__file__).resolve().parents[1]
+OUT = ROOT / "assets" / "models" / "witch-rider.glb"
+MANIFEST = ROOT / "assets" / "witch-mesh-pass14.json"
+
+CLAY = PBRMaterial(
+    name="neutral_clay_mesh_review",
+    baseColorFactor=[0.48, 0.46, 0.44, 1.0],
+    metallicFactor=0.0,
+    roughnessFactor=1.0,
+)
+
+scene = trimesh.Scene()
+scene.metadata["pass"] = "pass-14-mesh-only-v20"
+scene.metadata["review"] = "neutral-clay-mesh-review-only"
+scene.metadata["intent"] = "camera-safe large-form seated rider rebuild"
+
+def clean(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+    mesh.remove_unreferenced_vertices()
+    try:
+        mesh.fix_normals(multibody=True)
+    except TypeError:
+        mesh.fix_normals()
+    mesh.visual.material = CLAY
+    return mesh
+
+def ellipsoid(scale, center, name, parent=None, subdivisions=3):
+    m = trimesh.creation.icosphere(subdivisions=subdivisions, radius=1.0)
+    T = np.eye(4)
+    T[:3,:3] = np.diag(scale)
+    T[:3,3] = center
+    m.apply_transform(T)
+    clean(m)
+    scene.add_geometry(m, node_name=name, geom_name=name, parent_node_name=parent)
+    return m
+
+def cylinder_between(a, b, radius, name, parent=None, sections=20):
+    a=np.asarray(a,float); b=np.asarray(b,float)
+    v=b-a; L=float(np.linalg.norm(v))
+    m=trimesh.creation.cylinder(radius=radius, height=L, sections=sections)
+    T=trimesh.geometry.align_vectors([0,0,1], v/L)
+    if T is None: T=np.eye(4)
+    T[:3,3]=(a+b)/2.0
+    m.apply_transform(T)
+    clean(m)
+    scene.add_geometry(m, node_name=name, geom_name=name, parent_node_name=parent)
+    return m
+
+def capsule_between(a, b, radius, name, parent=None, sections=20):
+    meshes=[]
+    a=np.asarray(a,float); b=np.asarray(b,float)
+    v=b-a; L=float(np.linalg.norm(v))
+    c=trimesh.creation.cylinder(radius=radius, height=L, sections=sections)
+    T=trimesh.geometry.align_vectors([0,0,1], v/L)
+    if T is None: T=np.eye(4)
+    T[:3,3]=(a+b)/2.0
+    c.apply_transform(T); meshes.append(c)
+    for p in (a,b):
+        s=trimesh.creation.icosphere(subdivisions=2,radius=radius)
+        s.apply_translation(p); meshes.append(s)
+    m=trimesh.util.concatenate(meshes)
+    clean(m)
+    scene.add_geometry(m,node_name=name,geom_name=name,parent_node_name=parent)
+    return m
+
+def tapered_prism(rings, name, parent=None, thickness=0.12):
+    verts=[]
+    for cx,y,z,hw in rings:
+        verts.extend([
+            [cx-hw,y,z+thickness/2],
+            [cx+hw,y,z+thickness/2],
+            [cx-hw,y,z-thickness/2],
+            [cx+hw,y,z-thickness/2],
+        ])
+    faces=[]
+    n=len(rings)
+    for i in range(n-1):
+        a=4*i; b=4*(i+1)
+        faces += [[a,b,a+1],[a+1,b,b+1]]
+        faces += [[a+2,a+3,b+2],[a+3,b+3,b+2]]
+        faces += [[a,a+2,b],[a+2,b+2,b]]
+        faces += [[a+1,b+1,a+3],[a+3,b+1,b+3]]
+    faces += [[0,1,2],[1,3,2]]
+    e=4*(n-1)
+    faces += [[e,e+2,e+1],[e+1,e+2,e+3]]
+    m=trimesh.Trimesh(vertices=np.asarray(verts), faces=np.asarray(faces), process=True)
+    clean(m)
+    scene.add_geometry(m,node_name=name,geom_name=name,parent_node_name=parent)
+    return m
+
+def wavy_brim(name="hat_brim"):
+    N=40
+    top=[]; bottom=[]
+    for i in range(N):
+        a=2*math.pi*i/N
+        rx=1.28*(1+0.09*math.sin(3*a+0.6)+0.04*math.sin(7*a))
+        rz=0.78*(1+0.07*math.sin(4*a-0.3))
+        y=3.18 + 0.10*math.sin(2*a+0.4) - 0.11*max(0, math.cos(a-0.45))
+        z=-0.60 + rz*math.sin(a)
+        x=rx*math.cos(a)
+        top.append([x,y+0.055,z])
+        bottom.append([x,y-0.055,z])
+    verts=top+bottom+[[0,3.23,-0.60],[0,3.13,-0.60]]
+    topc=2*N; botc=2*N+1
+    faces=[]
+    for i in range(N):
+        j=(i+1)%N
+        faces += [[topc,i,j],[botc,N+j,N+i],[i,N+i,j],[j,N+i,N+j]]
+    m=trimesh.Trimesh(vertices=np.array(verts),faces=np.array(faces),process=True)
+    clean(m)
+    scene.add_geometry(m,node_name=name,geom_name=name)
+    return m
+
+def cone_y(radius, height, center, name, parent=None, tilt=(0,0,0), sections=32):
+    m=trimesh.creation.cone(radius=radius,height=height,sections=sections)
+    R=trimesh.transformations.rotation_matrix(-math.pi/2,[1,0,0])
+    m.apply_transform(R)
+    c=m.bounds.mean(axis=0)
+    m.apply_translation(np.asarray(center)-c)
+    if any(abs(v)>1e-8 for v in tilt):
+        Rx=trimesh.transformations.rotation_matrix(tilt[0],[1,0,0],point=center)
+        Ry=trimesh.transformations.rotation_matrix(tilt[1],[0,1,0],point=center)
+        Rz=trimesh.transformations.rotation_matrix(tilt[2],[0,0,1],point=center)
+        m.apply_transform(Rz@Ry@Rx)
+    clean(m)
+    scene.add_geometry(m,node_name=name,geom_name=name,parent_node_name=parent)
+    return m
+
+def crooked_crown(name="hat_crown", parent="hat_tip"):
+    rings=[
+        (0.00,3.19,-0.60,0.56,0.42),
+        (0.02,3.55,-0.63,0.47,0.35),
+        (0.08,3.88,-0.68,0.38,0.29),
+        (0.18,4.18,-0.76,0.29,0.22),
+        (0.32,4.43,-0.86,0.20,0.15),
+        (0.44,4.62,-0.96,0.10,0.08),
+    ]
+    N=32
+    verts=[]
+    for cx,y,cz,rx,rz in rings:
+        for i in range(N):
+            a=2*math.pi*i/N
+            verts.append([cx+rx*math.cos(a),y,cz+rz*math.sin(a)])
+    verts.append([rings[-1][0]+0.07,rings[-1][1]+0.16,rings[-1][2]-0.05])
+    tip=len(verts)-1
+    faces=[]
+    for r in range(len(rings)-1):
+        a0=r*N; b0=(r+1)*N
+        for i in range(N):
+            j=(i+1)%N
+            faces += [[a0+i,b0+i,a0+j],[a0+j,b0+i,b0+j]]
+    base_center=len(verts); verts.append([rings[0][0],rings[0][1],rings[0][2]])
+    for i in range(N):
+        j=(i+1)%N
+        faces.append([base_center,j,i])
+    top0=(len(rings)-1)*N
+    for i in range(N):
+        j=(i+1)%N
+        faces.append([top0+i,tip,top0+j])
+    m=trimesh.Trimesh(vertices=np.asarray(verts),faces=np.asarray(faces),process=True)
+    clean(m)
+    scene.add_geometry(m,node_name=name,geom_name=name,parent_node_name=parent)
+    return m
+
+for root in ["hair_01","hair_02","hair_03","hair_04","hair_05",
+             "cape","cape_left","cape_center","cape_right",
+             "hat_tip","broom_handle","broom_bristles"]:
+    scene.graph.update(frame_to=root, frame_from=scene.graph.base_frame, matrix=np.eye(4))
+
+ellipsoid((0.82,0.74,0.40),(0,1.86,-0.42),"ribcage",subdivisions=4)
+ellipsoid((0.52,0.50,0.31),(0,1.22,-0.22),"waist",subdivisions=4)
+ellipsoid((0.74,0.48,0.41),(0,0.72,-0.02),"pelvis",subdivisions=4)
+capsule_between((-0.72,2.10,-0.42),(0.72,2.10,-0.42),0.18,"shoulder_bar")
+ellipsoid((0.18,0.22,0.19),(-0.76,2.05,-0.41),"shoulder_L",subdivisions=3)
+ellipsoid((0.18,0.22,0.19),(0.76,2.05,-0.41),"shoulder_R",subdivisions=3)
+ellipsoid((0.28,0.33,0.25),(0,2.55,-0.76),"head",subdivisions=3)
+capsule_between((0,2.26,-0.60),(0,2.43,-0.72),0.13,"neck",sections=18)
+
+arm_data = {
+    "L": [(-0.66,2.02,-0.45),(-0.94,1.48,-0.80),(-0.30,0.72,-1.46)],
+    "R": [( 0.66,2.02,-0.45),( 0.94,1.48,-0.80),( 0.30,0.72,-1.46)],
+}
+for side,(shoulder,elbow,hand) in arm_data.items():
+    capsule_between(shoulder,elbow,0.145,f"upper_arm_{side}",sections=20)
+    capsule_between(elbow,hand,0.125,f"forearm_{side}",sections=20)
+    ellipsoid((0.18,0.14,0.17),hand,f"hand_{side}",subdivisions=2)
+    sign=-1 if side=="L" else 1
+    for j,dx in enumerate((-0.06,0.0,0.06)):
+        capsule_between((hand[0]+dx,0.72,-1.48),(hand[0]+dx+0.015*sign,0.56,-1.45),0.032,
+                        f"finger_{side}_{j+1}",sections=10)
+
+legs = {
+    "L":[(-0.42,0.67,0.02),(-0.96,0.16,0.28),(-0.78,-0.62,0.74)],
+    "R":[( 0.42,0.67,0.02),( 0.96,0.16,0.28),( 0.78,-0.62,0.74)]
+}
+for side,(hip,knee,ankle) in legs.items():
+    capsule_between(hip,knee,0.22,f"thigh_{side}",sections=22)
+    ellipsoid((0.24,0.22,0.25),knee,f"knee_{side}",subdivisions=2)
+    capsule_between(knee,ankle,0.19,f"calf_{side}",sections=22)
+    boot_top=ankle
+    boot_bottom=(ankle[0],ankle[1]-0.38,ankle[2]+0.18)
+    capsule_between(boot_top,boot_bottom,0.21,f"boot_shaft_{side}",sections=22)
+    toe=(boot_bottom[0],boot_bottom[1]-0.03,boot_bottom[2]-0.34)
+    capsule_between(boot_bottom,toe,0.22,f"boot_foot_{side}",sections=22)
+
+cape_specs=[
+    ([
+        (-0.78,1.30,0.24,0.17),(-0.82,1.04,0.34,0.18),(-0.87,0.78,0.45,0.20),
+        (-0.94,0.52,0.56,0.22),(-1.00,0.26,0.66,0.24)
+    ], "cape_left"),
+    ([
+        (-0.43,1.22,0.25,0.13),(-0.45,0.99,0.35,0.14),(-0.47,0.76,0.45,0.15),
+        (-0.50,0.54,0.55,0.16),(-0.54,0.34,0.63,0.17)
+    ], "cape_center"),
+    ([
+        (0.43,1.22,0.25,0.13),(0.45,0.99,0.35,0.14),(0.47,0.76,0.45,0.15),
+        (0.50,0.54,0.55,0.16),(0.54,0.34,0.63,0.17)
+    ], "cape_center"),
+    ([
+        (0.78,1.30,0.24,0.17),(0.82,1.04,0.34,0.18),(0.87,0.78,0.45,0.20),
+        (0.94,0.52,0.56,0.22),(1.00,0.26,0.66,0.24)
+    ], "cape_right"),
+]
+for i,(rings,parent) in enumerate(cape_specs,1):
+    tapered_prism(rings,f"cape_fold_{i}",parent=parent,thickness=0.16)
+
+tapered_prism([
+    (-0.63,1.86,0.08,0.15),(-0.68,1.68,0.13,0.17),(-0.72,1.50,0.19,0.15)
+],"cape_shoulder_L",parent="cape",thickness=0.10)
+tapered_prism([
+    (0.63,1.86,0.08,0.15),(0.68,1.68,0.13,0.17),(0.72,1.50,0.19,0.15)
+],"cape_shoulder_R",parent="cape",thickness=0.10)
+
+hair_specs=[
+    (-0.66,2.70,2.02,0.18,0.22,-0.04),
+    (-0.34,2.74,1.78,0.21,0.25, 0.00),
+    ( 0.00,2.78,1.56,0.25,0.30, 0.05),
+    ( 0.34,2.72,1.80,0.21,0.25, 0.00),
+    ( 0.66,2.68,2.05,0.18,0.22,-0.03),
+]
+for i,(x,ytop,ybottom,hw0,hwm,zoff) in enumerate(hair_specs,1):
+    span=ytop-ybottom
+    rings=[
+        (x,ytop,-0.08+zoff,hw0),
+        (x+0.035*math.sin(i),ytop-span*0.24,0.00+zoff,hwm),
+        (x-0.045*math.sin(i*1.4),ytop-span*0.50,0.08+zoff,hwm*1.02),
+        (x+0.035*math.sin(i*1.9),ytop-span*0.76,0.16+zoff,hwm*0.90),
+        (x+0.045*math.sin(i*2.2),ybottom,0.22+zoff,hw0*0.62),
+    ]
+    tapered_prism(rings,f"mane_lock_{i}",parent=f"hair_{i:02d}",thickness=0.14)
+
+wavy_brim()
+crooked_crown()
+
+shaft=[(0.00,0.70,-2.45),(0.01,0.66,-1.55),(-0.02,0.55,-0.55),(0.00,0.48,0.40),(0.06,0.43,1.35),(0.02,0.40,2.10)]
+for i,(a,b) in enumerate(zip(shaft,shaft[1:]),1):
+    cylinder_between(a,b,0.095,f"broom_shaft_{i}",parent="broom_handle",sections=24)
+
+for j,z in enumerate((1.72,1.90),1):
+    ellipsoid((0.34,0.28,0.09),(0.02,0.40,z),f"broom_bind_{j}",subdivisions=2)
+
+rng=np.random.default_rng(1416)
+for i in range(18):
+    ang=2*math.pi*i/18
+    x=0.34*math.cos(ang)*(0.72+0.25*rng.random())
+    y=0.40+0.27*math.sin(ang)*(0.70+0.20*rng.random())
+    a=(0.02 + x*0.18, 0.40 + (y-0.40)*0.18, 1.90)
+    b=(0.02 + x*0.72, 0.40 + (y-0.40)*0.72, 2.85)
+    c=(0.02 + x, y, 3.38 + 0.15*rng.random())
+    capsule_between(a,b,0.045,f"straw_clump_{i+1}_a",parent="broom_bristles",sections=10)
+    capsule_between(b,c,0.032,f"straw_clump_{i+1}_b",parent="broom_bristles",sections=9)
+
+for i in range(144):
+    a=2*math.pi*(i/144.0) + rng.normal(0,0.06)
+    r=(0.08+0.52*math.sqrt((i+0.5)/144.0))*(0.85+0.20*rng.random())
+    tipx=0.02+r*math.cos(a)
+    tipy=0.40+0.78*r*math.sin(a)
+    tipz=3.20+0.46*rng.random()
+    base=(0.02+r*0.10*math.cos(a),0.40+0.10*r*math.sin(a),1.90)
+    cylinder_between(base,(tipx,tipy,tipz),0.0105,f"bristle_{i+1:03d}",parent="broom_bristles",sections=8)
+
+OUT.parent.mkdir(parents=True,exist_ok=True)
+blob=scene.export(file_type="glb")
+OUT.write_bytes(blob)
+manifest={
+    "pass":"pass-14-mesh-only-v20",
+    "review":"neutral-clay-mesh-review-only",
+    "geometry_strategy":"camera-safe large forms",
+    "required_roots":["hair_01","hair_02","hair_03","hair_04","hair_05","cape","cape_left","cape_center","cape_right","hat_tip","broom_handle","broom_bristles"],
+    "cape_primary_folds":4,
+    "mane_primary_locks":5,
+    "broom_bristles":144,
+    "broom_straw_clumps":18,
+    "file_bytes":OUT.stat().st_size,
+}
+MANIFEST.write_text(json.dumps(manifest,indent=2)+"\n",encoding="utf-8")
+print(json.dumps(manifest,indent=2))
