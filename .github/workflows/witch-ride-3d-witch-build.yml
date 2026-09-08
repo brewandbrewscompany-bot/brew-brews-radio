@@ -44,7 +44,7 @@ jobs:
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
-      - name: Build and validate Pass 14 swept hair and seated lower body mesh
+      - name: Build and validate Pass 14 reference-matched lower body mesh
         shell: bash
         run: |
           python -m pip install --disable-pip-version-check 'numpy>=2,<3' 'scipy>=1.15,<2' 'trimesh==4.11.1' 'networkx>=3.4,<4'
@@ -62,8 +62,10 @@ jobs:
           test "$(stat -c%s halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb)" -ge 540000
           grep -q "const hairMotion=\[" halloween-radio/games/witch-ride-3d/game.js
           grep -q "hatTip.node.setLocalEulerAngles(b.x,b.y,b.z)" halloween-radio/games/witch-ride-3d/game.js
-          grep -q '"lower_body_pose": "pelvis seated; inner thighs grip broom; knees tucked; boots trail close"' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
+          grep -q '"lower_body_pose": "pelvis centered on broom; inner thighs grip; knees compact; calves and boots tuck inward"' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           grep -q '"lower_body_runtime_physics": false' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
+          grep -q '"lower_body_max_knee_center_x": 0.36' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
+          grep -q '"lower_body_ankle_center_x": 0.3' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           grep -q '"broom_bristles": 240' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           grep -q '"broom_straw_clumps": 56' halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
           grep -q "witch-centerpiece-pass-v14" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
@@ -146,7 +148,7 @@ jobs:
           test "$MAIN_NOW" = "$BASE_MAIN"
           test "$TARGET_NOW" = "$BASE_TARGET"
           test "$TARGET_NOW" = "$GITHUB_SHA"
-      - name: Commit validated Pass 14 seated lower body asset
+      - name: Commit validated Pass 14 reference-matched lower body asset
         shell: bash
         run: |
           git config user.name 'brewandbrewscompany-bot'
@@ -155,6 +157,6 @@ jobs:
             halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb \
             halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json \
             halloween-radio/games/witch-ride-3d/game.js
-          git diff --cached --quiet && { echo 'Generated Pass 14 seated lower body asset already current'; exit 0; }
-          git commit -m 'Build Witch Ride Pass 14 seated lower body mesh'
+          git diff --cached --quiet && { echo 'Generated Pass 14 reference-matched lower body asset already current'; exit 0; }
+          git commit -m 'Build Witch Ride Pass 14 reference-matched lower body mesh'
           git push origin HEAD:witch-ride-3d-witch-rebuild-pass-14
