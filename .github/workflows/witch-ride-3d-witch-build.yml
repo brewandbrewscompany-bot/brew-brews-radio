@@ -85,7 +85,7 @@ jobs:
               for(const e of all){if(hidePrefixes.some(p=>e.name?.startsWith(p)))e.enabled=false}
               document.querySelector('#hud')?.classList.add('hidden');
               for(const el of document.querySelectorAll('.screen'))el.classList.remove('open');
-              app.on('prerender',()=>{cam.setPosition(1.55,4.25,7.65);cam.lookAt(0,1.45,1.10);cam.camera.fov=38});
+              app.on('prerender',()=>{cam.setPosition(2.15,3.55,10.25);cam.lookAt(0,3.05,1.80);cam.camera.fov=42});
             });
             await sleep(350);
             await page.screenshot({path:'witch-pass14-close-430x932.png',fullPage:false});
