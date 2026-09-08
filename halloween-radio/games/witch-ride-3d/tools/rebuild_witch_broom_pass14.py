@@ -51,15 +51,7 @@ def remove_named(scene: trimesh.Scene, name: str) -> None:
         pass
 
 
-def organic_tube(
-    scene: trimesh.Scene,
-    points,
-    rx,
-    rz,
-    name: str,
-    parent: str = 'broom_bristles',
-    sections: int = 14,
-) -> trimesh.Trimesh:
+def tube_mesh(points, rx, rz, sections: int = 10) -> trimesh.Trimesh:
     pts = np.asarray(points, dtype=float)
     count = len(pts)
     rx = np.asarray(rx if hasattr(rx, '__len__') else [rx] * count, dtype=float)
@@ -86,7 +78,7 @@ def organic_tube(
 
         for j in range(sections):
             angle = 2.0 * math.pi * j / sections
-            scallop = 1.0 + 0.018 * math.sin(3.0 * angle + i * 0.51)
+            scallop = 1.0 + 0.012 * math.sin(3.0 * angle + i * 0.51)
             verts.append(
                 point
                 + math.cos(angle) * rx[i] * scallop * n1
@@ -114,8 +106,11 @@ def organic_tube(
         base = (count - 1) * sections
         faces.append([last_cap, base + j, base + nxt])
 
-    mesh = trimesh.Trimesh(vertices=np.asarray(verts), faces=np.asarray(faces), process=True)
-    return add(scene, mesh, name, parent)
+    return trimesh.Trimesh(vertices=np.asarray(verts), faces=np.asarray(faces), process=True)
+
+
+def organic_tube(scene, points, rx, rz, name, parent='broom_bristles', sections=10):
+    return add(scene, tube_mesh(points, rx, rz, sections), name, parent)
 
 
 def main() -> None:
@@ -125,7 +120,7 @@ def main() -> None:
     scene = trimesh.load(MODEL, force='scene', process=False)
     nodes_before = set(scene.graph.nodes)
 
-    # This pass is broom-tail only. Everything already approved must survive unchanged.
+    # Broom-tail-only pass. Preserve all already-approved Pass 14 systems.
     assert 'broom_bristles' in nodes_before
     assert 'broom_shaft' in nodes_before
     assert len([n for n in nodes_before if re.fullmatch(r'bristle_\d{3}', n)]) == 240
@@ -139,9 +134,10 @@ def main() -> None:
         if re.fullmatch(r'bristle_\d{3}', name) or re.fullmatch(r'straw_mass_\d{2}', name):
             remove_named(scene, name)
 
-    # Eight overlapping primary groups form one full straw broom. The root stays tight
-    # below the boots for roughly the first quarter, then the mass opens decisively into
-    # a broad middle body like the approved reference instead of a narrow tassel.
+    # Eight overlapping directional groups establish the broad broom silhouette.
+    # The root remains compact below the boots, then the bundle opens through the
+    # middle body. Each of the 56 named straw clumps is itself FOUR slim closed straw
+    # bodies, so the neutral-clay render reads as clustered straw rather than fat fingers.
     base = np.array([0.14, -0.35, 1.54], dtype=float)
     group_x = np.array([-0.84, -0.63, -0.42, -0.17, 0.14, 0.39, 0.61, 0.82], dtype=float)
     group_y = np.array([-2.12, -2.30, -2.03, -2.38, -2.18, -2.33, -2.06, -2.24], dtype=float)
@@ -157,13 +153,8 @@ def main() -> None:
             lateral = 0.082 * spread + 0.018 * math.sin(phase)
             length_jitter = 0.145 * math.sin(phase * 1.37) + 0.055 * spread
             depth_jitter = 0.055 * math.cos(phase * 0.83)
-            tip = np.array([
-                base[0] + gx + lateral,
-                group_y[group] + length_jitter,
-                group_z[group] + depth_jitter,
-            ])
 
-            root = base + np.array([0.018 * math.sin(phase), 0.010 * math.cos(phase), 0.0])
+            root = base + np.array([0.014 * math.sin(phase), 0.008 * math.cos(phase), 0.0])
             neck = np.array([
                 base[0] + 0.055 * gx + 0.010 * spread,
                 -0.56 + 0.018 * math.sin(phase),
@@ -184,21 +175,41 @@ def main() -> None:
                 -1.72 + 0.070 * math.cos(phase * 0.9),
                 2.88 + 0.055 * math.cos(phase * 0.9),
             ])
+            tip_center = np.array([
+                base[0] + gx + lateral,
+                group_y[group] + length_jitter,
+                group_z[group] + depth_jitter,
+            ])
 
-            # Broad overlapping bundles carry most of the visible volume. The body is
-            # deliberately full; ends narrow in uneven groups rather than uniform strings.
-            size_bias = 1.0 + 0.09 * math.sin(phase)
-            organic_tube(
-                scene,
-                [tuple(root), tuple(neck), tuple(shoulder), tuple(body), tuple(pretip), tuple(tip)],
-                np.array([0.046, 0.054, 0.078, 0.112, 0.086, 0.026]) * size_bias,
-                np.array([0.038, 0.046, 0.064, 0.090, 0.068, 0.021]) * size_bias,
-                f'straw_mass_{straw_index:02d}',
-                sections=14,
-            )
+            components = []
+            for sub in range(4):
+                sub_spread = (sub - 1.5) / 1.5
+                sub_phase = phase + sub * 0.61
+                # Sub-strands share a clustered trajectory but split gradually after the
+                # compressed root. Their tips are tiny and staggered instead of rounded plugs.
+                p0 = root + np.array([0.004 * sub_spread, 0.003 * math.sin(sub_phase), 0.002 * math.cos(sub_phase)])
+                p1 = neck + np.array([0.010 * sub_spread, 0.006 * math.sin(sub_phase), 0.005 * math.cos(sub_phase)])
+                p2 = shoulder + np.array([0.018 * sub_spread, 0.010 * math.sin(sub_phase), 0.009 * math.cos(sub_phase)])
+                p3 = body + np.array([0.030 * sub_spread, 0.018 * math.sin(sub_phase), 0.014 * math.cos(sub_phase)])
+                p4 = pretip + np.array([0.040 * sub_spread, 0.030 * math.sin(sub_phase), 0.020 * math.cos(sub_phase)])
+                p5 = tip_center + np.array([
+                    0.045 * sub_spread,
+                    0.055 * math.sin(sub_phase * 1.21),
+                    0.028 * math.cos(sub_phase * 1.13),
+                ])
+                size_bias = 1.0 + 0.08 * math.sin(sub_phase)
+                components.append(tube_mesh(
+                    [tuple(p0), tuple(p1), tuple(p2), tuple(p3), tuple(p4), tuple(p5)],
+                    np.array([0.014, 0.018, 0.024, 0.030, 0.020, 0.0018]) * size_bias,
+                    np.array([0.012, 0.016, 0.021, 0.026, 0.017, 0.0015]) * size_bias,
+                    sections=10,
+                ))
 
-    # Fine bristles keep the proven count but sit inside and around the broad grouped
-    # envelope. Varied length tiers break the edge without becoming the dominant form.
+            bundle = trimesh.util.concatenate(components)
+            add(scene, bundle, f'straw_mass_{straw_index:02d}', 'broom_bristles')
+
+    # 240 fine bristles add surface breakup and stray edge detail. They follow the same
+    # eight grouped envelopes but vary in length so they never become a uniform comb.
     bristle_index = 0
     for group in range(8):
         gx = group_x[group]
@@ -208,11 +219,11 @@ def main() -> None:
             tier = local % 6
             phase = group * 0.67 + local * 0.49
             tip = np.array([
-                base[0] + gx + 0.105 * spread + 0.020 * math.sin(phase),
-                group_y[group] + 0.135 * spread + 0.155 * math.sin(phase * 1.31) + 0.025 * (tier - 2.5),
-                group_z[group] + 0.085 * math.sin(phase * 1.17) + 0.020 * tier,
+                base[0] + gx + 0.115 * spread + 0.022 * math.sin(phase),
+                group_y[group] + 0.145 * spread + 0.175 * math.sin(phase * 1.31) + 0.030 * (tier - 2.5),
+                group_z[group] + 0.090 * math.sin(phase * 1.17) + 0.020 * tier,
             ])
-            root = base + np.array([0.016 * math.sin(phase), 0.009 * math.cos(phase), 0.0])
+            root = base + np.array([0.014 * math.sin(phase), 0.008 * math.cos(phase), 0.0])
             compress = np.array([
                 base[0] + 0.052 * gx + 0.008 * spread,
                 -0.56,
@@ -231,8 +242,8 @@ def main() -> None:
             organic_tube(
                 scene,
                 [tuple(root), tuple(compress), tuple(middle), tuple(pretip), tuple(tip)],
-                [0.0068, 0.0070, 0.0072, 0.0056, 0.0026],
-                [0.0057, 0.0059, 0.0060, 0.0047, 0.0022],
+                [0.0058, 0.0061, 0.0064, 0.0047, 0.0014],
+                [0.0049, 0.0052, 0.0054, 0.0040, 0.0012],
                 f'bristle_{bristle_index:03d}',
                 sections=8,
             )
@@ -250,6 +261,7 @@ def main() -> None:
         'broom_primary_groups': 8,
         'broom_root_compression_fraction': 0.28,
         'broom_straw_shape': 'tight bound root; dense middle body; gradual flare; clustered tapered tips',
+        'broom_straw_substrands_per_clump': 4,
         'broom_material_ready': False,
     })
 
@@ -264,6 +276,7 @@ def main() -> None:
         'broom_primary_groups': 8,
         'broom_root_compression_fraction': 0.28,
         'broom_straw_shape': 'tight bound root; dense middle body; gradual flare; clustered tapered tips',
+        'broom_straw_substrands_per_clump': 4,
         'broom_material_ready': False,
         'bytes': len(blob),
         'nodes': len(nodes_after),
@@ -277,6 +290,7 @@ def main() -> None:
         'broom_bristles': 240,
         'broom_straw_clumps': 56,
         'broom_primary_groups': 8,
+        'broom_straw_substrands_per_clump': 4,
         'broom_root_compression_fraction': 0.28,
         'broom_straw_shape': manifest['broom_straw_shape'],
         'hair_main_locks': 14,
