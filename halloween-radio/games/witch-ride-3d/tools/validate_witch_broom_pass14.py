@@ -20,7 +20,7 @@ assert meta['broom_primary_groups'] == 8, meta['broom_primary_groups']
 assert 0.26 <= meta['broom_root_compression_fraction'] <= 0.30, meta['broom_root_compression_fraction']
 assert meta['broom_material_ready'] is False
 assert meta['broom_straw_workflow'] == 'grouped authored straw mass first; fine bristles are secondary breakup only'
-assert meta['broom_straw_shape'] == 'tight bound root; dense middle body; gradual flare; clustered tapered tips'
+assert meta['broom_straw_shape'] == 'tight bound root; full dense middle body; broad gradual flare; irregular clustered tapered tips'
 
 scene = trimesh.load(MODEL, force='scene')
 nodes = set(scene.graph.nodes)
@@ -63,50 +63,56 @@ bristles = np.vstack([mesh.vertices for mesh in bristle_meshes])
 straw_span = np.ptp(straw, axis=0)
 bristle_span = np.ptp(bristles, axis=0)
 
-# The whole tail must remain full and broom-like, not collapse into a narrow wire spray.
-assert straw_span[0] >= 1.12, straw_span
-assert straw_span[1] >= 1.05, straw_span
+# The tail must have the large, full silhouette visible in the supplied rear-view
+# reference. A narrow tassel or wire spray is rejected even if strand counts are high.
+assert straw_span[0] >= 1.70, straw_span
+assert straw_span[1] >= 1.75, straw_span
 assert straw_span[2] >= 1.55, straw_span
-assert bristle_span[0] >= 1.10, bristle_span
+assert bristle_span[0] >= 1.70, bristle_span
+assert bristle_span[1] >= 1.75, bristle_span
 assert bristle_span[2] >= 1.55, bristle_span
 
-# Root compression gate: directly below the binding, the tail must remain narrow.
+# Root compression gate: directly below the binding, the tail stays narrow so the
+# legs and two boots remain readable before the straw fan opens.
 root_band = straw[(straw[:, 2] >= 1.48) & (straw[:, 2] <= 1.96)]
 assert len(root_band) > 500, len(root_band)
 root_width = float(np.ptp(root_band[:, 0]))
 assert root_width <= 0.48, root_width
 
-# The middle body must become substantial only after the compressed root.
+# The middle body must become substantial after the compact root. This prevents the
+# previous cone/tassel result and forces a strong broom-shaped body.
 mid_band = straw[(straw[:, 2] >= 2.20) & (straw[:, 2] <= 2.72)]
 assert len(mid_band) > 600, len(mid_band)
 mid_width = float(np.ptp(mid_band[:, 0]))
-assert mid_width >= 0.68, mid_width
-assert mid_width >= root_width * 1.65, (root_width, mid_width)
+assert mid_width >= 1.15, mid_width
+assert mid_width >= root_width * 3.5, (root_width, mid_width)
 
-# Tips open into a controlled broad silhouette, not an instant flare at the binding.
+# Tips remain broad, but their lengths are intentionally irregular and clustered.
 tip_band = straw[straw[:, 2] >= 2.88]
 assert len(tip_band) > 400, len(tip_band)
 tip_width = float(np.ptp(tip_band[:, 0]))
-assert tip_width >= 1.02, tip_width
+assert tip_width >= 1.60, tip_width
 assert tip_width >= mid_width * 1.18, (mid_width, tip_width)
+clump_low_y = np.asarray([float(mesh.vertices[:, 1].min()) for mesh in straw_meshes])
+assert float(np.ptp(clump_low_y)) >= 0.34, np.ptp(clump_low_y)
+assert float(np.std(clump_low_y)) >= 0.10, np.std(clump_low_y)
 
-# Broad straw clumps must carry the visual mass. Fine bristles remain secondary detail.
+# Broad straw clumps must carry the visible mass. Fine bristles are secondary breakup.
 straw_volumes = np.asarray([abs(float(mesh.volume)) for mesh in straw_meshes])
 bristle_volumes = np.asarray([abs(float(mesh.volume)) for mesh in bristle_meshes])
-assert np.median(straw_volumes) >= np.median(bristle_volumes) * 10.0, (
+assert np.median(straw_volumes) >= np.median(bristle_volumes) * 14.0, (
     float(np.median(straw_volumes)),
     float(np.median(bristle_volumes)),
 )
-assert np.percentile(straw_volumes, 25) > 0.0015, np.percentile(straw_volumes, 25)
+assert np.percentile(straw_volumes, 25) > 0.0025, np.percentile(straw_volumes, 25)
 
-# Protect lower-body chase readability: the compressed broom root lives below the
-# boots and must stay narrow through its first visible section before the tail opens.
+# Protect lower-body chase readability: only the compressed root occupies this zone.
 readability_band = straw[(straw[:, 1] >= -0.50) & (straw[:, 1] <= -0.15) & (straw[:, 2] <= 2.08)]
 assert len(readability_band) > 300, len(readability_band)
 readability_width = float(np.ptp(readability_band[:, 0]))
 assert readability_width <= 0.52, readability_width
 
-# Material pass is explicitly still blocked; this remains neutral-clay geometry review.
+# Material work remains blocked; this is still neutral-clay geometry review.
 for mesh in straw_meshes + bristle_meshes:
     material = getattr(getattr(mesh, 'visual', None), 'material', None)
     if material is None:
@@ -126,6 +132,8 @@ print(json.dumps({
     'root_width': root_width,
     'mid_width': mid_width,
     'tip_width': tip_width,
+    'tip_length_range': float(np.ptp(clump_low_y)),
+    'tip_length_std': float(np.std(clump_low_y)),
     'straw_span': straw_span.tolist(),
     'bristle_span': bristle_span.tolist(),
     'median_straw_volume': float(np.median(straw_volumes)),
