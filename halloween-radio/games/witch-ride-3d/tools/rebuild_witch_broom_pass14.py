@@ -249,7 +249,7 @@ def main() -> None:
         'broom_straw_workflow': 'grouped authored straw mass first; fine bristles are secondary breakup only',
         'broom_primary_groups': 8,
         'broom_root_compression_fraction': 0.28,
-        'broom_straw_shape': 'tight bound root; full dense middle body; broad gradual flare; irregular clustered tapered tips',
+        'broom_straw_shape': 'tight bound root; dense middle body; gradual flare; clustered tapered tips',
         'broom_material_ready': False,
     })
 
@@ -263,7 +263,7 @@ def main() -> None:
         'broom_straw_workflow': 'grouped authored straw mass first; fine bristles are secondary breakup only',
         'broom_primary_groups': 8,
         'broom_root_compression_fraction': 0.28,
-        'broom_straw_shape': 'tight bound root; full dense middle body; broad gradual flare; irregular clustered tapered tips',
+        'broom_straw_shape': 'tight bound root; dense middle body; gradual flare; clustered tapered tips',
         'broom_material_ready': False,
         'bytes': len(blob),
         'nodes': len(nodes_after),
