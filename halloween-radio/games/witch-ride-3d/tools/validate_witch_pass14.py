@@ -30,12 +30,13 @@ assert 'smooth cards' in meta['hair_workflow']
 assert 3<=meta['cape_primary_folds']<=5
 assert meta['broom_bristles']==240,meta['broom_bristles']
 assert meta['broom_straw_clumps']==56,meta['broom_straw_clumps']
-assert meta['lower_body_workflow']=='authored narrow straddle; no runtime physics pose correction'
-assert meta['lower_body_pose']=='pelvis seated; inner thighs grip broom; knees tucked; boots trail close'
-assert meta['lower_body_leg_mass']=='fuller human thighs and calves'
+assert meta['lower_body_workflow']=='reference-matched compact seated straddle authored in mesh; no runtime pose correction'
+assert meta['lower_body_pose']=='pelvis centered on broom; inner thighs grip; knees compact; calves and boots tuck inward'
+assert meta['lower_body_leg_mass']=='full thighs with tapered knees and calves; no column silhouette'
 assert meta['lower_body_runtime_physics'] is False
-assert meta['lower_body_max_knee_center_x']<=.60,meta['lower_body_max_knee_center_x']
-assert meta['lower_body_ankle_center_x']<=.48,meta['lower_body_ankle_center_x']
+assert meta['lower_body_max_knee_center_x']<=.36,meta['lower_body_max_knee_center_x']
+assert meta['lower_body_ankle_center_x']<=.30,meta['lower_body_ankle_center_x']
+assert 'compact centered rider' in meta['lower_body_reference']
 
 scene=trimesh.load(GLB,force='scene')
 nodes=set(scene.graph.nodes)
@@ -87,37 +88,53 @@ for side,sgn in [('L',-1),('R',1)]:
     h=center(f'hand_{side}')
     assert abs(h[0])<0.32 and .45<h[1]<.82 and h[2]<-1.48,h
 
-# Lower body is authored as a narrow riding straddle.  These gates explicitly
-# reject the old wide-splayed pose while also requiring more human thigh/calf mass.
+# Reference-matched compact lower body. Reject both the original wide straddle
+# and the interim oversized column legs. The leg mass must cluster around the
+# broom, shorten under the cape, then taper cleanly into close parallel boots.
 leg_meshes={side:mw(f'leg_{side}') for side in ('L','R')}
 boot_meshes={side:mw(f'boot_{side}') for side in ('L','R')}
 all_legs=np.vstack([leg_meshes['L'].vertices,leg_meshes['R'].vertices])
 all_boots=np.vstack([boot_meshes['L'].vertices,boot_meshes['R'].vertices])
 leg_span=np.ptp(all_legs,axis=0)
 boot_span=np.ptp(all_boots,axis=0)
-assert 1.70<=leg_span[0]<=1.90,leg_span
-assert 1.36<=boot_span[0]<=1.50,boot_span
-assert all_legs[:,0].min()>-.95 and all_legs[:,0].max()<.95,(all_legs[:,0].min(),all_legs[:,0].max())
+assert 1.20<=leg_span[0]<=1.34,leg_span
+assert .88<=boot_span[0]<=1.00,boot_span
+assert leg_span[1]<=1.38,leg_span
+assert boot_span[1]<=.58,boot_span
+assert all_legs[:,0].min()>-.70 and all_legs[:,0].max()<.70,(all_legs[:,0].min(),all_legs[:,0].max())
 
 leg_centers={}
 boot_centers={}
 for side,sgn in [('L',-1),('R',1)]:
     lm=leg_meshes[side]; lv=lm.vertices; ld=dims(f'leg_{side}'); lc=center(f'leg_{side}')
     leg_centers[side]=lc
-    assert .47<=abs(lc[0])<=.58,(side,lc)
-    assert .72<=ld[0]<=.84 and 1.58<=ld[1]<=1.75 and ld[2]>=1.00,(side,ld)
-    assert abs(float(lm.volume))>=.49,(side,lm.volume)
-    assert (lv[:,0].min()>-.95 if sgn==-1 else lv[:,0].max()<.95),(side,lm.bounds)
-    assert (lv[:,0].max()>-.18 if sgn==-1 else lv[:,0].min()<.18),(side,lm.bounds)
-    seat_band=lv[(lv[:,1]>=.45)&(lv[:,1]<=.82)&(lv[:,2]>=-.20)&(lv[:,2]<=.28)]
-    assert len(seat_band)>20,(side,len(seat_band))
-    assert float(np.abs(seat_band[:,0]).min())<.18,(side,float(np.abs(seat_band[:,0]).min()))
+    assert .30<=abs(lc[0])<=.37,(side,lc)
+    assert .56<=ld[0]<=.65 and 1.24<=ld[1]<=1.38 and .90<=ld[2]<=1.05,(side,ld)
+    assert abs(float(lm.volume))>=.24,(side,lm.volume)
+    assert (lv[:,0].min()>-.70 if sgn==-1 else lv[:,0].max()<.70),(side,lm.bounds)
+    assert (lv[:,0].max()>-.08 if sgn==-1 else lv[:,0].min()<.08),(side,lm.bounds)
+
+    # Inner thighs must physically reach the broom/seat corridor just beneath
+    # the pelvis. A visually separate pair of legs is not accepted.
+    seat_band=lv[(lv[:,1]>=.46)&(lv[:,1]<=.82)&(lv[:,2]>=-.20)&(lv[:,2]<=.32)]
+    assert len(seat_band)>30,(side,len(seat_band))
+    assert float(np.abs(seat_band[:,0]).min())<.08,(side,float(np.abs(seat_band[:,0]).min()))
+
+    knee_band=lv[(lv[:,1]>=.08)&(lv[:,1]<=.40)&(lv[:,2]>=.12)&(lv[:,2]<=.52)]
+    assert len(knee_band)>30,(side,len(knee_band))
+    knee_center=float(np.mean(knee_band[:,0]))
+    assert .24<=abs(knee_center)<=.40,(side,knee_center)
+
+    calf_band=lv[(lv[:,1]>=-.36)&(lv[:,1]<=-.05)&(lv[:,2]>=.34)&(lv[:,2]<=.70)]
+    assert len(calf_band)>20,(side,len(calf_band))
+    calf_center=float(np.mean(calf_band[:,0]))
+    assert abs(calf_center)<=.37,(side,calf_center)
 
     bm=boot_meshes[side]; bd=dims(f'boot_{side}'); bc=center(f'boot_{side}')
     boot_centers[side]=bc
-    assert .40<=abs(bc[0])<=.50 and bc[1]<-.93,(side,bc)
-    assert .48<=bd[0]<=.58 and .54<=bd[1]<=.66 and .54<=bd[2]<=.67,(side,bd)
-    assert (bm.vertices[:,0].max()>-.20 if sgn==-1 else bm.vertices[:,0].min()<.20),(side,bm.bounds)
+    assert .24<=abs(bc[0])<=.31 and -.76<=bc[1]<=-.62,(side,bc)
+    assert .38<=bd[0]<=.45 and .48<=bd[1]<=.58 and .50<=bd[2]<=.59,(side,bd)
+    assert (bm.vertices[:,0].max()>-.07 if sgn==-1 else bm.vertices[:,0].min()<.07),(side,bm.bounds)
 
 assert abs(leg_centers['L'][0]+leg_centers['R'][0])<.03,leg_centers
 assert abs(boot_centers['L'][0]+boot_centers['R'][0])<.03,boot_centers
@@ -129,9 +146,8 @@ for side in ('L','R'):
     d=float(np.linalg.norm(hv[:,None,:]-sv[None,:,:],axis=2).min())
     assert d<.16,(side,d)
 
-# Hair shape is authored, not solved by runtime wind.  The whole mass must be
-# broad over the shoulders, shallow in vertical drop, and much longer aft.  This
-# rejects both dangling hair and the flat chase-view shelf seen in earlier tries.
+# Hair shape is authored, not solved by runtime wind. The whole mass must be
+# broad over the shoulders, shallow in vertical drop, and much longer aft.
 hair_names=main+overlap+['hair_cap']
 allh=np.vstack([mw(n).vertices for n in hair_names]); hs=np.ptp(allh,axis=0)
 assert hs[0]>=2.28 and .86<=hs[1]<=1.08 and hs[2]>=3.25,hs
@@ -143,7 +159,6 @@ hat_bounds=mw('hat_brim').bounds
 assert cap_bounds[1,1]<=hat_bounds[1,1]+.04,(cap_bounds,hat_bounds)
 assert cap_bounds[0,1]>=2.42,cap_bounds
 
-# Each main lock is now a smooth, narrow card instead of a large pointed leaf.
 for n in main:
     m=mw(n); d=dims(n); b=m.bounds
     assert len(m.vertices)>700 and len(m.faces)>1300,(n,len(m.vertices),len(m.faces))
@@ -164,8 +179,6 @@ assert len(shoulder_band)>200 and len(tip_band)>100,(len(shoulder_band),len(tip_
 shoulder_w=float(np.ptp(shoulder_band[:,0])); tip_w=float(np.ptp(tip_band[:,0]))
 assert shoulder_w>=2.28,(shoulder_w,tip_w)
 assert shoulder_w>=tip_w*1.18,(shoulder_w,tip_w)
-# Roots begin directly beneath the brim.  Tips move strongly aft but only drop
-# into the upper-back zone; if they fall lower than this, the mane becomes a collar.
 roots=mainv[(mainv[:,1]>=2.88)&(mainv[:,2]<=-.55)]
 assert len(roots)>120,len(roots)
 assert mainv[:,2].max()>=2.18,mainv[:,2].max()
@@ -182,7 +195,6 @@ sb=mw('broom_shaft').bounds; assert sb[0,2]<-3.1 and sb[1,2]>1.50,sb
 st=np.vstack([mw(n).vertices for n in straw_names]); ss=np.ptp(st,axis=0)
 assert ss[0]>=1.25 and ss[1]>=.85 and ss[2]>=1.35,ss
 assert st[:,1].min()<-0.90 and st[:,1].max()<0.50,'bundle must visibly trail downward'
-# Keep the strengthened production density: never weaken this to the old 72-bristle minimum.
 assert len(bristles)==240 and len(straw_names)==56
 for n in folds+['torso_core','arm_L','arm_R']:
     assert mw(n).bounds[1,2] < 1.10,(n,mw(n).bounds[1,2])
