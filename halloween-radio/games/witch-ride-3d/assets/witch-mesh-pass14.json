@@ -1,16 +1,16 @@
 {
-  "pass": "pass-14-mesh-only-v23",
+  "pass": "pass-14-mesh-only-v24",
   "review": "neutral-clay-mesh-review-only",
-  "geometry_strategy": "full organic lofts from fuller pre-v21 silhouette",
-  "torso": "single ribcage-waist-pelvis loft",
-  "arms": "continuous bent organic lofts",
-  "legs": "continuous seated-straddle organic lofts",
-  "mane_primary_locks": 5,
-  "mane_fillers": 6,
+  "geometry_strategy": "full organic lofted silhouette; no visible primitive columns",
+  "torso": "single pelvis-waist-ribcage-shoulder shell with forward lean",
+  "arms": "continuous bent organic lofts to visible central grip",
+  "legs": "continuous seated straddle with bent knees and aligned boots",
+  "mane_primary_locks": 9,
+  "mane_shoulder_locks": 7,
   "cape_primary_folds": 4,
-  "broom_bristles": 216,
-  "broom_straw_clumps": 40,
-  "camera_clearance": "reformed depth, no scale/material hacks",
+  "broom_bristles": 240,
+  "broom_straw_clumps": 56,
+  "camera_clearance": "volume reformed and layered without scale/material hacks",
   "materials_applied": false,
   "required_animation_roots": [
     "hair_01",
@@ -26,7 +26,7 @@
     "broom_handle",
     "broom_bristles"
   ],
-  "bytes": 505844,
-  "nodes": 310,
-  "geometries": 294
+  "bytes": 590644,
+  "nodes": 357,
+  "geometries": 341
 }
