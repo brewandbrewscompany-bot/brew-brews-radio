@@ -1,2 +1,107 @@
-import base64,zlib
-exec(compile(zlib.decompress(base64.b64decode('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')).decode(),'validate_witch_pass14_v14_payload','exec'))
+from __future__ import annotations
+import json, math, re
+from pathlib import Path
+import numpy as np
+import trimesh
+
+ROOT=Path(__file__).resolve().parents[1]
+GLB=ROOT/"assets"/"models"/"witch-rider.glb"
+MANIFEST=ROOT/"assets"/"witch-mesh-pass14.json"
+
+assert GLB.exists(), f"missing {GLB}"
+assert MANIFEST.exists(), f"missing {MANIFEST}"
+assert GLB.stat().st_size >= 500_000, f"GLB too small: {GLB.stat().st_size}"
+
+meta=json.loads(MANIFEST.read_text(encoding="utf-8"))
+assert meta["pass"]=="pass-14-mesh-only-v20", meta
+assert meta["review"]=="neutral-clay-mesh-review-only", meta
+assert meta["geometry_strategy"]=="camera-safe large forms", meta
+assert meta["cape_primary_folds"]==4, meta
+assert meta["mane_primary_locks"]==5, meta
+assert meta["broom_bristles"]>=144, meta
+assert meta["broom_straw_clumps"]>=18, meta
+
+scene=trimesh.load(GLB, force="scene")
+nodes=set(scene.graph.nodes)
+required={
+    "hair_01","hair_02","hair_03","hair_04","hair_05",
+    "cape","cape_left","cape_center","cape_right",
+    "hat_tip","broom_handle","broom_bristles"
+}
+missing=sorted(required-nodes)
+assert not missing, f"missing required roots: {missing}"
+
+names=set(scene.geometry.keys()) | nodes
+for bad in ("braid","rope","hair_strand","hair_curl","cape_wedge"):
+    assert not any(bad in n.lower() for n in names), f"forbidden legacy geometry token {bad}"
+
+bristles=sorted(n for n in nodes if re.fullmatch(r"bristle_\d{3}",n))
+assert len(bristles)>=144, f"bristles {len(bristles)}"
+folds=sorted(n for n in nodes if re.fullmatch(r"cape_fold_[1-4]",n))
+assert len(folds)==4, folds
+mane=sorted(n for n in nodes if re.fullmatch(r"mane_lock_[1-5]",n))
+assert len(mane)==5, mane
+for expected in ["ribcage","waist","pelvis","shoulder_bar","thigh_L","thigh_R","calf_L","calf_R",
+                 "boot_shaft_L","boot_shaft_R","hand_L","hand_R","hat_brim","hat_crown"]:
+    assert expected in nodes, f"missing {expected}"
+
+# All primary broad forms must be closed, finite and correctly oriented enough for PlayCanvas.
+for n in folds+mane+["ribcage","waist","pelvis","hat_brim","hat_crown"]:
+    T,gn=scene.graph[n]
+    m=scene.geometry[gn].copy()
+    m.apply_transform(T)
+    assert len(m.faces)>0 and len(m.vertices)>0, n
+    assert np.isfinite(m.vertices).all(), n
+    assert np.isfinite(m.face_normals).all(), n
+    assert m.is_watertight, f"{n} must be closed/watertight"
+
+# Camera safety: chase camera is at world z=11.8 and close review camera at z=7.65.
+# Witch entity sits at world z=2, so the closest review plane is local z=5.65.
+# Keep the entire mesh, including straw, safely in front of that camera and
+# keep shoulder/hair/cape volumes far from it.
+b=np.asarray(scene.bounds,float)
+assert b[1,2] < 4.10, f"mesh projects into close camera safety zone: zmax={b[1,2]:.3f}"
+assert b[0,2] < -2.20, f"broom handle not extended forward enough: zmin={b[0,2]:.3f}"
+assert b[1,0]-b[0,0] >= 2.6, f"rider/broom silhouette too narrow: {b}"
+assert b[1,1]-b[0,1] >= 5.8, f"rider silhouette too short: {b}"
+
+# Explicit hair/cape rear-depth gate. These forms caused prior camera penetration.
+for n in folds+mane+["shoulder_bar","shoulder_L","shoulder_R"]:
+    T,gn=scene.graph[n]
+    m=scene.geometry[gn].copy(); m.apply_transform(T)
+    assert m.bounds[1,2] < 1.05, f"{n} too far toward chase camera: {m.bounds[1,2]:.3f}"
+
+# Human proportions / readable seated straddle.
+def center(node):
+    T,gn=scene.graph[node]; m=scene.geometry[gn].copy(); m.apply_transform(T); return m.bounds.mean(axis=0)
+rib=center("ribcage"); waist=center("waist"); pelvis=center("pelvis")
+assert rib[1] > waist[1] > pelvis[1], (rib,waist,pelvis)
+assert rib[2] < waist[2] < pelvis[2]+0.10, (rib,waist,pelvis)  # forward lean
+for side in ("L","R"):
+    thigh=center(f"thigh_{side}"); calf=center(f"calf_{side}")
+    if side=="L":
+        assert thigh[0] < -0.40 and calf[0] < -0.55, (thigh,calf)
+    else:
+        assert thigh[0] > 0.40 and calf[0] > 0.55, (thigh,calf)
+
+# Neutral clay review only: no metallic/gloss production tuning.
+for g in scene.geometry.values():
+    mat=getattr(getattr(g,"visual",None),"material",None)
+    if mat is None: continue
+    metallic=getattr(mat,"metallicFactor",0.0)
+    rough=getattr(mat,"roughnessFactor",1.0)
+    if metallic is not None:
+        assert float(metallic) <= 0.01, f"metallic material in mesh-only pass: {metallic}"
+    if rough is not None:
+        assert float(rough) >= 0.95, f"non-clay roughness in mesh-only pass: {rough}"
+
+print(json.dumps({
+    "ok":True,
+    "bytes":GLB.stat().st_size,
+    "nodes":len(nodes),
+    "geometries":len(scene.geometry),
+    "bristles":len(bristles),
+    "cape_folds":len(folds),
+    "mane_locks":len(mane),
+    "bounds":b.tolist(),
+},indent=2))
