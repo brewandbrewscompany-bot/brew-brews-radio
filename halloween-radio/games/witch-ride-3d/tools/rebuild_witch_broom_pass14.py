@@ -128,7 +128,7 @@ def main() -> None:
     scene = trimesh.load(MODEL, force='scene', process=False)
     nodes_before = set(scene.graph.nodes)
 
-    # Broom-tail-only pass. Preserve all approved Pass 14 systems exactly in spirit.
+    # Broom-tail-only pass. Preserve approved witch, hair, lower body, cape and hat.
     assert 'broom_bristles' in nodes_before
     assert 'broom_shaft' in nodes_before
     assert len([n for n in nodes_before if re.fullmatch(r'bristle_\d{3}', n)]) == 240
@@ -142,18 +142,27 @@ def main() -> None:
         if re.fullmatch(r'bristle_\d{3}', name) or re.fullmatch(r'straw_mass_\d{2}', name):
             remove_named(scene, name)
 
-    # Realtime hierarchy: 8 primary directional masses, 32 secondary clumps, 16 edge
-    # clumps. The first 28% stays compressed behind/between the boots; the middle opens
-    # early into a packed overlapping body; the final third breaks into six grouped length
-    # families with intentionally asymmetric curved flow.
-    base = np.array([0.14, -0.22, 1.56], dtype=float)
-    group_x = np.array([-0.76, -0.59, -0.43, -0.18, 0.10, 0.31, 0.54, 0.79], dtype=float)
-    group_drift = np.array([-0.22, 0.07, -0.15, 0.08, -0.05, 0.16, -0.07, 0.20], dtype=float)
-    group_curve = np.array([-0.10, 0.06, -0.13, 0.08, -0.05, 0.11, -0.06, 0.13], dtype=float)
-    group_tip_z = np.array([3.08, 2.99, 3.26, 3.10, 3.31, 3.02, 3.23, 3.15], dtype=float)
-    group_length_family = np.array([3, 1, 5, 2, 4, 0, 5, 2], dtype=int)
-    length_y = np.array([-2.28, -2.48, -2.72, -2.94, -3.15, -3.38], dtype=float)
-    local_length = np.array([-0.07, 0.03, -0.02, 0.00, 0.07, -0.04, 0.11], dtype=float)
+    # Large handmade broom envelope. Eight overlapping directional masses establish
+    # the broad shape, but each of their seven clumps belongs to a different length
+    # family so no directional group terminates as a blunt tassel finger.
+    base = np.array([0.14, -0.34, 1.58], dtype=float)
+    group_x = np.array([-1.12, -0.84, -0.61, -0.30, 0.09, 0.41, 0.74, 1.04], dtype=float)
+    group_drift = np.array([-0.24, 0.10, -0.18, 0.12, -0.07, 0.18, -0.10, 0.23], dtype=float)
+    group_curve = np.array([-0.15, 0.09, -0.17, 0.11, -0.08, 0.15, -0.09, 0.17], dtype=float)
+    group_tip_z = np.array([3.38, 3.14, 3.48, 3.22, 3.52, 3.18, 3.43, 3.28], dtype=float)
+    length_y = np.array([-2.68, -2.96, -3.25, -3.56, -3.90, -4.26], dtype=float)
+    length_family = np.array([
+        [1, 2, 3, 4, 2, 5, 3],
+        [2, 1, 4, 3, 5, 2, 0],
+        [4, 3, 5, 2, 1, 4, 3],
+        [0, 2, 3, 5, 4, 1, 2],
+        [3, 4, 1, 2, 5, 3, 0],
+        [5, 2, 4, 1, 3, 0, 2],
+        [2, 5, 3, 4, 1, 2, 5],
+        [1, 3, 0, 5, 2, 4, 3],
+    ], dtype=int)
+    local_length = np.array([-0.05, 0.04, -0.03, 0.00, 0.07, -0.04, 0.10], dtype=float)
+    sub_length = np.array([-0.16, -0.05, 0.07, 0.16], dtype=float)
 
     role_counts = {'primary': 0, 'secondary': 0, 'edge': 0}
     straw_index = 0
@@ -161,87 +170,95 @@ def main() -> None:
         gx = float(group_x[group])
         drift = float(group_drift[group])
         curve = float(group_curve[group])
-        family = int(group_length_family[group])
         for local in range(7):
             straw_index += 1
             role = clump_role(local)
             role_counts[role] += 1
             spread = (local - 3) / 3.0
-            phase = group * 0.79 + local * 0.93
+            phase = group * 0.81 + local * 0.97
+            family = int(length_family[group, local])
 
-            # Role-specific envelope: primary clumps carry the body, secondary clumps
-            # overlap/fill it, edge clumps are slimmer and supply silhouette breakup.
             if role == 'primary':
-                lateral_scale = 0.030
-                radii_x = np.array([0.015, 0.019, 0.025, 0.033, 0.032, 0.022, 0.0016])
-                radii_z = np.array([0.013, 0.017, 0.022, 0.029, 0.028, 0.019, 0.0014])
+                lateral_scale = 0.070
+                radii_x = np.array([0.018, 0.022, 0.029, 0.036, 0.034, 0.024, 0.010, 0.0012])
+                radii_z = np.array([0.012, 0.015, 0.019, 0.023, 0.022, 0.016, 0.007, 0.0009])
             elif role == 'secondary':
-                lateral_scale = 0.058
-                radii_x = np.array([0.013, 0.017, 0.023, 0.029, 0.028, 0.019, 0.0015])
-                radii_z = np.array([0.011, 0.015, 0.020, 0.025, 0.024, 0.016, 0.0013])
+                lateral_scale = 0.105
+                radii_x = np.array([0.016, 0.020, 0.027, 0.033, 0.031, 0.022, 0.009, 0.0011])
+                radii_z = np.array([0.011, 0.014, 0.018, 0.021, 0.020, 0.015, 0.006, 0.0008])
             else:
-                lateral_scale = 0.095
-                radii_x = np.array([0.011, 0.015, 0.020, 0.025, 0.024, 0.016, 0.0013])
-                radii_z = np.array([0.010, 0.013, 0.017, 0.021, 0.020, 0.014, 0.0011])
+                lateral_scale = 0.145
+                radii_x = np.array([0.014, 0.018, 0.024, 0.029, 0.027, 0.019, 0.008, 0.0010])
+                radii_z = np.array([0.010, 0.013, 0.016, 0.019, 0.018, 0.013, 0.0055, 0.00075])
 
-            target_y = float(length_y[family] + local_length[local] + 0.020 * math.sin(phase * 1.21))
-            target_x = (
+            target_y_center = float(length_y[family] + local_length[local] + 0.025 * math.sin(phase * 1.17))
+            target_x_center = (
                 base[0]
                 + gx
                 + drift
                 + lateral_scale * spread
-                + 0.018 * math.sin(phase * 1.47)
+                + 0.030 * math.sin(phase * 1.39)
             )
-            target_z = float(group_tip_z[group] + 0.055 * spread + 0.030 * math.cos(phase))
+            target_z_center = float(group_tip_z[group] + 0.095 * spread + 0.045 * math.cos(phase))
 
-            root = base + np.array([0.012 * math.sin(phase), 0.006 * math.cos(phase), 0.0])
+            # Compact but physically distributed root wraps the existing broom neck
+            # rather than stacking all 224 medium straws on the exact same line.
+            root = np.array([
+                base[0] + 0.055 * gx + 0.026 * spread + 0.010 * math.sin(phase),
+                -0.34 + 0.010 * math.cos(phase),
+                1.58 + 0.035 * math.sin(group * 0.88) + 0.018 * spread,
+            ])
             neck = np.array([
-                base[0] + 0.045 * gx + 0.008 * spread,
-                -0.46 + 0.012 * math.sin(phase),
-                1.79 + 0.014 * math.cos(phase),
+                base[0] + 0.13 * gx + 0.040 * spread + 0.020 * curve,
+                -0.48 + 0.015 * math.sin(phase),
+                1.82 + 0.040 * math.cos(phase),
             ])
             shoulder = np.array([
-                base[0] + 0.30 * gx + 0.030 * curve + 0.020 * spread,
-                -0.72 + 0.022 * math.cos(phase),
-                2.06 + 0.022 * math.sin(phase),
+                base[0] + 0.42 * gx + 0.075 * drift + 0.090 * curve + 0.055 * spread,
+                -0.68 + 0.025 * math.cos(phase),
+                2.08 + 0.040 * math.sin(phase),
             ])
             body1 = np.array([
-                base[0] + 0.68 * gx + 0.14 * drift + 0.10 * curve + 0.035 * spread,
-                -1.08 + 0.035 * math.sin(phase * 1.13),
-                2.34 + 0.035 * math.cos(phase * 0.91),
+                base[0] + 0.77 * gx + 0.22 * drift + 0.16 * curve + 0.070 * spread,
+                -0.96 + 0.040 * math.sin(phase * 1.11),
+                2.38 + 0.050 * math.cos(phase * 0.93),
             ])
             body2 = np.array([
-                base[0] + 0.91 * gx + 0.42 * drift + 0.22 * curve + 0.045 * spread,
-                -1.52 + 0.050 * math.cos(phase * 0.87),
-                2.60 + 0.045 * math.sin(phase * 1.07),
+                base[0] + 0.98 * gx + 0.52 * drift + 0.26 * curve + 0.085 * spread,
+                -1.42 + 0.055 * math.cos(phase * 0.89),
+                2.72 + 0.055 * math.sin(phase * 1.05),
             ])
             pretip = np.array([
-                0.58 * body2[0] + 0.42 * target_x + 0.055 * curve,
-                0.48 * body2[1] + 0.52 * target_y + 0.035 * math.sin(phase),
-                0.52 * body2[2] + 0.48 * target_z + 0.035 * math.cos(phase),
+                0.62 * body2[0] + 0.38 * target_x_center + 0.075 * curve,
+                0.58 * body2[1] + 0.42 * target_y_center + 0.045 * math.sin(phase),
+                0.60 * body2[2] + 0.40 * target_z_center + 0.045 * math.cos(phase),
             ])
-            tip_center = np.array([target_x, target_y, target_z])
 
             components = []
             for sub in range(4):
                 sub_spread = (sub - 1.5) / 1.5
-                sub_phase = phase + sub * 0.63
-                # Four slim closed straw bodies form each named clump. They remain packed
-                # through the middle and only separate in the final third.
-                p0 = root + np.array([0.003 * sub_spread, 0.002 * math.sin(sub_phase), 0.002 * math.cos(sub_phase)])
-                p1 = neck + np.array([0.007 * sub_spread, 0.004 * math.sin(sub_phase), 0.004 * math.cos(sub_phase)])
-                p2 = shoulder + np.array([0.012 * sub_spread, 0.007 * math.sin(sub_phase), 0.006 * math.cos(sub_phase)])
-                p3 = body1 + np.array([0.020 * sub_spread, 0.010 * math.sin(sub_phase), 0.009 * math.cos(sub_phase)])
-                p4 = body2 + np.array([0.030 * sub_spread, 0.018 * math.sin(sub_phase), 0.013 * math.cos(sub_phase)])
-                p5 = pretip + np.array([0.040 * sub_spread, 0.028 * math.sin(sub_phase), 0.018 * math.cos(sub_phase)])
-                p6 = tip_center + np.array([
-                    0.052 * sub_spread,
-                    0.050 * math.sin(sub_phase * 1.19),
-                    0.026 * math.cos(sub_phase * 1.11),
+                sub_phase = phase + sub * 0.67
+                target_y = target_y_center + float(sub_length[sub]) + 0.025 * math.sin(sub_phase * 1.21)
+                target_x = target_x_center + 0.075 * sub_spread + 0.022 * math.sin(sub_phase)
+                target_z = target_z_center + 0.045 * sub_spread + 0.025 * math.cos(sub_phase)
+                tip = np.array([target_x, target_y, target_z])
+                taper = np.array([
+                    0.28 * pretip[0] + 0.72 * tip[0] + 0.022 * sub_spread,
+                    0.32 * pretip[1] + 0.68 * tip[1],
+                    0.34 * pretip[2] + 0.66 * tip[2],
                 ])
-                size_bias = 1.0 + 0.065 * math.sin(sub_phase)
+
+                p0 = root + np.array([0.006 * sub_spread, 0.003 * math.sin(sub_phase), 0.004 * math.cos(sub_phase)])
+                p1 = neck + np.array([0.010 * sub_spread, 0.005 * math.sin(sub_phase), 0.006 * math.cos(sub_phase)])
+                p2 = shoulder + np.array([0.016 * sub_spread, 0.008 * math.sin(sub_phase), 0.008 * math.cos(sub_phase)])
+                p3 = body1 + np.array([0.025 * sub_spread, 0.012 * math.sin(sub_phase), 0.011 * math.cos(sub_phase)])
+                p4 = body2 + np.array([0.036 * sub_spread, 0.020 * math.sin(sub_phase), 0.015 * math.cos(sub_phase)])
+                p5 = pretip + np.array([0.048 * sub_spread, 0.030 * math.sin(sub_phase), 0.020 * math.cos(sub_phase)])
+                p6 = taper
+                p7 = tip
+                size_bias = 1.0 + 0.060 * math.sin(sub_phase)
                 components.append(tube_mesh(
-                    [tuple(p0), tuple(p1), tuple(p2), tuple(p3), tuple(p4), tuple(p5), tuple(p6)],
+                    [tuple(p0), tuple(p1), tuple(p2), tuple(p3), tuple(p4), tuple(p5), tuple(p6), tuple(p7)],
                     radii_x * size_bias,
                     radii_z * size_bias,
                     sections=10,
@@ -252,8 +269,9 @@ def main() -> None:
 
     assert role_counts == {'primary': 8, 'secondary': 32, 'edge': 16}, role_counts
 
-    # 240 fine bristles are tertiary detail. Only 20% travel from the bound root; most
-    # emerge deeper in the middle/final third. Only 1/6 become perimeter flyaways.
+    # 240 fine bristles fill the grouped mass and provide natural straw breakup. Most
+    # begin inside the middle body; only 48 travel from the bound root and only 40 are
+    # permitted to become perimeter flyaways.
     bristle_index = 0
     full_root_bristles = 0
     flyaway_bristles = 0
@@ -261,65 +279,72 @@ def main() -> None:
         gx = float(group_x[group])
         drift = float(group_drift[group])
         curve = float(group_curve[group])
-        family = int(group_length_family[group])
         for local in range(30):
             bristle_index += 1
-            phase = group * 0.71 + local * 0.47
+            phase = group * 0.73 + local * 0.53
             spread = (local - 14.5) / 14.5
             start_mode = local % 5
             flyaway = (local % 6) == 0
+            family = int(length_family[group, local % 7])
             if start_mode == 0:
                 full_root_bristles += 1
             if flyaway:
                 flyaway_bristles += 1
 
-            base_target_y = float(length_y[family])
+            tip_y = float(length_y[family] + 0.16 + 0.06 * (local % 4))
+            edge_push = 0.0
             if flyaway:
-                tip_y = base_target_y - 0.10 - 0.035 * (local % 3)
-                edge_push = 0.10 * (1.0 if spread >= 0 else -1.0)
-            else:
-                tip_y = base_target_y + 0.16 + 0.06 * (local % 4)
-                edge_push = 0.0
+                tip_y -= 0.22 + 0.045 * (local % 3)
+                edge_push = 0.14 * (1.0 if spread >= 0 else -1.0)
 
             tip_x = (
                 base[0]
                 + gx
-                + 0.82 * drift
-                + 0.080 * spread
+                + 0.88 * drift
+                + 0.150 * spread
                 + edge_push
-                + 0.018 * math.sin(phase * 1.37)
+                + 0.035 * math.sin(phase * 1.31)
             )
-            tip_z = float(group_tip_z[group] + 0.060 * spread + 0.040 * math.sin(phase))
+            tip_z = float(group_tip_z[group] + 0.100 * spread + 0.055 * math.sin(phase))
 
-            root = base + np.array([0.010 * math.sin(phase), 0.005 * math.cos(phase), 0.0])
+            root = np.array([
+                base[0] + 0.050 * gx + 0.020 * spread,
+                -0.34,
+                1.58 + 0.025 * math.sin(group),
+            ])
             neck = np.array([
-                base[0] + 0.045 * gx + 0.006 * spread,
-                -0.46,
-                1.79,
+                base[0] + 0.13 * gx + 0.032 * spread,
+                -0.48,
+                1.82,
             ])
             shoulder = np.array([
-                base[0] + 0.30 * gx + 0.025 * curve + 0.016 * spread,
-                -0.72 + 0.018 * math.sin(phase),
-                2.06,
+                base[0] + 0.42 * gx + 0.070 * drift + 0.075 * curve + 0.050 * spread,
+                -0.68 + 0.018 * math.sin(phase),
+                2.08,
             ])
             body1 = np.array([
-                base[0] + 0.68 * gx + 0.14 * drift + 0.09 * curve + 0.030 * spread,
-                -1.08 + 0.028 * math.sin(phase),
-                2.34 + 0.025 * math.cos(phase),
+                base[0] + 0.77 * gx + 0.21 * drift + 0.14 * curve + 0.065 * spread,
+                -0.96 + 0.030 * math.sin(phase),
+                2.38 + 0.030 * math.cos(phase),
             ])
             body2 = np.array([
-                base[0] + 0.91 * gx + 0.42 * drift + 0.20 * curve + 0.040 * spread,
-                -1.52 + 0.040 * math.cos(phase),
-                2.60 + 0.032 * math.sin(phase),
+                base[0] + 0.98 * gx + 0.50 * drift + 0.23 * curve + 0.080 * spread,
+                -1.42 + 0.040 * math.cos(phase),
+                2.72 + 0.038 * math.sin(phase),
             ])
             pretip = np.array([
-                0.57 * body2[0] + 0.43 * tip_x + 0.040 * curve,
-                0.50 * body2[1] + 0.50 * tip_y,
-                0.54 * body2[2] + 0.46 * tip_z,
+                0.60 * body2[0] + 0.40 * tip_x + 0.050 * curve,
+                0.56 * body2[1] + 0.44 * tip_y,
+                0.58 * body2[2] + 0.42 * tip_z,
+            ])
+            taper = np.array([
+                0.30 * pretip[0] + 0.70 * tip_x,
+                0.30 * pretip[1] + 0.70 * tip_y,
+                0.32 * pretip[2] + 0.68 * tip_z,
             ])
             tip = np.array([tip_x, tip_y, tip_z])
 
-            full_path = [root, neck, shoulder, body1, body2, pretip, tip]
+            full_path = [root, neck, shoulder, body1, body2, pretip, taper, tip]
             if start_mode == 0:
                 path = full_path
             elif start_mode == 1:
@@ -330,8 +355,8 @@ def main() -> None:
                 path = full_path[3:]
 
             count = len(path)
-            rx = np.linspace(0.0052, 0.00075, count)
-            rz = np.linspace(0.0044, 0.00062, count)
+            rx = np.linspace(0.0072, 0.00070, count)
+            rz = np.linspace(0.0052, 0.00052, count)
             organic_tube(
                 scene,
                 [tuple(p) for p in path],
@@ -361,9 +386,9 @@ def main() -> None:
         'broom_straw_substrands_per_clump': 4,
         'broom_straw_role_counts': hierarchy,
         'broom_length_clusters': 6,
+        'broom_length_family_matrix': length_family.tolist(),
         'broom_full_root_bristles': 48,
         'broom_flyaway_bristles': 40,
-        'broom_primary_group_length_families': group_length_family.tolist(),
         'broom_material_ready': False,
     })
 
@@ -381,9 +406,9 @@ def main() -> None:
         'broom_straw_substrands_per_clump': 4,
         'broom_straw_role_counts': hierarchy,
         'broom_length_clusters': 6,
+        'broom_length_family_matrix': length_family.tolist(),
         'broom_full_root_bristles': 48,
         'broom_flyaway_bristles': 40,
-        'broom_primary_group_length_families': group_length_family.tolist(),
         'broom_material_ready': False,
         'bytes': len(blob),
         'nodes': len(nodes_after),
