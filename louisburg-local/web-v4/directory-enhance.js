@@ -161,6 +161,20 @@
     openOverlay('#profileOverlay')
   };
 
+  const directorySearch=$('#directorySearch');
+  if(directorySearch){
+    let searchFrame=0;
+    const syncDirectorySearch=()=>{
+      state.dirQ=directorySearch.value||'';
+      if(searchFrame)cancelAnimationFrame(searchFrame);
+      searchFrame=requestAnimationFrame(()=>{searchFrame=0;renderDirectory()});
+    };
+    directorySearch.oninput=syncDirectorySearch;
+    directorySearch.onsearch=syncDirectorySearch;
+    directorySearch.onchange=syncDirectorySearch;
+    directorySearch.addEventListener('compositionend',syncDirectorySearch);
+  }
+
   quick.onclick=e=>{
     const b=e.target.closest('[data-dir-quick]');if(!b)return;
     state.dirQuick=b.dataset.dirQuick;state.dirCat='ALL';
