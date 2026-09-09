@@ -1,15 +1,14 @@
 import * as pc from 'playcanvas';
 
 const PASS_ID='environment-realism-pass15';
-const VERSION='road-truck-bean-realism-v4-coffee-sparkle-crease';
+const VERSION='road-truck-bean-realism-v5-production-bean-glimmer';
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 const TRUCK_FILES=['traffic-pickup.glb','traffic-farm-truck.glb','traffic-box-truck.glb','traffic-utility-truck.glb'];
 const TRUCK_TYPES=['pickup','farm','box','utility'];
 const BEAN_VISUAL_SCALE=.40;
 
 function mat(name,diffuse,metalness=0,roughness=.8,emissive=null,opacity=1){
-  const m=new pc.StandardMaterial();
-  m.name=name;m.diffuse=new pc.Color(...diffuse);m.useMetalness=true;m.metalness=metalness;m.gloss=1-roughness;
+  const m=new pc.StandardMaterial();m.name=name;m.diffuse=new pc.Color(...diffuse);m.useMetalness=true;m.metalness=metalness;m.gloss=1-roughness;
   if(emissive){m.emissive=new pc.Color(...emissive);m.emissiveIntensity=1}
   if(opacity<1){m.opacity=opacity;m.blendType=pc.BLEND_NORMAL;m.depthWrite=false;m.cull=pc.CULLFACE_NONE}
   m.update();return m;
@@ -50,32 +49,24 @@ function upgradeRoad(app){
 async function upgradeTraffic(app){
   const assets=await Promise.all(TRUCK_FILES.map(f=>loadAsset(app,f))),types=[],wheels=[],scales={pickup:.88,farm:.88,box:.90,utility:.88};for(let i=0;i<7;i++){const root=app.root.findByName(`1938 Coupe ${i}`);if(!root)continue;const type=TRUCK_TYPES[i%TRUCK_TYPES.length];for(const r of root.findComponents?.('render')||[])r.enabled=false;const visual=instantiate(assets[i%assets.length],`Pass15 ${type} truck visual`);visual.setLocalScale(scales[type],scales[type],scales[type]);visual.setLocalPosition(0,0,0);root.addChild(visual);root.__trafficType=type;root.__pass15Visual=visual;root.__pass15PrevZ=root.getPosition().z;root.__pass15Wheels=[];walk(visual,n=>{if(n.name?.startsWith('wheel_')){root.__pass15Wheels.push(n);wheels.push(n)}});const lamps=(root.children||[]).filter(c=>c.name?.startsWith('Headlight Glow')&&c.light),front={pickup:2.45,farm:2.60,box:2.63,utility:2.48}[type];for(const lamp of lamps){const p=lamp.getLocalPosition();lamp.setLocalPosition(p.x,1.16,front);lamp.light.range=9.0;lamp.light.intensity=.25}types.push(type)}return {vehicles:types.length,truckTypes:[...new Set(types)].sort(),wheelNodes:wheels.length,types};
 }
-function beanDetailMaterials(){
-  const glint=mat('pass15 coffee bean subtle glimmer fleck',[.72,.48,.18],0,.82,[1,.48,.12],.28);glint.blendType=pc.BLEND_ADDITIVE;glint.depthWrite=false;glint.cull=pc.CULLFACE_NONE;glint.emissiveIntensity=.48;glint.update();
-  const crease=mat('pass15 coffee bean rounded dark center crease',[.014,.006,.002],0,.98);crease.specular=new pc.Color(.012,.007,.004);crease.update();return {glint,crease};
-}
-function addBeanCrease(visual,material,index){
-  const ys=[.47,.235,0,-.235,-.47],xs=[-.050,-.022,0,.022,.050],zs=[.205,.272,.302,.272,.205],rots=[-10,-5,0,5,10],lens=[.145,.185,.205,.185,.145];let count=0;
-  for(const side of [1,-1])for(let j=0;j<5;j++){
-    const e=primitive(`Pass15 Bean Crease ${index} ${side>0?'front':'back'} ${j}`,'capsule',[.034,lens[j],.020],[side>0?xs[j]:-xs[j],ys[j],side*zs[j]],material,visual,[0,0,side>0?rots[j]:-rots[j]]);e.render.receiveShadows=false;count++;
-  }
-  return count;
+function beanGlintMaterial(){
+  const glint=mat('pass15 coffee bean restrained sparkle glimmer',[.78,.53,.20],0,.84,[1,.52,.15],.31);glint.blendType=pc.BLEND_ADDITIVE;glint.depthWrite=false;glint.cull=pc.CULLFACE_NONE;glint.emissiveIntensity=.54;glint.update();return glint;
 }
 async function upgradeBeans(app){
-  const asset=await loadAsset(app,'coffee-bean-v2.glb'),visuals=[],glints=[],dm=beanDetailMaterials();let creaseSegments=0;
-  const sparkleBases=[[-.235,.285,.115],[.235,.055,.105],[-.155,-.300,.105]];
+  const asset=await loadAsset(app,'coffee-bean-v2.glb'),visuals=[],glints=[],gm=beanGlintMaterial();
+  const sparkleBases=[[-.238,.286,.116],[.238,.075,.112],[-.160,-.302,.108],[.178,-.225,.104]],sparkleSizes=[.024,.018,.015,.013];
   for(let i=0;i<16;i++){
     const root=app.root.findByName(`Coffee Bean ${i}`);if(!root)continue;for(const r of root.findComponents?.('render')||[])r.enabled=false;
-    const visual=instantiate(asset,`Pass15 Coffee Bean Visual ${i}`);visual.setLocalScale(BEAN_VISUAL_SCALE,BEAN_VISUAL_SCALE,BEAN_VISUAL_SCALE);visual.setLocalEulerAngles(0,(i*37)%360,(i%3-1)*4);root.addChild(visual);creaseSegments+=addBeanCrease(visual,dm.crease,i);
-    const local=[];for(let j=0;j<sparkleBases.length;j++){const s=[.020,.014,.012][j],g=primitive(`Pass15 Bean Glimmer Fleck ${i}-${j}`,'sphere',[s,s,s],sparkleBases[j],dm.glint,root);g.render.receiveShadows=false;g.__phase=i*.79+j*2.07;g.__base=sparkleBases[j];g.__size=s;local.push(g);glints.push(g)}
+    const visual=instantiate(asset,`Pass15 Coffee Bean Visual ${i}`);visual.setLocalScale(BEAN_VISUAL_SCALE,BEAN_VISUAL_SCALE,BEAN_VISUAL_SCALE);visual.setLocalEulerAngles(0,(i*37)%360,(i%3-1)*4);root.addChild(visual);
+    const local=[];for(let j=0;j<sparkleBases.length;j++){const s=sparkleSizes[j],g=primitive(`Pass15 Bean Glimmer Fleck ${i}-${j}`,'sphere',[s,s,s],sparkleBases[j],gm,root);g.render.receiveShadows=false;g.__phase=i*.79+j*1.57;g.__base=sparkleBases[j];g.__size=s;local.push(g);glints.push(g)}
     root.__pass15BeanVisual=visual;root.__pass15BeanGlints=local;visuals.push(visual);
   }
-  return {beans:visuals.length,centerCrease:true,organicAsymmetry:true,neonHalo:false,glimmer:true,glimmerNonNeon:true,glimmerShell:false,glimmerStyle:'three-subtle-specular-flecks',visualScale:BEAN_VISUAL_SCALE,approxWorldHeight:.59,glints:glints.length,creaseSegments,visuals};
+  return {beans:visuals.length,centerCrease:true,creaseSource:'coffee-bean-v2.glb sculpted S-curve and inset ribbons',organicAsymmetry:true,neonHalo:false,glimmer:true,glimmerNonNeon:true,glimmerShell:false,glimmerStyle:'four-subtle-specular-flecks',visualScale:BEAN_VISUAL_SCALE,approxWorldHeight:.59,glints:glints.length,creaseOverlaySegments:0,visuals};
 }
 function animate(app){
   let t=0;app.on('update',dt=>{t+=dt;
     for(let i=0;i<7;i++){const root=app.root.findByName(`1938 Coupe ${i}`);if(!root?.__pass15Wheels)continue;const z=root.getPosition().z,prev=root.__pass15PrevZ;root.__pass15PrevZ=z;const dz=z-prev;if(root.enabled&&Math.abs(dz)<4){const deg=-(dz/.49)*57.2958;for(const w of root.__pass15Wheels)w.rotateLocal(0,0,deg)}}
-    for(let i=0;i<16;i++){const root=app.root.findByName(`Coffee Bean ${i}`),v=root?.__pass15BeanVisual,gs=root?.__pass15BeanGlints||[];if(v)v.rotateLocal(8*dt,-70*dt,3*dt);for(let j=0;j<gs.length;j++){const g=gs[j],b=g.__base,s=g.__size,p=.82+Math.sin(t*(2.8+j*.45)+g.__phase)*.18;g.setLocalScale(s*p,s*p,s*p);g.setLocalPosition(b[0]+Math.sin(t*1.35+g.__phase)*.010,b[1]+Math.cos(t*1.10+g.__phase)*.009,b[2]+Math.sin(t*.95+g.__phase)*.006)}}
+    for(let i=0;i<16;i++){const root=app.root.findByName(`Coffee Bean ${i}`),v=root?.__pass15BeanVisual,gs=root?.__pass15BeanGlints||[];if(v)v.rotateLocal(8*dt,-70*dt,3*dt);for(let j=0;j<gs.length;j++){const g=gs[j],b=g.__base,s=g.__size,p=.80+Math.sin(t*(2.7+j*.38)+g.__phase)*.20;g.setLocalScale(s*p,s*p,s*p);g.setLocalPosition(b[0]+Math.sin(t*1.25+g.__phase)*.011,b[1]+Math.cos(t*1.05+g.__phase)*.010,b[2]+Math.sin(t*.90+g.__phase)*.006)}}
   });
 }
 async function install(){
@@ -83,8 +74,8 @@ async function install(){
     const app=pc.app,w=window.WitchRide3D;
     if(app&&w?.ready&&w?.variationPass==='variation-pass-v8'&&w?.worldDetailPass==='world-detail-pass-v6'&&window.WitchRideWitchMaterialPass14?.active===true){
       try{
-        const road=upgradeRoad(app),traffic=await upgradeTraffic(app),beans=await upgradeBeans(app);animate(app);const detail={road,...traffic,beans:beans.beans,beanCenterCrease:beans.centerCrease,beanOrganicAsymmetry:beans.organicAsymmetry,beanNeonHalo:beans.neonHalo,beanGlimmer:beans.glimmer,beanGlimmerNonNeon:beans.glimmerNonNeon,beanGlimmerShell:beans.glimmerShell,beanGlimmerStyle:beans.glimmerStyle,beanVisualScale:beans.visualScale,beanApproxWorldHeight:beans.approxWorldHeight,beanGlimmerEntities:beans.glints,beanGlints:beans.glints,beanCreaseOverlaySegments:beans.creaseSegments};
-        if(road.roadSegments!==9||!road.blueSheenDisabled||road.legacyRoadOverlaysDisabled<18||traffic.vehicles!==7||traffic.truckTypes.length<4||beans.beans!==16||beans.visualScale>.40||!beans.glimmer||beans.neonHalo||beans.glimmerShell||beans.glints<48||beans.creaseSegments<160||traffic.wheelNodes<70)throw new Error(`environment coverage incomplete ${JSON.stringify(detail)}`);
+        const road=upgradeRoad(app),traffic=await upgradeTraffic(app),beans=await upgradeBeans(app);animate(app);const detail={road,...traffic,beans:beans.beans,beanCenterCrease:beans.centerCrease,beanCreaseSource:beans.creaseSource,beanOrganicAsymmetry:beans.organicAsymmetry,beanNeonHalo:beans.neonHalo,beanGlimmer:beans.glimmer,beanGlimmerNonNeon:beans.glimmerNonNeon,beanGlimmerShell:beans.glimmerShell,beanGlimmerStyle:beans.glimmerStyle,beanVisualScale:beans.visualScale,beanApproxWorldHeight:beans.approxWorldHeight,beanGlimmerEntities:beans.glints,beanGlints:beans.glints,beanCreaseOverlaySegments:beans.creaseOverlaySegments};
+        if(road.roadSegments!==9||!road.blueSheenDisabled||road.legacyRoadOverlaysDisabled<18||traffic.vehicles!==7||traffic.truckTypes.length<4||beans.beans!==16||beans.visualScale>.40||!beans.centerCrease||!beans.creaseSource.includes('sculpted S-curve')||!beans.glimmer||beans.neonHalo||beans.glimmerShell||beans.glints<64||beans.creaseOverlaySegments!==0||traffic.wheelNodes<70)throw new Error(`environment coverage incomplete ${JSON.stringify(detail)}`);
         window.WitchRideEnvironmentPass15={passId:PASS_ID,version:VERSION,active:true,production:true,preservesWitch:true,preservesGameplay:true,detail};w.environmentRealismPass=VERSION;w.environmentRealismDetail=detail;document.body.classList.add('environment-realism-pass15-ready');console.info('Witch Ride environment realism pass ready',window.WitchRideEnvironmentPass15);return;
       }catch(err){console.error('Witch Ride environment realism pass failed',err);w.environmentRealismPass='fallback';w.environmentRealismDetail={};return}
     }
