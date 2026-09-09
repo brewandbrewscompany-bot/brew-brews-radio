@@ -9,6 +9,8 @@ on:
       - 'halloween-radio/games/witch-ride-3d/tools/validate_witch_pass14.py'
       - 'halloween-radio/games/witch-ride-3d/tools/validate_witch_pass15.py'
       - 'halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js'
+      - 'halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js'
+      - 'halloween-radio/games/witch-ride-3d/index.html'
       - 'halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb'
       - 'halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json'
   workflow_dispatch:
@@ -41,6 +43,7 @@ jobs:
           git ls-tree origin/witch-ride-3d-witch-material-pass-15 halloween-radio/games/witch-ride-3d/tools/build_witch_pass14.py
           git ls-tree origin/witch-ride-3d-witch-material-pass-15 halloween-radio/games/witch-ride-3d/tools/validate_witch_pass15.py
           git ls-tree origin/witch-ride-3d-witch-material-pass-15 halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
+          git ls-tree origin/witch-ride-3d-witch-material-pass-15 halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
       - name: Validate locked Pass 14 geometry and Pass 15 runtime materials
         shell: bash
         run: |
@@ -48,12 +51,15 @@ jobs:
           python -m py_compile halloween-radio/games/witch-ride-3d/tools/validate_witch_pass14.py halloween-radio/games/witch-ride-3d/tools/validate_witch_pass15.py
           python halloween-radio/games/witch-ride-3d/tools/validate_witch_pass14.py
           python halloween-radio/games/witch-ride-3d/tools/validate_witch_pass15.py
+          node --check halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
           test "$(git hash-object halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb)" = "8ec46a27aa0b60244061ce8cc81c2d603a97b1c5"
           grep -q "witch-centerpiece-pass-v15" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           grep -q "pass-15-materials-v1" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           grep -q "materialsApplied:true" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           grep -q "geometryLocked:true" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
-      - name: Actual PlayCanvas 430x932 material gate
+          grep -q "pass15-environment-traffic-v1" halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
+          grep -q "pass15-environment-traffic.js" halloween-radio/games/witch-ride-3d/index.html
+      - name: Actual PlayCanvas 430x932 material and environment gate
         shell: bash
         run: |
           npm install --no-save puppeteer-core@24.16.0
@@ -77,20 +83,32 @@ jobs:
               const p=window.WitchRideWitchCenterpiecePass;
               return p?.active===true&&p?.materialsApplied===true&&p?.geometryLocked===true&&p?.meshOnly===false&&p?.missing?.length===0;
             },{polling:200,timeout:30000});
-            const boot=await page.evaluate(()=>({assetMode:window.WitchRide3D.assetMode,engine:window.WitchRide3D.engine,witch:window.WitchRideWitchCenterpiecePass,composition:window.WitchRide3D.compositionPass}));
+            await page.waitForFunction(()=>window.WitchRidePass15Environment?.active===true&&window.WitchRide3D?.pass15EnvironmentPass==='pass15-environment-traffic-v1',{polling:200,timeout:30000});
+            const boot=await page.evaluate(()=>({assetMode:window.WitchRide3D.assetMode,engine:window.WitchRide3D.engine,witch:window.WitchRideWitchCenterpiecePass,composition:window.WitchRide3D.compositionPass,environment:window.WitchRidePass15Environment}));
             if(boot.assetMode!=='glb-pbr'||boot.engine!=='PlayCanvas'||boot.witch?.passId!=='witch-centerpiece-pass-v15'||boot.witch?.version!=='pass-15-materials-v1'||boot.witch?.lockedMeshBlob!=='8ec46a27aa0b60244061ce8cc81c2d603a97b1c5')throw new Error('Pass 15 material boot failed '+JSON.stringify(boot));
             const a=boot.witch?.lookdev?.assigned||{};
             if(!(a.hair>=16&&a.wool>=10&&a.leather>=12&&a.wood>=1&&a.straw>=250&&a.felt>=2))throw new Error('Pass 15 material coverage incomplete '+JSON.stringify(a));
+            const d=boot.environment?.detail||{};
+            if(!(d.roadNeutralCharcoal===true&&d.roadSegments===9&&d.puddles===9&&d.coolRoadSheensDisabled===9&&d.reflectionRibbons===9&&d.headlightLensesAdjusted>=14&&d.oncomingTraffic>=4&&d.beanHalos===16&&d.witchTouched===false))throw new Error('Pass 15 environment coverage incomplete '+JSON.stringify(d));
             await page.click('#play');
             await page.waitForFunction(()=>window.WitchRide3D?.state?.mode==='playing',{polling:100,timeout:10000});
             await sleep(650);
-            const gameplayState=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,score:window.WitchRide3D.state.score,elapsed:window.WitchRide3D.state.elapsed,lookdev:window.WitchRideWitchCenterpiecePass.lookdev}));
+            const gameplayState=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,score:window.WitchRide3D.state.score,elapsed:window.WitchRide3D.state.elapsed,lookdev:window.WitchRideWitchCenterpiecePass.lookdev,environment:window.WitchRide3D.pass15EnvironmentDetail}));
             await page.screenshot({path:'witch-pass15-mobile-430x932.png',fullPage:false});
+
+            await page.evaluate(async()=>{
+              const pc=await import('playcanvas'),app=pc.app;
+              const bean=app.root.findByName('Coffee Bean 0');if(bean){bean.enabled=true;bean.__active=true;bean.setPosition(3.55,1.15,-12.5)}
+              const traffic=app.root.findByName('Oncoming Traffic 0');if(traffic)traffic.setPosition(-3.95,0,-17.5);
+              window.WitchRide3D.state.mode='paused';
+            });
+            await sleep(220);
+            await page.screenshot({path:'witch-pass15-environment-430x932.png',fullPage:false});
 
             await page.evaluate(async()=>{
               const pc=await import('playcanvas'),app=pc.app,cam=app.root.findByName('Chase Camera');
               if(!cam?.camera)throw new Error('Chase Camera unavailable for close material render');
-              const hidePrefixes=['Road Segment','Fog Bank','Dead Tree','Fence ','Pumpkin ','1938 Coupe','Coffee Bean','Cinematic Foreground','Pass10','Pass11','Brew & Brews Haunted Roastery','Moon Halo','Moon'];
+              const hidePrefixes=['Road Segment','Fog Bank','Dead Tree','Fence ','Pumpkin ','1938 Coupe','Oncoming Traffic','Coffee Bean','Cinematic Foreground','Pass10','Pass11','Pass15','Brew & Brews Haunted Roastery','Moon Halo','Moon'];
               const all=[...(app.root.children||[])];
               for(const e of all){if(hidePrefixes.some(p=>e.name?.startsWith(p)))e.enabled=false}
               document.querySelector('#hud')?.classList.add('hidden');
@@ -111,6 +129,7 @@ jobs:
           name: witch-pass15-material-renders
           path: |
             witch-pass15-mobile-430x932.png
+            witch-pass15-environment-430x932.png
             witch-pass15-close-430x932.png
           if-no-files-found: error
           retention-days: 7
