@@ -59,7 +59,7 @@ function refineVehicleHeadlights(app){
         node.light.intensity=.36+(i%3)*.015;node.light.range=10.8;node.light.color=new pc.Color(1,.67,.38);pointLightsAdjusted++;
       }
     });
-    const spill=app.root.findByName(`Wet Headlight Spill ${i}`);if(spill){spill.setLocalScale(1.55,1,7.0);const m=renderMaterial(spill);if(m)tuneMaterial(m,{diffuse:[.52,.29,.11],opacity:.028,emissive:[.36,.16,.045],emissiveIntensity:.30});spillsAdjusted++}
+    const spill=app.root.findByName(`Wet Headlight Spill ${i}`);if(spill){spill.enabled=false;spillsAdjusted++}
   }
   return {lensesAdjusted,mountsAdjusted,pointLightsAdjusted,spillsAdjusted};
 }
