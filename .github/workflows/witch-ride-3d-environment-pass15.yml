@@ -1,0 +1,97 @@
+name: Witch Ride 3D Environment Realism Pass 15
+
+on:
+  push:
+    branches: [witch-ride-3d-witch-rebuild-pass-14]
+    paths:
+      - '.github/workflows/witch-ride-3d-environment-pass15.yml'
+      - 'halloween-radio/games/witch-ride-3d/tools/build_road_traffic_bean_pass15.py'
+      - 'halloween-radio/games/witch-ride-3d/tools/pass15_payload_*.txt'
+      - 'halloween-radio/games/witch-ride-3d/environment-realism-pass15.js'
+      - 'halloween-radio/games/witch-ride-3d/index.html'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  environment-realism:
+    if: github.ref == 'refs/heads/witch-ride-3d-witch-rebuild-pass-14'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 20}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Safety baseline
+        shell: bash
+        run: |
+          git fetch origin main witch-ride-3d-witch-rebuild-pass-14
+          test "$(git rev-parse origin/witch-ride-3d-witch-rebuild-pass-14)" = "$GITHUB_SHA"
+          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/build_road_traffic_bean_pass15.py
+          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/environment-realism-pass15.js
+          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/index.html
+          git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
+          sha256sum halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb > /tmp/witch.sha
+      - name: Build and validate environment assets
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check 'numpy>=2,<3' 'scipy>=1.15,<2' 'trimesh==4.11.1' 'networkx>=3.4,<4' 'pillow>=11,<12'
+          python -m py_compile halloween-radio/games/witch-ride-3d/tools/build_road_traffic_bean_pass15.py
+          node --check halloween-radio/games/witch-ride-3d/environment-realism-pass15.js
+          python halloween-radio/games/witch-ride-3d/tools/build_road_traffic_bean_pass15.py
+          sha256sum -c /tmp/witch.sha
+          grep -q 'src="environment-realism-pass15.js"' halloween-radio/games/witch-ride-3d/index.html
+          grep -q 'const GAMEPLAY_SCALE=.24' halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
+          grep -q 'pass-14-production-materials-v3-textured' halloween-radio/games/witch-ride-3d/witch-material-pass14.js
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=Path('halloween-radio/games/witch-ride-3d');m=json.loads((r/'assets/environment-realism-pass15.json').read_text())
+          assert sorted(m['traffic'])==['box','farm','pickup','utility']
+          for k,v in m['traffic'].items():
+              assert v['bytes']>300000 and v['geometries']>=24 and v['wheel_geometry_count']>=12,(k,v)
+          b=m['bean'];assert b['bytes']>150000 and b['geometries']>=3 and b['organic_asymmetry'] and not b['neon_visibility'] and 'S-curve' in b['center_crease']
+          print('PASS15_ASSET_GATE',json.dumps(m,sort_keys=True))
+          PY
+      - name: Actual PlayCanvas 430x932 environment gate
+        shell: bash
+        run: |
+          npm install --no-save puppeteer-core@24.16.0
+          python3 -m http.server 8000 --directory . >/tmp/pass15-http.log 2>&1 &
+          SERVER_PID=$!; trap 'kill $SERVER_PID || true' EXIT; sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"; test -n "$CHROME_BIN"
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const p=require('puppeteer-core'),sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          (async()=>{const b=await p.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--mute-audio','--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader']}),page=await b.newPage();await page.setViewport({width:430,height:932,deviceScaleFactor:1,isMobile:true,hasTouch:true});const errors=[];page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});await page.goto('http://127.0.0.1:8000/halloween-radio/games/witch-ride-3d/',{waitUntil:'domcontentloaded',timeout:30000});await page.waitForFunction(()=>window.WitchRideEnvironmentPass15?.active===true&&window.WitchRideWitchMaterialPass14?.active===true,{polling:200,timeout:30000});const boot=await page.evaluate(async()=>{const pc=await import('playcanvas'),a=pc.app,w=window.WitchRide3D,e=window.WitchRideEnvironmentPass15,witch=a.root.findByName('Witch Rig');return{engine:w.engine,assetMode:w.assetMode,env:e,scale:witch.getLocalScale().x,mesh:window.WitchRideWitchCenterpiecePass,material:window.WitchRideWitchMaterialPass14}});if(boot.engine!=='PlayCanvas'||boot.assetMode!=='glb-pbr'||boot.env.detail.road.roadSegments!==9||boot.env.detail.vehicles!==7||boot.env.detail.truckTypes.length<4||boot.env.detail.beans!==16||Math.abs(boot.scale-.24)>.005||boot.mesh.hatLocked!==true||boot.material.version!=='pass-14-production-materials-v3-textured')throw Error('gate '+JSON.stringify(boot));await page.click('#play');await page.waitForFunction(()=>window.WitchRide3D?.state?.mode==='playing',{timeout:10000});await sleep(350);await page.evaluate(async()=>{const pc=await import('playcanvas'),a=pc.app,t=a.root.findByName('1938 Coupe 0'),bean=a.root.findByName('Coffee Bean 0');t.enabled=true;t.__active=false;t.setPosition(3.55,0,-10.5);bean.enabled=true;bean.__active=false;bean.setPosition(-3.45,1.15,-6.4)});await sleep(250);await page.screenshot({path:'pass15-gameplay-430x932.png'});await page.evaluate(async()=>{const pc=await import('playcanvas'),a=pc.app,c=a.root.findByName('Chase Camera');window.__pass15Review='truck';a.on('prerender',()=>{const m=window.__pass15Review;if(m==='truck'){c.setPosition(4.8,2.7,7.9);c.lookAt(0,1.15,0);c.camera.fov=46}else if(m==='road'){c.setPosition(0,1.08,8.4);c.lookAt(0,0,-19);c.camera.fov=54}else{c.setPosition(2.1,1.62,4.1);c.lookAt(0,1.25,0);c.camera.fov=32}});document.querySelector('#hud')?.classList.add('hidden');for(const e of a.root.children||[]){if(e.name==='Witch Rig'||e.name?.startsWith('Dead Tree')||e.name?.startsWith('Fog Bank')||e.name?.startsWith('Fence ')||e.name?.startsWith('Pumpkin ')||e.name?.startsWith('Brew & Brews')||(e.name?.startsWith('Road Segment ')&&e.name!=='Road Segment 0')||(e.name?.startsWith('1938 Coupe ')&&e.name!=='1938 Coupe 0')||e.name?.startsWith('Coffee Bean '))e.enabled=false}const r=a.root.findByName('Road Segment 0'),t=a.root.findByName('1938 Coupe 0');r.enabled=true;r.setPosition(0,0,0);t.enabled=true;t.setPosition(0,0,0)});await sleep(250);await page.screenshot({path:'pass15-truck-close-430x932.png'});await page.evaluate(async()=>{const pc=await import('playcanvas'),a=pc.app;window.__pass15Review='road';a.root.findByName('1938 Coupe 0').enabled=false});await sleep(250);await page.screenshot({path:'pass15-road-level-430x932.png'});await page.evaluate(async()=>{const pc=await import('playcanvas'),a=pc.app;window.__pass15Review='bean';a.root.findByName('Road Segment 0').enabled=false;const bean=a.root.findByName('Coffee Bean 0');bean.enabled=true;bean.__active=false;bean.setPosition(0,1.25,0);bean.setEulerAngles(0,0,0)});await sleep(220);await page.screenshot({path:'pass15-bean-close-430x932.png'});if(errors.length)throw Error(errors.join(' | '));await b.close()})().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - name: Upload renders
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: witch-pass15-road-truck-bean-renders
+          path: |
+            pass15-gameplay-430x932.png
+            pass15-truck-close-430x932.png
+            pass15-road-level-430x932.png
+            pass15-bean-close-430x932.png
+          if-no-files-found: error
+          retention-days: 7
+      - name: Commit generated environment assets safely
+        shell: bash
+        run: |
+          git add halloween-radio/games/witch-ride-3d/assets/models/traffic-*.glb halloween-radio/games/witch-ride-3d/assets/models/coffee-bean-v2.glb halloween-radio/games/witch-ride-3d/assets/environment-realism-pass15.json
+          git diff --cached --quiet && exit 0
+          git config user.name brewandbrewscompany-bot; git config user.email brewandbrewscompany@gmail.com
+          git commit -m 'Build Witch Ride Pass 15 road traffic and bean assets'
+          for attempt in 1 2 3; do
+            git fetch origin main witch-ride-3d-witch-rebuild-pass-14
+            git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/tools/build_road_traffic_bean_pass15.py
+            git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/environment-realism-pass15.js
+            git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/index.html
+            git ls-tree origin/witch-ride-3d-witch-rebuild-pass-14 halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
+            git rebase origin/witch-ride-3d-witch-rebuild-pass-14
+            git fetch origin main witch-ride-3d-witch-rebuild-pass-14
+            if git push origin HEAD:witch-ride-3d-witch-rebuild-pass-14; then exit 0; fi
+            sleep 2
+          done
+          exit 1
