@@ -1,0 +1,72 @@
+{
+  "pass": "environment-realism-pass15",
+  "traffic": {
+    "pickup": {
+      "bytes": 418460,
+      "geometries": 45,
+      "nodes": 46,
+      "extents": [
+        2.7118,
+        2.28,
+        5.985
+      ],
+      "wheel_geometry_count": 12
+    },
+    "farm": {
+      "bytes": 409356,
+      "geometries": 53,
+      "nodes": 54,
+      "extents": [
+        2.7718,
+        2.34,
+        6.625
+      ],
+      "wheel_geometry_count": 12
+    },
+    "box": {
+      "bytes": 404620,
+      "geometries": 43,
+      "nodes": 44,
+      "extents": [
+        2.8118,
+        3.04,
+        6.765
+      ],
+      "wheel_geometry_count": 12
+    },
+    "utility": {
+      "bytes": 419628,
+      "geometries": 52,
+      "nodes": 53,
+      "extents": [
+        2.7518,
+        2.4974,
+        6.205
+      ],
+      "wheel_geometry_count": 12
+    }
+  },
+  "bean": {
+    "bytes": 257452,
+    "geometries": 3,
+    "nodes": 4,
+    "extents": [
+      0.9272,
+      1.28,
+      0.5886
+    ],
+    "wheel_geometry_count": 0,
+    "center_crease": "sculpted S-curve front/back plus dark inset ribbons",
+    "organic_asymmetry": true,
+    "neon_visibility": false
+  },
+  "textures": [
+    "traffic-truck-paint-albedo.png",
+    "traffic-truck-paint-normal.png",
+    "traffic-truck-paint-metalrough.png",
+    "traffic-truck-tire-albedo.png",
+    "traffic-truck-tire-normal.png",
+    "coffee-bean-v2-albedo.png",
+    "coffee-bean-v2-normal.png"
+  ]
+}
