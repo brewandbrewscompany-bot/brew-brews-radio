@@ -1,6 +1,6 @@
 import * as pc from 'playcanvas';
 
-const VERSION='pass15-environment-traffic-v3';
+const VERSION='pass15-environment-traffic-v4';
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 const REFLECTION_SLAB_PREFIXES=['Wet sheen','Pass11 Wet Reflection','Warm Road Reflection','Pass9 Moon Road Sheen','Pass9 Warm Road Pool','Wet Headlight Spill','Headlight Spill','Pass15 Neutral Reflection','Pass15 Warm Reflection','Oncoming Reflection'];
 
@@ -26,25 +26,32 @@ function purgeReflectionSlabs(app){
   });
   return disabled;
 }
+function disableGroundFog(app){
+  let disabled=0;
+  for(let i=0;i<20;i++){
+    const e=app.root.findByName(`Realism Fog ${i}`);if(e&&e.enabled!==false){e.enabled=false;disabled++}
+  }
+  return disabled;
+}
 function softWetTexture(app){
   const c=document.createElement('canvas');c.width=64;c.height=256;const ctx=c.getContext('2d'),img=ctx.createImageData(c.width,c.height),d=img.data;
   for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++){
     const nx=(x-(c.width-1)/2)/(c.width*.5),ny=(y-c.height*.46)/(c.height*.54);
-    const taper=.42+.58*Math.max(0,1-Math.abs(ny)*.72),grain=.94+.06*Math.sin(y*.31+x*.17);
-    const a=Math.exp(-(nx*nx)/(0.105*taper*taper)-(ny*ny)/.44)*grain;
-    const k=(y*c.width+x)*4;d[k]=255;d[k+1]=205;d[k+2]=145;d[k+3]=Math.round(255*Math.min(.92,a));
+    const taper=.38+.62*Math.max(0,1-Math.abs(ny)*.72),grain=.92+.08*Math.sin(y*.31+x*.17);
+    const a=Math.exp(-(nx*nx)/(0.085*taper*taper)-(ny*ny)/.50)*grain;
+    const k=(y*c.width+x)*4;d[k]=255;d[k+1]=208;d[k+2]=150;d[k+3]=Math.round(255*Math.min(.94,a));
   }
   ctx.putImageData(img,0,0);
   const t=new pc.Texture(app.graphicsDevice,{width:c.width,height:c.height,format:pc.PIXELFORMAT_R8_G8_B8_A8,mipmaps:false});
   t.name='Pass15 soft wet reflection gradient';t.addressU=pc.ADDRESS_CLAMP_TO_EDGE;t.addressV=pc.ADDRESS_CLAMP_TO_EDGE;t.minFilter=pc.FILTER_LINEAR;t.magFilter=pc.FILTER_LINEAR;t.setSource(c);return t;
 }
 function softWetMaterial(app){
-  const tex=softWetTexture(app),m=new pc.StandardMaterial();m.name='Pass15 feathered wet light';m.diffuse=new pc.Color(.34,.17,.07);m.emissive=new pc.Color(.72,.30,.08);m.emissiveIntensity=.16;m.emissiveMap=tex;m.opacity=.12;m.opacityMap=tex;m.opacityMapChannel='a';m.blendType=pc.BLEND_NORMAL;m.depthWrite=false;m.cull=pc.CULLFACE_NONE;m.useMetalness=true;m.metalness=0;m.gloss=.88;m.update();return m;
+  const tex=softWetTexture(app),m=new pc.StandardMaterial();m.name='Pass15 feathered wet light';m.diffuse=new pc.Color(.40,.20,.08);m.emissive=new pc.Color(.80,.34,.095);m.emissiveIntensity=.24;m.emissiveMap=tex;m.opacity=.18;m.opacityMap=tex;m.opacityMapChannel='a';m.blendType=pc.BLEND_NORMAL;m.depthWrite=false;m.cull=pc.CULLFACE_NONE;m.useMetalness=true;m.metalness=0;m.gloss=.90;m.update();return m;
 }
 function addSoftHeadlightReflection(car,index,mat){
   let count=0;
   for(const x of [-.70,.70]){
-    const e=primitive(`Pass15 Soft Wet Light ${index} ${count}`,'plane',[.60,1,4.8],[x,.026,4.25],mat,car,[0,0,0]);e.__softWetReflection=true;count++;
+    const e=primitive(`Pass15 Soft Wet Light ${index} ${count}`,'plane',[.48,1,5.4],[x,.026,4.70],mat,car,[0,0,0]);e.__softWetReflection=true;count++;
   }
   return count;
 }
@@ -131,10 +138,10 @@ async function install(){
     const app=pc.app,w=window.WitchRide3D;
     if(app&&w?.ready&&w?.illuminationPass==='illumination-pass-v9'&&w?.worldDetailPass==='world-detail-pass-v6'&&window.WitchRideWitchCenterpiecePass?.active===true){
       try{
-        const road=neutralizeRoad(app),softMat=softWetMaterial(app),headlights=refineVehicleHeadlights(app,softMat),traffic=buildOncomingTraffic(app),beans=buildBeanHalos(app);
+        const road=neutralizeRoad(app),groundFogDisabled=disableGroundFog(app),softMat=softWetMaterial(app),headlights=refineVehicleHeadlights(app,softMat),traffic=buildOncomingTraffic(app),beans=buildBeanHalos(app);
         const purgedReflectionSlabs=purgeReflectionSlabs(app);
         animate(app,traffic,beans);
-        const detail={roadNeutralCharcoal:road.roads===9,roadSegments:road.roads,puddlesDisabled:road.puddlesDisabled,coolRoadSheensDisabled:road.coolSheensDisabled,baseSheenSlabsDisabled:road.baseSheenSlabsDisabled,legacyWetStreaksDisabled:road.legacyStreaksDisabled,legacyWarmReflectionsDisabled:road.legacyWarmDisabled,legacyWarmPoolsDisabled:road.legacyWarmPoolsDisabled,reflectionPanels:road.reflectionPanels,purgedReflectionSlabs,headlightLensesAdjusted:headlights.lensesAdjusted,headlightMountsAdjusted:headlights.mountsAdjusted,headlightPointsAdjusted:headlights.pointLightsAdjusted,headlightSpillsAdjusted:headlights.spillsAdjusted,softWetReflections:headlights.softWetReflections,oncomingTraffic:traffic.cars.length,beanHalos:beans.halos.length,beansRescaled:beans.beansRescaled,beanScale:beans.beanScale,beanLightsSoftened:beans.beanLightsSoftened,beanHaloScale:beans.haloScale,beanHaloOpacity:beans.haloOpacity,beanHaloIntensity:beans.haloIntensity,witchTouched:false};
+        const detail={roadNeutralCharcoal:road.roads===9,roadSegments:road.roads,puddlesDisabled:road.puddlesDisabled,groundFogDisabled,coolRoadSheensDisabled:road.coolSheensDisabled,baseSheenSlabsDisabled:road.baseSheenSlabsDisabled,legacyWetStreaksDisabled:road.legacyStreaksDisabled,legacyWarmReflectionsDisabled:road.legacyWarmDisabled,legacyWarmPoolsDisabled:road.legacyWarmPoolsDisabled,reflectionPanels:road.reflectionPanels,purgedReflectionSlabs,headlightLensesAdjusted:headlights.lensesAdjusted,headlightMountsAdjusted:headlights.mountsAdjusted,headlightPointsAdjusted:headlights.pointLightsAdjusted,headlightSpillsAdjusted:headlights.spillsAdjusted,softWetReflections:headlights.softWetReflections,oncomingTraffic:traffic.cars.length,beanHalos:beans.halos.length,beansRescaled:beans.beansRescaled,beanScale:beans.beanScale,beanLightsSoftened:beans.beanLightsSoftened,beanHaloScale:beans.haloScale,beanHaloOpacity:beans.haloOpacity,beanHaloIntensity:beans.haloIntensity,witchTouched:false};
         w.pass15EnvironmentPass=VERSION;w.pass15EnvironmentDetail=detail;window.WitchRidePass15Environment={active:true,version:VERSION,detail};document.body.classList.add('pass15-environment-ready');console.info('Witch Ride Pass 15 environment/traffic pass ready',VERSION,detail);return;
       }catch(err){console.error('Witch Ride Pass 15 environment/traffic pass failed',err);w.pass15EnvironmentPass='fallback';w.pass15EnvironmentDetail={};w.pass15EnvironmentError=err?.stack||err?.message||String(err);return}
     }
