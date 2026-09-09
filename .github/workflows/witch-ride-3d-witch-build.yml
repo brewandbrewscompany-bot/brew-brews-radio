@@ -60,8 +60,9 @@ jobs:
           grep -q "stanceLocked:true" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           grep -q "materialsApplied:true" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           grep -q "geometryLocked:true" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
-          grep -q "pass15-environment-traffic-v3" halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
+          grep -q "pass15-environment-traffic-v4" halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
           grep -q "puddlesDisabled" halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
+          grep -q "groundFogDisabled" halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
           grep -q "Pass15 Soft Wet Light" halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
           grep -q "reflectionPanels:0" halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
           grep -q "pass15-environment-traffic.js" halloween-radio/games/witch-ride-3d/index.html
@@ -97,13 +98,13 @@ jobs:
               const p=window.WitchRideWitchCenterpiecePass;
               return p?.active===true&&p?.materialsApplied===true&&p?.geometryLocked===true&&p?.scaleEnforced===true&&p?.stanceLocked===true&&p?.meshOnly===false&&p?.missing?.length===0;
             },{polling:200,timeout:30000});
-            await page.waitForFunction(()=>window.WitchRidePass15Environment?.active===true&&window.WitchRide3D?.pass15EnvironmentPass==='pass15-environment-traffic-v3',{polling:200,timeout:30000});
+            await page.waitForFunction(()=>window.WitchRidePass15Environment?.active===true&&window.WitchRide3D?.pass15EnvironmentPass==='pass15-environment-traffic-v4',{polling:200,timeout:30000});
             const boot=await page.evaluate(()=>({assetMode:window.WitchRide3D.assetMode,engine:window.WitchRide3D.engine,witch:window.WitchRideWitchCenterpiecePass,composition:window.WitchRide3D.compositionPass,environment:window.WitchRidePass15Environment}));
             if(boot.assetMode!=='glb-pbr'||boot.engine!=='PlayCanvas'||boot.witch?.passId!=='witch-centerpiece-pass-v15'||boot.witch?.version!=='pass-15-materials-v2-pose-lock'||boot.witch?.gameplayScale!==.24||boot.witch?.lockedMeshBlob!=='8ec46a27aa0b60244061ce8cc81c2d603a97b1c5')throw new Error('Pass 15 presentation boot failed '+JSON.stringify(boot));
             const a=boot.witch?.lookdev?.assigned||{};
             if(!(a.hair>=16&&a.wool>=10&&a.leather>=12&&a.wood>=1&&a.straw>=250&&a.felt>=2))throw new Error('Pass 15 material coverage incomplete '+JSON.stringify(a));
             const d=boot.environment?.detail||{};
-            if(!(d.roadNeutralCharcoal===true&&d.roadSegments===9&&d.puddlesDisabled>=27&&d.coolRoadSheensDisabled===9&&d.baseSheenSlabsDisabled>=18&&d.reflectionPanels===0&&d.softWetReflections>=14&&d.headlightLensesAdjusted>=14&&d.headlightPointsAdjusted>=14&&d.oncomingTraffic>=4&&d.beanHalos===16&&d.beanScale<=.95&&d.beanHaloScale<=.28&&d.beanHaloOpacity<=.016&&d.beanHaloIntensity<=.11&&d.witchTouched===false))throw new Error('Pass 15 environment coverage incomplete '+JSON.stringify(d));
+            if(!(d.roadNeutralCharcoal===true&&d.roadSegments===9&&d.puddlesDisabled>=27&&d.groundFogDisabled>=12&&d.coolRoadSheensDisabled===9&&d.baseSheenSlabsDisabled>=18&&d.reflectionPanels===0&&d.softWetReflections>=14&&d.headlightLensesAdjusted>=14&&d.headlightPointsAdjusted>=14&&d.oncomingTraffic>=4&&d.beanHalos===16&&d.beanScale<=.95&&d.beanHaloScale<=.28&&d.beanHaloOpacity<=.016&&d.beanHaloIntensity<=.11&&d.witchTouched===false))throw new Error('Pass 15 environment coverage incomplete '+JSON.stringify(d));
             await page.click('#play');
             await page.waitForFunction(()=>window.WitchRide3D?.state?.mode==='playing',{polling:100,timeout:10000});
             await sleep(750);
@@ -135,8 +136,8 @@ jobs:
               const bristleBounds=bounds(witch.findByName('broom_bristles')),shaftBounds=bounds(witch.findByName('broom_handle'))||bounds(witch.findByName('broom_shaft'));
               const scale=witch.getLocalScale();
               const roadColors=[];for(let i=0;i<9;i++){const root=app.root.findByName(`Road Segment ${i}`),road=root?.findByName('Road'),m=road?.render?.material||road?.render?.meshInstances?.[0]?.material;if(m?.diffuse)roadColors.push([m.diffuse.r,m.diffuse.g,m.diffuse.b])}
-              const slabTokens=['Wet sheen','Pass11 Wet Reflection','Warm Road Reflection','Pass9 Moon Road Sheen','Pass9 Warm Road Pool','Wet Headlight Spill','Headlight Spill','Pass15 Neutral Reflection','Pass15 Warm Reflection','Oncoming Reflection'];let enabledSlabs=0,enabledPuddles=0,softWetNodes=0;
-              const walk=(n,parentEnabled=true)=>{const effective=parentEnabled&&n.enabled!==false;if(effective&&slabTokens.some(t=>(n.name||'').startsWith(t)))enabledSlabs++;if(effective&&/^Puddle( Variation)?/.test(n.name||''))enabledPuddles++;if((n.name||'').startsWith('Pass15 Soft Wet Light'))softWetNodes++;for(const c of n.children||[])walk(c,effective)};walk(app.root,true);
+              const slabTokens=['Wet sheen','Pass11 Wet Reflection','Warm Road Reflection','Pass9 Moon Road Sheen','Pass9 Warm Road Pool','Wet Headlight Spill','Headlight Spill','Pass15 Neutral Reflection','Pass15 Warm Reflection','Oncoming Reflection'];let enabledSlabs=0,enabledPuddles=0,enabledGroundFog=0,softWetNodes=0;
+              const walk=(n,parentEnabled=true)=>{const effective=parentEnabled&&n.enabled!==false;if(effective&&slabTokens.some(t=>(n.name||'').startsWith(t)))enabledSlabs++;if(effective&&/^Puddle( Variation)?/.test(n.name||''))enabledPuddles++;if(effective&&(n.name||'').startsWith('Realism Fog'))enabledGroundFog++;if((n.name||'').startsWith('Pass15 Soft Wet Light'))softWetNodes++;for(const c of n.children||[])walk(c,effective)};walk(app.root,true);
               const tailDeltaZ=bristleBounds&&shaftBounds?bristleBounds.center.z-shaftBounds.center.z:null;
               return{
                 witch:{...wb,scale:[scale.x,scale.y,scale.z]},
@@ -144,7 +145,7 @@ jobs:
                 kneeSeparationPx:Math.abs(kneeR.x-kneeL.x),
                 broomStraddlePx:Math.abs(straddleR.x-straddleL.x),
                 broomTailDeltaZ:tailDeltaZ,
-                roadColors,enabledReflectionSlabs:enabledSlabs,enabledPuddles,softWetNodes,
+                roadColors,enabledReflectionSlabs:enabledSlabs,enabledPuddles,enabledGroundFog,softWetNodes,
                 centeredOffsetPx:wb?Math.abs(wb.centerX-215):999
               };
             });
@@ -155,7 +156,7 @@ jobs:
             if(!(metrics.kneeSeparationPx>=LIMITS.kneeSeparationPxMin))throw new Error('Knee separation gate failed '+JSON.stringify({metrics,LIMITS}));
             if(!(metrics.broomStraddlePx>=LIMITS.broomStraddlePxMin))throw new Error('Broom straddle gate failed '+JSON.stringify({metrics,LIMITS}));
             if(!(metrics.broomTailDeltaZ!==null&&metrics.broomTailDeltaZ>=LIMITS.broomTailDeltaZMin))throw new Error('Broom tail orientation gate failed '+JSON.stringify({metrics,LIMITS}));
-            if(metrics.enabledReflectionSlabs!==0||metrics.enabledPuddles!==0)throw new Error('Road slab/puddle gate failed '+JSON.stringify(metrics));
+            if(metrics.enabledReflectionSlabs!==0||metrics.enabledPuddles!==0||metrics.enabledGroundFog!==0)throw new Error('Road slab/puddle/ground-fog gate failed '+JSON.stringify(metrics));
             if(metrics.softWetNodes<14)throw new Error('Soft wet reflection gate failed '+JSON.stringify(metrics));
             if(metrics.centeredOffsetPx>46)throw new Error('Witch road centering gate failed '+JSON.stringify(metrics));
             for(const rgb of metrics.roadColors){if(Math.max(...rgb)-Math.min(...rgb)>.025||rgb[2]>rgb[0]+.012)throw new Error('Road neutral-charcoal gate failed '+JSON.stringify(metrics.roadColors))}
@@ -175,7 +176,7 @@ jobs:
             await page.evaluate(async()=>{
               const pc=await import('playcanvas'),app=pc.app,cam=app.root.findByName('Chase Camera');
               if(!cam?.camera)throw new Error('Chase Camera unavailable for close render');
-              const hidePrefixes=['Road Segment','Fog Bank','Dead Tree','Fence ','Pumpkin ','1938 Coupe','Oncoming Traffic','Coffee Bean','Cinematic Foreground','Pass10','Pass11','Brew & Brews Haunted Roastery','Moon Halo','Moon'];
+              const hidePrefixes=['Road Segment','Fog Bank','Realism Fog','Dead Tree','Fence ','Pumpkin ','1938 Coupe','Oncoming Traffic','Coffee Bean','Cinematic Foreground','Cinematic Haunted Horizon','Pass10','Pass11','Brew & Brews Haunted Roastery','Moon Halo','Moon'];
               for(const e of [...(app.root.children||[])])if(hidePrefixes.some(p=>e.name?.startsWith(p)))e.enabled=false;
               document.querySelector('#hud')?.classList.add('hidden');
               for(const el of document.querySelectorAll('.screen'))el.classList.remove('open');
