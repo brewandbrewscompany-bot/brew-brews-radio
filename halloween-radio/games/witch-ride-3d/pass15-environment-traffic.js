@@ -2,6 +2,7 @@ import * as pc from 'playcanvas';
 
 const VERSION='pass15-environment-traffic-v2';
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const REFLECTION_SLAB_PREFIXES=['Wet sheen','Pass11 Wet Reflection','Warm Road Reflection','Pass9 Moon Road Sheen','Pass9 Warm Road Pool','Wet Headlight Spill','Headlight Spill','Pass15 Neutral Reflection','Pass15 Warm Reflection','Oncoming Reflection'];
 
 function walk(root,fn){if(!root)return;fn(root);for(const c of root.children||[])walk(c,fn)}
 function renderMaterial(node){return node?.render?.material||node?.render?.meshInstances?.[0]?.material||null}
@@ -17,6 +18,13 @@ function tuneMaterial(m,{diffuse=null,gloss=null,metalness=null,opacity=null,emi
 }
 function primitive(name,type,scale,pos,material,parent=null,rot=null){
   const e=new pc.Entity(name);e.addComponent('render',{type});e.setLocalScale(...scale);e.setLocalPosition(...pos);if(rot)e.setLocalEulerAngles(...rot);e.render.material=material;e.render.castShadows=false;e.render.receiveShadows=false;(parent||pc.app.root).addChild(e);return e;
+}
+function purgeReflectionSlabs(app){
+  let disabled=0;
+  walk(app.root,node=>{
+    if(node!==app.root&&node.enabled!==false&&REFLECTION_SLAB_PREFIXES.some(prefix=>(node.name||'').startsWith(prefix))){node.enabled=false;disabled++}
+  });
+  return disabled;
 }
 
 function neutralizeRoad(app){
@@ -103,8 +111,9 @@ async function install(){
     if(app&&w?.ready&&w?.illuminationPass==='illumination-pass-v9'&&w?.worldDetailPass==='world-detail-pass-v6'&&window.WitchRideWitchCenterpiecePass?.active===true){
       try{
         const road=neutralizeRoad(app),headlights=refineVehicleHeadlights(app),traffic=buildOncomingTraffic(app),beans=buildBeanHalos(app);
+        const purgedReflectionSlabs=purgeReflectionSlabs(app);
         animate(app,traffic,beans);
-        const detail={roadNeutralCharcoal:road.roads===9,roadSegments:road.roads,puddles:road.puddles,coolRoadSheensDisabled:road.coolSheensDisabled,baseSheenSlabsDisabled:road.baseSheenSlabsDisabled,legacyWetStreaksDisabled:road.legacyStreaksDisabled,legacyWarmReflectionsDisabled:road.legacyWarmDisabled,legacyWarmPoolsDisabled:road.legacyWarmPoolsDisabled,reflectionPanels:road.reflectionPanels,headlightLensesAdjusted:headlights.lensesAdjusted,headlightMountsAdjusted:headlights.mountsAdjusted,headlightPointsAdjusted:headlights.pointLightsAdjusted,headlightSpillsAdjusted:headlights.spillsAdjusted,oncomingTraffic:traffic.cars.length,beanHalos:beans.halos.length,beansRescaled:beans.beansRescaled,beanLightsSoftened:beans.beanLightsSoftened,beanHaloScale:beans.haloScale,beanHaloOpacity:beans.haloOpacity,beanHaloIntensity:beans.haloIntensity,witchTouched:false};
+        const detail={roadNeutralCharcoal:road.roads===9,roadSegments:road.roads,puddles:road.puddles,coolRoadSheensDisabled:road.coolSheensDisabled,baseSheenSlabsDisabled:road.baseSheenSlabsDisabled,legacyWetStreaksDisabled:road.legacyStreaksDisabled,legacyWarmReflectionsDisabled:road.legacyWarmDisabled,legacyWarmPoolsDisabled:road.legacyWarmPoolsDisabled,reflectionPanels:road.reflectionPanels,purgedReflectionSlabs,headlightLensesAdjusted:headlights.lensesAdjusted,headlightMountsAdjusted:headlights.mountsAdjusted,headlightPointsAdjusted:headlights.pointLightsAdjusted,headlightSpillsAdjusted:headlights.spillsAdjusted,oncomingTraffic:traffic.cars.length,beanHalos:beans.halos.length,beansRescaled:beans.beansRescaled,beanLightsSoftened:beans.beanLightsSoftened,beanHaloScale:beans.haloScale,beanHaloOpacity:beans.haloOpacity,beanHaloIntensity:beans.haloIntensity,witchTouched:false};
         w.pass15EnvironmentPass=VERSION;w.pass15EnvironmentDetail=detail;window.WitchRidePass15Environment={active:true,version:VERSION,detail};document.body.classList.add('pass15-environment-ready');console.info('Witch Ride Pass 15 environment/traffic pass ready',VERSION,detail);return;
       }catch(err){console.error('Witch Ride Pass 15 environment/traffic pass failed',err);w.pass15EnvironmentPass='fallback';w.pass15EnvironmentDetail={};w.pass15EnvironmentError=err?.stack||err?.message||String(err);return}
     }
