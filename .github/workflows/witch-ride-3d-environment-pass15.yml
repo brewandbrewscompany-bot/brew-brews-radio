@@ -43,7 +43,7 @@ jobs:
           grep -q 'src="environment-realism-pass15.js"' halloween-radio/games/witch-ride-3d/index.html
           grep -q 'const GAMEPLAY_SCALE=.24' halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           grep -q 'pass-14-production-materials-v3-textured' halloween-radio/games/witch-ride-3d/witch-material-pass14.js
-          grep -q "road-truck-bean-realism-v3-coffee-crease-glimmer" halloween-radio/games/witch-ride-3d/environment-realism-pass15.js
+          grep -q "road-truck-bean-realism-v4-coffee-sparkle-crease" halloween-radio/games/witch-ride-3d/environment-realism-pass15.js
           python - <<'PY'
           import json
           from pathlib import Path
@@ -78,7 +78,7 @@ jobs:
               return{engine:w.engine,assetMode:w.assetMode,env:e,scale:witch.getLocalScale().x,mesh:window.WitchRideWitchCenterpiecePass,material:window.WitchRideWitchMaterialPass14};
             });
             const d=boot.env.detail;
-            if(boot.engine!=='PlayCanvas'||boot.assetMode!=='glb-pbr'||boot.env.version!=='road-truck-bean-realism-v3-coffee-crease-glimmer'||d.road.roadSegments!==9||d.road.blueSheenDisabled!==true||d.road.roadPalette!=='neutral-charcoal-warm'||d.vehicles!==7||d.truckTypes.length<4||d.beans!==16||d.beanVisualScale>.40||d.beanGlimmer!==true||d.beanNeonHalo!==false||d.beanCreaseOverlaySegments<128||Math.abs(boot.scale-.24)>.005||boot.mesh.hatLocked!==true||boot.material.version!=='pass-14-production-materials-v3-textured')throw Error('gate '+JSON.stringify(boot));
+            if(boot.engine!=='PlayCanvas'||boot.assetMode!=='glb-pbr'||boot.env.version!=='road-truck-bean-realism-v4-coffee-sparkle-crease'||d.road.roadSegments!==9||d.road.blueSheenDisabled!==true||d.road.roadPalette!=='neutral-charcoal-warm'||d.vehicles!==7||d.truckTypes.length<4||d.beans!==16||d.beanVisualScale>.40||d.beanGlimmer!==true||d.beanGlimmerShell!==false||d.beanGlimmerStyle!=='three-subtle-specular-flecks'||d.beanGlints<48||d.beanNeonHalo!==false||d.beanCreaseOverlaySegments<160||Math.abs(boot.scale-.24)>.005||boot.mesh.hatLocked!==true||boot.material.version!=='pass-14-production-materials-v3-textured')throw Error('gate '+JSON.stringify(boot));
             await page.click('#play');
             await page.waitForFunction(()=>window.WitchRide3D?.state?.mode==='playing',{timeout:10000});
             await sleep(350);
@@ -91,8 +91,7 @@ jobs:
             await page.screenshot({path:'pass15-gameplay-430x932.png'});
             await page.evaluate(async()=>{
               const pc=await import('playcanvas'),a=pc.app,c=a.root.findByName('Chase Camera');
-              window.WitchRide3D.state.mode='paused';
-              window.__pass15Review='truck';
+              window.WitchRide3D.state.mode='paused';window.__pass15Review='truck';
               a.on('prerender',()=>{
                 const m=window.__pass15Review;
                 if(m==='truck'){c.setPosition(4.8,2.7,7.9);c.lookAt(0,1.15,0);c.camera.fov=46}
@@ -100,35 +99,25 @@ jobs:
                 else if(m==='bean'){c.setPosition(.58,1.48,2.18);c.lookAt(0,1.25,0);c.camera.fov=28}
               });
               document.querySelector('#hud')?.classList.add('hidden');
-              for(const e of a.root.children||[]){
-                if(e.name==='Witch Rig'||e.name?.startsWith('Dead Tree')||e.name?.startsWith('Fog Bank')||e.name?.startsWith('Fence ')||e.name?.startsWith('Pumpkin ')||e.name?.startsWith('Brew & Brews')||(e.name?.startsWith('Road Segment ')&&e.name!=='Road Segment 0')||(e.name?.startsWith('1938 Coupe ')&&e.name!=='1938 Coupe 0')||e.name?.startsWith('Coffee Bean '))e.enabled=false;
-              }
+              for(const e of a.root.children||[]){if(e.name==='Witch Rig'||e.name?.startsWith('Dead Tree')||e.name?.startsWith('Fog Bank')||e.name?.startsWith('Fence ')||e.name?.startsWith('Pumpkin ')||e.name?.startsWith('Brew & Brews')||(e.name?.startsWith('Road Segment ')&&e.name!=='Road Segment 0')||(e.name?.startsWith('1938 Coupe ')&&e.name!=='1938 Coupe 0')||e.name?.startsWith('Coffee Bean '))e.enabled=false}
               const r=a.root.findByName('Road Segment 0'),t=a.root.findByName('1938 Coupe 0');r.enabled=true;r.setPosition(0,0,0);t.enabled=true;t.setPosition(0,0,0);
             });
-            await sleep(250);
-            await page.screenshot({path:'pass15-truck-close-430x932.png'});
+            await sleep(250);await page.screenshot({path:'pass15-truck-close-430x932.png'});
             await page.evaluate(async()=>{const pc=await import('playcanvas'),a=pc.app;window.__pass15Review='road';a.root.findByName('1938 Coupe 0').enabled=false});
-            await sleep(250);
-            await page.screenshot({path:'pass15-road-level-430x932.png'});
+            await sleep(250);await page.screenshot({path:'pass15-road-level-430x932.png'});
             await page.evaluate(async()=>{
-              const pc=await import('playcanvas'),a=pc.app,c=a.root.findByName('Chase Camera');
-              window.__pass15Review='bean';
-              for(const e of [...(a.root.children||[])])if(e!==c)e.enabled=false;
-              c.enabled=true;
-              const bean=a.root.findByName('Coffee Bean 0');
-              bean.enabled=true;bean.__active=false;bean.setPosition(0,1.25,0);bean.setEulerAngles(0,0,0);
+              const pc=await import('playcanvas'),a=pc.app,c=a.root.findByName('Chase Camera');window.__pass15Review='bean';
+              for(const e of [...(a.root.children||[])])if(e!==c)e.enabled=false;c.enabled=true;
+              const bean=a.root.findByName('Coffee Bean 0');bean.enabled=true;bean.__active=false;bean.setPosition(0,1.25,0);bean.setEulerAngles(0,0,0);
               if(bean.__pass15BeanVisual){bean.__pass15BeanVisual.enabled=true;bean.__pass15BeanVisual.setLocalEulerAngles(0,0,0)}
-              if(bean.__pass15BeanGlimmer)bean.__pass15BeanGlimmer.enabled=true;
               for(const g of bean.__pass15BeanGlints||[])g.enabled=true;
-              const key=new pc.Entity('Pass15 Bean Review Key');key.addComponent('light',{type:'point',color:new pc.Color(1,.66,.38),intensity:1.15,range:5.5,castShadows:false});key.setPosition(1.35,2.25,2.1);a.root.addChild(key);
-              const fill=new pc.Entity('Pass15 Bean Review Fill');fill.addComponent('light',{type:'point',color:new pc.Color(.46,.52,.62),intensity:.42,range:4.5,castShadows:false});fill.setPosition(-1.4,1.6,1.3);a.root.addChild(fill);
-              a.scene.ambientLight=new pc.Color(.17,.14,.12);
+              const key=new pc.Entity('Pass15 Bean Review Key');key.addComponent('light',{type:'point',color:new pc.Color(1,.72,.52),intensity:.82,range:5.5,castShadows:false});key.setPosition(1.35,2.25,2.1);a.root.addChild(key);
+              const fill=new pc.Entity('Pass15 Bean Review Fill');fill.addComponent('light',{type:'point',color:new pc.Color(.38,.42,.48),intensity:.30,range:4.5,castShadows:false});fill.setPosition(-1.4,1.6,1.3);a.root.addChild(fill);
+              a.scene.ambientLight=new pc.Color(.10,.085,.07);
             });
-            await sleep(300);
-            await page.screenshot({path:'pass15-bean-close-430x932.png'});
+            await sleep(300);await page.screenshot({path:'pass15-bean-close-430x932.png'});
             if(errors.length)throw Error(errors.join(' | '));
-            console.log('PASS15_PLAYCANVAS_GATE',JSON.stringify(boot));
-            await b.close();
+            console.log('PASS15_PLAYCANVAS_GATE',JSON.stringify(boot));await b.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
       - name: Upload renders
