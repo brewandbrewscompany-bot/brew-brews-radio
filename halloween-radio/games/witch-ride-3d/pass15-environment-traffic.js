@@ -25,26 +25,24 @@ function primitive(name,type,scale,pos,material,parent=null,rot=null){
 }
 
 function neutralizeRoad(app,fogTex){
-  const neutralReflection=softMaterial(fogTex,'Pass15 neutral wet reflection',[.34,.31,.27],.028,.22);
-  const warmReflection=softMaterial(fogTex,'Pass15 restrained headlight reflection',[.72,.30,.075],.038,.40);
-  let roads=0,puddles=0,coolSheensDisabled=0,reflectionRibbons=0,warmPools=0;
+  const neutralReflection=softMaterial(fogTex,'Pass15 neutral wet reflection',[.28,.27,.25],.020,.16);
+  const warmReflection=softMaterial(fogTex,'Pass15 restrained headlight reflection',[.58,.30,.115],.025,.26);
+  let roads=0,puddles=0,coolSheensDisabled=0,legacyStreaksDisabled=0,legacyWarmDisabled=0,reflectionRibbons=0,warmPools=0;
+  for(let i=0;i<24;i++){const e=app.root.findByName(`Pass11 Wet Reflection ${i}`);if(e){e.enabled=false;legacyStreaksDisabled++}}
+  for(let i=0;i<10;i++){const e=app.root.findByName(`Warm Road Reflection ${i}`);if(e){e.enabled=false;legacyWarmDisabled++}}
   for(let i=0;i<9;i++){
     const root=app.root.findByName(`Road Segment ${i}`);if(!root)continue;
     const road=root.findByName('Road');const rm=renderMaterial(road);
-    if(rm){tuneMaterial(rm,{diffuse:[.078,.076,.072],gloss:.79,metalness:.018});roads++}
+    if(rm){tuneMaterial(rm,{diffuse:[.074,.072,.069],gloss:.82,metalness:.016});roads++}
     const puddle=root.findByName(`Puddle Variation ${i}`);const pm=renderMaterial(puddle);
-    if(pm){tuneMaterial(pm,{diffuse:[.052,.050,.047],gloss:.992,metalness:.025,opacity:.19});puddles++}
+    if(pm){tuneMaterial(pm,{diffuse:[.047,.046,.044],gloss:.994,metalness:.022,opacity:.17});puddles++}
     const cool=root.findByName(`Pass9 Moon Road Sheen ${i}`);if(cool){cool.enabled=false;coolSheensDisabled++}
-    const oldWarm=root.findByName(`Pass9 Warm Road Pool ${i}`);if(oldWarm){oldWarm.enabled=false}
+    const oldWarm=root.findByName(`Pass9 Warm Road Pool ${i}`);if(oldWarm)oldWarm.enabled=false;
     const side=i%2?-1:1;
-    const ribbon=primitive(`Pass15 Neutral Reflection ${i}`,'plane',[4.8,1,10.8],[side*.42,.166,-1.0+(i%3)*1.6],neutralReflection,root);ribbon.__phase=i*.61;reflectionRibbons++;
-    const warm=primitive(`Pass15 Warm Reflection ${i}`,'plane',[1.25,1,6.6],[side*4.18,.169,-4.4+(i%3)*3.6],warmReflection,root);warm.__phase=i*.47;warmPools++;
+    const ribbon=primitive(`Pass15 Neutral Reflection ${i}`,'plane',[4.35,1,9.6],[side*.28,.166,-1.0+(i%3)*1.6],neutralReflection,root);ribbon.__phase=i*.61;reflectionRibbons++;
+    const warm=primitive(`Pass15 Warm Reflection ${i}`,'plane',[.72,1,5.4],[side*4.08,.169,-4.4+(i%3)*3.6],warmReflection,root);warm.__phase=i*.47;warmPools++;
   }
-  for(let i=0;i<10;i++){
-    const e=app.root.findByName(`Warm Road Reflection ${i}`);const m=renderMaterial(e);
-    if(e&&m){e.setLocalScale(.46,1,5.6);tuneMaterial(m,{diffuse:[.24,.13,.055],opacity:.075,emissive:[.20,.075,.012],emissiveIntensity:.52})}
-  }
-  return {roads,puddles,coolSheensDisabled,reflectionRibbons,warmPools,neutralReflection,warmReflection};
+  return {roads,puddles,coolSheensDisabled,legacyStreaksDisabled,legacyWarmDisabled,reflectionRibbons,warmPools,neutralReflection,warmReflection};
 }
 
 function refineVehicleHeadlights(app){
@@ -53,56 +51,58 @@ function refineVehicleHeadlights(app){
     const car=app.root.findByName(`1938 Coupe ${i}`);if(!car)continue;
     walk(car,node=>{
       if(node.name?.startsWith('headlamp_')){
-        const s=node.getLocalScale();node.setLocalScale(s.x*.78,s.y*.78,s.z*.86);lensesAdjusted++;
-        const m=renderMaterial(node);if(m)tuneMaterial(m,{diffuse:[.43,.19,.055],gloss:.62,metalness:.035,emissive:[1,.31,.065],emissiveIntensity:.82});
+        const s=node.getLocalScale();node.setLocalScale(s.x*.70,s.y*.70,s.z*.80);lensesAdjusted++;
+        const m=renderMaterial(node);if(m)tuneMaterial(m,{diffuse:[.36,.20,.085],gloss:.72,metalness:.028,emissive:[1,.44,.14],emissiveIntensity:.52});
       }else if(node.name?.startsWith('lamp_mount_')){
-        const s=node.getLocalScale();node.setLocalScale(s.x*.90,s.y*.90,s.z*.93);mountsAdjusted++;
+        const s=node.getLocalScale();node.setLocalScale(s.x*.86,s.y*.86,s.z*.90);mountsAdjusted++;
       }else if(node.name?.startsWith('Headlight Glow')&&node.light){
-        node.light.intensity=.43+(i%3)*.018;node.light.range=12.2;node.light.color=new pc.Color(1,.56,.23);pointLightsAdjusted++;
+        node.light.intensity=.36+(i%3)*.015;node.light.range=10.8;node.light.color=new pc.Color(1,.67,.38);pointLightsAdjusted++;
       }
     });
-    const spill=app.root.findByName(`Wet Headlight Spill ${i}`);if(spill){spill.setLocalScale(2.05,1,7.6);const m=renderMaterial(spill);if(m)tuneMaterial(m,{diffuse:[.63,.27,.075],opacity:.042,emissive:[.50,.18,.028],emissiveIntensity:.48});spillsAdjusted++}
+    const spill=app.root.findByName(`Wet Headlight Spill ${i}`);if(spill){spill.setLocalScale(1.55,1,7.0);const m=renderMaterial(spill);if(m)tuneMaterial(m,{diffuse:[.52,.29,.11],opacity:.028,emissive:[.36,.16,.045],emissiveIntensity:.30});spillsAdjusted++}
   }
   return {lensesAdjusted,mountsAdjusted,pointLightsAdjusted,spillsAdjusted};
 }
 
 function buildOncomingTraffic(app,fogTex){
   const base=app.root.findByName('1938 Coupe 0');if(!base?.clone)return {cars:[],reflectionMaterial:null};
-  const reflectionMaterial=softMaterial(fogTex,'Pass15 moving headlight reflection',[.78,.33,.085],.045,.42),cars=[];
+  const reflectionMaterial=softMaterial(fogTex,'Pass15 moving headlight reflection',[.62,.33,.13],.028,.25),cars=[];
   const lanes=[-4.25,4.20,-4.10,4.15],starts=[-38,-82,-132,-182];
   for(let i=0;i<4;i++){
     const e=base.clone();e.name=`Oncoming Traffic ${i}`;e.enabled=true;e.setPosition(lanes[i],0,starts[i]);e.setEulerAngles(0,(i%2?-.35:.35),0);e.setLocalScale(.88+(i%2)*.025,.88+(i%2)*.025,.88+(i%2)*.025);e.__lane=lanes[i];e.__reset=164+i*18;e.__offset=i*1.73;app.root.addChild(e);
-    walk(e,node=>{if(node.light){node.light.intensity=.34+(i%2)*.025;node.light.range=10.5;node.light.color=new pc.Color(1,.57,.25);node.light.castShadows=false}});
-    for(const x of [-.68,.68])primitive(`Oncoming Reflection ${i} ${x}`,'plane',[.72,1,5.4],[x,.035,5.3],reflectionMaterial,e);
+    walk(e,node=>{if(node.light){node.light.intensity=.30+(i%2)*.02;node.light.range=9.8;node.light.color=new pc.Color(1,.68,.40);node.light.castShadows=false}});
+    for(const x of [-.68,.68])primitive(`Oncoming Reflection ${i} ${x}`,'plane',[.46,1,4.6],[x,.035,5.2],reflectionMaterial,e);
     cars.push(e);
   }
   return {cars,reflectionMaterial};
 }
 
 function buildBeanHalos(app){
-  const m=new pc.StandardMaterial();m.name='Pass15 subtle bean halo';m.diffuse=new pc.Color(.42,.12,.025);m.emissive=new pc.Color(.72,.20,.035);m.emissiveIntensity=.28;m.opacity=.045;m.blendType=pc.BLEND_ADDITIVE;m.depthWrite=false;m.cull=pc.CULLFACE_NONE;m.useMetalness=true;m.metalness=0;m.gloss=.02;m.update();
-  const halos=[];
+  const m=new pc.StandardMaterial();m.name='Pass15 subtle bean halo';m.diffuse=new pc.Color(.34,.12,.035);m.emissive=new pc.Color(.58,.20,.052);m.emissiveIntensity=.20;m.opacity=.032;m.blendType=pc.BLEND_ADDITIVE;m.depthWrite=false;m.cull=pc.CULLFACE_NONE;m.useMetalness=true;m.metalness=0;m.gloss=.02;m.update();
+  const halos=[];let beansRescaled=0,beanLightsSoftened=0;
   for(let i=0;i<16;i++){
     const bean=app.root.findByName(`Coffee Bean ${i}`);if(!bean)continue;
+    bean.setLocalScale(1.08,1.08,1.08);beansRescaled++;
     const old=bean.findByName?.(`Coffee Bean Halo ${i}`);if(old)old.enabled=false;
-    const h=primitive(`Pass15 Bean Halo ${i}`,'sphere',[.43,.43,.43],[0,0,0],m,bean);h.__phase=i*.63;halos.push(h);
+    const oldLight=bean.findByName?.(`Pass11 Bean Warm Light ${i}`);if(oldLight?.light){oldLight.light.intensity=.045;oldLight.light.range=2.2;oldLight.light.color=new pc.Color(1,.34,.10);beanLightsSoftened++}
+    const h=primitive(`Pass15 Bean Halo ${i}`,'sphere',[.45,.45,.45],[0,0,0],m,bean);h.__phase=i*.63;halos.push(h);
   }
-  return {halos,material:m};
+  return {halos,material:m,beansRescaled,beanLightsSoftened};
 }
 
 function animate(app,road,traffic,beans){
   let t=0;
   app.on('update',dt=>{
     t+=dt;const s=window.WitchRide3D?.state||{},playing=s.mode==='playing',speed=s.speed||1,roadTravel=playing?11.2*speed:.18;
-    if(road.neutralReflection){road.neutralReflection.opacity=.025+Math.sin(t*.72)*.003;road.neutralReflection.update()}
-    if(road.warmReflection){road.warmReflection.opacity=.034+Math.sin(t*1.1+.8)*.004;road.warmReflection.update()}
-    if(traffic.reflectionMaterial){traffic.reflectionMaterial.opacity=.041+Math.sin(t*1.7)*.004;traffic.reflectionMaterial.update()}
+    if(road.neutralReflection){road.neutralReflection.opacity=.018+Math.sin(t*.72)*.002;road.neutralReflection.update()}
+    if(road.warmReflection){road.warmReflection.opacity=.023+Math.sin(t*1.1+.8)*.0025;road.warmReflection.update()}
+    if(traffic.reflectionMaterial){traffic.reflectionMaterial.opacity=.026+Math.sin(t*1.7)*.0025;traffic.reflectionMaterial.update()}
     for(let i=0;i<traffic.cars.length;i++){
       const e=traffic.cars[i],approach=playing?(roadTravel+8.2+speed*2.1):.24;e.translate(0,0,approach*dt);const p=e.getPosition();
       if(p.z>24)e.setPosition(e.__lane,0,p.z-e.__reset);
     }
     for(let i=0;i<beans.halos.length;i++){
-      const h=beans.halos[i],pulse=.97+Math.sin(t*2.2+h.__phase)*.03;h.setLocalScale(.43*pulse,.43*pulse,.43*pulse);
+      const h=beans.halos[i],pulse=.985+Math.sin(t*2.0+h.__phase)*.018;h.setLocalScale(.45*pulse,.45*pulse,.45*pulse);
     }
   });
 }
@@ -115,7 +115,7 @@ async function install(){
         const fogTex=app.assets.find('fog-sheet.png','texture')?.resource;if(!fogTex)throw new Error('fog-sheet texture unavailable for Pass 15 environment pass');
         const road=neutralizeRoad(app,fogTex),headlights=refineVehicleHeadlights(app),traffic=buildOncomingTraffic(app,fogTex),beans=buildBeanHalos(app);
         animate(app,road,traffic,beans);
-        const detail={roadNeutralCharcoal:road.roads===9,roadSegments:road.roads,puddles:road.puddles,coolRoadSheensDisabled:road.coolSheensDisabled,reflectionRibbons:road.reflectionRibbons,warmReflectionPools:road.warmPools,headlightLensesAdjusted:headlights.lensesAdjusted,headlightMountsAdjusted:headlights.mountsAdjusted,headlightPointsAdjusted:headlights.pointLightsAdjusted,headlightSpillsAdjusted:headlights.spillsAdjusted,oncomingTraffic:traffic.cars.length,beanHalos:beans.halos.length,witchTouched:false};
+        const detail={roadNeutralCharcoal:road.roads===9,roadSegments:road.roads,puddles:road.puddles,coolRoadSheensDisabled:road.coolSheensDisabled,legacyWetStreaksDisabled:road.legacyStreaksDisabled,legacyWarmReflectionsDisabled:road.legacyWarmDisabled,reflectionRibbons:road.reflectionRibbons,warmReflectionPools:road.warmPools,headlightLensesAdjusted:headlights.lensesAdjusted,headlightMountsAdjusted:headlights.mountsAdjusted,headlightPointsAdjusted:headlights.pointLightsAdjusted,headlightSpillsAdjusted:headlights.spillsAdjusted,oncomingTraffic:traffic.cars.length,beanHalos:beans.halos.length,beansRescaled:beans.beansRescaled,beanLightsSoftened:beans.beanLightsSoftened,witchTouched:false};
         w.pass15EnvironmentPass=VERSION;w.pass15EnvironmentDetail=detail;window.WitchRidePass15Environment={active:true,version:VERSION,detail};document.body.classList.add('pass15-environment-ready');console.info('Witch Ride Pass 15 environment/traffic pass ready',VERSION,detail);return;
       }catch(err){console.error('Witch Ride Pass 15 environment/traffic pass failed',err);w.pass15EnvironmentPass='fallback';w.pass15EnvironmentDetail={};w.pass15EnvironmentError=err?.stack||err?.message||String(err);return}
     }
