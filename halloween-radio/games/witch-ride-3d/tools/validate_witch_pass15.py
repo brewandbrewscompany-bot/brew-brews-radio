@@ -33,45 +33,56 @@ assert meta['broom_bristles']==240 and meta['broom_straw_clumps']==56
 
 src=RUNTIME.read_text(encoding='utf-8')
 required=(
-    "witch-centerpiece-pass-v15",
-    "pass-15-materials-v1",
-    "locked-pass14-mesh-material-lookdev",
+    'witch-centerpiece-pass-v15',
+    'pass-15-materials-v2-pose-lock',
+    'locked-pass14-mesh-material-lookdev',
     LOCKED_GLB_BLOB,
-    "materialsApplied:true",
-    "geometryLocked:true",
-    "meshOnly:false",
-    "Pass15 aged black felt",
-    "Pass15 dense auburn hair",
-    "Pass15 heavy charcoal wool",
-    "Pass15 restrained oxblood lining",
-    "Pass15 aged riding leather",
-    "Pass15 weathered crooked broom wood",
-    "Pass15 dark natural broom straw",
-    "Witch Pass15 Moon Rim",
-    "Witch Pass15 Broom Bounce"
+    'const GAMEPLAY_SCALE=.24',
+    'const STANCE_OFFSETS=',
+    'leg_L:-.10',
+    'leg_R:.10',
+    'boot_L:-.14',
+    'boot_R:.14',
+    "app.on('prerender',lockGameplayPresentation)",
+    'materialsApplied:true',
+    'geometryLocked:true',
+    'meshOnly:false',
+    'scaleEnforced:true',
+    'stanceLocked:true',
+    "broomFlowAxis:'+Z toward chase camera/player'",
+    'Pass15 aged black felt',
+    'Pass15 dense auburn hair',
+    'Pass15 heavy charcoal wool',
+    'Pass15 restrained oxblood lining',
+    'Pass15 aged riding leather',
+    'Pass15 weathered crooked broom wood',
+    'Pass15 dark natural broom straw',
+    'Witch Pass15 Moon Rim',
+    'Witch Pass15 Broom Bounce'
 )
 for token in required:
     assert token in src,token
 
-# Materials-only means no approved rider transform/scale/position edits in runtime.
-for forbidden in ('setLocalScale(','setPosition(','setEulerAngles(','setLocalPosition(0,0,0)','clone()'):
-    if forbidden=='clone()':
-        continue
-# The only new entities allowed are the two visual lights; no replacement rider meshes.
+# The rider GLB remains locked. Runtime transforms are permitted only to enforce the
+# approved smaller gameplay presentation and fixed leg/boot stance requested by Pass 15.
 assert src.count("new pc.Entity(")==2,src.count("new pc.Entity(")
 assert "addComponent('render'" not in src and "addComponent('model'" not in src
-assert "createMesh" not in src and "createBox" not in src and "createSphere" not in src
+assert 'createMesh' not in src and 'createBox' not in src and 'createSphere' not in src
+for forbidden in ('witch.clone','instantiateRenderEntity','loadFromUrl','assets/models/witch-rider'):
+    assert forbidden not in src,forbidden
 
-# Guard Halloween Radio behavior: this visual pass must not call playback/station controls.
+# Guard Halloween Radio playback behavior: this visual pass must not call playback/station controls.
 for forbidden in ('audio.play','audio.pause','currentTrack','nextTrack','previousTrack','station','shuffle','repeat','favorite','Haunted Auto Tune','Ghost Tune'):
     assert forbidden not in src,forbidden
 
 print(json.dumps({
     'ok':True,
-    'pass':'pass-15-materials-v1',
+    'pass':'pass-15-materials-v2-pose-lock',
     'locked_glb_blob':LOCKED_GLB_BLOB,
     'locked_builder_blob':LOCKED_BUILDER_BLOB,
     'locked_glb_bytes':LOCKED_GLB_BYTES,
     'geometry_locked':True,
-    'materials_runtime_only':True
+    'runtime_pose_lock':True,
+    'gameplay_scale':0.24,
+    'stance_offsets':{'leg_L':-0.10,'leg_R':0.10,'boot_L':-0.14,'boot_R':0.14}
 },indent=2))
