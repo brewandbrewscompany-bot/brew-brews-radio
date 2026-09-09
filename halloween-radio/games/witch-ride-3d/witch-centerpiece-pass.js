@@ -1,12 +1,14 @@
 import * as pc from 'playcanvas';
 
 // Witch Ride 3D — Pass 15 materials/lookdev on the LOCKED Pass 14 mesh.
-// Geometry, transforms, proportions, node hierarchy and animation roots are immutable here.
+// The GLB geometry stays immutable; the approved gameplay scale and riding stance are enforced at runtime.
 const PASS_ID='witch-centerpiece-pass-v15';
-const VERSION='pass-15-materials-v1';
+const VERSION='pass-15-materials-v2-pose-lock';
 const REVIEW='locked-pass14-mesh-material-lookdev';
 const LOCKED_GLB_BLOB='8ec46a27aa0b60244061ce8cc81c2d603a97b1c5';
-const REQUIRED=['cape','cape_left','cape_center','cape_right','hair_01','hair_02','hair_03','hair_04','hair_05','hat_tip','broom_handle','broom_bristles'];
+const GAMEPLAY_SCALE=.24;
+const STANCE_OFFSETS={leg_L:-.10,leg_R:.10,boot_L:-.14,boot_R:.14};
+const REQUIRED=['cape','cape_left','cape_center','cape_right','hair_01','hair_02','hair_03','hair_04','hair_05','hat_tip','broom_handle','broom_bristles','leg_L','leg_R','boot_L','boot_R'];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
 function spring(ch,target,dt,k,d){
@@ -17,7 +19,16 @@ function part(app,name){
   const node=app.root.findByName(name);if(!node)return null;
   return {node,base:node.getLocalEulerAngles().clone(),x:{x:0,v:0},y:{x:0,v:0},z:{x:0,v:0}};
 }
+function posePart(witch,name,offsetX){
+  const node=witch.findByName(name);if(!node)return null;
+  return {node,basePos:node.getLocalPosition().clone(),baseEuler:node.getLocalEulerAngles().clone(),offsetX};
+}
 function setDelta(p,x,y,z){if(p?.node)p.node.setLocalEulerAngles(p.base.x+x,p.base.y+y,p.base.z+z)}
+function lockPosePart(p){
+  if(!p?.node)return;
+  p.node.setLocalPosition(p.basePos.x+p.offsetX,p.basePos.y,p.basePos.z);
+  p.node.setLocalEulerAngles(p.baseEuler.x,p.baseEuler.y,p.baseEuler.z);
+}
 function color(hex){
   const s=hex.replace('#','');return new pc.Color(parseInt(s.slice(0,2),16)/255,parseInt(s.slice(2,4),16)/255,parseInt(s.slice(4,6),16)/255);
 }
@@ -63,11 +74,10 @@ function installLookdev(app,witch){
   for(const e of descendants(witch)){
     const key=classify(e.name||'');if(key)assigned[key]+=applyMaterial(e,mats[key]);
   }
-  // Lighting is attached to the locked rig but does not modify mesh geometry or transforms.
   let moon=app.root.findByName('Witch Pass15 Moon Rim');
   if(!moon){moon=new pc.Entity('Witch Pass15 Moon Rim');moon.addComponent('light',{type:'directional',color:new pc.Color(.45,.57,.78),intensity:.28,castShadows:false});moon.setLocalEulerAngles(42,-138,12);witch.addChild(moon)}
   let ember=app.root.findByName('Witch Pass15 Broom Bounce');
-  if(!ember){ember=new pc.Entity('Witch Pass15 Broom Bounce');ember.addComponent('light',{type:'omni',color:new pc.Color(1,.20,.035),intensity:.34,range:5.5,castShadows:false});ember.setLocalPosition(0,.15,2.25);witch.addChild(ember)}
+  if(!ember){ember=new pc.Entity('Witch Pass15 Broom Bounce');ember.addComponent('light',{type:'omni',color:new pc.Color(1,.20,.035),intensity:.24,range:4.7,castShadows:false});ember.setLocalPosition(0,.15,2.25);witch.addChild(ember)}
   return {assigned,materials:Object.fromEntries(Object.entries(mats).map(([k,m])=>[k,{name:m.name,gloss:m.gloss,metalness:m.metalness}]))};
 }
 
@@ -77,15 +87,24 @@ function install(){
   const parts={};for(const n of REQUIRED)parts[n]=part(app,n);
   const missing=REQUIRED.filter(n=>!parts[n]);
   if(missing.length){console.error('Pass 15 locked mesh roots missing:',missing.join(', '));return false}
+  const stance={};for(const [name,offsetX] of Object.entries(STANCE_OFFSETS))stance[name]=posePart(witch,name,offsetX);
+  if(Object.values(stance).some(x=>!x)){console.error('Pass 15 stance lock nodes unavailable');return false}
   const lookdev=installLookdev(app,witch);
   const assignedTotal=Object.values(lookdev.assigned).reduce((a,b)=>a+b,0);
   if(assignedTotal<250||lookdev.assigned.hair<16||lookdev.assigned.straw<250){console.error('Pass 15 material assignment incomplete',lookdev.assigned);return false}
 
-  // Preserve the approved Pass 14 secondary motion exactly; Pass 15 changes lookdev only.
+  const lockGameplayPresentation=()=>{
+    witch.setLocalScale(GAMEPLAY_SCALE,GAMEPLAY_SCALE,GAMEPLAY_SCALE);
+    for(const p of Object.values(stance))lockPosePart(p);
+  };
+  lockGameplayPresentation();
+  app.on('prerender',lockGameplayPresentation);
+
   let t=0,prevSpeed=wr.state?.speed||1;
   const capeCfg=[['cape_left',8.8,10.0,-.30],['cape_center',10.4,10.8,0],['cape_right',8.8,10.0,.30]];
   const hair=['hair_01','hair_02','hair_03','hair_04','hair_05'];
   app.on('update',dt=>{
+    lockGameplayPresentation();
     if(!wr.state)return;dt=Math.min(dt||0,.05);t+=dt;
     const s=wr.state,playing=s.mode==='playing',speed=s.speed||1;
     const speedN=playing?clamp((speed-1)/2.8,0,1):0;
@@ -103,12 +122,12 @@ function install(){
       const p=parts[hair[i]],phase=i*.74;
       setDelta(p,spring(p.x,speedN*(.15+i*.025)+Math.sin(t*.72+phase)*.025*air,dt,12.2+i*.4,9.0),spring(p.y,Math.sin(t*.45+phase)*.018*air,dt,11.5,9.2),spring(p.z,-steer*(.32+i*.055)-demand*.10+Math.sin(t*.58+phase)*.018*air,dt,12.0,9.0));
     }
-    const tip=parts.hat_tip;
-    setDelta(tip,spring(tip.x,speedN*.14+Math.sin(t*.48)*.028*air,dt,9.2,8.8),spring(tip.y,Math.sin(t*.34)*.016*air,dt,9.0,9.0),spring(tip.z,-steer*.18-demand*.07,dt,9.2,8.8));
+    const tip=parts.hat_tip;setDelta(tip,0,0,0);
     const br=parts.broom_bristles;
-    setDelta(br,spring(br.x,speedN*.10+Math.sin(t*.96)*.022*air,dt,24,11),spring(br.y,0,dt,25,11),spring(br.z,-steer*.09-demand*.03,dt,24,11));
+    setDelta(br,spring(br.x,speedN*.025+Math.sin(t*.96)*.008*air,dt,24,11),spring(br.y,0,dt,25,11),spring(br.z,-steer*.045-demand*.015,dt,24,11));
+    lockGameplayPresentation();
   });
-  window.WitchRideWitchCenterpiecePass={passId:PASS_ID,version:VERSION,review:REVIEW,lockedMeshBlob:LOCKED_GLB_BLOB,active:true,visualOnly:true,meshOnly:false,materialsApplied:true,geometryLocked:true,requiredNodes:REQUIRED.slice(),missing:[],lookdev};
+  window.WitchRideWitchCenterpiecePass={passId:PASS_ID,version:VERSION,review:REVIEW,lockedMeshBlob:LOCKED_GLB_BLOB,active:true,visualOnly:true,meshOnly:false,materialsApplied:true,geometryLocked:true,gameplayScale:GAMEPLAY_SCALE,scaleEnforced:true,stanceLocked:true,stanceOffsets:{...STANCE_OFFSETS},hatLocked:true,broomFlowAxis:'+Z toward chase camera/player',requiredNodes:REQUIRED.slice(),missing:[],lookdev};
   return true;
 }
 function boot(attempt=0){if(install())return;if(attempt<180)setTimeout(()=>boot(attempt+1),100);else console.error('Pass 15 material centerpiece runtime did not initialize')}
