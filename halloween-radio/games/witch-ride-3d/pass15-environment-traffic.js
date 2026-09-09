@@ -1,6 +1,6 @@
 import * as pc from 'playcanvas';
 
-const VERSION='pass15-environment-traffic-v4';
+const VERSION='pass15-environment-traffic-v5';
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 const REFLECTION_SLAB_PREFIXES=['Wet sheen','Pass11 Wet Reflection','Warm Road Reflection','Pass9 Moon Road Sheen','Pass9 Warm Road Pool','Wet Headlight Spill','Headlight Spill','Pass15 Neutral Reflection','Pass15 Warm Reflection','Oncoming Reflection'];
 
@@ -30,6 +30,13 @@ function disableGroundFog(app){
   let disabled=0;
   for(let i=0;i<20;i++){
     const e=app.root.findByName(`Realism Fog ${i}`);if(e&&e.enabled!==false){e.enabled=false;disabled++}
+  }
+  return disabled;
+}
+function disableGroundMist(app){
+  let disabled=0;
+  for(let i=0;i<16;i++){
+    const e=app.root.findByName(`Atmosphere Ground Mist ${i}`);if(e&&e.enabled!==false){e.enabled=false;disabled++}
   }
   return disabled;
 }
@@ -138,10 +145,10 @@ async function install(){
     const app=pc.app,w=window.WitchRide3D;
     if(app&&w?.ready&&w?.illuminationPass==='illumination-pass-v9'&&w?.worldDetailPass==='world-detail-pass-v6'&&window.WitchRideWitchCenterpiecePass?.active===true){
       try{
-        const road=neutralizeRoad(app),groundFogDisabled=disableGroundFog(app),softMat=softWetMaterial(app),headlights=refineVehicleHeadlights(app,softMat),traffic=buildOncomingTraffic(app),beans=buildBeanHalos(app);
+        const road=neutralizeRoad(app),groundFogDisabled=disableGroundFog(app),groundMistDisabled=disableGroundMist(app),softMat=softWetMaterial(app),headlights=refineVehicleHeadlights(app,softMat),traffic=buildOncomingTraffic(app),beans=buildBeanHalos(app);
         const purgedReflectionSlabs=purgeReflectionSlabs(app);
         animate(app,traffic,beans);
-        const detail={roadNeutralCharcoal:road.roads===9,roadSegments:road.roads,puddlesDisabled:road.puddlesDisabled,groundFogDisabled,coolRoadSheensDisabled:road.coolSheensDisabled,baseSheenSlabsDisabled:road.baseSheenSlabsDisabled,legacyWetStreaksDisabled:road.legacyStreaksDisabled,legacyWarmReflectionsDisabled:road.legacyWarmDisabled,legacyWarmPoolsDisabled:road.legacyWarmPoolsDisabled,reflectionPanels:road.reflectionPanels,purgedReflectionSlabs,headlightLensesAdjusted:headlights.lensesAdjusted,headlightMountsAdjusted:headlights.mountsAdjusted,headlightPointsAdjusted:headlights.pointLightsAdjusted,headlightSpillsAdjusted:headlights.spillsAdjusted,softWetReflections:headlights.softWetReflections,oncomingTraffic:traffic.cars.length,beanHalos:beans.halos.length,beansRescaled:beans.beansRescaled,beanScale:beans.beanScale,beanLightsSoftened:beans.beanLightsSoftened,beanHaloScale:beans.haloScale,beanHaloOpacity:beans.haloOpacity,beanHaloIntensity:beans.haloIntensity,witchTouched:false};
+        const detail={roadNeutralCharcoal:road.roads===9,roadSegments:road.roads,puddlesDisabled:road.puddlesDisabled,groundFogDisabled,groundMistDisabled,coolRoadSheensDisabled:road.coolSheensDisabled,baseSheenSlabsDisabled:road.baseSheenSlabsDisabled,legacyWetStreaksDisabled:road.legacyStreaksDisabled,legacyWarmReflectionsDisabled:road.legacyWarmDisabled,legacyWarmPoolsDisabled:road.legacyWarmPoolsDisabled,reflectionPanels:road.reflectionPanels,purgedReflectionSlabs,headlightLensesAdjusted:headlights.lensesAdjusted,headlightMountsAdjusted:headlights.mountsAdjusted,headlightPointsAdjusted:headlights.pointLightsAdjusted,headlightSpillsAdjusted:headlights.spillsAdjusted,softWetReflections:headlights.softWetReflections,oncomingTraffic:traffic.cars.length,beanHalos:beans.halos.length,beansRescaled:beans.beansRescaled,beanScale:beans.beanScale,beanLightsSoftened:beans.beanLightsSoftened,beanHaloScale:beans.haloScale,beanHaloOpacity:beans.haloOpacity,beanHaloIntensity:beans.haloIntensity,witchTouched:false};
         w.pass15EnvironmentPass=VERSION;w.pass15EnvironmentDetail=detail;window.WitchRidePass15Environment={active:true,version:VERSION,detail};document.body.classList.add('pass15-environment-ready');console.info('Witch Ride Pass 15 environment/traffic pass ready',VERSION,detail);return;
       }catch(err){console.error('Witch Ride Pass 15 environment/traffic pass failed',err);w.pass15EnvironmentPass='fallback';w.pass15EnvironmentDetail={};w.pass15EnvironmentError=err?.stack||err?.message||String(err);return}
     }
