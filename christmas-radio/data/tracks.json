@@ -1,6 +1,13 @@
 {
-  "version": 1,
-  "status": "foundation",
-  "notes": "Add approved tracks after the Christmas Radio Audio Audit. Audio is intentionally not preloaded.",
+  "version": 2,
+  "status": "ready-for-audio",
+  "defaultStationId": "bb-christmas-radio",
+  "audioPolicy": {
+    "initialPreload": "none",
+    "prepareNextAfterPlaybackStarts": true,
+    "crossfadeMs": 280,
+    "rotationMode": "curated-loop"
+  },
+  "notes": "Populate only after the Christmas Radio Audio Audit. Curated station order is intentional; do not shuffle audited pacing. No song audio is requested before explicit Play.",
   "tracks": []
 }
