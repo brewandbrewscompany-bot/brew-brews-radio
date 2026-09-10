@@ -2,6 +2,13 @@ const STATIONS_URL='data/stations.json';
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 
+function paintKnob(input){
+  if(!input)return;
+  const min=Number(input.min)||0,max=Number(input.max)||1,value=Number(input.value)||0;
+  const t=max===min?0:(value-min)/(max-min),angle=-125+(Math.min(1,Math.max(0,t))*250);
+  input.closest('.knob-control')?.style.setProperty('--knob-angle',`${angle}deg`);
+}
+
 class ChristmasAudioEngine{
   constructor(audio){this.audio=audio;this.userWantsPlayback=false;this.currentTrack=null;this.audio.preload='none'}
   setVolume(v){const n=Math.min(1,Math.max(0,Number(v)));this.audio.volume=Number.isFinite(n)?n:.8}
@@ -18,7 +25,7 @@ class ChristmasStationController{
     document.body.dataset.station=s.id;document.body.dataset.scene=s.scene||s.id;document.documentElement.style.setProperty('--station-position',`${8+(i/(this.stations.length-1))*84}%`);
     this.el.frequency.textContent=s.frequency;this.el.name.textContent=s.name;this.el.tagline.textContent=s.tagline;this.el.signal.textContent=this.engine.userWantsPlayback?'ON AIR':'READY';
     this.el.panelStation.textContent=`${s.frequency} · ${s.name}`;
-    if(source!=='tuner')this.el.tuner.value=String(i);if(source!=='knob')this.el.tuningKnob.value=String(i);
+    if(source!=='tuner')this.el.tuner.value=String(i);if(source!=='knob')this.el.tuningKnob.value=String(i);paintKnob(this.el.tuningKnob);
     [...this.el.grid.children].forEach((card,n)=>card.setAttribute('aria-current',n===i?'true':'false'));
     this.noTrack();
   }
@@ -30,11 +37,13 @@ function openPanel(id,button){closePanels();const panel=document.getElementById(
 
 async function init(){
   const el={frequency:$('#frequencyLabel'),name:$('#stationName'),tagline:$('#stationTagline'),signal:$('#signalLabel'),title:$('#nowPlayingTitle'),artist:$('#nowPlayingArtist'),tuner:$('#stationTuner'),tuningKnob:$('#tuningKnob'),grid:$('#stationGrid'),play:$('#playButton'),volume:$('#volumeControl'),audio:$('#christmasRadioAudio'),panelStation:$('#panelStation'),panelTrack:$('#panelTrack'),panelArtist:$('#panelArtist')};
-  const engine=new ChristmasAudioEngine(el.audio);engine.setVolume(el.volume.value);
+  const engine=new ChristmasAudioEngine(el.audio);engine.setVolume(el.volume.value);paintKnob(el.volume);paintKnob(el.tuningKnob);
   try{
     const res=await fetch(STATIONS_URL,{cache:'no-cache'});if(!res.ok)throw new Error(`Station manifest ${res.status}`);const manifest=await res.json(),stations=manifest.stations||[];if(!stations.length)throw new Error('Station manifest is empty');
     const controller=new ChristmasStationController(stations,engine,el);controller.renderCards();const d=Math.max(0,stations.findIndex(s=>s.id===manifest.defaultStationId));el.tuner.max=el.tuningKnob.max=String(stations.length-1);controller.tune(d,'boot');
-    el.tuner.addEventListener('input',e=>controller.tune(e.target.value,'tuner'));el.tuningKnob.addEventListener('input',e=>controller.tune(e.target.value,'knob'));el.volume.addEventListener('input',e=>engine.setVolume(e.target.value));
+    el.tuner.addEventListener('input',e=>controller.tune(e.target.value,'tuner'));
+    el.tuningKnob.addEventListener('input',e=>{paintKnob(e.target);controller.tune(e.target.value,'knob')});
+    el.volume.addEventListener('input',e=>{engine.setVolume(e.target.value);paintKnob(e.target)});
     el.play.addEventListener('click',async()=>{if(engine.userWantsPlayback){engine.pause();el.play.setAttribute('aria-pressed','false');$('.play-icon',el.play).textContent='▶';el.signal.textContent='READY';controller.noTrack();return}const result=await engine.play();el.play.setAttribute('aria-pressed','true');$('.play-icon',el.play).textContent='Ⅱ';el.signal.textContent=result.started?'ON AIR':'READY';controller.noTrack()});
     $$('.bottom-nav button').forEach(b=>b.addEventListener('click',()=>openPanel(b.dataset.panel,b)));$$('.panel-close').forEach(b=>b.addEventListener('click',closePanels));$('#panelScrim').addEventListener('click',closePanels);document.addEventListener('keydown',e=>{if(e.key==='Escape')closePanels()});
   }catch(err){console.error('[B&B Christmas Radio]',err);el.signal.textContent='OFFLINE';el.title.textContent='Broadcast setup incomplete';el.artist.textContent='Christmas Radio could not load its station manifest'}
