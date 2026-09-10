@@ -1,0 +1,64 @@
+/* Brew & Brews Christmas Radio — rendered art skin over the real radio engine.
+   Base christmas-radio.css remains the fallback/skeleton. */
+:root{--art-stage-w:430px;--art-stage-h:854px;--nav-h:76px}
+
+/* One production image drives the atmosphere. It is shown once crisply in the center,
+   with the same cached asset softly filling any side gutters on wider screens. */
+.scene{z-index:0;inset:0 0 var(--nav-h);background:#120b07;overflow:hidden}
+.scene::before{content:"";position:absolute;inset:-22px;background:url("../../artwork/flagship-roastery.avif") center/cover no-repeat;filter:blur(18px) brightness(.56) saturate(.85);transform:scale(1.06)}
+.scene::after{content:"";position:absolute;inset:0;background:url("../../artwork/flagship-roastery.avif") top center/auto 100% no-repeat;filter:none;pointer-events:none}
+.scene>*{display:none!important}
+
+/* The live UI uses the same portrait coordinate system as the artwork. */
+.app{position:fixed;z-index:5;top:0;bottom:var(--nav-h);left:50%;translate:-50% 0;width:min(100vw,var(--art-stage-w));max-width:none;margin:0;padding:0;pointer-events:none}
+.scene-copy{display:none!important}
+.radio{position:absolute;inset:0;margin:0;padding:0;max-width:none;border:0;border-radius:0;background:none;box-shadow:none;pointer-events:none}
+.radio::before,.radio::after,.radio-garland,.radio-crown,.radio-location{display:none!important}
+
+/* Live tuner: art supplies the brass bezel; this glass overlay masks the baked needle
+   so every station can move the real needle accurately. */
+.dial-bezel{position:absolute;z-index:8;left:19%;top:57.25%;width:66.5%;height:5.7%;margin:0;padding:3px;border:0;border-radius:6px;background:rgba(8,7,5,.74);box-shadow:inset 0 0 12px #000,0 0 0 1px rgba(241,186,83,.18);pointer-events:auto}
+.dial-scale{height:100%;padding:0 4%;border:0;border-radius:4px;background:linear-gradient(180deg,rgba(3,3,2,.72),rgba(18,12,7,.74));color:#ecd18f;font-size:clamp(.53rem,2.5vw,.72rem);box-shadow:none}
+.dial-scale span::after{top:58%;height:18%}
+.dial-scale i{top:-2px;bottom:-2px;width:2px;background:#ef3d31;box-shadow:0 0 8px #ff5748}
+.dial-input{pointer-events:auto}
+
+/* Hit targets align to the three physical controls already painted into the art. */
+.control-deck{position:absolute;z-index:9;left:9.3%;top:62.35%;width:81.4%;height:10.9%;margin:0;display:block;pointer-events:none}
+.knob-control{position:absolute;top:0;width:18%;height:100%;display:block;color:transparent;pointer-events:auto}
+.volume-control{left:0}
+.tuner-control{right:0}
+.knob-control .knob{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;box-shadow:none}
+.knob-control .knob::after,.knob-control .knob i,.knob-control>b{display:none}
+.knob-control input{inset:0;width:100%;height:100%;opacity:0;pointer-events:auto;cursor:pointer}
+.play-button{position:absolute;left:50%;top:50%;translate:-50% -50%;width:24%;height:auto;aspect-ratio:1;border:0;border-radius:50%;background:transparent;box-shadow:none;pointer-events:auto;cursor:pointer;touch-action:manipulation}
+.play-button .play-icon{opacity:0}
+.play-button:active{background:rgba(255,190,85,.08);box-shadow:0 0 24px rgba(255,171,52,.35)}
+.play-button[aria-pressed=true]{background:rgba(18,10,5,.62);box-shadow:0 0 0 2px rgba(244,188,91,.52),0 0 28px rgba(255,171,52,.38)}
+.play-button[aria-pressed=true] .play-icon{opacity:1;display:grid;place-items:center;color:#ffe0a0;font:800 1.45rem/1 system-ui,sans-serif;translate:0 0;text-shadow:0 0 10px #ffb33f}
+
+/* The flagship art already contains its station label. Other stations get a live wood-glass
+   readout over that same area until their dedicated lazy-loaded art skins are added. */
+.station-readout{display:none}
+body:not([data-station="bb-christmas-radio"]) .station-readout{display:block;position:absolute;z-index:10;left:21%;top:71.5%;width:58%;padding:7px 9px;border:1px solid rgba(227,177,95,.36);border-radius:8px;background:rgba(42,19,8,.88);box-shadow:0 5px 16px #0008;text-align:center;pointer-events:none}
+body:not([data-station="bb-christmas-radio"]) .station-readout>strong{font-size:.92rem;color:#ffe0a5}
+body:not([data-station="bb-christmas-radio"]) .station-readout h2{font-size:.78rem;color:#fff0d1;margin:1px 0}
+body:not([data-station="bb-christmas-radio"]) .station-readout>p{display:none}
+body:not([data-station="bb-christmas-radio"]) .now-line{margin-top:3px;font-size:.45rem;gap:4px}
+
+/* Keep the bottom navigation truly live; panels float over the art without stopping audio. */
+.bottom-nav{z-index:30;height:var(--nav-h);background:linear-gradient(180deg,rgba(43,20,9,.96),rgba(24,11,6,.99));backdrop-filter:blur(10px);border-top:1px solid rgba(235,190,112,.28)}
+.app-panel{z-index:40}.panel-scrim{z-index:35}
+
+/* Keyboard users still get visible focus even though the physical controls come from artwork. */
+.play-button:focus-visible,.dial-input:focus-visible,.knob-control:focus-within{outline:2px solid #ffe0a0;outline-offset:3px;border-radius:10px}
+
+@media(max-width:480px){
+  .scene::before{display:none}
+  .scene::after{background-size:100% 100%}
+  .app{width:100vw}
+}
+@media(min-width:481px){
+  .app{width:min(var(--art-stage-w),100vw)}
+}
+@media(prefers-reduced-motion:reduce){.dial-scale i{transition:none}}
