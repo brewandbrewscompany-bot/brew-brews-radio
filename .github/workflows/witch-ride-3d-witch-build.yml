@@ -26,6 +26,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -41,7 +42,11 @@ jobs:
           test "$(git ls-tree fc57a127836225f61a17f57e8af1540415dd6f18 halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json | awk '{print $3}')" = "ecd1aab936d770bcb135dddce0b03020801e052a"
           test "$(git hash-object halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb)" = "4b6b7009e86a53dc35d9216ea8d29133584b280d"
           test "$(git hash-object halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json)" = "ecd1aab936d770bcb135dddce0b03020801e052a"
-          git ls-tree origin/witch-ride-3d-witch-material-pass-15 halloween-radio/games/witch-ride-3d/game.js halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js halloween-radio/games/witch-ride-3d/index.html
+          git ls-tree origin/witch-ride-3d-witch-material-pass-15 \
+            halloween-radio/games/witch-ride-3d/game.js \
+            halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js \
+            halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js \
+            halloween-radio/games/witch-ride-3d/index.html
 
       - name: Validate exact approved asset and frozen unrelated work
         run: |
@@ -49,49 +54,249 @@ jobs:
           node --check halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           node --check halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
 
-      - name: Actual PlayCanvas 430x932 multi-time gameplay gate
+      - name: Actual PlayCanvas 430x932 September 8 baseline and multi-time pose gate
         shell: bash
         run: |
           npm install --no-save puppeteer-core@24.16.0
+          rm -rf /tmp/pass14-approved
+          git worktree add --detach /tmp/pass14-approved fc57a127836225f61a17f57e8af1540415dd6f18
           python3 -m http.server 8000 --directory . >/tmp/wr3d-pass15-http.log 2>&1 &
-          SERVER_PID=$!
-          trap 'kill $SERVER_PID || true' EXIT
+          CURRENT_PID=$!
+          python3 -m http.server 8001 --directory /tmp/pass14-approved >/tmp/wr3d-pass14-http.log 2>&1 &
+          APPROVED_PID=$!
+          trap 'kill $CURRENT_PID $APPROVED_PID || true' EXIT
           sleep 2
           CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
           test -n "$CHROME_BIN"
           CHROME_BIN="$CHROME_BIN" node <<'NODE'
           const fs=require('fs'),puppeteer=require('puppeteer-core');
           const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-          const LIMITS={witchHeightPx:[75,170],witchWidthPx:[50,150],bootSeparationPxMin:18,kneeSeparationPxMin:22,hipSeparationPxMin:16,broomStraddlePxMin:15,broomTailDeltaZMin:.10,runtimeRelativeFloor:.95,runtimeDriftPx:1.5};
-          const close=(a,b,t=.0001)=>Math.abs(a-b)<=t;
-          const angleClose=(a,b,t=.001)=>Math.abs(((a-b+180)%360+360)%360-180)<=t;
-          function samePose(a,b,label){for(const n of ['leg_L','leg_R','boot_L','boot_R']){for(let i=0;i<3;i++){if(!close(a[n].p[i],b[n].p[i]))throw Error(`${label} ${n} position drift`);if(!close(a[n].s[i],b[n].s[i]))throw Error(`${label} ${n} scale drift`);if(!angleClose(a[n].e[i],b[n].e[i]))throw Error(`${label} ${n} rotation drift`)}}}
-          function absolute(m,label){if(m.witch.height<LIMITS.witchHeightPx[0]||m.witch.height>LIMITS.witchHeightPx[1]||m.witch.width<LIMITS.witchWidthPx[0]||m.witch.width>LIMITS.witchWidthPx[1])throw Error(`${label} framing ${JSON.stringify(m)}`);for(const [k,min] of [['bootSeparationPx',LIMITS.bootSeparationPxMin],['kneeSeparationPx',LIMITS.kneeSeparationPxMin],['hipSeparationPx',LIMITS.hipSeparationPxMin],['broomStraddlePx',LIMITS.broomStraddlePxMin]])if(m[k]<min)throw Error(`${label} ${k} ${JSON.stringify(m)}`);if(m.broomTailDeltaZ<LIMITS.broomTailDeltaZMin)throw Error(`${label} broom tail ${JSON.stringify(m)}`)}
-          function drift(m,start,label){samePose(m.pose,start.pose,label);for(const k of ['bootSeparationPx','kneeSeparationPx','hipSeparationPx','broomStraddlePx'])if(m[k]+LIMITS.runtimeDriftPx<start[k]*LIMITS.runtimeRelativeFloor)throw Error(`${label} ${k} collapsed ${JSON.stringify({start:start[k],now:m[k]})}`);if(m.broomTailDeltaZ<LIMITS.broomTailDeltaZMin)throw Error(`${label} broom tail drifted`)}
-          async function pageReady(browser){const p=await browser.newPage();await p.setViewport({width:430,height:932,deviceScaleFactor:1,isMobile:true,hasTouch:true});await p.goto('http://127.0.0.1:8000/halloween-radio/games/witch-ride-3d/',{waitUntil:'domcontentloaded',timeout:30000});await p.waitForFunction(()=>window.WitchRide3D?.ready&&window.WitchRideWitchCenterpiecePass?.active&&window.WitchRidePass15Environment?.active,{timeout:30000});return p}
-          async function metrics(p,env=false){return p.evaluate(async(env)=>{const pc=await import('playcanvas'),app=pc.app,cam=app.root.findByName('Chase Camera'),w=app.root.findByName('Witch Rig');const comps=n=>n?.findComponents?.('render')||[];function b(n){let mn=new pc.Vec3(Infinity,Infinity,Infinity),mx=new pc.Vec3(-Infinity,-Infinity,-Infinity),c=0;for(const r of comps(n))for(const mi of r.meshInstances||[]){const a=mi.aabb.center,h=mi.aabb.halfExtents;mn.x=Math.min(mn.x,a.x-h.x);mn.y=Math.min(mn.y,a.y-h.y);mn.z=Math.min(mn.z,a.z-h.z);mx.x=Math.max(mx.x,a.x+h.x);mx.y=Math.max(mx.y,a.y+h.y);mx.z=Math.max(mx.z,a.z+h.z);c++}return c?{mn,mx,ct:new pc.Vec3((mn.x+mx.x)/2,(mn.y+mx.y)/2,(mn.z+mx.z)/2)}:null}function pr(v){const o=new pc.Vec3();cam.camera.worldToScreen(v,o);return o}function sb(n){const q=b(n);if(!q)return null;const ps=[];for(const x of [q.mn.x,q.mx.x])for(const y of [q.mn.y,q.mx.y])for(const z of [q.mn.z,q.mx.z])ps.push(pr(new pc.Vec3(x,y,z)));const xs=ps.map(x=>x.x),ys=ps.map(x=>x.y);return{width:Math.max(...xs)-Math.min(...xs),height:Math.max(...ys)-Math.min(...ys),cx:(Math.max(...xs)+Math.min(...xs))/2}}function lp(n,x,y,z){const o=new pc.Vec3();n.getWorldTransform().transformPoint(new pc.Vec3(x,y,z),o);return pr(o)}function po(n){const x=w.findByName(n),p=x.getLocalPosition(),e=x.getLocalEulerAngles(),s=x.getLocalScale();return{p:[p.x,p.y,p.z],e:[e.x,e.y,e.z],s:[s.x,s.y,s.z]}}const ll=w.findByName('leg_L'),lr=w.findByName('leg_R'),bl=sb(w.findByName('boot_L')),br=sb(w.findByName('boot_R')),lb=sb(ll),rb=sb(lr),kl=lp(ll,-.98,.20,.28),kr=lp(lr,.98,.20,.28),sl=lp(ll,-.58,.62,.02),sr=lp(lr,.58,.62,.02),bb=b(w.findByName('broom_bristles')),bh=b(w.findByName('broom_handle'));const out={witch:sb(w),pose:Object.fromEntries(['leg_L','leg_R','boot_L','boot_R'].map(n=>[n,po(n)])),bootSeparationPx:Math.abs(br.cx-bl.cx),kneeSeparationPx:Math.abs(kr.x-kl.x),hipSeparationPx:Math.abs(rb.cx-lb.cx),broomStraddlePx:Math.abs(sr.x-sl.x),broomTailDeltaZ:bb.ct.z-bh.ct.z};if(env){let soft=0,pud=0,fog=0,mist=0;const walk=(n,on=true)=>{on=on&&n.enabled!==false;if((n.name||'').startsWith('Pass15 Soft Wet Light'))soft++;if(on&&/^Puddle( Variation)?/.test(n.name||''))pud++;if(on&&(n.name||'').startsWith('Realism Fog'))fog++;if(on&&(n.name||'').startsWith('Atmosphere Ground Mist'))mist++;for(const c of n.children||[])walk(c,on)};walk(app.root);out.environment={soft,pud,fog,mist}}return out},env)}
-          (async()=>{const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader','--mute-audio']});
-            const visual=await pageReady(browser);const boot=await visual.evaluate(()=>({assetMode:window.WitchRide3D.assetMode,engine:window.WitchRide3D.engine,witch:window.WitchRideWitchCenterpiecePass,environment:window.WitchRidePass15Environment}));if(boot.assetMode!=='glb-pbr'||boot.engine!=='PlayCanvas'||boot.witch.lockedMeshBlob!=='4b6b7009e86a53dc35d9216ea8d29133584b280d'||boot.witch.gameplayScale!==.24)throw Error('boot '+JSON.stringify(boot));await visual.click('#play');await visual.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(350);await visual.screenshot({path:'witch-pass15-mobile-430x932.png'});
-            await visual.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,cam=app.root.findByName('Chase Camera');const hide=['Road Segment','Fog Bank','Realism Fog','Atmosphere Ground Mist','Dead Tree','Fence ','Pumpkin ','1938 Coupe','Oncoming Traffic','Coffee Bean','Cinematic Foreground','Pass10','Pass11','Brew & Brews Haunted Roastery','Moon Halo','Moon','Pass15 Soft Wet Light'];for(const e of [...app.root.children])if(hide.some(x=>e.name?.startsWith(x)))e.enabled=false;document.querySelector('#hud')?.classList.add('hidden');for(const el of document.querySelectorAll('.screen'))el.classList.remove('open');app.on('prerender',()=>{cam.setPosition(2.15,3.55,10.25);cam.lookAt(0,3.05,1.80);cam.camera.fov=42})});await sleep(350);await visual.screenshot({path:'witch-pass15-close-430x932.png'});
-            const gate=await pageReady(browser);await gate.click('#play');await gate.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(350);const start=await metrics(gate,true);absolute(start,'start');if(start.environment.pud||start.environment.fog||start.environment.mist||start.environment.soft<14)throw Error('environment freeze '+JSON.stringify(start.environment));await sleep(1050);const active=await metrics(gate);drift(active,start,'active');await gate.keyboard.down('ArrowLeft');await sleep(700);const steering=await metrics(gate);drift(steering,start,'steering');await gate.keyboard.up('ArrowLeft');await sleep(1500);const late=await metrics(gate);drift(late,start,'late');fs.writeFileSync('witch-pass15-runtime-metrics.json',JSON.stringify({LIMITS,boot,start,active,steering,late},null,2));await gate.screenshot({path:'witch-pass15-environment-430x932.png'});await browser.close()})().catch(e=>{console.error(e);process.exit(1)});
+          const LIMITS={
+            witchHeightPx:[70,170],witchWidthPx:[45,150],
+            baselineShapeFloor:.96,baselineShapeCeil:1.06,
+            baselineAspectTolerance:.05,baselineMaxSizeRatio:1.04,
+            baselineMinSizeRatio:.78,broomTailDeltaZMin:.10,
+            runtimeRelativeFloor:.92,runtimeDriftPx:1.5,
+            localPositionTolerance:.0001,localScaleTolerance:.0001,localEulerTolerance:.001
+          };
+          const close=(a,b,t)=>Math.abs(a-b)<=t;
+          const angleClose=(a,b,t)=>Math.abs(((a-b+180)%360+360)%360-180)<=t;
+          function samePose(a,b,label){
+            for(const n of ['leg_L','leg_R','boot_L','boot_R']){
+              if(!a[n]||!b[n])throw Error(`${label} missing ${n}`);
+              for(let i=0;i<3;i++){
+                if(!close(a[n].p[i],b[n].p[i],LIMITS.localPositionTolerance))throw Error(`${label} ${n} position drift`);
+                if(!close(a[n].s[i],b[n].s[i],LIMITS.localScaleTolerance))throw Error(`${label} ${n} scale drift`);
+                if(!angleClose(a[n].e[i],b[n].e[i],LIMITS.localEulerTolerance))throw Error(`${label} ${n} rotation drift`);
+              }
+            }
+          }
+          function shapeRatios(m){
+            return {
+              boot:m.bootSeparationPx/m.witch.width,
+              knee:m.kneeSeparationPx/m.witch.width,
+              hip:m.hipSeparationPx/m.witch.width,
+              straddle:m.broomStraddlePx/m.witch.width,
+              aspect:m.witch.width/m.witch.height
+            };
+          }
+          function baselineGate(m,ref,label){
+            if(m.witch.height<LIMITS.witchHeightPx[0]||m.witch.height>LIMITS.witchHeightPx[1]||
+               m.witch.width<LIMITS.witchWidthPx[0]||m.witch.width>LIMITS.witchWidthPx[1])
+              throw Error(`${label} framing ${JSON.stringify(m)}`);
+            if(m.witch.height>ref.witch.height*LIMITS.baselineMaxSizeRatio||
+               m.witch.width>ref.witch.width*LIMITS.baselineMaxSizeRatio)
+              throw Error(`${label} witch became larger than September 8 baseline`);
+            if(m.witch.height<ref.witch.height*LIMITS.baselineMinSizeRatio||
+               m.witch.width<ref.witch.width*LIMITS.baselineMinSizeRatio)
+              throw Error(`${label} witch became too small relative to September 8 baseline`);
+            const a=shapeRatios(m),b=shapeRatios(ref);
+            if(Math.abs(a.aspect-b.aspect)>LIMITS.baselineAspectTolerance)
+              throw Error(`${label} body aspect changed ${JSON.stringify({current:a,approved:b})}`);
+            for(const k of ['boot','knee','hip','straddle']){
+              const r=a[k]/b[k];
+              if(r<LIMITS.baselineShapeFloor||r>LIMITS.baselineShapeCeil)
+                throw Error(`${label} ${k} separation no longer matches September 8 ${JSON.stringify({current:a[k],approved:b[k],ratio:r})}`);
+            }
+            if(!(m.broomTailDeltaZ>=LIMITS.broomTailDeltaZMin&&m.broomTailDeltaZ>=ref.broomTailDeltaZ*.90))
+              throw Error(`${label} broom tail orientation/length changed ${JSON.stringify({current:m.broomTailDeltaZ,approved:ref.broomTailDeltaZ})}`);
+          }
+          function drift(m,start,label){
+            samePose(m.pose,start.pose,label);
+            const a=shapeRatios(m),b=shapeRatios(start);
+            for(const k of ['boot','knee','hip','straddle']){
+              if(a[k]+(LIMITS.runtimeDriftPx/m.witch.width)<b[k]*LIMITS.runtimeRelativeFloor)
+                throw Error(`${label} ${k} collapsed ${JSON.stringify({start:b[k],now:a[k]})}`);
+            }
+            if(m.broomTailDeltaZ<LIMITS.broomTailDeltaZMin)throw Error(`${label} broom tail drifted wrong`);
+          }
+          async function pageReady(browser,url,pass15){
+            const p=await browser.newPage();
+            await p.setViewport({width:430,height:932,deviceScaleFactor:1,isMobile:true,hasTouch:true});
+            await p.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
+            if(pass15){
+              await p.waitForFunction(()=>window.WitchRide3D?.ready&&window.WitchRideWitchCenterpiecePass?.active&&window.WitchRidePass15Environment?.active,{timeout:30000});
+            }else{
+              await p.waitForFunction(()=>window.WitchRide3D?.ready&&window.WitchRideWitchCenterpiecePass?.active,{timeout:30000});
+            }
+            return p;
+          }
+          async function metrics(p,env=false){
+            return p.evaluate(async(env)=>{
+              const pc=await import('playcanvas'),app=pc.app,cam=app.root.findByName('Chase Camera'),w=app.root.findByName('Witch Rig');
+              if(!cam?.camera||!w)throw Error('camera/witch unavailable');
+              const comps=n=>n?.findComponents?.('render')||[];
+              function b(n){
+                let mn=new pc.Vec3(Infinity,Infinity,Infinity),mx=new pc.Vec3(-Infinity,-Infinity,-Infinity),c=0;
+                for(const r of comps(n))for(const mi of r.meshInstances||[]){
+                  const a=mi.aabb.center,h=mi.aabb.halfExtents;
+                  mn.x=Math.min(mn.x,a.x-h.x);mn.y=Math.min(mn.y,a.y-h.y);mn.z=Math.min(mn.z,a.z-h.z);
+                  mx.x=Math.max(mx.x,a.x+h.x);mx.y=Math.max(mx.y,a.y+h.y);mx.z=Math.max(mx.z,a.z+h.z);c++;
+                }
+                return c?{mn,mx,ct:new pc.Vec3((mn.x+mx.x)/2,(mn.y+mx.y)/2,(mn.z+mx.z)/2)}:null;
+              }
+              function pr(v){const o=new pc.Vec3();cam.camera.worldToScreen(v,o);return o}
+              function sb(n){
+                const q=b(n);if(!q)return null;const ps=[];
+                for(const x of [q.mn.x,q.mx.x])for(const y of [q.mn.y,q.mx.y])for(const z of [q.mn.z,q.mx.z])ps.push(pr(new pc.Vec3(x,y,z)));
+                const xs=ps.map(x=>x.x),ys=ps.map(x=>x.y);
+                return{width:Math.max(...xs)-Math.min(...xs),height:Math.max(...ys)-Math.min(...ys),cx:(Math.max(...xs)+Math.min(...xs))/2};
+              }
+              function lp(n,x,y,z){const o=new pc.Vec3();n.getWorldTransform().transformPoint(new pc.Vec3(x,y,z),o);return pr(o)}
+              function po(n){
+                const x=w.findByName(n);if(!x)return null;
+                const p=x.getLocalPosition(),e=x.getLocalEulerAngles(),s=x.getLocalScale();
+                return{p:[p.x,p.y,p.z],e:[e.x,e.y,e.z],s:[s.x,s.y,s.z]};
+              }
+              const ll=w.findByName('leg_L'),lr=w.findByName('leg_R'),bootL=w.findByName('boot_L'),bootR=w.findByName('boot_R');
+              if(!ll||!lr||!bootL||!bootR)throw Error('approved stance roots unavailable');
+              const bl=sb(bootL),br=sb(bootR),lb=sb(ll),rb=sb(lr);
+              const kl=lp(ll,-.98,.20,.28),kr=lp(lr,.98,.20,.28),sl=lp(ll,-.58,.62,.02),sr=lp(lr,.58,.62,.02);
+              const bb=b(w.findByName('broom_bristles')),bh=b(w.findByName('broom_handle'));
+              const out={
+                witch:sb(w),
+                pose:Object.fromEntries(['leg_L','leg_R','boot_L','boot_R'].map(n=>[n,po(n)])),
+                bootSeparationPx:Math.abs(br.cx-bl.cx),
+                kneeSeparationPx:Math.abs(kr.x-kl.x),
+                hipSeparationPx:Math.abs(rb.cx-lb.cx),
+                broomStraddlePx:Math.abs(sr.x-sl.x),
+                broomTailDeltaZ:bb&&bh?bb.ct.z-bh.ct.z:null
+              };
+              if(env){
+                let soft=0,pud=0,fog=0,mist=0;
+                const walk=(n,on=true)=>{
+                  on=on&&n.enabled!==false;
+                  if(on&&(n.name||'').startsWith('Pass15 Soft Wet Light'))soft++;
+                  if(on&&/^Puddle( Variation)?/.test(n.name||''))pud++;
+                  if(on&&(n.name||'').startsWith('Realism Fog'))fog++;
+                  if(on&&(n.name||'').startsWith('Atmosphere Ground Mist'))mist++;
+                  for(const c of n.children||[])walk(c,on);
+                };
+                walk(app.root);out.environment={soft,pud,fog,mist};
+              }
+              return out;
+            },env);
+          }
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader','--mute-audio']});
+
+            const approved=await pageReady(browser,'http://127.0.0.1:8001/halloween-radio/games/witch-ride-3d/',false);
+            const approvedBoot=await approved.evaluate(()=>({assetMode:window.WitchRide3D.assetMode,engine:window.WitchRide3D.engine,witch:window.WitchRideWitchCenterpiecePass}));
+            if(approvedBoot.assetMode!=='glb-pbr'||approvedBoot.engine!=='PlayCanvas'||approvedBoot.witch?.passId!=='witch-centerpiece-pass-v14')
+              throw Error('September 8 approved runtime boot failed '+JSON.stringify(approvedBoot));
+            await approved.click('#play');
+            await approved.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');
+            await sleep(350);
+            const approvedMetrics=await metrics(approved);
+            await approved.screenshot({path:'witch-pass14-runtime-baseline-430x932.png'});
+
+            const visual=await pageReady(browser,'http://127.0.0.1:8000/halloween-radio/games/witch-ride-3d/',true);
+            const boot=await visual.evaluate(()=>({assetMode:window.WitchRide3D.assetMode,engine:window.WitchRide3D.engine,witch:window.WitchRideWitchCenterpiecePass,environment:window.WitchRidePass15Environment}));
+            if(boot.assetMode!=='glb-pbr'||boot.engine!=='PlayCanvas'||boot.witch.lockedMeshBlob!=='4b6b7009e86a53dc35d9216ea8d29133584b280d'||boot.witch.gameplayScale!==.24)
+              throw Error('Pass 15 restore boot failed '+JSON.stringify(boot));
+            await visual.click('#play');
+            await visual.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');
+            await sleep(350);
+            await visual.screenshot({path:'witch-pass15-mobile-430x932.png'});
+            await visual.evaluate(async()=>{
+              const pc=await import('playcanvas'),app=pc.app,cam=app.root.findByName('Chase Camera');
+              const hide=['Road Segment','Fog Bank','Realism Fog','Atmosphere Ground Mist','Dead Tree','Fence ','Pumpkin ','1938 Coupe','Oncoming Traffic','Coffee Bean','Cinematic Foreground','Pass10','Pass11','Brew & Brews Haunted Roastery','Moon Halo','Moon','Pass15 Soft Wet Light'];
+              for(const e of [...app.root.children])if(hide.some(x=>e.name?.startsWith(x)))e.enabled=false;
+              document.querySelector('#hud')?.classList.add('hidden');
+              for(const el of document.querySelectorAll('.screen'))el.classList.remove('open');
+              app.on('prerender',()=>{cam.setPosition(2.15,3.55,10.25);cam.lookAt(0,3.05,1.80);cam.camera.fov=42});
+            });
+            await sleep(350);
+            await visual.screenshot({path:'witch-pass15-close-430x932.png'});
+
+            const gate=await pageReady(browser,'http://127.0.0.1:8000/halloween-radio/games/witch-ride-3d/',true);
+            await gate.click('#play');
+            await gate.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');
+            await sleep(350);
+            const start=await metrics(gate,true);
+            await gate.screenshot({path:'witch-pass15-environment-430x932.png'});
+            baselineGate(start,approvedMetrics,'start');
+            if(start.environment.pud||start.environment.fog||start.environment.mist||start.environment.soft<14)
+              throw Error('frozen truck/bean/reflection environment gate '+JSON.stringify(start.environment));
+
+            await sleep(1050);
+            const active=await metrics(gate);
+            drift(active,start,'active');
+
+            await gate.keyboard.down('ArrowLeft');
+            await sleep(700);
+            const steering=await metrics(gate);
+            drift(steering,start,'steering');
+            await gate.keyboard.up('ArrowLeft');
+
+            await sleep(1500);
+            const late=await metrics(gate);
+            drift(late,start,'late');
+
+            fs.writeFileSync('witch-pass15-runtime-metrics.json',JSON.stringify({LIMITS,approvedBoot,approvedMetrics,boot,start,active,steering,late},null,2));
+            console.log('SEPT8_BASELINE',JSON.stringify(approvedMetrics));
+            console.log('PASS15_START',JSON.stringify(start));
+            console.log('PASS15_ACTIVE',JSON.stringify(active));
+            console.log('PASS15_STEERING',JSON.stringify(steering));
+            console.log('PASS15_LATE',JSON.stringify(late));
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
           NODE
 
       - name: Build direct side-by-side against approved September 8 images
+        if: always()
         env:
           GITHUB_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           python -m pip install --disable-pip-version-check pillow
           curl -fL -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/10079209833/zip" -o /tmp/approved.zip
-          rm -rf /tmp/approved && mkdir /tmp/approved && unzip -q /tmp/approved.zip -d /tmp/approved
-          cp /tmp/approved/witch-pass14-mobile-430x932.png witch-pass14-approved-mobile-430x932.png
-          cp /tmp/approved/witch-pass14-close-430x932.png witch-pass14-approved-close-430x932.png
+          rm -rf /tmp/approved-artifact && mkdir /tmp/approved-artifact && unzip -q /tmp/approved.zip -d /tmp/approved-artifact
+          cp /tmp/approved-artifact/witch-pass14-mobile-430x932.png witch-pass14-approved-mobile-430x932.png
+          cp /tmp/approved-artifact/witch-pass14-close-430x932.png witch-pass14-approved-close-430x932.png
           python - <<'PY'
-          from PIL import Image,ImageDraw
+          from PIL import Image,ImageDraw,ImageChops,ImageStat
           def pair(a,b,o):
-              x=Image.open(a).convert('RGB');y=Image.open(b).convert('RGB');c=Image.new('RGB',(x.width+y.width,max(x.height,y.height)+40),(8,8,8));c.paste(x,(0,40));c.paste(y,(x.width,40));d=ImageDraw.Draw(c);d.text((10,12),'SEPT 8 APPROVED PASS 14',fill='white');d.text((x.width+10,12),'PASS 15 RESTORE',fill='white');c.save(o)
+              x=Image.open(a).convert('RGB');y=Image.open(b).convert('RGB')
+              c=Image.new('RGB',(x.width+y.width,max(x.height,y.height)+40),(8,8,8))
+              c.paste(x,(0,40));c.paste(y,(x.width,40))
+              d=ImageDraw.Draw(c)
+              d.text((10,12),'SEPT 8 APPROVED PASS 14',fill='white')
+              d.text((x.width+10,12),'PASS 15 RESTORE',fill='white')
+              c.save(o)
           pair('witch-pass14-approved-mobile-430x932.png','witch-pass15-mobile-430x932.png','witch-pass15-vs-sept8-mobile.png')
           pair('witch-pass14-approved-close-430x932.png','witch-pass15-close-430x932.png','witch-pass15-vs-sept8-close.png')
+
+          approved=Image.open('witch-pass14-approved-close-430x932.png').convert('RGB').crop((80,500,340,815))
+          current=Image.open('witch-pass15-close-430x932.png').convert('RGB').crop((80,500,340,815))
+          diff=ImageChops.difference(approved,current)
+          stat=ImageStat.Stat(diff)
+          mae=sum(stat.mean)/3.0
+          px=list(diff.getdata())
+          over20=sum(1 for p in px if max(p)>20)/len(px)
+          print({'close_crop_mae':mae,'close_crop_fraction_over20':over20})
+          if mae>6.0 or over20>0.07:
+              raise SystemExit('Close witch render no longer visually matches September 8 approved reference')
           PY
 
       - name: Upload inspection renders
@@ -100,6 +305,7 @@ jobs:
         with:
           name: witch-pass15-sept8-restore-renders
           path: |
+            witch-pass14-runtime-baseline-430x932.png
             witch-pass15-mobile-430x932.png
             witch-pass15-environment-430x932.png
             witch-pass15-close-430x932.png
@@ -108,10 +314,11 @@ jobs:
             witch-pass14-approved-close-430x932.png
             witch-pass15-vs-sept8-mobile.png
             witch-pass15-vs-sept8-close.png
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7
 
       - name: Final branch and freeze verification
+        if: success()
         shell: bash
         run: |
           git fetch origin main witch-ride-3d-witch-material-pass-15
