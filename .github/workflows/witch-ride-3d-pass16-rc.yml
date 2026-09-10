@@ -1,0 +1,224 @@
+name: Witch Ride 3D Pass 16 Release Candidate
+
+on:
+  push:
+    branches: [witch-ride-3d-release-candidate-pass-16]
+    paths:
+      - '.github/workflows/witch-ride-3d-pass16-rc.yml'
+      - 'halloween-radio/games/witch-ride-3d/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  release-candidate-gate:
+    if: github.ref == 'refs/heads/witch-ride-3d-release-candidate-pass-16'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Record GitHub safety state and frozen Pass 15 source
+        shell: bash
+        run: |
+          git fetch origin main witch-ride-3d-witch-material-pass-15 witch-ride-3d-release-candidate-pass-16
+          echo "BASE_MAIN=$(git rev-parse origin/main)" >> "$GITHUB_ENV"
+          echo "BASE_TARGET=$(git rev-parse origin/witch-ride-3d-release-candidate-pass-16)" >> "$GITHUB_ENV"
+          test "$(git rev-parse origin/witch-ride-3d-release-candidate-pass-16)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/witch-ride-3d-witch-material-pass-15)" = "431decb3fd91975455a8e949c3464af24b716851"
+          git merge-base --is-ancestor 431decb3fd91975455a8e949c3464af24b716851 "$GITHUB_SHA"
+          python - <<'PY'
+          import subprocess
+          source='431decb3fd91975455a8e949c3464af24b716851'
+          allowed={
+            '.github/workflows/witch-ride-3d-pass16-rc.yml',
+            'halloween-radio/games/witch-ride-3d/pass16-rc-lock.json',
+            'halloween-radio/games/witch-ride-3d/tools/validate_pass16_rc.py',
+          }
+          changed=set(subprocess.check_output(['git','diff','--name-only',source,'HEAD'],text=True).splitlines())
+          extra=changed-allowed
+          if extra: raise SystemExit('Unexpected Pass 16 production changes: '+', '.join(sorted(extra)))
+          if any(x.startswith('louisburg-local/') for x in changed): raise SystemExit('louisburg-local/ changed')
+          print('Pass 16 isolated changes:',sorted(changed))
+          PY
+
+      - name: Validate locked release candidate source
+        run: |
+          python halloween-radio/games/witch-ride-3d/tools/validate_pass16_rc.py
+          python halloween-radio/games/witch-ride-3d/tools/validate_witch_pass15.py
+          node --check halloween-radio/games/witch-ride-3d/game.js
+          node --check halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
+          node --check halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
+
+      - name: Actual 430x932 gameplay, controls, collection, collision, replay and endurance gate
+        shell: bash
+        run: |
+          npm install --no-save puppeteer-core@24.16.0
+          python3 -m http.server 8000 --directory . >/tmp/witch-pass16-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_BIN"
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const fs=require('fs'),puppeteer=require('puppeteer-core');
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          const close=(a,b,t=.0001)=>Math.abs(a-b)<=t;
+          const angleClose=(a,b,t=.001)=>Math.abs(((a-b+180)%360+360)%360-180)<=t;
+          function samePose(a,b,label){
+            for(const n of ['leg_L','leg_R','boot_L','boot_R'])for(let i=0;i<3;i++){
+              if(!close(a[n].p[i],b[n].p[i]))throw Error(`${label} ${n} position drift`);
+              if(!close(a[n].s[i],b[n].s[i]))throw Error(`${label} ${n} scale drift`);
+              if(!angleClose(a[n].e[i],b[n].e[i]))throw Error(`${label} ${n} rotation drift`);
+            }
+          }
+          async function pageReady(browser){
+            const p=await browser.newPage();
+            await p.setViewport({width:430,height:932,deviceScaleFactor:1,isMobile:true,hasTouch:true});
+            await p.goto('http://127.0.0.1:8000/halloween-radio/games/witch-ride-3d/',{waitUntil:'domcontentloaded',timeout:30000});
+            await p.waitForFunction(()=>window.WitchRide3D?.ready&&window.WitchRideWitchCenterpiecePass?.active&&window.WitchRidePass15Environment?.active,{timeout:30000});
+            return p;
+          }
+          async function scene(p){
+            return p.evaluate(async()=>{
+              const pc=await import('playcanvas'),app=pc.app,w=app.root.findByName('Witch Rig');
+              const pose={};for(const n of ['leg_L','leg_R','boot_L','boot_R']){const e=w.findByName(n),p=e.getLocalPosition(),r=e.getLocalEulerAngles(),s=e.getLocalScale();pose[n]={p:[p.x,p.y,p.z],e:[r.x,r.y,r.z],s:[s.x,s.y,s.z]}}
+              const road=app.root.findByName('Road Segment 0')?.findByName('Road'),m=road?.render?.material||road?.render?.meshInstances?.[0]?.material;
+              let oncoming=0,halos=0,headlamps=0,headlightPoints=0;
+              const walk=n=>{if((n.name||'').startsWith('Oncoming Traffic ')&&/^Oncoming Traffic \d+$/.test(n.name))oncoming++;if((n.name||'').startsWith('Pass15 Bean Halo '))halos++;if((n.name||'').startsWith('headlamp_'))headlamps++;if((n.name||'').startsWith('Headlight Glow')&&n.light)headlightPoints++;for(const c of n.children||[])walk(c)};walk(app.root);
+              return {pose,detail:window.WitchRidePass15Environment.detail,road:m?{diffuse:[m.diffuse.r,m.diffuse.g,m.diffuse.b],gloss:m.gloss,metalness:m.metalness}:null,oncoming,halos,headlamps,headlightPoints,witchMeta:window.WitchRideWitchCenterpiecePass};
+            });
+          }
+          async function perf(p,ms=6000){
+            return p.evaluate(ms=>new Promise(resolve=>{const d=[],start=performance.now();let prev=start;function f(t){if(t>start+ms){d.sort((a,b)=>a-b);const q=x=>d[Math.min(d.length-1,Math.floor((d.length-1)*x))]||999;resolve({frames:d.length,median:q(.5),p95:q(.95),max:d[d.length-1]||999});return}d.push(t-prev);prev=t;requestAnimationFrame(f)}requestAnimationFrame(f)}),ms);
+          }
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader','--mute-audio']});
+            const p=await pageReady(browser);
+            const boot=await p.evaluate(()=>({assetMode:window.WitchRide3D.assetMode,engine:window.WitchRide3D.engine,detailMode:window.WitchRide3D.detailMode,witch:window.WitchRideWitchCenterpiecePass}));
+            if(boot.assetMode!=='glb-pbr'||boot.engine!=='PlayCanvas'||boot.witch.lockedMeshBlob!=='4b6b7009e86a53dc35d9216ea8d29133584b280d'||boot.witch.gameplayScale!==.24)throw Error('boot contract '+JSON.stringify(boot));
+            const pre=await scene(p),d=pre.detail;
+            const exact={roadSegments:9,headlightLensesAdjusted:14,headlightMountsAdjusted:14,headlightPointsAdjusted:14,softWetReflections:14,oncomingTraffic:4,beanHalos:16,beansRescaled:16,beanScale:.92,beanHaloScale:.27,beanHaloOpacity:.015,beanHaloIntensity:.10};
+            if(!d.roadNeutralCharcoal||d.witchTouched!==false||d.reflectionPanels!==0)throw Error('frozen environment flags '+JSON.stringify(d));
+            for(const [k,v] of Object.entries(exact))if(d[k]!==v)throw Error(`frozen ${k}: ${d[k]} != ${v}`);
+            if(pre.oncoming!==4||pre.halos!==16||pre.headlamps<14||pre.headlightPoints<14)throw Error('scene integration counts '+JSON.stringify(pre));
+            if(!pre.road||Math.max(...pre.road.diffuse)-Math.min(...pre.road.diffuse)>.01||pre.road.diffuse[2]>pre.road.diffuse[0]+.005)throw Error('road no longer neutral charcoal '+JSON.stringify(pre.road));
+
+            await p.click('#play');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(350);
+            const start=await scene(p);await p.screenshot({path:'witch-pass16-start-430x932.png'});
+
+            await p.keyboard.down('ArrowLeft');await sleep(650);await p.keyboard.up('ArrowLeft');await p.keyboard.down('ArrowRight');await sleep(1000);await p.keyboard.up('ArrowRight');await sleep(500);
+            const steered=await scene(p);samePose(steered.pose,start.pose,'steering');await p.screenshot({path:'witch-pass16-steering-430x932.png'});
+
+            await p.click('#pause');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='paused');const paused=await p.evaluate(()=>window.WitchRide3D.state.elapsed);await sleep(450);const paused2=await p.evaluate(()=>window.WitchRide3D.state.elapsed);if(Math.abs(paused2-paused)>.05)throw Error('pause did not stop gameplay');await p.click('#resume');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');
+
+            const beansBefore=await p.evaluate(()=>window.WitchRide3D.state.beans);
+            await p.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,s=window.WitchRide3D.state,b=app.root.findByName('Coffee Bean 0');b.enabled=true;b.__active=true;b.setPosition(s.x,1.15,2.2)});
+            await p.waitForFunction(b=>window.WitchRide3D.state.beans>b,{timeout:2500},beansBefore);
+            await p.screenshot({path:'witch-pass16-bean-collected-430x932.png'});
+
+            await p.evaluate(()=>{window.WitchRide3D.state.spawnClock=999});
+            for(const code of ['ArrowLeft','ArrowRight','ArrowLeft','ArrowRight']){await p.keyboard.down(code);await sleep(850);await p.keyboard.up(code);await sleep(400)}
+            const beforePerf=await scene(p),performance=await perf(p,6000),afterPerf=await scene(p);samePose(afterPerf.pose,start.pose,'endurance');
+            if(performance.frames<90||performance.median>50||performance.p95>100)throw Error('render performance regression '+JSON.stringify(performance));
+            await p.screenshot({path:'witch-pass16-endurance-430x932.png'});
+
+            await p.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,s=window.WitchRide3D.state,h=app.root.findByName('1938 Coupe 0');h.enabled=true;h.__active=true;h.setPosition(s.x,0,2)});
+            await p.waitForFunction(()=>window.WitchRide3D.state.mode==='over',{timeout:2500});
+            const result=await p.evaluate(()=>({mode:window.WitchRide3D.state.mode,overOpen:document.querySelector('#over')?.classList.contains('open'),hudHidden:document.querySelector('#hud')?.classList.contains('hidden')}));
+            if(!result.overOpen||!result.hudHidden)throw Error('collision/end screen regression '+JSON.stringify(result));
+            await p.screenshot({path:'witch-pass16-game-over-430x932.png'});
+            await p.click('#again');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(350);
+            const replay=await p.evaluate(()=>({...window.WitchRide3D.state}));if(replay.beans!==0||replay.score>20||replay.distance>.02)throw Error('replay reset regression '+JSON.stringify(replay));
+            const replayScene=await scene(p);samePose(replayScene.pose,start.pose,'replay');await p.screenshot({path:'witch-pass16-replay-430x932.png'});
+
+            await p.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,cam=app.root.findByName('Chase Camera');const hide=['Road Segment','Fog Bank','Realism Fog','Atmosphere Ground Mist','Dead Tree','Fence ','Pumpkin ','1938 Coupe','Oncoming Traffic','Coffee Bean','Cinematic Foreground','Pass10','Pass11','Brew & Brews Haunted Roastery','Moon Halo','Moon','Pass15 Soft Wet Light'];for(const e of [...app.root.children])if(hide.some(x=>e.name?.startsWith(x)))e.enabled=false;document.querySelector('#hud')?.classList.add('hidden');for(const el of document.querySelectorAll('.screen'))el.classList.remove('open');app.on('prerender',()=>{cam.setPosition(2.15,3.55,10.25);cam.lookAt(0,3.05,1.80);cam.camera.fov=42})});
+            await sleep(350);await p.screenshot({path:'witch-pass16-close-430x932.png'});
+            fs.writeFileSync('witch-pass16-runtime-report.json',JSON.stringify({boot,environment:d,initialScene:pre,performance,result,replay},null,2));
+            console.log('PASS16_PERFORMANCE',JSON.stringify(performance));
+            console.log('PASS16_ENVIRONMENT',JSON.stringify(d));
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+
+      - name: Visual lock against September 8 approved witch
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check pillow
+          curl -fL -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/10079209833/zip" -o /tmp/approved.zip
+          rm -rf /tmp/pass16-approved && mkdir /tmp/pass16-approved && unzip -q /tmp/approved.zip -d /tmp/pass16-approved
+          cp /tmp/pass16-approved/witch-pass14-close-430x932.png witch-pass14-approved-close-430x932.png
+          python - <<'PY'
+          from PIL import Image,ImageDraw,ImageChops,ImageStat
+          approved=Image.open('witch-pass14-approved-close-430x932.png').convert('RGB')
+          current=Image.open('witch-pass16-close-430x932.png').convert('RGB')
+          a=approved.crop((80,500,340,815));b=current.crop((80,500,340,815))
+          diff=ImageChops.difference(a,b);stat=ImageStat.Stat(diff);mae=sum(stat.mean)/3.0
+          px=list(diff.getdata());over20=sum(1 for p in px if max(p)>20)/len(px)
+          c=Image.new('RGB',(860,972),(8,8,8));c.paste(approved,(0,40));c.paste(current,(430,40));d=ImageDraw.Draw(c);d.text((10,12),'SEPT 8 APPROVED PASS 14',fill='white');d.text((440,12),'PASS 16 RELEASE CANDIDATE',fill='white');c.save('witch-pass16-vs-sept8-close.png')
+          print({'close_crop_mae':mae,'close_crop_fraction_over20':over20})
+          if mae>6.0 or over20>0.07: raise SystemExit('Pass 16 witch no longer visually matches September 8 approval')
+          PY
+
+      - name: Build gameplay inspection contact sheet
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          try:
+            from PIL import Image,ImageDraw
+          except Exception:
+            raise SystemExit(0)
+          files=['witch-pass16-start-430x932.png','witch-pass16-steering-430x932.png','witch-pass16-bean-collected-430x932.png','witch-pass16-endurance-430x932.png','witch-pass16-game-over-430x932.png','witch-pass16-replay-430x932.png']
+          names=['START','STEERING','BEAN COLLECTED','ENDURANCE','GAME OVER','REPLAY']
+          ims=[]
+          for f in files:
+            try: ims.append(Image.open(f).convert('RGB'))
+            except: ims.append(None)
+          if not any(ims): raise SystemExit(0)
+          c=Image.new('RGB',(430*3,972*2),(8,8,8));d=ImageDraw.Draw(c)
+          for i,(im,name) in enumerate(zip(ims,names)):
+            x=(i%3)*430;y=(i//3)*972;d.text((x+8,y+10),name,fill='white')
+            if im:c.paste(im,(x,y+40))
+          c.save('witch-pass16-gameplay-contact-sheet.png')
+          PY
+
+      - name: Upload Pass 16 release candidate inspection artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: witch-pass16-release-candidate-renders
+          path: |
+            witch-pass16-start-430x932.png
+            witch-pass16-steering-430x932.png
+            witch-pass16-bean-collected-430x932.png
+            witch-pass16-endurance-430x932.png
+            witch-pass16-game-over-430x932.png
+            witch-pass16-replay-430x932.png
+            witch-pass16-close-430x932.png
+            witch-pass16-vs-sept8-close.png
+            witch-pass16-gameplay-contact-sheet.png
+            witch-pass16-runtime-report.json
+            witch-pass14-approved-close-430x932.png
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Final branch, source and frozen-file verification
+        if: success()
+        shell: bash
+        run: |
+          git fetch origin main witch-ride-3d-witch-material-pass-15 witch-ride-3d-release-candidate-pass-16
+          test "$(git rev-parse origin/main)" = "$BASE_MAIN"
+          test "$(git rev-parse origin/witch-ride-3d-release-candidate-pass-16)" = "$BASE_TARGET"
+          test "$(git rev-parse origin/witch-ride-3d-witch-material-pass-15)" = "431decb3fd91975455a8e949c3464af24b716851"
+          python halloween-radio/games/witch-ride-3d/tools/validate_pass16_rc.py
