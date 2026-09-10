@@ -236,7 +236,7 @@ jobs:
             const start=await metrics(gate,true);
             await gate.screenshot({path:'witch-pass15-environment-430x932.png'});
             baselineGate(start,approvedMetrics,'start');
-            if(start.environment.pud||start.environment.fog||start.environment.mist||start.environment.soft<14)
+            if(start.environment.pud||start.environment.fog||start.environment.mist||start.environment.soft!==8)
               throw Error('frozen truck/bean/reflection environment gate '+JSON.stringify(start.environment));
 
             await sleep(1050);
