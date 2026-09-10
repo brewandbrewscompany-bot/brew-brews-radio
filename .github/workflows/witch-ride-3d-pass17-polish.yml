@@ -72,14 +72,56 @@ jobs:
           const sleep=ms=>new Promise(r=>setTimeout(r,ms));
           const close=(a,b,t=.0001)=>Math.abs(a-b)<=t;
           const angleClose=(a,b,t=.001)=>Math.abs(((a-b+180)%360+360)%360-180)<=t;
-          function samePose(a,b,label){for(const n of ['leg_L','leg_R','boot_L','boot_R'])for(let i=0;i<3;i++){if(!close(a[n].p[i],b[n].p[i]))throw Error(`${label} ${n} position drift`);if(!close(a[n].s[i],b[n].s[i]))throw Error(`${label} ${n} scale drift`);if(!angleClose(a[n].e[i],b[n].e[i]))throw Error(`${label} ${n} rotation drift`)}}
-          async function ready(browser){const p=await browser.newPage();p.setDefaultTimeout(60000);await p.setViewport({width:430,height:932,deviceScaleFactor:1,isMobile:true,hasTouch:true});await p.goto('http://127.0.0.1:8000/halloween-radio/games/witch-ride-3d/',{waitUntil:'domcontentloaded',timeout:60000});await p.waitForFunction(()=>window.WitchRide3D?.ready&&window.WitchRideWitchCenterpiecePass?.active&&window.WitchRidePass17Environment?.active,{timeout:60000});return p}
-          async function scene(p){return p.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,w=app.root.findByName('Witch Rig'),pose={};for(const n of ['leg_L','leg_R','boot_L','boot_R']){const e=w.findByName(n),p=e.getLocalPosition(),r=e.getLocalEulerAngles(),s=e.getLocalScale();pose[n]={p:[p.x,p.y,p.z],e:[r.x,r.y,r.z],s:[s.x,s.y,s.z]}}const road=app.root.findByName('Road Segment 0')?.findByName('Road'),m=road?.render?.material||road?.render?.meshInstances?.[0]?.material;let oncoming=0,halos=0;const walk=n=>{if(/^Oncoming Traffic \d+$/.test(n.name||''))oncoming++;if((n.name||'').startsWith('Pass15 Bean Halo '))halos++;for(const c of n.children||[])walk(c)};walk(app.root);return {pose,detail:window.WitchRidePass17Environment.detail,road:m?{diffuse:[m.diffuse.r,m.diffuse.g,m.diffuse.b],gloss:m.gloss,metalness:m.metalness}:null,oncoming,halos,witchMeta:window.WitchRideWitchCenterpiecePass}})}
-          (async()=>{const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,protocolTimeout:600000,args:['--no-sandbox','--disable-dev-shm-usage','--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader','--mute-audio']});const p=await ready(browser);const boot=await p.evaluate(()=>({assetMode:window.WitchRide3D.assetMode,engine:window.WitchRide3D.engine,witch:window.WitchRideWitchCenterpiecePass,version:window.WitchRidePass17Environment?.version}));if(boot.assetMode!=='glb-pbr'||boot.engine!=='PlayCanvas'||boot.witch.lockedMeshBlob!=='4b6b7009e86a53dc35d9216ea8d29133584b280d'||boot.witch.gameplayScale!==.24)throw Error('locked witch boot contract '+JSON.stringify(boot));if(boot.version!=='pass17-environment-headlight-bean-v1')throw Error('wrong Pass 17 version '+boot.version);const pre=await scene(p),d=pre.detail;const exact={roadSegments:9,headlightLensesAdjusted:14,headlightMountsAdjusted:14,headlightPointsAdjusted:14,softWetReflections:14,oncomingTraffic:4,beanHalos:16,beansRescaled:16,beanScale:.92,beanHaloScale:.34,beanHaloOpacity:.045,beanHaloIntensity:.22,beanLightIntensity:.055,beanLightRange:2.1,sceneExposure:1.70,softWetReflectionOpacity:.23,softWetReflectionIntensity:.33};if(!d.roadNeutralCharcoal||d.witchTouched!==false||d.reflectionPanels!==0)throw Error('environment flags '+JSON.stringify(d));for(const [k,v] of Object.entries(exact))if(!close(d[k],v,1e-6))throw Error(`Pass 17 ${k}: ${d[k]} != ${v}`);if(pre.oncoming!==4||pre.halos!==16)throw Error('scene integration counts '+JSON.stringify(pre));if(!pre.road||Math.max(...pre.road.diffuse)-Math.min(...pre.road.diffuse)>.01||pre.road.diffuse[2]>pre.road.diffuse[0]+.005)throw Error('road no longer neutral charcoal '+JSON.stringify(pre.road));
-          await p.click('#play');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(450);const start=await scene(p);await p.screenshot({path:'witch-pass17-mobile-gameplay-430x932.png'});await sleep(700);await p.evaluate(()=>document.querySelector('#hud')?.classList.add('hidden'));await p.screenshot({path:'witch-pass17-environment-430x932.png'});await p.evaluate(()=>document.querySelector('#hud')?.classList.remove('hidden'));
-          await p.keyboard.down('ArrowLeft');await sleep(600);await p.keyboard.up('ArrowLeft');await p.keyboard.down('ArrowRight');await sleep(900);await p.keyboard.up('ArrowRight');await sleep(250);samePose((await scene(p)).pose,start.pose,'steering');await p.click('#pause');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='paused');const paused=await p.evaluate(()=>window.WitchRide3D.state.elapsed);await sleep(450);const paused2=await p.evaluate(()=>window.WitchRide3D.state.elapsed);if(Math.abs(paused2-paused)>.05)throw Error('pause regression');await p.click('#resume');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');
-          const beansBefore=await p.evaluate(()=>window.WitchRide3D.state.beans);await p.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,s=window.WitchRide3D.state,b=app.root.findByName('Coffee Bean 0');b.enabled=true;b.__active=true;b.setPosition(s.x,1.15,2.2)});await p.waitForFunction(b=>window.WitchRide3D.state.beans>b,{timeout:2500},beansBefore);
-          await p.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,s=window.WitchRide3D.state,h=app.root.findByName('1938 Coupe 0');h.enabled=true;h.__active=true;h.setPosition(s.x,0,2)});await p.waitForFunction(()=>window.WitchRide3D.state.mode==='over',{timeout:2500});const over=await p.evaluate(()=>({open:document.querySelector('#over')?.classList.contains('open'),hudHidden:document.querySelector('#hud')?.classList.contains('hidden')}));if(!over.open||!over.hudHidden)throw Error('game-over regression '+JSON.stringify(over));await p.click('#again');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(300);const replay=await p.evaluate(()=>({...window.WitchRide3D.state}));if(replay.beans!==0||replay.score>20||replay.distance>.02)throw Error('replay regression '+JSON.stringify(replay));samePose((await scene(p)).pose,start.pose,'replay');fs.writeFileSync('witch-pass17-functional-report.json',JSON.stringify({boot,pre,startPose:start.pose,over,replay},null,2));await browser.close()})().catch(e=>{console.error(e);process.exit(1)});
+          function samePose(a,b,label){
+            for(const n of ['leg_L','leg_R','boot_L','boot_R'])for(let i=0;i<3;i++){
+              if(!close(a[n].p[i],b[n].p[i]))throw Error(`${label} ${n} position drift`);
+              if(!close(a[n].s[i],b[n].s[i]))throw Error(`${label} ${n} scale drift`);
+              if(!angleClose(a[n].e[i],b[n].e[i]))throw Error(`${label} ${n} rotation drift`);
+            }
+          }
+          async function ready(browser){
+            const p=await browser.newPage();p.setDefaultTimeout(60000);
+            await p.setViewport({width:430,height:932,deviceScaleFactor:1,isMobile:true,hasTouch:true});
+            await p.goto('http://127.0.0.1:8000/halloween-radio/games/witch-ride-3d/',{waitUntil:'domcontentloaded',timeout:60000});
+            await p.waitForFunction(()=>window.WitchRide3D?.ready&&window.WitchRideWitchCenterpiecePass?.active&&window.WitchRidePass17Environment?.active,{timeout:60000});
+            return p;
+          }
+          async function scene(p){
+            return p.evaluate(async()=>{
+              const pc=await import('playcanvas'),app=pc.app,w=app.root.findByName('Witch Rig'),pose={};
+              for(const n of ['leg_L','leg_R','boot_L','boot_R']){const e=w.findByName(n),p=e.getLocalPosition(),r=e.getLocalEulerAngles(),s=e.getLocalScale();pose[n]={p:[p.x,p.y,p.z],e:[r.x,r.y,r.z],s:[s.x,s.y,s.z]}}
+              const road=app.root.findByName('Road Segment 0')?.findByName('Road'),m=road?.render?.material||road?.render?.meshInstances?.[0]?.material;
+              let oncoming=0,halos=0,headlamps=0,headlightPoints=0,wetStreaks=0;
+              const walk=n=>{const name=n.name||'';if(/^Oncoming Traffic \d+$/.test(name))oncoming++;if(/^Coffee Bean Halo \d+$/.test(name)&&n.enabled!==false)halos++;if(name.startsWith('headlamp_'))headlamps++;if(name.startsWith('Headlight Glow')&&n.light)headlightPoints++;if(name.startsWith('Pass17 Wet Reflection '))wetStreaks++;for(const c of n.children||[])walk(c)};walk(app.root);
+              return {pose,detail:window.WitchRidePass17Environment.detail,road:m?{diffuse:[m.diffuse.r,m.diffuse.g,m.diffuse.b],gloss:m.gloss,metalness:m.metalness}:null,oncoming,halos,headlamps,headlightPoints,wetStreaks,witchMeta:window.WitchRideWitchCenterpiecePass};
+            });
+          }
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,protocolTimeout:600000,args:['--no-sandbox','--disable-dev-shm-usage','--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader','--mute-audio']});
+            const p=await ready(browser);
+            const boot=await p.evaluate(()=>({assetMode:window.WitchRide3D.assetMode,engine:window.WitchRide3D.engine,witch:window.WitchRideWitchCenterpiecePass,version:window.WitchRidePass17Environment?.version}));
+            if(boot.assetMode!=='glb-pbr'||boot.engine!=='PlayCanvas'||boot.witch.lockedMeshBlob!=='4b6b7009e86a53dc35d9216ea8d29133584b280d'||boot.witch.gameplayScale!==.24)throw Error('locked witch boot contract '+JSON.stringify(boot));
+            if(boot.version!=='pass17-environment-headlight-bean-v2')throw Error('wrong Pass 17 version '+boot.version);
+            const pre=await scene(p),d=pre.detail;
+            const exact={roadSegments:9,headlightLensesAdjusted:14,headlightMountsAdjusted:14,headlightPointsAdjusted:14,wetReflectionStreaks:28,oncomingTraffic:4,beanHalos:16,beanHalosReactivated:16,beansRescaled:16,beanScale:.92,beanHaloScale:.66,beanHaloOpacity:.070,beanHaloIntensity:.58,beanLightIntensity:.078,beanLightRange:2.55,sceneExposure:1.96,headlightPointIntensityBase:.62,headlightPointRange:13.2,wetReflectionOpacity:.13,wetReflectionIntensity:.18};
+            if(!d.roadNeutralCharcoal||d.witchTouched!==false||d.reflectionPanels!==0)throw Error('environment flags '+JSON.stringify(d));
+            for(const [k,v] of Object.entries(exact))if(!close(d[k],v,1e-6))throw Error(`Pass 17 ${k}: ${d[k]} != ${v}`);
+            if(pre.oncoming!==4||pre.halos!==16||pre.wetStreaks!==44||pre.headlamps<14||pre.headlightPoints<14)throw Error('scene integration counts '+JSON.stringify(pre));
+            if(!pre.road||Math.max(...pre.road.diffuse)-Math.min(...pre.road.diffuse)>.01||pre.road.diffuse[2]>pre.road.diffuse[0]+.005)throw Error('road no longer neutral charcoal '+JSON.stringify(pre.road));
+
+            await p.click('#play');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(450);
+            const start=await scene(p);await p.screenshot({path:'witch-pass17-mobile-gameplay-430x932.png'});await sleep(700);
+            await p.evaluate(()=>document.querySelector('#hud')?.classList.add('hidden'));await p.screenshot({path:'witch-pass17-environment-430x932.png'});await p.evaluate(()=>document.querySelector('#hud')?.classList.remove('hidden'));
+
+            await p.keyboard.down('ArrowLeft');await sleep(600);await p.keyboard.up('ArrowLeft');await p.keyboard.down('ArrowRight');await sleep(900);await p.keyboard.up('ArrowRight');await sleep(250);samePose((await scene(p)).pose,start.pose,'steering');
+            await p.click('#pause');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='paused');const paused=await p.evaluate(()=>window.WitchRide3D.state.elapsed);await sleep(450);const paused2=await p.evaluate(()=>window.WitchRide3D.state.elapsed);if(Math.abs(paused2-paused)>.05)throw Error('pause regression');await p.click('#resume');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');
+
+            const beansBefore=await p.evaluate(()=>window.WitchRide3D.state.beans);await p.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,s=window.WitchRide3D.state,b=app.root.findByName('Coffee Bean 0');b.enabled=true;b.__active=true;b.setPosition(s.x,1.15,2.2)});await p.waitForFunction(b=>window.WitchRide3D.state.beans>b,{timeout:2500},beansBefore);
+            await p.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,s=window.WitchRide3D.state,h=app.root.findByName('1938 Coupe 0');h.enabled=true;h.__active=true;h.setPosition(s.x,0,2)});await p.waitForFunction(()=>window.WitchRide3D.state.mode==='over',{timeout:2500});
+            const over=await p.evaluate(()=>({open:document.querySelector('#over')?.classList.contains('open'),hudHidden:document.querySelector('#hud')?.classList.contains('hidden')}));if(!over.open||!over.hudHidden)throw Error('game-over regression '+JSON.stringify(over));
+            await p.click('#again');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(300);const replay=await p.evaluate(()=>({...window.WitchRide3D.state}));if(replay.beans!==0||replay.score>20||replay.distance>.02)throw Error('replay regression '+JSON.stringify(replay));samePose((await scene(p)).pose,start.pose,'replay');
+            fs.writeFileSync('witch-pass17-functional-report.json',JSON.stringify({boot,pre,startPose:start.pose,over,replay},null,2));await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
           NODE
 
       - name: Sequential Pass 16 vs Pass 17 430x932 visual captures
@@ -97,17 +139,28 @@ jobs:
           CHROME_BIN="$CHROME_BIN" node <<'NODE'
           const fs=require('fs'),puppeteer=require('puppeteer-core');const sleep=ms=>new Promise(r=>setTimeout(r,ms));
           async function openPage(browser,port,want17=false){const p=await browser.newPage();p.setDefaultTimeout(60000);await p.setViewport({width:430,height:932,deviceScaleFactor:1,isMobile:true,hasTouch:true});await p.goto(`http://127.0.0.1:${port}/halloween-radio/games/witch-ride-3d/`,{waitUntil:'domcontentloaded',timeout:60000});await p.waitForFunction(w=>window.WitchRide3D?.ready&&window.WitchRideWitchCenterpiecePass?.active&&window.WitchRidePass15Environment?.active&&(!w||window.WitchRidePass17Environment?.active),{timeout:60000},want17);return p}
-          async function playPause(p){await p.click('#play');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(250);await p.click('#pause');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='paused')}
-          async function stageBean(p,pos=null){return p.evaluate(async(pos)=>{const pc=await import('playcanvas'),app=pc.app,s=window.WitchRide3D.state,cam=app.root.findByName('Chase Camera');for(let i=0;i<16;i++){const x=app.root.findByName(`Coffee Bean ${i}`);if(x)x.enabled=i===0}const b=app.root.findByName('Coffee Bean 0');b.enabled=true;b.__active=true;let chosen=pos;if(!chosen){let best=null;for(const dx of [-2.2,-1.4,0,1.4,2.2])for(const z of [-1,-2.5,-4,-6,-8])for(const y of [1.05,1.35,1.65]){const wp=[s.x+dx,y,z];b.setPosition(...wp);const q=cam.camera.worldToScreen(b.getPosition());if(q.x<55||q.x>375||q.y<190||q.y>800)continue;const score=(q.x-292)**2+(q.y-535)**2;if(!best||score<best.score)best={pos:wp,screen:[q.x,q.y],score}}if(!best)throw Error('could not stage visible bean');chosen=best.pos}b.setPosition(...chosen);const q=cam.camera.worldToScreen(b.getPosition());return {pos:chosen,screen:[q.x,q.y]}},pos)}
-          async function stageHead(p,pos=null){return p.evaluate(async(pos)=>{const pc=await import('playcanvas'),app=pc.app,cam=app.root.findByName('Chase Camera');for(let i=0;i<7;i++){const c=app.root.findByName(`1938 Coupe ${i}`);if(c)c.enabled=i===0}for(let i=0;i<4;i++){const c=app.root.findByName(`Oncoming Traffic ${i}`);if(c)c.enabled=false}const car=app.root.findByName('1938 Coupe 0');car.enabled=true;car.__active=true;let chosen=pos;if(!chosen){let best=null;for(const x of [-2.6,-1.8,-1,0,1,1.8,2.6])for(const z of [-2.5,-4,-5.5,-7]){const wp=[x,0,z];car.setPosition(...wp);const q=cam.camera.worldToScreen(car.getPosition());if(q.x<70||q.x>360||q.y<280||q.y>730)continue;const score=(q.x-215)**2+(q.y-500)**2;if(!best||score<best.score)best={pos:wp,screen:[q.x,q.y],score}}if(!best)throw Error('could not stage headlight car');chosen=best.pos}car.setPosition(...chosen);const q=cam.camera.worldToScreen(car.getPosition());return {pos:chosen,screen:[q.x,q.y]}},pos)}
-          (async()=>{const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,protocolTimeout:600000,args:['--no-sandbox','--disable-dev-shm-usage','--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader','--mute-audio']});let p,bean,beanBase,head,headBase;
-          p=await openPage(browser,8010,true);await p.click('#play');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(450);await p.screenshot({path:'witch-pass17-mobile-gameplay-430x932.png'});const pass17Pose=await p.evaluate(async()=>{const pc=await import('playcanvas'),w=pc.app.root.findByName('Witch Rig'),o={};for(const n of ['leg_L','leg_R','boot_L','boot_R']){const e=w.findByName(n),p=e.getLocalPosition(),r=e.getLocalEulerAngles(),s=e.getLocalScale();o[n]={p:[p.x,p.y,p.z],e:[r.x,r.y,r.z],s:[s.x,s.y,s.z]}}return o});await p.close();
-          p=await openPage(browser,8011,false);await p.click('#play');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(450);await p.screenshot({path:'witch-pass17-baseline-mobile-430x932.png'});const basePose=await p.evaluate(async()=>{const pc=await import('playcanvas'),w=pc.app.root.findByName('Witch Rig'),o={};for(const n of ['leg_L','leg_R','boot_L','boot_R']){const e=w.findByName(n),p=e.getLocalPosition(),r=e.getLocalEulerAngles(),s=e.getLocalScale();o[n]={p:[p.x,p.y,p.z],e:[r.x,r.y,r.z],s:[s.x,s.y,s.z]}}return o});await p.close();
-          p=await openPage(browser,8010,true);await playPause(p);bean=await stageBean(p);await sleep(250);await p.screenshot({path:'witch-pass17-bean-visibility-430x932.png'});await p.close();
-          p=await openPage(browser,8011,false);await playPause(p);beanBase=await stageBean(p,bean.pos);await sleep(250);await p.screenshot({path:'witch-pass17-baseline-bean-430x932.png'});await p.close();
-          p=await openPage(browser,8010,true);await playPause(p);head=await stageHead(p);await sleep(250);await p.screenshot({path:'witch-pass17-headlight-reflection-430x932.png'});await p.close();
-          p=await openPage(browser,8011,false);await playPause(p);headBase=await stageHead(p,head.pos);await sleep(250);await p.screenshot({path:'witch-pass17-baseline-headlight-430x932.png'});await p.close();
-          p=await openPage(browser,8010,true);await playPause(p);await p.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,cam=app.root.findByName('Chase Camera');const hide=['Road Segment','Fog Bank','Realism Fog','Atmosphere Ground Mist','Dead Tree','Fence ','Pumpkin ','1938 Coupe','Oncoming Traffic','Coffee Bean','Cinematic Foreground','Pass10','Pass11','Brew & Brews Haunted Roastery','Moon Halo','Moon','Pass15 Soft Wet Light'];for(const e of [...app.root.children])if(hide.some(x=>e.name?.startsWith(x)))e.enabled=false;document.querySelector('#hud')?.classList.add('hidden');for(const el of document.querySelectorAll('.screen'))el.classList.remove('open');cam.setPosition(2.15,3.55,10.25);cam.lookAt(0,3.05,1.80);cam.camera.fov=42});await sleep(300);await p.screenshot({path:'witch-pass17-close-witch-430x932.png'});await p.close();fs.writeFileSync('witch-pass17-visual-stage.json',JSON.stringify({bean,beanBase,head,headBase,pass17Pose,basePose},null,2));await browser.close()})().catch(e=>{console.error(e);process.exit(1)});
+          async function hideUi(p){await p.evaluate(()=>{document.querySelector('#hud')?.classList.add('hidden');for(const el of document.querySelectorAll('.screen'))el.classList.remove('open')})}
+          async function playPause(p){await p.click('#play');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(250);await p.click('#pause');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='paused');await hideUi(p)}
+          async function stageBean(p,pos=null){return p.evaluate(async(pos)=>{const pc=await import('playcanvas'),app=pc.app,s=window.WitchRide3D.state,cam=app.root.findByName('Chase Camera');for(let i=0;i<7;i++){const c=app.root.findByName(`1938 Coupe ${i}`);if(c)c.enabled=false}for(let i=0;i<4;i++){const c=app.root.findByName(`Oncoming Traffic ${i}`);if(c)c.enabled=false}for(let i=0;i<16;i++){const x=app.root.findByName(`Coffee Bean ${i}`);if(x)x.enabled=i===0}const b=app.root.findByName('Coffee Bean 0');b.enabled=true;b.__active=true;let chosen=pos;if(!chosen){let best=null;for(const dx of [-2.2,-1.4,0,1.4,2.2])for(const z of [-1,-2.5,-4,-6,-8])for(const y of [1.05,1.35,1.65]){const wp=[s.x+dx,y,z];b.setPosition(...wp);const q=cam.camera.worldToScreen(b.getPosition());if(q.x<55||q.x>375||q.y<190||q.y>800)continue;const score=(q.x-292)**2+(q.y-535)**2;if(!best||score<best.score)best={pos:wp,screen:[q.x,q.y],score}}if(!best)throw Error('could not stage visible bean');chosen=best.pos}b.setPosition(...chosen);const q=cam.camera.worldToScreen(b.getPosition());return {pos:chosen,screen:[q.x,q.y]}},pos)}
+          async function stageHead(p,pos=null){return p.evaluate(async(pos)=>{const pc=await import('playcanvas'),app=pc.app,cam=app.root.findByName('Chase Camera');for(let i=0;i<7;i++){const c=app.root.findByName(`1938 Coupe ${i}`);if(c)c.enabled=i===0}for(let i=0;i<4;i++){const c=app.root.findByName(`Oncoming Traffic ${i}`);if(c)c.enabled=false}for(let i=0;i<16;i++){const b=app.root.findByName(`Coffee Bean ${i}`);if(b)b.enabled=false}const car=app.root.findByName('1938 Coupe 0');car.enabled=true;car.__active=true;let chosen=pos;if(!chosen){let best=null;for(const x of [-2.6,-1.8,-1,0,1,1.8,2.6])for(const z of [-2.5,-4,-5.5,-7]){const wp=[x,0,z];car.setPosition(...wp);const q=cam.camera.worldToScreen(car.getPosition());if(q.x<70||q.x>360||q.y<280||q.y>730)continue;const score=(q.x-215)**2+(q.y-500)**2;if(!best||score<best.score)best={pos:wp,screen:[q.x,q.y],score}}if(!best)throw Error('could not stage headlight car');chosen=best.pos}car.setPosition(...chosen);const q=cam.camera.worldToScreen(car.getPosition()),lenses=[];const walk=n=>{if((n.name||'').startsWith('headlamp_')){const z=cam.camera.worldToScreen(n.getPosition());lenses.push([z.x,z.y])}for(const c of n.children||[])walk(c)};walk(car);return {pos:chosen,screen:[q.x,q.y],lenses:lenses.slice(0,2)}},pos)}
+          async function staticShot(browser,port,path,want17){const p=await openPage(browser,port,want17);await hideUi(p);await sleep(300);await p.screenshot({path});await p.close()}
+          async function pose(p){return p.evaluate(async()=>{const pc=await import('playcanvas'),w=pc.app.root.findByName('Witch Rig'),o={};for(const n of ['leg_L','leg_R','boot_L','boot_R']){const e=w.findByName(n),p=e.getLocalPosition(),r=e.getLocalEulerAngles(),s=e.getLocalScale();o[n]={p:[p.x,p.y,p.z],e:[r.x,r.y,r.z],s:[s.x,s.y,s.z]}}return o})}
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,protocolTimeout:600000,args:['--no-sandbox','--disable-dev-shm-usage','--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader','--mute-audio']});let p,bean,beanBase,head,headBase;
+            await staticShot(browser,8010,'witch-pass17-static-environment-430x932.png',true);await staticShot(browser,8011,'witch-pass17-baseline-static-environment-430x932.png',false);
+
+            p=await openPage(browser,8010,true);await p.click('#play');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(450);await p.screenshot({path:'witch-pass17-visual-mobile-430x932.png'});const pass17Pose=await pose(p);await p.close();
+            p=await openPage(browser,8011,false);await p.click('#play');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(450);await p.screenshot({path:'witch-pass17-baseline-mobile-430x932.png'});const basePose=await pose(p);await p.close();
+
+            p=await openPage(browser,8010,true);await playPause(p);bean=await stageBean(p);await sleep(300);await p.screenshot({path:'witch-pass17-bean-visibility-430x932.png'});await p.close();
+            p=await openPage(browser,8011,false);await playPause(p);beanBase=await stageBean(p,bean.pos);await sleep(300);await p.screenshot({path:'witch-pass17-baseline-bean-430x932.png'});await p.close();
+
+            p=await openPage(browser,8010,true);await playPause(p);head=await stageHead(p);await sleep(300);await p.screenshot({path:'witch-pass17-headlight-reflection-430x932.png'});await p.close();
+            p=await openPage(browser,8011,false);await playPause(p);headBase=await stageHead(p,head.pos);await sleep(300);await p.screenshot({path:'witch-pass17-baseline-headlight-430x932.png'});await p.close();
+
+            p=await openPage(browser,8010,true);await playPause(p);await p.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,cam=app.root.findByName('Chase Camera');const hide=['Road Segment','Fog Bank','Realism Fog','Atmosphere Ground Mist','Dead Tree','Fence ','Pumpkin ','1938 Coupe','Oncoming Traffic','Coffee Bean','Cinematic Foreground','Pass10','Pass11','Brew & Brews Haunted Roastery','Moon Halo','Moon','Pass15 Soft Wet Light','Pass17 Wet Reflection'];for(const e of [...app.root.children])if(hide.some(x=>e.name?.startsWith(x)))e.enabled=false;document.querySelector('#hud')?.classList.add('hidden');for(const el of document.querySelectorAll('.screen'))el.classList.remove('open');app.on('prerender',()=>{cam.setPosition(2.15,3.55,10.25);cam.lookAt(0,3.05,1.80);cam.camera.fov=42})});await sleep(350);await p.screenshot({path:'witch-pass17-close-witch-430x932.png'});await p.close();
+            fs.writeFileSync('witch-pass17-visual-stage.json',JSON.stringify({bean,beanBase,head,headBase,pass17Pose,basePose},null,2));await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
           NODE
 
       - name: Quantify visual lift and build comparison sheet
@@ -116,25 +169,35 @@ jobs:
           python -m pip install --disable-pip-version-check pillow
           python - <<'PY'
           from PIL import Image,ImageDraw,ImageStat
-          import json,math
+          import json,statistics
           def luma(im): return ImageStat.Stat(im.convert('L')).mean[0]
           def warm(im):
             vals=[max(0,r-g)+.45*max(0,g-b) for r,g,b in im.convert('RGB').getdata()]
             return sum(vals)/max(1,len(vals))
-          def crop(path,xy,rx,up,down):
+          def crop(path,xy,rx,up=None,down=None):
+            if up is None: up=rx
+            if down is None: down=rx
             im=Image.open(path).convert('RGB');x,y=xy
             return im.crop((max(0,int(x-rx)),max(0,int(y-up)),min(im.width,int(x+rx)),min(im.height,int(y+down))))
+          def lens_energy(path,points):
+            vals=[]
+            for pt in points: vals.append(warm(crop(path,pt,22)))
+            return sum(vals)/max(1,len(vals))
+          def warm_coverage(im):
+            px=list(im.convert('RGB').getdata());hits=sum(1 for r,g,b in px if r>38 and r>g*1.18 and r>b*1.45)
+            return hits/max(1,len(px))
           stage=json.load(open('witch-pass17-visual-stage.json'))
-          base=Image.open('witch-pass17-baseline-mobile-430x932.png').convert('RGB').crop((0,135,430,915));cur=Image.open('witch-pass17-mobile-gameplay-430x932.png').convert('RGB').crop((0,135,430,915));base_l,cur_l=luma(base),luma(cur);lift=cur_l/max(base_l,1e-6)
-          bc=crop('witch-pass17-bean-visibility-430x932.png',stage['bean']['screen'],58,58,58);bb=crop('witch-pass17-baseline-bean-430x932.png',stage['beanBase']['screen'],58,58,58);bean_ratio=warm(bc)/max(warm(bb),1e-6)
-          hc=crop('witch-pass17-headlight-reflection-430x932.png',stage['head']['screen'],125,90,250);hb=crop('witch-pass17-baseline-headlight-430x932.png',stage['headBase']['screen'],125,90,250);head_ratio=luma(hc)/max(luma(hb),1e-6)
-          metrics={'baselineSceneLuma':base_l,'pass17SceneLuma':cur_l,'sceneLiftRatio':lift,'beanWarmRatio':bean_ratio,'headlightReflectionZoneRatio':head_ratio}
+          base=Image.open('witch-pass17-baseline-static-environment-430x932.png').convert('RGB').crop((0,135,430,915));cur=Image.open('witch-pass17-static-environment-430x932.png').convert('RGB').crop((0,135,430,915));base_l,cur_l=luma(base),luma(cur);lift=cur_l/max(base_l,1e-6)
+          bc=crop('witch-pass17-bean-visibility-430x932.png',stage['bean']['screen'],64);bb=crop('witch-pass17-baseline-bean-430x932.png',stage['beanBase']['screen'],64);bean_cur,bean_base=warm(bc),warm(bb);bean_ratio=bean_cur/max(bean_base,1e-6)
+          head_cur=lens_energy('witch-pass17-headlight-reflection-430x932.png',stage['head']['lenses']);head_base=lens_energy('witch-pass17-baseline-headlight-430x932.png',stage['headBase']['lenses']);head_ratio=head_cur/max(head_base,1e-6)
+          hc=crop('witch-pass17-headlight-reflection-430x932.png',stage['head']['screen'],145,85,280);hb=crop('witch-pass17-baseline-headlight-430x932.png',stage['headBase']['screen'],145,85,280);cur_cov,base_cov=warm_coverage(hc),warm_coverage(hb)
+          metrics={'baselineSceneLuma':base_l,'pass17SceneLuma':cur_l,'sceneLiftRatio':lift,'baselineBeanWarmEnergy':bean_base,'pass17BeanWarmEnergy':bean_cur,'beanWarmRatio':bean_ratio,'baselineHeadlightLensWarmEnergy':head_base,'pass17HeadlightLensWarmEnergy':head_cur,'headlightLensWarmRatio':head_ratio,'baselineBroadWarmCoverage':base_cov,'pass17BroadWarmCoverage':cur_cov}
           functional=json.load(open('witch-pass17-functional-report.json'));functional['visualMetrics']=metrics;functional['visualStage']=stage;json.dump(functional,open('witch-pass17-runtime-report.json','w'),indent=2);print(json.dumps(metrics,indent=2))
-          if not (lift>1.02 and lift<1.40): raise SystemExit('overall scene lift outside slight-night range')
+          if not (lift>1.03 and lift<1.25): raise SystemExit('overall scene lift outside slight-night range')
           if cur_l>90: raise SystemExit('scene no longer reads as moody night')
-          if bean_ratio<1.08: raise SystemExit('bean halo improvement insufficient')
-          if head_ratio<1.03: raise SystemExit('headlight/reflection improvement insufficient')
-          pairs=[('MOBILE GAMEPLAY','witch-pass17-baseline-mobile-430x932.png','witch-pass17-mobile-gameplay-430x932.png'),('BEAN VISIBILITY','witch-pass17-baseline-bean-430x932.png','witch-pass17-bean-visibility-430x932.png'),('HEADLIGHT / REFLECTION','witch-pass17-baseline-headlight-430x932.png','witch-pass17-headlight-reflection-430x932.png')]
+          if bean_ratio<1.12: raise SystemExit('bean halo improvement insufficient')
+          if head_ratio<1.08: raise SystemExit('headlight lens readability improvement insufficient')
+          pairs=[('STATIC ENVIRONMENT','witch-pass17-baseline-static-environment-430x932.png','witch-pass17-static-environment-430x932.png'),('BEAN VISIBILITY','witch-pass17-baseline-bean-430x932.png','witch-pass17-bean-visibility-430x932.png'),('HEADLIGHT / REFLECTION','witch-pass17-baseline-headlight-430x932.png','witch-pass17-headlight-reflection-430x932.png')]
           c=Image.new('RGB',(880,3*992),(7,7,7));d=ImageDraw.Draw(c)
           for row,(label,a,b) in enumerate(pairs):
             y=row*992;c.paste(Image.open(a).convert('RGB'),(5,y+55));c.paste(Image.open(b).convert('RGB'),(445,y+55));d.text((10,y+12),label,fill='white');d.text((10,y+34),'PASS 16 ACCEPTED RC',fill='white');d.text((450,y+34),'PASS 17 POLISH',fill='white')
@@ -150,9 +213,12 @@ jobs:
           path: |
             witch-pass17-mobile-gameplay-430x932.png
             witch-pass17-environment-430x932.png
+            witch-pass17-visual-mobile-430x932.png
             witch-pass17-close-witch-430x932.png
             witch-pass17-bean-visibility-430x932.png
             witch-pass17-headlight-reflection-430x932.png
+            witch-pass17-static-environment-430x932.png
+            witch-pass17-baseline-static-environment-430x932.png
             witch-pass17-baseline-mobile-430x932.png
             witch-pass17-baseline-bean-430x932.png
             witch-pass17-baseline-headlight-430x932.png
