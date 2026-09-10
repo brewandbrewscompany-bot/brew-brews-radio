@@ -1,0 +1,232 @@
+name: Christmas Radio Audio Audit Preflight
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'christmas-radio/audio/**/*.mp3'
+      - 'christmas-radio/audio/**/*.wav'
+      - 'christmas-radio/audio/**/*.m4a'
+      - '.github/workflows/christmas-audio-audit.yml'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install audio analysis tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install openai-whisper
+
+      - name: Build Christmas audio preflight package
+        run: |
+          python - <<'PY'
+          import json
+          import pathlib
+          import re
+          import subprocess
+          import tempfile
+          import whisper
+
+          root = pathlib.Path('christmas-radio')
+          audio_root = root / 'audio'
+          output_root = pathlib.Path('christmas-audit-output')
+          sample_root = output_root / 'samples'
+          output_root.mkdir(exist_ok=True)
+          sample_root.mkdir(exist_ok=True)
+
+          manifest_path = root / 'data' / 'tracks.json'
+          if manifest_path.exists():
+              manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+          else:
+              manifest = {'tracks': []}
+
+          manifested_names = set()
+          for track in manifest.get('tracks', []):
+              src = track.get('src') or track.get('file') or ''
+              if src:
+                  manifested_names.add(pathlib.Path(src).name)
+
+          supported = {'.mp3', '.wav', '.m4a'}
+          candidates = []
+          if audio_root.exists():
+              for path in sorted(audio_root.rglob('*')):
+                  if path.is_file() and path.suffix.lower() in supported:
+                      candidates.append(path)
+
+          model = whisper.load_model('tiny.en')
+
+          def duration(path):
+              out = subprocess.check_output([
+                  'ffprobe', '-v', 'error', '-show_entries', 'format=duration',
+                  '-of', 'default=noprint_wrappers=1:nokey=1', str(path)
+              ], text=True).strip()
+              return float(out)
+
+          def safe_slug(text):
+              return re.sub(r'[^a-z0-9]+', '-', text.lower()).strip('-')
+
+          def sample_specs(dur):
+              return [
+                  ('front', 0.0, min(35.0, dur)),
+                  ('middle', max(0.0, dur * 0.45 - 15.0), min(30.0, dur)),
+                  ('late', max(0.0, dur * 0.80 - 12.0), min(24.0, dur)),
+                  ('outro', max(0.0, dur - 18.0), min(18.0, dur)),
+              ]
+
+          def make_sample(path, start, length, out_path):
+              remaining = max(0.25, duration(path) - start)
+              actual_length = max(0.25, min(length, remaining))
+              subprocess.run([
+                  'ffmpeg', '-hide_banner', '-loglevel', 'error', '-y',
+                  '-ss', f'{start:.2f}', '-t', f'{actual_length:.2f}',
+                  '-i', str(path), '-vn', '-ac', '2', '-ar', '44100',
+                  '-b:a', '128k', str(out_path)
+              ], check=True)
+              return actual_length
+
+          def transcribe_sample(sample_path):
+              result = model.transcribe(
+                  str(sample_path),
+                  language='en',
+                  fp16=False,
+                  verbose=False,
+                  condition_on_previous_text=False,
+                  temperature=0,
+              )
+              good = []
+              for seg in result.get('segments', []):
+                  if seg.get('no_speech_prob', 1) < 0.68 and seg.get('avg_logprob', -99) > -1.45:
+                      good.append(seg)
+              text = ' '.join(seg.get('text', '').strip() for seg in good).strip()
+              words = re.findall(r"\b[\w']+\b", text)
+              return {
+                  'text': text[:600],
+                  'wordCount': len(words),
+              }
+
+          rows = []
+          for index, path in enumerate(candidates, 1):
+              dur = duration(path)
+              stem = safe_slug(path.stem)
+              sample_rows = {}
+
+              for tag, start, length in sample_specs(dur):
+                  sample_path = sample_root / f'{stem}__{tag}.mp3'
+                  actual_length = make_sample(path, start, length, sample_path)
+                  transcript = transcribe_sample(sample_path)
+                  sample_rows[tag] = {
+                      'startSec': round(start, 2),
+                      'lengthSec': round(actual_length, 2),
+                      'sampleFile': str(sample_path),
+                      'transcript': transcript['text'],
+                      'wordCount': transcript['wordCount'],
+                  }
+
+              word_counts = [sample_rows[tag]['wordCount'] for tag in ('front', 'middle', 'late')]
+              total_words = sum(word_counts)
+              if total_words < 8:
+                  heuristic = 'instrumental-or-mostly-music'
+              elif word_counts[0] >= 5 and word_counts[1] < 5 and word_counts[2] < 5:
+                  heuristic = 'spoken-or-vocal-front-then-mostly-music'
+              elif word_counts[1] >= 5 or word_counts[2] >= 5:
+                  heuristic = 'vocal-or-spoken-throughout'
+              else:
+                  heuristic = 'mixed-uncertain'
+
+              row = {
+                  'candidateFile': str(path),
+                  'fileName': path.name,
+                  'durationSec': round(dur, 2),
+                  'alreadyInRuntimeManifest': path.name in manifested_names,
+                  'machineHeuristicOnly': heuristic,
+                  'samples': sample_rows,
+                  'requiredHumanOrAssistantReview': {
+                      'frontNotes': '',
+                      'middleNotes': '',
+                      'lateNotes': '',
+                      'outroNotes': '',
+                      'vocalBehavior': '',
+                      'announcerSpeech': '',
+                      'energy1to5': None,
+                      'introTag': '',
+                      'outroTag': '',
+                      'stationFitPrimary': [],
+                      'stationFitSecondary': [],
+                      'lyricAccuracy': '',
+                      'artifactNotes': '',
+                      'transitionNotes': '',
+                      'decision': 'review-required',
+                      'approvedFinalFile': '',
+                  },
+                  'warning': 'Whisper/VAD output is a locator only. Do not approve or arrange this track until the actual audio samples are reviewed against intended lyrics, audible energy, speech, artifacts, and transition behavior.'
+              }
+              rows.append(row)
+              print(f'[{index}/{len(candidates)}] {path.name} | {dur:.1f}s | preflight={heuristic}')
+
+          report = {
+              'workflow': 'Christmas Radio Audio Audit Preflight',
+              'status': 'review-required' if rows else 'no-audio-found',
+              'rules': {
+                  'machineClassificationMayNotApprove': True,
+                  'listenFrontMiddleLateOutro': True,
+                  'compareAgainstIntendedLyrics': True,
+                  'finalPlaylistOnlyAfterAudioAwareReview': True,
+                  'rejectVADOnlyApproval': True,
+              },
+              'candidateCount': len(rows),
+              'tracks': rows,
+          }
+
+          report_path = output_root / 'christmas-radio-audio-preflight.json'
+          report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding='utf-8')
+
+          md = [
+              '# Christmas Radio Audio Audit Preflight',
+              '',
+              '**This report cannot approve a track.** Whisper/VAD is only a locator for where audible words may occur.',
+              'Every candidate must still be reviewed by listening to the exported beginning, middle, late, and outro samples and comparing the audible content with the intended lyrics and station role.',
+              '',
+              f'Candidates found: **{len(rows)}**',
+              '',
+              '| File | Duration | Machine preflight | Runtime manifest? |',
+              '| --- | ---: | --- | --- |',
+          ]
+          for row in rows:
+              md.append(f"| {row['fileName']} | {row['durationSec']:.1f}s | {row['machineHeuristicOnly']} | {row['alreadyInRuntimeManifest']} |")
+          if not rows:
+              md.append('| — | — | No Christmas audio files found | — |')
+          md += [
+              '',
+              '## Final review gate',
+              '',
+              '- Listen to all four samples.',
+              '- Confirm actual lyric/spoken behavior.',
+              '- Confirm energy and station fit from audio, not the Suno prompt.',
+              '- Note intro/outro transition behavior.',
+              '- Reject unexplained crowds, laugh tracks, café framing, lyric errors, harsh bells, muddy vintage filtering, or genre drift.',
+              '- Set `decision` to `approve` only after the real audio review.',
+              '- Add nothing to `tracks.json` until an approved final file exists.',
+          ]
+          (output_root / 'README.md').write_text('\n'.join(md) + '\n', encoding='utf-8')
+
+          print('CHRISTMAS_AUDIO_PREFLIGHT_JSON_START')
+          print(json.dumps(report, ensure_ascii=False))
+          print('CHRISTMAS_AUDIO_PREFLIGHT_JSON_END')
+          PY
+
+      - name: Upload Christmas audit package
+        uses: actions/upload-artifact@v4
+        with:
+          name: christmas-radio-audio-audit-preflight
+          path: christmas-audit-output/
+          if-no-files-found: error
+          retention-days: 14
