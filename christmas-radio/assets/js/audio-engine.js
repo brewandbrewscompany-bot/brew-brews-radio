@@ -72,7 +72,8 @@ export class ChristmasRadioEngine extends EventTarget{
     if(!this.activeStationId)return{started:false,reason:'no-station'};
     const track=this.currentTrack?.stationId===this.activeStationId?this.currentTrack:this.selectedTrack();
     if(!track){this.#emit('playback',this.snapshot());return{started:false,reason:'no-track'}}
-    if(this.currentTrack!==track)await this.#loadTrack(track,{autoplay:false});
+    const absolute=new URL(track.src,document.baseURI).href;
+    if(this.currentTrack!==track||this.audio.src!==absolute)await this.#loadTrack(track,{autoplay:false,prime:true});
     try{await this.audio.play();this.#prepareNext();this.#updateMediaSession();return{started:true,track:this.currentTrack}}
     catch(error){this.playbackIntent=false;this.#emit('error',{type:'play',error,snapshot:this.snapshot()});return{started:false,reason:'play-rejected',error}}
   }
@@ -97,7 +98,7 @@ export class ChristmasRadioEngine extends EventTarget{
 
   #setIndex(stationId,index){if(!stationId)return;this.indices.set(stationId,index);sessionStorage.setItem(`bbxmas:index:${stationId}`,String(index))}
 
-  async #loadTrack(track,{autoplay=false,fade=false}={}){
+  async #loadTrack(track,{autoplay=false,fade=false,prime=autoplay}={}){
     const token=++this.switchToken;
     if(!track){
       this.currentTrack=null;this.audio.pause();this.audio.removeAttribute('src');this.audio.load();this.preloader.removeAttribute('src');
@@ -107,7 +108,7 @@ export class ChristmasRadioEngine extends EventTarget{
     if(fade&&wasAudible)await this.#fadeTo(0,this.policy.crossfadeMs/2,token);
     if(token!==this.switchToken)return;
     const absolute=new URL(track.src,document.baseURI).href;
-    if(this.audio.src!==absolute){this.audio.src=track.src;this.audio.preload=autoplay?'auto':'metadata';this.audio.load()}
+    if(prime&&this.audio.src!==absolute){this.audio.src=track.src;this.audio.preload='auto';this.audio.load()}
     this.currentTrack=track;this.#updateMediaSession();this.#emit('track',this.snapshot());
     if(autoplay&&this.playbackIntent){
       this.audio.volume=fade?0:targetVolume;
