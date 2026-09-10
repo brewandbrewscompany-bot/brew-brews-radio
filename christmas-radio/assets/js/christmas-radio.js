@@ -22,7 +22,8 @@ class ChristmasStationController{
   renderCards(){const f=document.createDocumentFragment();this.stations.forEach((s,i)=>{const b=document.createElement('button');b.type='button';b.className='station-card';b.innerHTML=`<small>${s.frequency}</small><h3>${s.name}</h3><p>${s.tagline}</p>`;b.addEventListener('click',()=>{this.tune(i,'card');closePanels()});f.append(b)});this.el.grid.replaceChildren(f)}
   tune(index,source='tuner'){
     const i=Math.min(this.stations.length-1,Math.max(0,Number(index)||0)),s=this.stations[i];this.currentIndex=i;
-    document.body.dataset.station=s.id;document.body.dataset.scene=s.scene||s.id;document.documentElement.style.setProperty('--station-position',`${8+(i/(this.stations.length-1))*84}%`);
+    const frequency=Number.parseFloat(s.frequency),dialT=Number.isFinite(frequency)?Math.min(1,Math.max(0,(frequency-88)/(110-88))):i/(this.stations.length-1);
+    document.body.dataset.station=s.id;document.body.dataset.scene=s.scene||s.id;document.documentElement.style.setProperty('--station-position',`${8+(dialT*84)}%`);
     this.el.frequency.textContent=s.frequency;this.el.name.textContent=s.name;this.el.tagline.textContent=s.tagline;this.el.signal.textContent=this.engine.userWantsPlayback?'ON AIR':'READY';
     this.el.panelStation.textContent=`${s.frequency} · ${s.name}`;
     if(source!=='tuner')this.el.tuner.value=String(i);if(source!=='knob')this.el.tuningKnob.value=String(i);paintKnob(this.el.tuningKnob);
