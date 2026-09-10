@@ -1,6 +1,6 @@
 import * as pc from 'playcanvas';
 
-const VERSION='pass17-environment-headlight-bean-v2';
+const VERSION='pass17-environment-headlight-bean-v3';
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 const REFLECTION_SLAB_PREFIXES=['Wet sheen','Pass11 Wet Reflection','Warm Road Reflection','Pass9 Moon Road Sheen','Pass9 Warm Road Pool','Wet Headlight Spill','Headlight Spill','Pass15 Neutral Reflection','Pass15 Warm Reflection','Oncoming Reflection','Pass15 Soft Wet Light'];
 
@@ -23,6 +23,13 @@ function purgeReflectionSlabs(app){
   let disabled=0;
   walk(app.root,node=>{
     if(node!==app.root&&node.enabled!==false&&REFLECTION_SLAB_PREFIXES.some(prefix=>(node.name||'').startsWith(prefix))){node.enabled=false;disabled++}
+  });
+  return disabled;
+}
+function purgeLegacyHeadlightVolumes(app){
+  let disabled=0;
+  walk(app.root,node=>{
+    if(node!==app.root&&(node.name||'').startsWith('Fog Headlight Volume')&&node.enabled!==false){node.enabled=false;disabled++}
   });
   return disabled;
 }
@@ -144,9 +151,9 @@ async function install(){
     if(app&&w?.ready&&w?.illuminationPass==='illumination-pass-v9'&&w?.worldDetailPass==='world-detail-pass-v6'&&window.WitchRideWitchCenterpiecePass?.active===true){
       try{
         const readability=polishSceneReadability(app),road=neutralizeRoad(app),groundFogDisabled=disableGroundFog(app),groundMistDisabled=disableGroundMist(app),streakMat=wetStreakMaterial(app),headlights=refineVehicleHeadlights(app,streakMat),traffic=buildOncomingTraffic(app),beans=buildBeanHalos(app);
-        const purgedReflectionSlabs=purgeReflectionSlabs(app);
+        const legacyHeadlightVolumesDisabled=purgeLegacyHeadlightVolumes(app),purgedReflectionSlabs=purgeReflectionSlabs(app);
         animate(app,traffic);
-        const detail={...readability,roadNeutralCharcoal:road.roads===9,roadSegments:road.roads,puddlesDisabled:road.puddlesDisabled,groundFogDisabled,groundMistDisabled,coolRoadSheensDisabled:road.coolSheensDisabled,baseSheenSlabsDisabled:road.baseSheenSlabsDisabled,legacyWetStreaksDisabled:road.legacyStreaksDisabled,legacyWarmReflectionsDisabled:road.legacyWarmDisabled,legacyWarmPoolsDisabled:road.legacyWarmPoolsDisabled,reflectionPanels:road.reflectionPanels,purgedReflectionSlabs,headlightLensesAdjusted:headlights.lensesAdjusted,headlightMountsAdjusted:headlights.mountsAdjusted,headlightPointsAdjusted:headlights.pointLightsAdjusted,headlightSpillsAdjusted:headlights.spillsAdjusted,headlightPointIntensityBase:headlights.pointIntensityBase,headlightPointRange:headlights.pointRange,wetReflectionStreaks:headlights.wetReflectionStreaks,wetReflectionOpacity:headlights.reflectionOpacity,wetReflectionIntensity:headlights.reflectionIntensity,oncomingTraffic:traffic.cars.length,oncomingPointIntensityBase:traffic.pointIntensityBase,oncomingPointRange:traffic.pointRange,beanHalos:beans.halos.length,beanHalosReactivated:beans.halosReactivated,beansRescaled:beans.beansRescaled,beanScale:beans.beanScale,beanLightsSoftened:beans.beanLightsSoftened,beanHaloScale:beans.haloScale,beanHaloOpacity:beans.haloOpacity,beanHaloIntensity:beans.haloIntensity,beanLightIntensity:beans.beanLightIntensity,beanLightRange:beans.beanLightRange,witchTouched:false};
+        const detail={...readability,roadNeutralCharcoal:road.roads===9,roadSegments:road.roads,puddlesDisabled:road.puddlesDisabled,groundFogDisabled,groundMistDisabled,coolRoadSheensDisabled:road.coolSheensDisabled,baseSheenSlabsDisabled:road.baseSheenSlabsDisabled,legacyWetStreaksDisabled:road.legacyStreaksDisabled,legacyWarmReflectionsDisabled:road.legacyWarmDisabled,legacyWarmPoolsDisabled:road.legacyWarmPoolsDisabled,reflectionPanels:road.reflectionPanels,purgedReflectionSlabs,legacyHeadlightVolumesDisabled,headlightLensesAdjusted:headlights.lensesAdjusted,headlightMountsAdjusted:headlights.mountsAdjusted,headlightPointsAdjusted:headlights.pointLightsAdjusted,headlightSpillsAdjusted:headlights.spillsAdjusted,headlightPointIntensityBase:headlights.pointIntensityBase,headlightPointRange:headlights.pointRange,wetReflectionStreaks:headlights.wetReflectionStreaks,wetReflectionOpacity:headlights.reflectionOpacity,wetReflectionIntensity:headlights.reflectionIntensity,oncomingTraffic:traffic.cars.length,oncomingPointIntensityBase:traffic.pointIntensityBase,oncomingPointRange:traffic.pointRange,beanHalos:beans.halos.length,beanHalosReactivated:beans.halosReactivated,beansRescaled:beans.beansRescaled,beanScale:beans.beanScale,beanLightsSoftened:beans.beanLightsSoftened,beanHaloScale:beans.haloScale,beanHaloOpacity:beans.haloOpacity,beanHaloIntensity:beans.haloIntensity,beanLightIntensity:beans.beanLightIntensity,beanLightRange:beans.beanLightRange,witchTouched:false};
         w.pass15EnvironmentPass=VERSION;w.pass15EnvironmentDetail=detail;w.pass17EnvironmentPass=VERSION;w.pass17EnvironmentDetail=detail;window.WitchRidePass15Environment={active:true,version:VERSION,detail};window.WitchRidePass17Environment={active:true,version:VERSION,detail};document.body.classList.add('pass15-environment-ready','pass17-environment-ready');console.info('Witch Ride Pass 17 environment/headlight/bean polish ready',VERSION,detail);return;
       }catch(err){console.error('Witch Ride Pass 17 environment/headlight/bean polish failed',err);w.pass15EnvironmentPass='fallback';w.pass15EnvironmentDetail={};w.pass17EnvironmentPass='fallback';w.pass17EnvironmentDetail={};w.pass17EnvironmentError=err?.stack||err?.message||String(err);return}
     }
