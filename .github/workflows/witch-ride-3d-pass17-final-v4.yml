@@ -1,0 +1,127 @@
+name: Witch Ride 3D Pass 17 Final V4 Gate
+
+on:
+  push:
+    branches: [witch-ride-3d-environment-headlight-bean-pass-17]
+    paths:
+      - '.github/workflows/witch-ride-3d-pass17-final-v4.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  final-v4:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify locked source and current branch
+        shell: bash
+        run: |
+          git fetch origin main witch-ride-3d-release-candidate-pass-16 witch-ride-3d-environment-headlight-bean-pass-17
+          echo "CURRENT_MAIN=$(git rev-parse origin/main)"
+          echo "CURRENT_TARGET=$(git rev-parse origin/witch-ride-3d-environment-headlight-bean-pass-17)"
+          test "$(git rev-parse origin/witch-ride-3d-environment-headlight-bean-pass-17)" = "$GITHUB_SHA"
+          BASE=ea550e5c46db3764de972ce078804783be83dfbf
+          for path in halloween-radio/games/witch-ride-3d/game.js halloween-radio/games/witch-ride-3d/index.html halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js halloween-radio/games/witch-ride-3d/assets/witch-rider.glb; do
+            git diff --quiet "$BASE" HEAD -- "$path" || { echo "LOCKED SOURCE CHANGED: $path"; exit 1; }
+          done
+          ! git diff --name-only "$BASE" HEAD | grep -q '^louisburg-local/'
+          node --check halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
+          node --check halloween-radio/games/witch-ride-3d/game.js
+          node --check halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
+
+      - name: Real PlayCanvas 430x932 functional and visual gate
+        shell: bash
+        run: |
+          npm install --no-save puppeteer-core@24.16.0
+          rm -rf /tmp/pass16-base
+          git worktree add --detach /tmp/pass16-base ea550e5c46db3764de972ce078804783be83dfbf
+          python3 -m http.server 8010 --directory . >/tmp/pass17-current.log 2>&1 &
+          PID17=$!
+          python3 -m http.server 8011 --directory /tmp/pass16-base >/tmp/pass16-base.log 2>&1 &
+          PID16=$!
+          trap 'kill $PID17 $PID16 || true' EXIT
+          sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_BIN"
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const fs=require('fs'),puppeteer=require('puppeteer-core');
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          const close=(a,b,t=.0001)=>Math.abs(a-b)<=t;
+          const angleClose=(a,b,t=.001)=>Math.abs(((a-b+180)%360+360)%360-180)<=t;
+          function samePose(a,b,label){for(const n of ['leg_L','leg_R','boot_L','boot_R'])for(let i=0;i<3;i++){if(!close(a[n].p[i],b[n].p[i]))throw Error(`${label} ${n} position drift`);if(!close(a[n].s[i],b[n].s[i]))throw Error(`${label} ${n} scale drift`);if(!angleClose(a[n].e[i],b[n].e[i]))throw Error(`${label} ${n} rotation drift`)}}
+          async function openPage(browser,port,want17=false){const p=await browser.newPage();p.setDefaultTimeout(60000);await p.setViewport({width:430,height:932,deviceScaleFactor:1,isMobile:true,hasTouch:true});await p.goto(`http://127.0.0.1:${port}/halloween-radio/games/witch-ride-3d/`,{waitUntil:'domcontentloaded',timeout:60000});await p.waitForFunction(w=>window.WitchRide3D?.ready&&window.WitchRideWitchCenterpiecePass?.active&&window.WitchRidePass15Environment?.active&&(!w||window.WitchRidePass17Environment?.active),{timeout:60000},want17);return p}
+          async function pose(p){return p.evaluate(async()=>{const pc=await import('playcanvas'),w=pc.app.root.findByName('Witch Rig'),o={};for(const n of ['leg_L','leg_R','boot_L','boot_R']){const e=w.findByName(n),q=e.getLocalPosition(),r=e.getLocalEulerAngles(),s=e.getLocalScale();o[n]={p:[q.x,q.y,q.z],e:[r.x,r.y,r.z],s:[s.x,s.y,s.z]}}return o})}
+          async function hideUi(p){await p.evaluate(()=>{document.querySelector('#hud')?.classList.add('hidden');for(const el of document.querySelectorAll('.screen'))el.classList.remove('open')})}
+          async function playPause(p){await p.click('#play');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(350);await p.click('#pause');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='paused');await hideUi(p)}
+          async function stageBean(p,pos=null){return p.evaluate(async(pos)=>{const pc=await import('playcanvas'),app=pc.app,s=window.WitchRide3D.state,cam=app.root.findByName('Chase Camera');for(let i=0;i<7;i++){const c=app.root.findByName(`1938 Coupe ${i}`);if(c)c.enabled=false}for(let i=0;i<4;i++){const c=app.root.findByName(`Oncoming Traffic ${i}`);if(c)c.enabled=false}for(let i=0;i<16;i++){const b=app.root.findByName(`Coffee Bean ${i}`);if(b)b.enabled=i===0}const b=app.root.findByName('Coffee Bean 0');b.enabled=true;b.__active=true;let chosen=pos;if(!chosen){let best=null;for(const dx of [-2,-1.2,0,1.2,2])for(const z of [-3,-5,-7,-9])for(const y of [1.05,1.35,1.65]){const wp=[s.x+dx,y,z];b.setPosition(...wp);const q=cam.camera.worldToScreen(b.getPosition());if(q.x<80||q.x>350||q.y<220||q.y>760)continue;const score=(q.x-285)**2+(q.y-520)**2;if(!best||score<best.score)best={pos:wp,screen:[q.x,q.y],score}}if(!best)throw Error('bean staging failed');chosen=best.pos}b.setPosition(...chosen);const q=cam.camera.worldToScreen(b.getPosition());return {pos:chosen,screen:[q.x,q.y]}},pos)}
+          async function stageHead(p,pos=null){return p.evaluate(async(pos)=>{const pc=await import('playcanvas'),app=pc.app,cam=app.root.findByName('Chase Camera');for(let i=0;i<7;i++){const c=app.root.findByName(`1938 Coupe ${i}`);if(c)c.enabled=i===0}for(let i=0;i<4;i++){const c=app.root.findByName(`Oncoming Traffic ${i}`);if(c)c.enabled=false}for(let i=0;i<16;i++){const b=app.root.findByName(`Coffee Bean ${i}`);if(b)b.enabled=false}const car=app.root.findByName('1938 Coupe 0');car.enabled=true;car.__active=true;let chosen=pos;if(!chosen){let best=null;for(const x of [-2.4,-1.2,0,1.2,2.4])for(const z of [-4,-6,-8,-10]){const wp=[x,0,z];car.setPosition(...wp);const q=cam.camera.worldToScreen(car.getPosition());if(q.x<90||q.x>340||q.y<300||q.y>680)continue;const score=(q.x-215)**2+(q.y-500)**2;if(!best||score<best.score)best={pos:wp,screen:[q.x,q.y],score}}if(!best)throw Error('head staging failed');chosen=best.pos}car.setPosition(...chosen);const q=cam.camera.worldToScreen(car.getPosition());const lamps=[];for(const name of ['headlamp_-0.76','headlamp_0.76']){const h=car.findByName(name),s=h?cam.camera.worldToScreen(h.getPosition()):null;if(s)lamps.push([s.x,s.y])}return {pos:chosen,screen:[q.x,q.y],lamps}},pos)}
+          async function staticEnv(p){await playPause(p);await p.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app;for(let i=0;i<7;i++){const c=app.root.findByName(`1938 Coupe ${i}`);if(c)c.enabled=false}for(let i=0;i<4;i++){const c=app.root.findByName(`Oncoming Traffic ${i}`);if(c)c.enabled=false}for(let i=0;i<16;i++){const b=app.root.findByName(`Coffee Bean ${i}`);if(b)b.enabled=false}})}
+          async function closeWitch(p){await playPause(p);await p.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,cam=app.root.findByName('Chase Camera'),prefixes=['Road Segment','Fog Bank','Realism Fog','Atmosphere Ground Mist','Dead Tree','Fence ','Pumpkin ','1938 Coupe','Oncoming Traffic','Coffee Bean','Cinematic Foreground','Pass10','Pass11','Brew & Brews Haunted Roastery','Moon Halo','Moon','Pass15 Soft Wet Light','Pass17 Wet Reflection'];for(const e of [...app.root.children])if(prefixes.some(x=>e.name?.startsWith(x)))e.enabled=false;app.on('prerender',()=>{cam.setPosition(2.15,3.55,10.25);cam.lookAt(0,3.05,1.80);cam.camera.fov=42})});await sleep(300)}
+          (async()=>{const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,protocolTimeout:600000,args:['--no-sandbox','--disable-dev-shm-usage','--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader','--mute-audio']});let p=await openPage(browser,8010,true);
+            const contract=await p.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,d=window.WitchRidePass17Environment.detail,car=app.root.findByName('1938 Coupe 0'),body=car.findByName('body_shell'),lamp=car.findByName('headlamp_-0.76'),bm=body?.render?.material||body?.render?.meshInstances?.[0]?.material,lm=lamp?.render?.material||lamp?.render?.meshInstances?.[0]?.material;let activeLegacy=0;const scan=n=>{if(['Fog Headlight Volume','Wet Headlight Spill','Headlight Spill'].some(x=>(n.name||'').startsWith(x))&&n.enabledInHierarchy)activeLegacy++;for(const c of n.children||[])scan(c)};scan(app.root);return {assetMode:window.WitchRide3D.assetMode,engine:window.WitchRide3D.engine,version:window.WitchRidePass17Environment.version,witch:window.WitchRideWitchCenterpiecePass,detail:d,activeLegacy,bodyMaterial:bm?.name||'',lampMaterial:lm?.name||'',sameMaterial:bm===lm,bodyEmissive:bm?.emissive?[bm.emissive.r,bm.emissive.g,bm.emissive.b]:null}});
+            if(contract.assetMode!=='glb-pbr'||contract.engine!=='PlayCanvas'||contract.version!=='pass17-environment-headlight-bean-v4')throw Error('boot '+JSON.stringify(contract));
+            if(contract.witch.lockedMeshBlob!=='4b6b7009e86a53dc35d9216ea8d29133584b280d'||contract.witch.gameplayScale!==.24||!contract.witch.stanceLocked)throw Error('witch lock '+JSON.stringify(contract.witch));
+            const d=contract.detail;if(d.witchTouched!==false||!d.roadNeutralCharcoal||d.beanHalos!==16||d.beanHalosReactivated!==16||d.wetReflectionStreaks!==28||d.oncomingTraffic!==4||d.legacyHeadlightGeometryActive!==0||contract.activeLegacy!==0||d.headlightLensMaterialsIsolated!==14||contract.sameMaterial||!contract.lampMaterial.startsWith('Pass17 Headlamp Lens'))throw Error('v4 structure '+JSON.stringify(contract));
+            await p.click('#play');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(400);const start=await pose(p);await p.screenshot({path:'pass17-mobile-gameplay-430x932.png'});await p.keyboard.down('ArrowLeft');await sleep(550);await p.keyboard.up('ArrowLeft');await p.keyboard.down('ArrowRight');await sleep(850);await p.keyboard.up('ArrowRight');await sleep(250);samePose(await pose(p),start,'steering');await p.click('#pause');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='paused');const t1=await p.evaluate(()=>window.WitchRide3D.state.elapsed);await sleep(350);const t2=await p.evaluate(()=>window.WitchRide3D.state.elapsed);if(Math.abs(t2-t1)>.05)throw Error('pause');await p.click('#resume');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');const b0=await p.evaluate(()=>window.WitchRide3D.state.beans);await p.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,s=window.WitchRide3D.state,b=app.root.findByName('Coffee Bean 0');b.enabled=true;b.__active=true;b.setPosition(s.x,1.15,2.2)});await p.waitForFunction(n=>window.WitchRide3D.state.beans>n,{timeout:2500},b0);await p.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,s=window.WitchRide3D.state,h=app.root.findByName('1938 Coupe 0');h.enabled=true;h.__active=true;h.setPosition(s.x,0,2)});await p.waitForFunction(()=>window.WitchRide3D.state.mode==='over',{timeout:2500});if(!await p.evaluate(()=>document.querySelector('#over')?.classList.contains('open')))throw Error('game over');await p.click('#again');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(300);samePose(await pose(p),start,'replay');await p.close();
+            p=await openPage(browser,8010,true);await staticEnv(p);await p.screenshot({path:'pass17-environment-430x932.png'});await p.close();p=await openPage(browser,8011,false);await staticEnv(p);await p.screenshot({path:'pass16-environment-430x932.png'});await p.close();
+            p=await openPage(browser,8010,true);await playPause(p);const bean=await stageBean(p);await sleep(250);await p.screenshot({path:'pass17-bean-430x932.png'});await p.close();p=await openPage(browser,8011,false);await playPause(p);const beanBase=await stageBean(p,bean.pos);await sleep(250);await p.screenshot({path:'pass16-bean-430x932.png'});await p.close();
+            p=await openPage(browser,8010,true);await playPause(p);const head=await stageHead(p);await sleep(250);await p.screenshot({path:'pass17-headlight-430x932.png'});await p.close();p=await openPage(browser,8011,false);await playPause(p);const headBase=await stageHead(p,head.pos);await sleep(250);await p.screenshot({path:'pass16-headlight-430x932.png'});await p.close();
+            p=await openPage(browser,8010,true);await closeWitch(p);await p.screenshot({path:'pass17-close-witch-430x932.png'});await p.close();fs.writeFileSync('pass17-stage.json',JSON.stringify({contract,bean,beanBase,head,headBase},null,2));await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+
+      - name: Fail-closed visual measurements
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check pillow
+          python - <<'PY'
+          from PIL import Image,ImageStat,ImageDraw
+          import json
+          stage=json.load(open('pass17-stage.json'))
+          def luma(im): return ImageStat.Stat(im.convert('L')).mean[0]
+          def warm(im):
+              px=list(im.convert('RGB').getdata());return sum(max(0,r-g)+.45*max(0,g-b) for r,g,b in px)/max(1,len(px))
+          def crop(path,xy,r,u,d):
+              im=Image.open(path).convert('RGB');x,y=xy;return im.crop((max(0,int(x-r)),max(0,int(y-u)),min(im.width,int(x+r)),min(im.height,int(y+d))))
+          base=Image.open('pass16-environment-430x932.png').convert('RGB').crop((20,140,410,900));cur=Image.open('pass17-environment-430x932.png').convert('RGB').crop((20,140,410,900));scene=luma(cur)/max(luma(base),1e-6)
+          bb=crop('pass16-bean-430x932.png',stage['beanBase']['screen'],60,60,60);bc=crop('pass17-bean-430x932.png',stage['bean']['screen'],60,60,60);bean=warm(bc)/max(warm(bb),1e-6)
+          him=Image.open('pass17-headlight-430x932.png').convert('RGB');cx,cy=stage['head']['screen'];road=him.crop((max(0,int(cx-140)),max(0,int(cy+10)),min(430,int(cx+140)),900));px=list(road.getdata());warm_fraction=sum(1 for r,g,b in px if r>35 and r>g*1.18 and r>b*1.45)/max(1,len(px));
+          metrics={'sceneLiftRatio':scene,'beanWarmRatio':bean,'pass17SceneLuma':luma(cur),'headlightRoadWarmFraction':warm_fraction};print(json.dumps(metrics,indent=2));json.dump(metrics,open('pass17-metrics.json','w'),indent=2)
+          if not (scene>1.025 and scene<1.35): raise SystemExit('scene lift failed')
+          if luma(cur)>95: raise SystemExit('not moody night')
+          if bean<1.08: raise SystemExit('bean halo failed')
+          if not (.0005<warm_fraction<.16): raise SystemExit('headlight road light absent or too broad')
+          pairs=[('ENVIRONMENT','pass16-environment-430x932.png','pass17-environment-430x932.png'),('BEAN','pass16-bean-430x932.png','pass17-bean-430x932.png'),('HEADLIGHT / REFLECTION','pass16-headlight-430x932.png','pass17-headlight-430x932.png')];sheet=Image.new('RGB',(880,3*990),(8,8,8));d=ImageDraw.Draw(sheet)
+          for i,(label,a,b) in enumerate(pairs):
+              top=i*990;sheet.paste(Image.open(a).convert('RGB'),(5,top+55));sheet.paste(Image.open(b).convert('RGB'),(445,top+55));d.text((10,top+12),label,fill='white');d.text((10,top+34),'PASS 16 RC',fill='white');d.text((450,top+34),'PASS 17 V4',fill='white')
+          sheet.save('pass17-comparison-sheet.png')
+          PY
+
+      - name: Upload final proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: witch-pass17-final-v4-proof
+          if-no-files-found: warn
+          path: |
+            pass17-mobile-gameplay-430x932.png
+            pass17-environment-430x932.png
+            pass17-close-witch-430x932.png
+            pass17-bean-430x932.png
+            pass17-headlight-430x932.png
+            pass16-environment-430x932.png
+            pass16-bean-430x932.png
+            pass16-headlight-430x932.png
+            pass17-comparison-sheet.png
+            pass17-stage.json
+            pass17-metrics.json
