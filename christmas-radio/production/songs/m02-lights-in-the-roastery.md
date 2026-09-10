@@ -5,12 +5,12 @@ Primary station: `103.1 B&B Christmas Radio`
 Secondary station: `92.5 Fireside`  
 Kind: vocal song  
 Energy: 2/5  
-Target length: 3:00–3:35  
-Status: generation-ready; no approved audio yet
+Approved radio-edit length: 4:04.824  
+Status: **audio approved; canonical MP3 repository upload pending**
 
 ## Production role
 
-This is the first 103.1 production master. It establishes the flagship's warm, intimate center: legitimate Christmas music first, Brew & Brews setting second. The roastery is the visual anchor, not an advertisement.
+This is the first approved 103.1 production master. It establishes the flagship's warm, intimate center: legitimate Christmas music first, Brew & Brews setting second. The roastery is the visual anchor, not an advertisement.
 
 ## Final lyrics
 
@@ -61,39 +61,56 @@ Someone sees that gold and knows the way to go
 [Outro]
 [Instrumental release — fingerpicked guitar, felt piano, cello; gentle resolved ending]
 
-## Suno style prompt
+## Suno style prompt used
 
 Warm intimate acoustic Christmas folk, 82–86 BPM. Dry close male baritone-to-mid vocal with natural conversational phrasing, fingerpicked acoustic guitar, felt piano, soft cello and restrained strings, warm upright or electric bass, brushed percussion, extremely subtle sleigh texture. Airy, crisp, light soundscape with organic room tone; emotionally warm but not sleepy. Keep verses close and human, chorus memorable without shouting. No choir, no crowd, no glossy pop synths, no café ambience, no theatrical Broadway delivery, no huge cinematic build. Gentle resolved instrumental ending.
 
-## Generation instructions
+## Candidate audit
 
-Generate at least two candidates from the exact same lyric sheet before changing words. Candidate naming begins:
+Two Suno renders were reviewed using the Christmas Radio lyric-aware process.
 
-- `bbxmas-m02-lights-in-the-roastery-candidate-a.mp3`
-- `bbxmas-m02-lights-in-the-roastery-candidate-b.mp3`
+### Candidate A
 
-Prefer the candidate that sounds like a real song someone would choose to hear at Christmas even with all branding context removed.
+Source upload: `Leave the Lights Glowing.mp3`
 
-## Acceptance gate
+- Warm, intimate presentation
+- Vocal and lyric meaning remained usable
+- Chorus stayed flatter and sleepier than the stronger render
+- Decision: reject as final master; retain only as alternate/reference
 
-Do not approve solely from first impression. Upload/export the candidate and run the Christmas Radio Audio Audit.
+### Candidate B — selected
 
-Listen to beginning, middle, late section and outro. Confirm:
+Source upload: `Leave the Lights Glowing (1).mp3`
 
-- vocal is dry, close, warm and intelligible
-- no unexplained announcer or spoken material
-- no fake crowd, applause, laugh track or café ambience
-- no excessive sleigh bells
-- no glossy contemporary holiday-pop production
-- lyric remains intact enough to preserve meaning
-- 'roastery' is sung naturally rather than awkwardly stretched
-- Louisburg and Amity are pronounced naturally
-- chorus has a clear memorable melodic identity
-- final outro leaves enough air for a clean 103.1 transition
-- track can also sit on Fireside without feeling too branded
+- Clearer vocal presentation
+- Better natural chorus lift
+- Brighter acoustic detail without glossy holiday-pop character
+- Louisburg, Amity and roastery remained understandable
+- No announcer speech, fake audience or unexplained crowd noise
+- Decision: approve after radio edit
 
-Only after manual lyric-aware review may the clean final filename be created:
+## Approved radio edit
+
+The selected render had an overlong instrumental tail. The approved edit preserves every vocal section and uses a smooth ending fade.
+
+Canonical local master:
+
+`bbxmas-m02-lights-in-the-roastery.mp3`
+
+Verified metadata:
+
+- Title: `Lights in the Roastery`
+- Artist: `Brew & Brews Christmas Radio`
+- Album: `Brew & Brews Christmas Radio — Christmas 2026`
+- Duration: `244.824` seconds
+- Vocal profile: `vocal-throughout-with-instrumental-release`
+- Announcer speech: none
+- Transition role: warm reset after upbeat, vintage or spoken material
+
+## Runtime gate
+
+Do not add M02 to `tracks.json` until the canonical binary exists at:
 
 `christmas-radio/audio/bbxmas-m02-lights-in-the-roastery.mp3`
 
-Do not add this master to `tracks.json` before that approval.
+The GitHub chat connector used for this production pass can write repository text but cannot transfer the local binary MP3. The approved audio remains preserved in the conversation workspace for the next binary-capable repository upload step. No broken or fake manifest path is authorized.
