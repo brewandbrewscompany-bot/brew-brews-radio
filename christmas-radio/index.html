@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#120c08">
+  <meta name="theme-color" content="#0b0f12">
   <meta name="description" content="Brew & Brews Christmas Radio — a warm vintage Christmas broadcast from our Louisburg, Kansas coffee roastery.">
   <title>Brew & Brews Christmas Radio</title>
   <!-- BREW & BREWS CHRISTMAS RADIO | Main app entry | /christmas-radio/index.html -->
@@ -12,18 +12,16 @@
 </head>
 <body data-station="bb-christmas-radio" data-scene="roastery-snow">
   <div class="scene" aria-hidden="true">
-    <div class="scene-sky"></div>
-    <div class="moon"></div>
-    <div class="window-shell">
-      <div class="window-pane window-left"></div>
-      <div class="window-pane window-right"></div>
-      <div class="horizon"></div>
-      <div class="pine pine-one"></div>
-      <div class="pine pine-two"></div>
-      <div class="roastery-sign">B&B</div>
-    </div>
-    <div class="garland"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-    <div class="snow" aria-hidden="true"></div>
+    <div class="scene-room"></div>
+    <div class="scene-window"><span class="window-cross vertical"></span><span class="window-cross horizontal"></span></div>
+    <div class="scene-sill"></div>
+    <div class="scene-roastery"><span class="shelf shelf-a"></span><span class="shelf shelf-b"></span><span class="roaster"></span><span class="coffee-sacks"></span></div>
+    <div class="scene-fire"></div>
+    <div class="scene-candles"><i></i><i></i><i></i></div>
+    <div class="scene-northpole"><span>NORTH POLE</span></div>
+    <div class="scene-lights"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="snow"></div>
+    <div class="scene-vignette"></div>
   </div>
 
   <main class="app" id="christmasRadioApp">
@@ -33,49 +31,59 @@
     </header>
 
     <section class="radio" aria-label="Brew & Brews Christmas Radio">
+      <div class="cabinet-highlight" aria-hidden="true"></div>
       <div class="cabinet-top">
         <div class="brand-plate"><b>B&B</b><span>Christmas Radio</span></div>
         <div class="power-light"><i></i><span id="signalLabel">READY</span></div>
       </div>
 
       <div class="radio-face">
-        <div class="speaker" aria-hidden="true"><div class="speaker-badge">BREW<br>&amp;<br>BREWS</div></div>
+        <div class="speaker" aria-hidden="true"><span class="speaker-ring"></span><span class="speaker-badge">B&amp;B</span></div>
 
-        <div class="display-wrap">
-          <div class="display" aria-live="polite">
-            <div class="frequency-line"><span>FM</span><strong id="frequencyLabel">103.1</strong></div>
-            <h2 id="stationName">B&B Christmas Radio</h2>
-            <p id="stationTagline">The complete Brew & Brews Christmas mix.</p>
+        <div class="dial-stack">
+          <div class="dial-glass" aria-live="polite">
+            <div class="dial-header"><span>FM</span><strong id="frequencyLabel">103.1</strong></div>
+            <div class="frequency-track" aria-hidden="true">
+              <span>88</span><span>92</span><span>97</span><span>100</span><span>103</span><span>107</span>
+              <i id="dialNeedle"></i>
+            </div>
+            <div class="station-readout">
+              <h2 id="stationName">B&B Christmas Radio</h2>
+              <p id="stationTagline">The complete Brew & Brews Christmas mix.</p>
+            </div>
             <div class="now">
               <small>NOW PLAYING</small>
-              <b id="nowPlayingTitle">Christmas broadcast ready</b>
-              <span id="nowPlayingArtist">Press Play when you’re ready</span>
+              <div><b id="nowPlayingTitle">Christmas broadcast ready</b><span id="nowPlayingArtist">Press Play when you’re ready</span></div>
             </div>
           </div>
 
-          <div class="tuner-panel">
-            <div class="scale" aria-hidden="true"><span>88</span><span>92</span><span>97</span><span>100</span><span>103</span><span>107</span></div>
-            <input id="stationTuner" type="range" min="0" max="5" step="1" value="4" aria-label="Tune Christmas Radio station">
-          </div>
-
-          <div class="controls">
-            <button id="playButton" class="play-button" type="button" aria-pressed="false">
-              <span class="play-icon">▶</span><span class="play-text">PLAY</span>
-            </button>
-            <label class="volume-control"><span>VOLUME</span><input id="volumeControl" type="range" min="0" max="1" step="0.05" value="0.8"></label>
-          </div>
         </div>
       </div>
-      <div class="cabinet-foot" aria-hidden="true"><span></span><span></span></div>
+
+      <div class="control-deck">
+        <label class="knob-control tuner-control">
+          <span class="knob" aria-hidden="true"><i></i></span><b>TUNE</b>
+          <input id="stationTuner" type="range" min="0" max="5" step="1" value="4" aria-label="Tune Christmas Radio station">
+        </label>
+
+        <button id="playButton" class="play-button" type="button" aria-pressed="false">
+          <span class="play-icon">▶</span><span class="play-text">PLAY</span>
+        </button>
+
+        <label class="knob-control volume-control">
+          <span class="knob" aria-hidden="true"><i></i></span><b>VOLUME</b>
+          <input id="volumeControl" type="range" min="0" max="1" step="0.05" value="0.8" aria-label="Volume">
+        </label>
+      </div>
+      <div class="cabinet-feet" aria-hidden="true"><span></span><span></span></div>
     </section>
 
     <section class="stations" aria-labelledby="stationsHeading">
       <header><p>Turn the dial</p><h2 id="stationsHeading">Pick a Christmas mood</h2></header>
       <div class="station-grid" id="stationGrid"></div>
     </section>
-
-    <p class="flagship"><strong>103.1 B&B Christmas Radio</strong> is the flagship. Press Play and leave it there for the full mix, or tune around when you want a different Christmas room.</p>
   </main>
+
   <audio id="christmasRadioAudio" preload="none"></audio>
 </body>
 </html>
