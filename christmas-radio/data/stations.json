@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "defaultStationId": "bb-christmas-radio",
+  "stations": [
+    {"id":"snowfall-am","frequency":"88.7","name":"Snowfall AM","tagline":"Golden-era Christmas through a softly weathered signal.","description":"1940s and 1950s-inspired crooner, close harmony, brushed drums, upright bass and vintage instrumentals.","soundProfile":"aged-narrow-warm","scene":"snowfall"},
+    {"id":"fireside","frequency":"92.5","name":"Fireside","tagline":"Quiet Christmas music for the warm side of winter.","description":"Acoustic guitar, piano, strings, folk, airy soundscapes and gentle instrumentals with very little interruption.","soundProfile":"warm-intimate","scene":"fireside"},
+    {"id":"sleigh-bell-rock","frequency":"96.9","name":"Sleigh Bell Rock","tagline":"Turn Christmas up.","description":"Rockabilly, early rock and roll, roots rock and guitar-driven Christmas with punchier transitions and no fake crowd noise.","soundProfile":"punchy-vintage","scene":"rock-room"},
+    {"id":"candlelight","frequency":"100.3","name":"Candlelight","tagline":"The quiet meaning of Christmas after the room settles down.","description":"Piano, strings, intimate vocals and reflective Christmas songs with subtle faith and minimal interruption.","soundProfile":"clear-soft","scene":"candlelight"},
+    {"id":"bb-christmas-radio","frequency":"103.1","name":"B&B Christmas Radio","tagline":"The complete Brew & Brews Christmas mix.","description":"The flagship broadcast: warm originals, upbeat Christmas, acoustic, emotional, rock and instrumentals in one easy station.","soundProfile":"clean-warm-main","scene":"roastery-snow"},
+    {"id":"north-pole-after-hours","frequency":"106.7","name":"North Pole After Hours","tagline":"The late shift gets a little strange after midnight.","description":"Swing, quirky jazz, playful story songs and unusual Christmas originals with occasional North Pole broadcast moments.","soundProfile":"late-night-playful","scene":"north-pole"}
+  ]
+}
