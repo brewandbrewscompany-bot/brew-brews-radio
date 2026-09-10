@@ -76,10 +76,10 @@ jobs:
           (async()=>{
             const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,protocolTimeout:600000,args:['--no-sandbox','--disable-dev-shm-usage','--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader','--mute-audio']});
             let p=await openPage(browser,8010,true);
-            const contract=await p.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,d=window.WitchRidePass17Environment.detail,road=app.root.findByName('Road Segment 0')?.findByName('Road'),m=road?.render?.material||road?.render?.meshInstances?.[0]?.material;return {assetMode:window.WitchRide3D.assetMode,engine:window.WitchRide3D.engine,version:window.WitchRidePass17Environment.version,witch:window.WitchRideWitchCenterpiecePass,detail:d,road:m?{diffuse:[m.diffuse.r,m.diffuse.g,m.diffuse.b],gloss:m.gloss}:null}});
-            if(contract.assetMode!=='glb-pbr'||contract.engine!=='PlayCanvas'||contract.version!=='pass17-environment-headlight-bean-v2')throw Error('boot contract '+JSON.stringify(contract));
+            const contract=await p.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,d=window.WitchRidePass17Environment.detail,road=app.root.findByName('Road Segment 0')?.findByName('Road'),m=road?.render?.material||road?.render?.meshInstances?.[0]?.material;let activeFogVolumes=0;const scan=n=>{if((n.name||'').startsWith('Fog Headlight Volume')&&n.enabled!==false)activeFogVolumes++;for(const c of n.children||[])scan(c)};scan(app.root);return {assetMode:window.WitchRide3D.assetMode,engine:window.WitchRide3D.engine,version:window.WitchRidePass17Environment.version,witch:window.WitchRideWitchCenterpiecePass,detail:d,activeFogVolumes,road:m?{diffuse:[m.diffuse.r,m.diffuse.g,m.diffuse.b],gloss:m.gloss}:null}});
+            if(contract.assetMode!=='glb-pbr'||contract.engine!=='PlayCanvas'||contract.version!=='pass17-environment-headlight-bean-v3')throw Error('boot contract '+JSON.stringify(contract));
             if(contract.witch.lockedMeshBlob!=='4b6b7009e86a53dc35d9216ea8d29133584b280d'||contract.witch.gameplayScale!==.24||!contract.witch.stanceLocked)throw Error('witch lock '+JSON.stringify(contract.witch));
-            const d=contract.detail;if(d.witchTouched!==false||!d.roadNeutralCharcoal||d.beanHalos!==16||d.beanHalosReactivated!==16||d.wetReflectionStreaks!==28||d.oncomingTraffic!==4)throw Error('pass17 structure '+JSON.stringify(d));
+            const d=contract.detail;if(d.witchTouched!==false||!d.roadNeutralCharcoal||d.beanHalos!==16||d.beanHalosReactivated!==16||d.wetReflectionStreaks!==28||d.oncomingTraffic!==4||d.legacyHeadlightVolumesDisabled<7||contract.activeFogVolumes!==0)throw Error('pass17 structure '+JSON.stringify(contract));
             if(!contract.road||Math.max(...contract.road.diffuse)-Math.min(...contract.road.diffuse)>.01||contract.road.diffuse[2]>contract.road.diffuse[0]+.005)throw Error('road not neutral charcoal '+JSON.stringify(contract.road));
             await p.click('#play');await p.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(400);const start=await pose(p);await p.screenshot({path:'pass17-mobile-gameplay-430x932.png'});
             await p.keyboard.down('ArrowLeft');await sleep(550);await p.keyboard.up('ArrowLeft');await p.keyboard.down('ArrowRight');await sleep(850);await p.keyboard.up('ArrowRight');await sleep(250);samePose(await pose(p),start,'steering');
@@ -128,7 +128,7 @@ jobs:
           pairs=[('ENVIRONMENT','pass16-environment-430x932.png','pass17-environment-430x932.png'),('BEAN','pass16-bean-430x932.png','pass17-bean-430x932.png'),('HEADLIGHT / REFLECTION','pass16-headlight-430x932.png','pass17-headlight-430x932.png')]
           sheet=Image.new('RGB',(880,3*990),(8,8,8));d=ImageDraw.Draw(sheet)
           for i,(label,x,y) in enumerate(pairs):
-              top=i*990;sheet.paste(Image.open(x).convert('RGB'),(5,top+55));sheet.paste(Image.open(y).convert('RGB'),(445,top+55));d.text((10,top+12),label,fill='white');d.text((10,top+34),'PASS 16 RC',fill='white');d.text((450,top+34),'PASS 17 V2',fill='white')
+              top=i*990;sheet.paste(Image.open(x).convert('RGB'),(5,top+55));sheet.paste(Image.open(y).convert('RGB'),(445,top+55));d.text((10,top+12),label,fill='white');d.text((10,top+34),'PASS 16 RC',fill='white');d.text((450,top+34),'PASS 17 V3',fill='white')
           sheet.save('pass17-comparison-sheet.png')
           PY
 
