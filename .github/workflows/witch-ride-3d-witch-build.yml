@@ -1,11 +1,10 @@
-name: Witch Ride 3D Witch Material Pass 15
+name: Witch Ride 3D September 8 Witch Restore Pass 15
 
 on:
   push:
     branches: [witch-ride-3d-witch-material-pass-15]
     paths:
       - '.github/workflows/witch-ride-3d-witch-build.yml'
-      - 'halloween-radio/games/witch-ride-3d/tools/build_witch_pass14.py'
       - 'halloween-radio/games/witch-ride-3d/tools/validate_witch_pass14.py'
       - 'halloween-radio/games/witch-ride-3d/tools/validate_witch_pass15.py'
       - 'halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js'
@@ -17,100 +16,132 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
-  validate-material-lookdev:
+  validate-sept8-witch-restore:
     if: github.ref == 'refs/heads/witch-ride-3d-witch-material-pass-15'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Record safety and locked-mesh baseline
+
+      - name: Record safety and September 8 baseline
         shell: bash
         run: |
           git fetch origin main witch-ride-3d-witch-material-pass-15 witch-ride-3d-witch-rebuild-pass-14
           echo "BASE_MAIN=$(git rev-parse origin/main)" >> "$GITHUB_ENV"
           echo "BASE_TARGET=$(git rev-parse origin/witch-ride-3d-witch-material-pass-15)" >> "$GITHUB_ENV"
           test "$(git rev-parse origin/witch-ride-3d-witch-material-pass-15)" = "$GITHUB_SHA"
+          git cat-file -e fc57a127836225f61a17f57e8af1540415dd6f18^{commit}
           test "$(git hash-object halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb)" = "8ec46a27aa0b60244061ce8cc81c2d603a97b1c5"
-          test "$(git hash-object halloween-radio/games/witch-ride-3d/tools/build_witch_pass14.py)" = "7dc2af89d1ecaca8a176026463dca9ff41bd1ac8"
-          git ls-tree origin/witch-ride-3d-witch-material-pass-15 halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb
-          git ls-tree origin/witch-ride-3d-witch-material-pass-15 halloween-radio/games/witch-ride-3d/tools/build_witch_pass14.py
-          git ls-tree origin/witch-ride-3d-witch-material-pass-15 halloween-radio/games/witch-ride-3d/tools/validate_witch_pass15.py
           git ls-tree origin/witch-ride-3d-witch-material-pass-15 halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
+          git ls-tree origin/witch-ride-3d-witch-material-pass-15 halloween-radio/games/witch-ride-3d/tools/validate_witch_pass15.py
+          git ls-tree origin/witch-ride-3d-witch-material-pass-15 halloween-radio/games/witch-ride-3d/game.js
           git ls-tree origin/witch-ride-3d-witch-material-pass-15 halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
-      - name: Validate locked Pass 14 geometry and Pass 15 runtime presentation
+          git ls-tree origin/witch-ride-3d-witch-material-pass-15 halloween-radio/games/witch-ride-3d/index.html
+
+      - name: Validate locked September 8 geometry and frozen environment
         shell: bash
         run: |
-          python -m pip install --disable-pip-version-check 'numpy>=2,<3' 'scipy>=1.15,<2' 'trimesh==4.11.1' 'networkx>=3.4,<4'
+          python -m pip install --disable-pip-version-check 'numpy>=2,<3' 'scipy>=1.15,<2' 'trimesh==4.11.1' 'networkx>=3.4,<4' 'pillow>=11,<12'
           python -m py_compile halloween-radio/games/witch-ride-3d/tools/validate_witch_pass14.py halloween-radio/games/witch-ride-3d/tools/validate_witch_pass15.py
           python halloween-radio/games/witch-ride-3d/tools/validate_witch_pass14.py
           python halloween-radio/games/witch-ride-3d/tools/validate_witch_pass15.py
           node --check halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           node --check halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
-          test "$(git hash-object halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb)" = "8ec46a27aa0b60244061ce8cc81c2d603a97b1c5"
-          grep -q "witch-centerpiece-pass-v15" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
-          grep -q "pass-15-materials-v2-pose-lock" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
-          grep -q "GAMEPLAY_SCALE=.24" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
-          grep -q "stanceLocked:true" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
-          grep -q "materialsApplied:true" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
-          grep -q "geometryLocked:true" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
+          grep -q "pass-15-sept8-approved-restore-v1" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
+          grep -q "fc57a127836225f61a17f57e8af1540415dd6f18" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
+          grep -q "stanceMode:'pass14-exact-local-transforms'" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
+          grep -q "stanceOffsetsRemoved:true" halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js
           grep -q "pass15-environment-traffic-v5" halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
-          grep -q "puddlesDisabled" halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
-          grep -q "groundFogDisabled" halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
-          grep -q "groundMistDisabled" halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
-          grep -q "Pass15 Soft Wet Light" halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
-          grep -q "reflectionPanels:0" halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js
-          grep -q "pass15-environment-traffic.js" halloween-radio/games/witch-ride-3d/index.html
-      - name: Actual PlayCanvas 430x932 pose environment and lighting gate
+
+      - name: Prepare exact September 8 approved runtime baseline
+        shell: bash
+        run: |
+          rm -rf /tmp/witch-pass14-approved
+          git worktree add --detach /tmp/witch-pass14-approved fc57a127836225f61a17f57e8af1540415dd6f18
+          test "$(git -C /tmp/witch-pass14-approved rev-parse HEAD)" = "fc57a127836225f61a17f57e8af1540415dd6f18"
+          test "$(git -C /tmp/witch-pass14-approved hash-object halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb)" = "8ec46a27aa0b60244061ce8cc81c2d603a97b1c5"
+
+      - name: Actual PlayCanvas 430x932 September 8 visual pose gate
         shell: bash
         run: |
           npm install --no-save puppeteer-core@24.16.0
           python3 -m http.server 8000 --directory . >/tmp/wr3d-pass15-http.log 2>&1 &
-          SERVER_PID=$!
-          trap 'kill $SERVER_PID || true' EXIT
+          TARGET_SERVER_PID=$!
+          python3 -m http.server 8001 --directory /tmp/witch-pass14-approved >/tmp/wr3d-pass14-http.log 2>&1 &
+          BASE_SERVER_PID=$!
+          trap 'kill $TARGET_SERVER_PID $BASE_SERVER_PID || true' EXIT
           sleep 2
           CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
           test -n "$CHROME_BIN"
           CHROME_BIN="$CHROME_BIN" node <<'NODE'
           const puppeteer=require('puppeteer-core');
           const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          const APPROVED='fc57a127836225f61a17f57e8af1540415dd6f18';
           const LIMITS={
             witchHeightPx:[78,150],
             witchWidthPx:[48,132],
-            bootSeparationPxMin:20,
-            kneeSeparationPxMin:24,
-            broomStraddlePxMin:16,
-            broomTailDeltaZMin:.10
+            broomTailDeltaZMin:.10,
+            shapeRatioTolerance:.12,
+            separationRatioTolerance:.10,
+            localPositionTolerance:0.0001,
+            localScaleTolerance:0.0001,
+            localEulerTolerance:0.001,
+            runtimeDriftPx:2.0,
+            runtimeRelativeFloor:.94
           };
-          (async()=>{
-            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--mute-audio','--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader']});
+
+          function close(a,b,t){return Math.abs(a-b)<=t}
+          function angleClose(a,b,t){let d=((a-b+180)%360+360)%360-180;return Math.abs(d)<=t}
+          function assertPoseEqual(a,b,label){
+            for(const name of ['leg_L','leg_R','boot_L','boot_R']){
+              if(!a[name]||!b[name])throw new Error(`${label} missing ${name}`);
+              for(let i=0;i<3;i++)if(!close(a[name].position[i],b[name].position[i],LIMITS.localPositionTolerance))throw new Error(`${label} ${name} position drift ${JSON.stringify({a:a[name],b:b[name]})}`);
+              for(let i=0;i<3;i++)if(!close(a[name].scale[i],b[name].scale[i],LIMITS.localScaleTolerance))throw new Error(`${label} ${name} scale drift ${JSON.stringify({a:a[name],b:b[name]})}`);
+              for(let i=0;i<3;i++)if(!angleClose(a[name].euler[i],b[name].euler[i],LIMITS.localEulerTolerance))throw new Error(`${label} ${name} euler drift ${JSON.stringify({a:a[name],b:b[name]})}`);
+            }
+          }
+          function normalized(m,key){return m[key]/m.witch.height}
+          function ratioGate(candidate,baseline,key,tol){
+            const c=normalized(candidate,key),b=normalized(baseline,key),r=c/b;
+            if(!(r>=1-tol&&r<=1+tol))throw new Error(`${key} September 8 normalized ratio failed ${JSON.stringify({candidate:c,baseline:b,ratio:r,tol})}`);
+          }
+          function driftGate(sample,start,label){
+            assertPoseEqual(sample.pose,start.pose,`${label} local pose`);
+            for(const key of ['bootSeparationPx','kneeSeparationPx','hipSeparationPx','broomStraddlePx']){
+              const floor=start[key]*LIMITS.runtimeRelativeFloor;
+              if(sample[key]<floor-LIMITS.runtimeDriftPx)throw new Error(`${label} ${key} collapsed ${JSON.stringify({start:start[key],sample:sample[key],floor})}`);
+            }
+            if(!(sample.broomTailDeltaZ!==null&&sample.broomTailDeltaZ>=LIMITS.broomTailDeltaZMin))throw new Error(`${label} broom tail stopped trailing toward chase camera ${JSON.stringify(sample)}`);
+          }
+
+          async function readyPage(browser,url,kind){
             const page=await browser.newPage();
             await page.setViewport({width:430,height:932,deviceScaleFactor:1,isMobile:true,hasTouch:true});
-            const errors=[];page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
-            await page.goto('http://127.0.0.1:8000/halloween-radio/games/witch-ride-3d/',{waitUntil:'domcontentloaded',timeout:30000});
+            const errors=[];page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});page.__errors=errors;
+            await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
             await page.waitForFunction(()=>window.WitchRide3D?.ready&&document.body.classList.contains('ready'),{polling:200,timeout:30000});
-            await page.waitForFunction(()=>{
-              const p=window.WitchRideWitchCenterpiecePass;
-              return p?.active===true&&p?.materialsApplied===true&&p?.geometryLocked===true&&p?.scaleEnforced===true&&p?.stanceLocked===true&&p?.meshOnly===false&&p?.missing?.length===0;
-            },{polling:200,timeout:30000});
-            await page.waitForFunction(()=>window.WitchRidePass15Environment?.active===true&&window.WitchRide3D?.pass15EnvironmentPass==='pass15-environment-traffic-v5',{polling:200,timeout:30000});
-            const boot=await page.evaluate(()=>({assetMode:window.WitchRide3D.assetMode,engine:window.WitchRide3D.engine,witch:window.WitchRideWitchCenterpiecePass,composition:window.WitchRide3D.compositionPass,environment:window.WitchRidePass15Environment}));
-            if(boot.assetMode!=='glb-pbr'||boot.engine!=='PlayCanvas'||boot.witch?.passId!=='witch-centerpiece-pass-v15'||boot.witch?.version!=='pass-15-materials-v2-pose-lock'||boot.witch?.gameplayScale!==.24||boot.witch?.lockedMeshBlob!=='8ec46a27aa0b60244061ce8cc81c2d603a97b1c5')throw new Error('Pass 15 presentation boot failed '+JSON.stringify(boot));
-            const a=boot.witch?.lookdev?.assigned||{};
-            if(!(a.hair>=16&&a.wool>=10&&a.leather>=12&&a.wood>=1&&a.straw>=250&&a.felt>=2))throw new Error('Pass 15 material coverage incomplete '+JSON.stringify(a));
-            const d=boot.environment?.detail||{};
-            if(!(d.roadNeutralCharcoal===true&&d.roadSegments===9&&d.puddlesDisabled>=27&&d.groundFogDisabled>=12&&d.groundMistDisabled>=8&&d.coolRoadSheensDisabled===9&&d.baseSheenSlabsDisabled>=18&&d.reflectionPanels===0&&d.softWetReflections>=14&&d.headlightLensesAdjusted>=14&&d.headlightPointsAdjusted>=14&&d.oncomingTraffic>=4&&d.beanHalos===16&&d.beanScale<=.95&&d.beanHaloScale<=.28&&d.beanHaloOpacity<=.016&&d.beanHaloIntensity<=.11&&d.witchTouched===false))throw new Error('Pass 15 environment coverage incomplete '+JSON.stringify(d));
-            await page.click('#play');
-            await page.waitForFunction(()=>window.WitchRide3D?.state?.mode==='playing',{polling:100,timeout:10000});
-            await sleep(750);
+            if(kind==='approved'){
+              await page.waitForFunction(()=>window.WitchRideWitchCenterpiecePass?.active===true&&window.WitchRideWitchCenterpiecePass?.meshOnly===true&&window.WitchRideWitchCenterpiecePass?.missing?.length===0,{polling:200,timeout:30000});
+            }else{
+              await page.waitForFunction(()=>{
+                const p=window.WitchRideWitchCenterpiecePass;
+                return p?.active===true&&p?.version==='pass-15-sept8-approved-restore-v1'&&p?.approvedCommit==='fc57a127836225f61a17f57e8af1540415dd6f18'&&p?.meshOnly===true&&p?.materialsApplied===false&&p?.geometryLocked===true&&p?.scaleEnforced===true&&p?.stanceLocked===true&&p?.stanceOffsetsRemoved===true&&p?.missing?.length===0;
+              },{polling:200,timeout:30000});
+              await page.waitForFunction(()=>window.WitchRidePass15Environment?.active===true&&window.WitchRide3D?.pass15EnvironmentPass==='pass15-environment-traffic-v5',{polling:200,timeout:30000});
+            }
+            return page;
+          }
 
-            const metrics=await page.evaluate(async()=>{
+          async function metrics(page,includeEnvironment=false){
+            return page.evaluate(async(includeEnvironment)=>{
               const pc=await import('playcanvas'),app=pc.app,cam=app.root.findByName('Chase Camera'),witch=app.root.findByName('Witch Rig');
               if(!cam?.camera||!witch)throw new Error('Camera or Witch Rig unavailable');
               const components=node=>node?.findComponents?.('render')||[];
@@ -130,80 +161,149 @@ jobs:
                 const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);return{x0:Math.min(...xs),x1:Math.max(...xs),y0:Math.min(...ys),y1:Math.max(...ys),width:Math.max(...xs)-Math.min(...xs),height:Math.max(...ys)-Math.min(...ys),centerX:(Math.max(...xs)+Math.min(...xs))/2,centerY:(Math.max(...ys)+Math.min(...ys))/2};
               }
               function localPoint(node,x,y,z){const out=new pc.Vec3();node.getWorldTransform().transformPoint(new pc.Vec3(x,y,z),out);return project(out)}
+              function pose(name){const n=witch.findByName(name);if(!n)return null;const p=n.getLocalPosition(),e=n.getLocalEulerAngles(),s=n.getLocalScale();return{position:[p.x,p.y,p.z],euler:[e.x,e.y,e.z],scale:[s.x,s.y,s.z]}}
               const wb=screenBounds(witch),bootL=screenBounds(witch.findByName('boot_L')),bootR=screenBounds(witch.findByName('boot_R'));
               const legL=witch.findByName('leg_L'),legR=witch.findByName('leg_R');
               const kneeL=localPoint(legL,-.98,.20,.28),kneeR=localPoint(legR,.98,.20,.28);
+              const hipL=localPoint(legL,0,0,0),hipR=localPoint(legR,0,0,0);
               const straddleL=localPoint(legL,-.58,.62,.02),straddleR=localPoint(legR,.58,.62,.02);
               const bristleBounds=bounds(witch.findByName('broom_bristles')),shaftBounds=bounds(witch.findByName('broom_handle'))||bounds(witch.findByName('broom_shaft'));
               const scale=witch.getLocalScale();
-              const roadColors=[];for(let i=0;i<9;i++){const root=app.root.findByName(`Road Segment ${i}`),road=root?.findByName('Road'),m=road?.render?.material||road?.render?.meshInstances?.[0]?.material;if(m?.diffuse)roadColors.push([m.diffuse.r,m.diffuse.g,m.diffuse.b])}
-              const slabTokens=['Wet sheen','Pass11 Wet Reflection','Warm Road Reflection','Pass9 Moon Road Sheen','Pass9 Warm Road Pool','Wet Headlight Spill','Headlight Spill','Pass15 Neutral Reflection','Pass15 Warm Reflection','Oncoming Reflection'];let enabledSlabs=0,enabledPuddles=0,enabledGroundFog=0,enabledGroundMist=0,softWetNodes=0;
-              const walk=(n,parentEnabled=true)=>{const effective=parentEnabled&&n.enabled!==false;if(effective&&slabTokens.some(t=>(n.name||'').startsWith(t)))enabledSlabs++;if(effective&&/^Puddle( Variation)?/.test(n.name||''))enabledPuddles++;if(effective&&(n.name||'').startsWith('Realism Fog'))enabledGroundFog++;if(effective&&(n.name||'').startsWith('Atmosphere Ground Mist'))enabledGroundMist++;if((n.name||'').startsWith('Pass15 Soft Wet Light'))softWetNodes++;for(const c of n.children||[])walk(c,effective)};walk(app.root,true);
-              const tailDeltaZ=bristleBounds&&shaftBounds?bristleBounds.center.z-shaftBounds.center.z:null;
-              return{
+              const out={
                 witch:{...wb,scale:[scale.x,scale.y,scale.z]},
+                pose:Object.fromEntries(['leg_L','leg_R','boot_L','boot_R'].map(n=>[n,pose(n)])),
                 bootSeparationPx:bootL&&bootR?Math.abs(bootR.centerX-bootL.centerX):0,
                 kneeSeparationPx:Math.abs(kneeR.x-kneeL.x),
+                hipSeparationPx:Math.abs(hipR.x-hipL.x),
                 broomStraddlePx:Math.abs(straddleR.x-straddleL.x),
-                broomTailDeltaZ:tailDeltaZ,
-                roadColors,enabledReflectionSlabs:enabledSlabs,enabledPuddles,enabledGroundFog,enabledGroundMist,softWetNodes,
-                centeredOffsetPx:wb?Math.abs(wb.centerX-215):999
+                broomTailDeltaZ:bristleBounds&&shaftBounds?bristleBounds.center.z-shaftBounds.center.z:null,
+                centeredOffsetPx:wb?Math.abs(wb.centerX-215):999,
+                state:{mode:window.WitchRide3D?.state?.mode,elapsed:window.WitchRide3D?.state?.elapsed,x:window.WitchRide3D?.state?.x}
               };
-            });
-            const w=metrics.witch||{};
-            if(!(w.height>=LIMITS.witchHeightPx[0]&&w.height<=LIMITS.witchHeightPx[1]))throw new Error('Witch screen height gate failed '+JSON.stringify({metrics,LIMITS}));
-            if(!(w.width>=LIMITS.witchWidthPx[0]&&w.width<=LIMITS.witchWidthPx[1]))throw new Error('Witch screen width gate failed '+JSON.stringify({metrics,LIMITS}));
-            if(!(metrics.bootSeparationPx>=LIMITS.bootSeparationPxMin))throw new Error('Boot separation gate failed '+JSON.stringify({metrics,LIMITS}));
-            if(!(metrics.kneeSeparationPx>=LIMITS.kneeSeparationPxMin))throw new Error('Knee separation gate failed '+JSON.stringify({metrics,LIMITS}));
-            if(!(metrics.broomStraddlePx>=LIMITS.broomStraddlePxMin))throw new Error('Broom straddle gate failed '+JSON.stringify({metrics,LIMITS}));
-            if(!(metrics.broomTailDeltaZ!==null&&metrics.broomTailDeltaZ>=LIMITS.broomTailDeltaZMin))throw new Error('Broom tail orientation gate failed '+JSON.stringify({metrics,LIMITS}));
-            if(metrics.enabledReflectionSlabs!==0||metrics.enabledPuddles!==0||metrics.enabledGroundFog!==0||metrics.enabledGroundMist!==0)throw new Error('Road slab/puddle/ground-atmosphere gate failed '+JSON.stringify(metrics));
-            if(metrics.softWetNodes<14)throw new Error('Soft wet reflection gate failed '+JSON.stringify(metrics));
-            if(metrics.centeredOffsetPx>46)throw new Error('Witch road centering gate failed '+JSON.stringify(metrics));
-            for(const rgb of metrics.roadColors){if(Math.max(...rgb)-Math.min(...rgb)>.025||rgb[2]>rgb[0]+.012)throw new Error('Road neutral-charcoal gate failed '+JSON.stringify(metrics.roadColors))}
+              if(includeEnvironment){
+                const roadColors=[];for(let i=0;i<9;i++){const root=app.root.findByName(`Road Segment ${i}`),road=root?.findByName('Road'),m=road?.render?.material||road?.render?.meshInstances?.[0]?.material;if(m?.diffuse)roadColors.push([m.diffuse.r,m.diffuse.g,m.diffuse.b])}
+                const slabTokens=['Wet sheen','Pass11 Wet Reflection','Warm Road Reflection','Pass9 Moon Road Sheen','Pass9 Warm Road Pool','Wet Headlight Spill','Headlight Spill','Pass15 Neutral Reflection','Pass15 Warm Reflection','Oncoming Reflection'];let enabledSlabs=0,enabledPuddles=0,enabledGroundFog=0,enabledGroundMist=0,softWetNodes=0;
+                const walk=(n,parentEnabled=true)=>{const effective=parentEnabled&&n.enabled!==false;if(effective&&slabTokens.some(t=>(n.name||'').startsWith(t)))enabledSlabs++;if(effective&&/^Puddle( Variation)?/.test(n.name||''))enabledPuddles++;if(effective&&(n.name||'').startsWith('Realism Fog'))enabledGroundFog++;if(effective&&(n.name||'').startsWith('Atmosphere Ground Mist'))enabledGroundMist++;if((n.name||'').startsWith('Pass15 Soft Wet Light'))softWetNodes++;for(const c of n.children||[])walk(c,effective)};walk(app.root,true);
+                out.environment={roadColors,enabledReflectionSlabs:enabledSlabs,enabledPuddles,enabledGroundFog,enabledGroundMist,softWetNodes};
+              }
+              return out;
+            },includeEnvironment);
+          }
 
-            const gameplayState=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,score:window.WitchRide3D.state.score,elapsed:window.WitchRide3D.state.elapsed,pose:window.WitchRideWitchCenterpiecePass,environment:window.WitchRide3D.pass15EnvironmentDetail}));
-            await page.screenshot({path:'witch-pass15-mobile-430x932.png',fullPage:false});
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--mute-audio','--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader']});
+            const approved=await readyPage(browser,'http://127.0.0.1:8001/halloween-radio/games/witch-ride-3d/','approved');
+            const candidate=await readyPage(browser,'http://127.0.0.1:8000/halloween-radio/games/witch-ride-3d/','candidate');
+            const boot=await candidate.evaluate(()=>({assetMode:window.WitchRide3D.assetMode,engine:window.WitchRide3D.engine,witch:window.WitchRideWitchCenterpiecePass,environment:window.WitchRidePass15Environment}));
+            if(boot.assetMode!=='glb-pbr'||boot.engine!=='PlayCanvas'||boot.witch?.approvedCommit!==APPROVED||boot.witch?.gameplayScale!==.24||boot.witch?.lockedMeshBlob!=='8ec46a27aa0b60244061ce8cc81c2d603a97b1c5')throw new Error('September 8 restore boot failed '+JSON.stringify(boot));
+            const d=boot.environment?.detail||{};
+            if(!(d.roadNeutralCharcoal===true&&d.roadSegments===9&&d.puddlesDisabled>=27&&d.groundFogDisabled>=12&&d.groundMistDisabled>=8&&d.coolRoadSheensDisabled===9&&d.baseSheenSlabsDisabled>=18&&d.reflectionPanels===0&&d.softWetReflections>=14&&d.headlightLensesAdjusted>=14&&d.headlightPointsAdjusted>=14&&d.oncomingTraffic>=4&&d.beanHalos===16&&d.beanScale<=.95&&d.beanHaloScale<=.28&&d.beanHaloOpacity<=.016&&d.beanHaloIntensity<=.11&&d.witchTouched===false))throw new Error('Frozen environment coverage failed '+JSON.stringify(d));
 
-            await page.evaluate(async()=>{
+            await Promise.all([approved.click('#play'),candidate.click('#play')]);
+            await Promise.all([
+              approved.waitForFunction(()=>window.WitchRide3D?.state?.mode==='playing',{polling:100,timeout:10000}),
+              candidate.waitForFunction(()=>window.WitchRide3D?.state?.mode==='playing',{polling:100,timeout:10000})
+            ]);
+            await sleep(350);
+            const baseline=await metrics(approved,false),start=await metrics(candidate,true);
+            assertPoseEqual(start.pose,baseline.pose,'candidate vs September 8 approved local stance');
+            const w=start.witch||{};
+            if(!(w.height>=LIMITS.witchHeightPx[0]&&w.height<=LIMITS.witchHeightPx[1]))throw new Error('Smaller/farther gameplay height failed '+JSON.stringify({start,LIMITS}));
+            if(!(w.width>=LIMITS.witchWidthPx[0]&&w.width<=LIMITS.witchWidthPx[1]))throw new Error('Gameplay width failed '+JSON.stringify({start,LIMITS}));
+            if(start.centeredOffsetPx>46)throw new Error('Witch road centering failed '+JSON.stringify(start));
+            if(!(start.broomTailDeltaZ!==null&&start.broomTailDeltaZ>=LIMITS.broomTailDeltaZMin))throw new Error('Broom tail orientation failed '+JSON.stringify(start));
+            const shapeRatio=(start.witch.width/start.witch.height)/(baseline.witch.width/baseline.witch.height);
+            if(!(shapeRatio>=1-LIMITS.shapeRatioTolerance&&shapeRatio<=1+LIMITS.shapeRatioTolerance))throw new Error('Witch silhouette ratio departed September 8 '+JSON.stringify({shapeRatio,start,baseline}));
+            for(const key of ['bootSeparationPx','kneeSeparationPx','hipSeparationPx','broomStraddlePx'])ratioGate(start,baseline,key,LIMITS.separationRatioTolerance);
+            const env=start.environment||{};
+            if(env.enabledReflectionSlabs!==0||env.enabledPuddles!==0||env.enabledGroundFog!==0||env.enabledGroundMist!==0)throw new Error('Frozen road/reflection atmosphere gate failed '+JSON.stringify(env));
+            if(env.softWetNodes<14)throw new Error('Frozen soft wet reflections missing '+JSON.stringify(env));
+            for(const rgb of env.roadColors||[]){if(Math.max(...rgb)-Math.min(...rgb)>.025||rgb[2]>rgb[0]+.012)throw new Error('Road no longer neutral charcoal '+JSON.stringify(env.roadColors))}
+            await candidate.screenshot({path:'witch-pass15-mobile-430x932.png',fullPage:false});
+
+            await sleep(1050);
+            const active=await metrics(candidate,false);driftGate(active,start,'active runtime');
+            await candidate.keyboard.down('ArrowLeft');await sleep(700);const steering=await metrics(candidate,false);driftGate(steering,start,'steering runtime');await candidate.keyboard.up('ArrowLeft');
+            await sleep(1500);
+            const late=await metrics(candidate,false);driftGate(late,start,'late runtime');
+
+            await candidate.evaluate(async()=>{
               const pc=await import('playcanvas'),app=pc.app;
               const bean=app.root.findByName('Coffee Bean 0');if(bean){bean.enabled=true;bean.__active=true;bean.setPosition(3.55,1.15,-12.5)}
               const traffic=app.root.findByName('Oncoming Traffic 0');if(traffic)traffic.setPosition(-3.95,0,-17.5);
               window.WitchRide3D.state.mode='paused';
             });
             await sleep(300);
-            await page.screenshot({path:'witch-pass15-environment-430x932.png',fullPage:false});
+            await candidate.screenshot({path:'witch-pass15-environment-430x932.png',fullPage:false});
 
-            await page.evaluate(async()=>{
-              const pc=await import('playcanvas'),app=pc.app,cam=app.root.findByName('Chase Camera');
-              if(!cam?.camera)throw new Error('Chase Camera unavailable for close render');
-              const hidePrefixes=['Road Segment','Fog Bank','Realism Fog','Atmosphere Ground Mist','Dead Tree','Fence ','Pumpkin ','1938 Coupe','Oncoming Traffic','Coffee Bean','Cinematic Foreground','Cinematic Haunted Horizon','Pass10','Pass11','Brew & Brews Haunted Roastery','Moon Halo','Moon'];
+            await candidate.evaluate(async()=>{
+              const pc=await import('playcanvas'),app=pc.app,cam=app.root.findByName('Chase Camera'),witch=app.root.findByName('Witch Rig');
+              if(!cam?.camera||!witch)throw new Error('Close render camera/witch unavailable');
+              const s=window.WitchRide3D.state;s.mode='paused';s.x=0;s.targetX=0;s.velocityX=0;s.prevTurnVel=0;
+              witch.setPosition(0,1.55,2);witch.setEulerAngles(0,0,0);
+              const hidePrefixes=['Road Segment','Fog Bank','Realism Fog','Atmosphere Ground Mist','Dead Tree','Fence ','Pumpkin ','1938 Coupe','Oncoming Traffic','Coffee Bean','Cinematic Foreground','Pass10','Pass11','Brew & Brews Haunted Roastery','Moon Halo','Moon','Pass15 Soft Wet Light'];
               for(const e of [...(app.root.children||[])])if(hidePrefixes.some(p=>e.name?.startsWith(p)))e.enabled=false;
-              document.querySelector('#hud')?.classList.add('hidden');
-              for(const el of document.querySelectorAll('.screen'))el.classList.remove('open');
-              app.on('prerender',()=>{cam.setPosition(1.40,3.00,8.20);cam.lookAt(0,2.02,2.00);cam.camera.fov=44});
+              document.querySelector('#hud')?.classList.add('hidden');for(const el of document.querySelectorAll('.screen'))el.classList.remove('open');
+              app.on('prerender',()=>{cam.setPosition(2.15,3.55,10.25);cam.lookAt(0,3.05,1.80);cam.camera.fov=42});
             });
-            await sleep(520);
-            await page.screenshot({path:'witch-pass15-close-430x932.png',fullPage:false});
-            if(errors.length)throw new Error('Browser errors '+errors.join(' | '));
-            console.log('PASS15_PLAYCANVAS_GATE',JSON.stringify({LIMITS,metrics,boot,gameplayState}));
+            await sleep(420);
+            await candidate.screenshot({path:'witch-pass15-close-430x932.png',fullPage:false});
+
+            if(candidate.__errors.length)throw new Error('Candidate browser errors '+candidate.__errors.join(' | '));
+            if(approved.__errors.length)throw new Error('September 8 baseline browser errors '+approved.__errors.join(' | '));
+            console.log('SEPT8_RESTORE_PLAYCANVAS_GATE',JSON.stringify({LIMITS,baseline,start,active,steering,late,boot}));
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
-      - name: Upload Pass 15 inspection renders
+
+      - name: Download actual September 8 approved screenshots and build side-by-side
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          curl -fL \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/10079209833/zip" \
+            -o /tmp/witch-pass14-approved.zip
+          rm -rf /tmp/witch-pass14-approved-renders
+          mkdir -p /tmp/witch-pass14-approved-renders
+          unzip -q /tmp/witch-pass14-approved.zip -d /tmp/witch-pass14-approved-renders
+          cp /tmp/witch-pass14-approved-renders/witch-pass14-close-430x932.png witch-pass14-approved-close-430x932.png
+          cp /tmp/witch-pass14-approved-renders/witch-pass14-mobile-430x932.png witch-pass14-approved-mobile-430x932.png
+          python - <<'PY'
+          from PIL import Image, ImageDraw
+          def pair(left_path,right_path,out_path,left_label,right_label):
+              a=Image.open(left_path).convert('RGB'); b=Image.open(right_path).convert('RGB')
+              h=max(a.height,b.height); canvas=Image.new('RGB',(a.width+b.width,h+42),(10,10,10));
+              canvas.paste(a,(0,42));canvas.paste(b,(a.width,42));d=ImageDraw.Draw(canvas)
+              d.text((12,13),left_label,fill=(255,255,255));d.text((a.width+12,13),right_label,fill=(255,255,255));canvas.save(out_path)
+          pair('witch-pass14-approved-close-430x932.png','witch-pass15-close-430x932.png','witch-pass15-vs-sept8-close.png','SEPT 8 APPROVED PASS 14','PASS 15 RESTORE')
+          pair('witch-pass14-approved-mobile-430x932.png','witch-pass15-mobile-430x932.png','witch-pass15-vs-sept8-mobile.png','SEPT 8 APPROVED PASS 14','PASS 15 RESTORE')
+          PY
+
+      - name: Upload September 8 restore inspection renders
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: witch-pass15-material-renders
+          name: witch-pass15-sept8-restore-renders
           path: |
             witch-pass15-mobile-430x932.png
             witch-pass15-environment-430x932.png
             witch-pass15-close-430x932.png
+            witch-pass14-approved-mobile-430x932.png
+            witch-pass14-approved-close-430x932.png
+            witch-pass15-vs-sept8-mobile.png
+            witch-pass15-vs-sept8-close.png
           if-no-files-found: error
           retention-days: 7
-      - name: Confirm mesh stayed locked after runtime gate
+
+      - name: Final freeze verification
         shell: bash
         run: |
           test "$(git hash-object halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb)" = "8ec46a27aa0b60244061ce8cc81c2d603a97b1c5"
-          test "$(git hash-object halloween-radio/games/witch-ride-3d/tools/build_witch_pass14.py)" = "7dc2af89d1ecaca8a176026463dca9ff41bd1ac8"
-          git diff --exit-code -- halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb halloween-radio/games/witch-ride-3d/tools/build_witch_pass14.py halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json
+          test "$(git hash-object halloween-radio/games/witch-ride-3d/game.js)" = "a4d32f486d0b70900924196a0307cf2b2faa4583"
+          test "$(git hash-object halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js)" = "3abe399a343638b45c7fe143423df0cc3ca53f90"
+          test "$(git hash-object halloween-radio/games/witch-ride-3d/index.html)" = "654a2c5da88e3cc35be6106e0e5de094248e8614"
+          git diff --exit-code -- halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb halloween-radio/games/witch-ride-3d/game.js halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js halloween-radio/games/witch-ride-3d/index.html
