@@ -1,64 +1,66 @@
 /* Brew & Brews Christmas Radio — rendered art skin over the real radio engine.
-   Base christmas-radio.css remains the fallback/skeleton. */
-:root{--art-stage-w:430px;--art-stage-h:854px;--nav-h:76px}
+   The illustration supplies the atmosphere/materials. HTML remains the working radio. */
+:root{--art-ratio:.5627990431;--nav-h:86px;--station-position:66.5%}
 
-/* One production image drives the atmosphere. It is shown once crisply in the center,
-   with the same cached asset softly filling any side gutters on wider screens. */
-.scene{z-index:0;inset:0 0 var(--nav-h);background:#120b07;overflow:hidden}
-.scene::before{content:"";position:absolute;inset:-22px;background:url("../../artwork/flagship-roastery.avif") center/cover no-repeat;filter:blur(18px) brightness(.56) saturate(.85);transform:scale(1.06)}
-.scene::after{content:"";position:absolute;inset:0;background:url("../../artwork/flagship-roastery.avif") top center/auto 100% no-repeat;filter:none;pointer-events:none}
+/* Preserve the source artwork's proportions. Tall phones crop only the outer room edges;
+   the radio itself is never stretched. */
+.scene{position:fixed;z-index:0;inset:0;background:#120b07;overflow:hidden}
+.scene::before{content:"";position:absolute;inset:-28px;background:url("../../artwork/flagship-roastery.avif") center/cover no-repeat;filter:blur(22px) brightness(.48) saturate(.9);transform:scale(1.08)}
+.scene::after{content:"";position:absolute;inset:0;background:url("../../artwork/flagship-roastery.avif") center/auto 100% no-repeat;pointer-events:none}
 .scene>*{display:none!important}
 
-/* The live UI uses the same portrait coordinate system as the artwork. */
-.app{position:fixed;z-index:5;top:0;bottom:var(--nav-h);left:50%;translate:-50% 0;width:min(100vw,var(--art-stage-w));max-width:none;margin:0;padding:0;pointer-events:none}
+/* This stage exactly follows the rendered image coordinate system. */
+.app{position:fixed;z-index:5;top:0;left:50%;translate:-50% 0;width:calc(100dvh * var(--art-ratio));height:100dvh;max-width:none;margin:0;padding:0;pointer-events:none}
 .scene-copy{display:none!important}
 .radio{position:absolute;inset:0;margin:0;padding:0;max-width:none;border:0;border-radius:0;background:none;box-shadow:none;pointer-events:none}
 .radio::before,.radio::after,.radio-garland,.radio-crown,.radio-location{display:none!important}
 
-/* Live tuner: art supplies the brass bezel; this glass overlay masks the baked needle
-   so every station can move the real needle accurately. */
-.dial-bezel{position:absolute;z-index:8;left:19%;top:57.25%;width:66.5%;height:5.7%;margin:0;padding:3px;border:0;border-radius:6px;background:rgba(8,7,5,.74);box-shadow:inset 0 0 12px #000,0 0 0 1px rgba(241,186,83,.18);pointer-events:auto}
-.dial-scale{height:100%;padding:0 4%;border:0;border-radius:4px;background:linear-gradient(180deg,rgba(3,3,2,.72),rgba(18,12,7,.74));color:#ecd18f;font-size:clamp(.53rem,2.5vw,.72rem);box-shadow:none}
-.dial-scale span::after{top:58%;height:18%}
-.dial-scale i{top:-2px;bottom:-2px;width:2px;background:#ef3d31;box-shadow:0 0 8px #ff5748}
-.dial-input{pointer-events:auto}
+/* Use the beautiful tuner already painted into the artwork. The DOM layer supplies only
+   the live needle and the invisible touch/drag target. */
+.dial-bezel{position:absolute;z-index:8;left:25.55%;top:50.45%;width:50.7%;height:4.45%;margin:0;padding:0;border:0;border-radius:5px;background:transparent;box-shadow:none;pointer-events:auto;overflow:visible}
+.dial-scale{position:absolute;inset:0;height:100%;padding:0;border:0;background:transparent;box-shadow:none;color:transparent;pointer-events:none}
+.dial-scale span{visibility:hidden}
+.dial-scale span::after{display:none}
+.dial-scale i{position:absolute;z-index:2;top:3%;bottom:3%;left:var(--station-position);width:2px;background:#f03a30;box-shadow:0 0 7px #ff5c4b;transition:left .32s cubic-bezier(.2,.7,.2,1)}
+.dial-input{position:absolute;inset:-18% -2%;width:104%;height:136%;opacity:0;pointer-events:auto;cursor:pointer;touch-action:pan-y}
 
-/* Hit targets align to the three physical controls already painted into the art. */
-.control-deck{position:absolute;z-index:9;left:9.3%;top:62.35%;width:81.4%;height:10.9%;margin:0;display:block;pointer-events:none}
-.knob-control{position:absolute;top:0;width:18%;height:100%;display:block;color:transparent;pointer-events:auto}
-.volume-control{left:0}
-.tuner-control{right:0}
+/* The control deck is a transparent coordinate plane over the illustrated hardware. */
+.control-deck{position:absolute;z-index:9;inset:0;width:100%;height:100%;margin:0;display:block;pointer-events:none}
+.knob-control{position:absolute;display:block;color:transparent;pointer-events:auto}
+.volume-control{left:18.3%;top:54.55%;width:13.4%;height:8.1%}
+.tuner-control{left:69.7%;top:54.55%;width:13.4%;height:8.1%}
 .knob-control .knob{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;box-shadow:none}
 .knob-control .knob::after,.knob-control .knob i,.knob-control>b{display:none}
-.knob-control input{inset:0;width:100%;height:100%;opacity:0;pointer-events:auto;cursor:pointer}
-.play-button{position:absolute;left:50%;top:50%;translate:-50% -50%;width:24%;height:auto;aspect-ratio:1;border:0;border-radius:50%;background:transparent;box-shadow:none;pointer-events:auto;cursor:pointer;touch-action:manipulation}
+.knob-control input{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:auto;cursor:pointer;touch-action:pan-y}
+
+.play-button{position:absolute;z-index:3;left:50.16%;top:58.91%;translate:-50% -50%;width:13.2%;height:auto;aspect-ratio:1;border:0;border-radius:50%;background:transparent;box-shadow:none;pointer-events:auto;cursor:pointer;touch-action:manipulation}
 .play-button .play-icon{opacity:0}
-.play-button:active{background:rgba(255,190,85,.08);box-shadow:0 0 24px rgba(255,171,52,.35)}
-.play-button[aria-pressed=true]{background:rgba(18,10,5,.62);box-shadow:0 0 0 2px rgba(244,188,91,.52),0 0 28px rgba(255,171,52,.38)}
-.play-button[aria-pressed=true] .play-icon{opacity:1;display:grid;place-items:center;color:#ffe0a0;font:800 1.45rem/1 system-ui,sans-serif;translate:0 0;text-shadow:0 0 10px #ffb33f}
+.play-button:active{background:rgba(255,190,85,.08);box-shadow:0 0 24px rgba(255,171,52,.32)}
+.play-button[aria-pressed=true]{background:rgba(20,10,5,.78);box-shadow:0 0 0 2px rgba(244,188,91,.6),inset 0 0 18px #000,0 0 27px rgba(255,171,52,.42)}
+.play-button[aria-pressed=true] .play-icon{opacity:1;display:grid;place-items:center;color:#ffe0a0;font:800 clamp(.8rem,2.8dvh,1.35rem)/1 system-ui,sans-serif;translate:0 0;text-shadow:0 0 10px #ffb33f}
 
-/* The flagship art already contains its station label. Other stations get a live wood-glass
-   readout over that same area until their dedicated lazy-loaded art skins are added. */
+/* 103.1 is baked beautifully into the flagship art. Temporary live readout appears only
+   when another station is selected, until that station receives its own rendered skin. */
 .station-readout{display:none}
-body:not([data-station="bb-christmas-radio"]) .station-readout{display:block;position:absolute;z-index:10;left:21%;top:71.5%;width:58%;padding:7px 9px;border:1px solid rgba(227,177,95,.36);border-radius:8px;background:rgba(42,19,8,.88);box-shadow:0 5px 16px #0008;text-align:center;pointer-events:none}
-body:not([data-station="bb-christmas-radio"]) .station-readout>strong{font-size:.92rem;color:#ffe0a5}
-body:not([data-station="bb-christmas-radio"]) .station-readout h2{font-size:.78rem;color:#fff0d1;margin:1px 0}
+body:not([data-station="bb-christmas-radio"]) .station-readout{display:block;position:absolute;z-index:10;left:31%;top:63.45%;width:38%;padding:6px 8px;border:1px solid rgba(227,177,95,.42);border-radius:8px;background:rgba(35,15,7,.91);box-shadow:0 5px 16px #0009;text-align:center;pointer-events:none}
+body:not([data-station="bb-christmas-radio"]) .station-readout>strong{display:block;font-size:clamp(.68rem,1.75dvh,.9rem);color:#ffe0a5}
+body:not([data-station="bb-christmas-radio"]) .station-readout h2{font-size:clamp(.58rem,1.5dvh,.78rem);color:#fff0d1;margin:1px 0}
 body:not([data-station="bb-christmas-radio"]) .station-readout>p{display:none}
-body:not([data-station="bb-christmas-radio"]) .now-line{margin-top:3px;font-size:.45rem;gap:4px}
+body:not([data-station="bb-christmas-radio"]) .now-line{margin-top:3px;font-size:.42rem;gap:4px}
 
-/* Keep the bottom navigation truly live; panels float over the art without stopping audio. */
-.bottom-nav{z-index:30;height:var(--nav-h);background:linear-gradient(180deg,rgba(43,20,9,.96),rgba(24,11,6,.99));backdrop-filter:blur(10px);border-top:1px solid rgba(235,190,112,.28)}
+/* The real navigation intentionally covers the navigation painted into the concept art.
+   This prevents duplicate controls and keeps every target accessible/reliable. */
+.bottom-nav{position:fixed;z-index:30;left:0;right:0;bottom:0;height:calc(var(--nav-h) + env(safe-area-inset-bottom));padding:5px max(4px,env(safe-area-inset-left)) env(safe-area-inset-bottom) max(4px,env(safe-area-inset-right));display:grid;grid-template-columns:repeat(5,1fr);background:repeating-linear-gradient(90deg,rgba(255,255,255,.018) 0 1px,transparent 1px 5px),linear-gradient(180deg,rgba(63,30,14,.985),rgba(28,12,6,.995));border-top:1px solid rgba(235,190,112,.3);box-shadow:0 -8px 25px #0007;backdrop-filter:none}
+.bottom-nav button{min-width:0;border:0;border-right:1px solid rgba(218,170,90,.3);background:transparent;color:#f7e7c6;display:grid;place-items:center;align-content:center;gap:4px;padding:4px 1px;cursor:pointer;touch-action:manipulation}
+.bottom-nav button:last-child{border-right:0}.bottom-nav .nav-icon{font:700 1.24rem/1 system-ui,sans-serif;color:#ffe8b4}.bottom-nav b{font:600 clamp(.52rem,2.5vw,.67rem)/1.05 system-ui,sans-serif;white-space:nowrap}.bottom-nav button:active,.bottom-nav button[aria-current="page"]{background:rgba(238,178,83,.11);box-shadow:inset 0 3px rgba(238,178,83,.48)}
 .app-panel{z-index:40}.panel-scrim{z-index:35}
 
-/* Keyboard users still get visible focus even though the physical controls come from artwork. */
-.play-button:focus-visible,.dial-input:focus-visible,.knob-control:focus-within{outline:2px solid #ffe0a0;outline-offset:3px;border-radius:10px}
+/* Accessibility stays visible even though the physical hardware is painted. */
+.play-button:focus-visible,.dial-input:focus-visible,.knob-control:focus-within{outline:2px solid #ffe0a0;outline-offset:3px;border-radius:12px}
 
-@media(max-width:480px){
-  .scene::before{display:none}
-  .scene::after{background-size:100% 100%}
-  .app{width:100vw}
+@media(min-aspect-ratio:941/1672){
+  /* On wider screens keep the entire image visible and let the blurred copy fill gutters. */
+  .scene::after{background-size:auto 100%}
 }
-@media(min-width:481px){
-  .app{width:min(var(--art-stage-w),100vw)}
-}
+@media(max-height:700px){:root{--nav-h:70px}.bottom-nav .nav-icon{font-size:1.05rem}.bottom-nav b{font-size:.5rem}}
 @media(prefers-reduced-motion:reduce){.dial-scale i{transition:none}}
