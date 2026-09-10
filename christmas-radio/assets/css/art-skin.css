@@ -15,7 +15,7 @@
 .radio{position:absolute;inset:0;margin:0;padding:0;max-width:none;border:0;border-radius:0;background:none;box-shadow:none;pointer-events:none}
 .radio::before,.radio::after,.radio-garland,.radio-crown,.radio-location{display:none!important}
 
-/* Use the beautiful tuner already painted into the artwork. The DOM layer supplies only
+/* Use the tuner already painted into the artwork. The DOM layer supplies only
    the live needle and the invisible touch/drag target. */
 .dial-bezel{position:absolute;z-index:8;left:25.55%;top:50.45%;width:50.7%;height:4.45%;margin:0;padding:0;border:0;border-radius:5px;background:transparent;box-shadow:none;pointer-events:auto;overflow:visible}
 .dial-scale{position:absolute;inset:0;height:100%;padding:0;border:0;background:transparent;box-shadow:none;color:transparent;pointer-events:none}
@@ -24,14 +24,17 @@
 .dial-scale i{position:absolute;z-index:2;top:3%;bottom:3%;left:var(--station-position);width:2px;background:#f03a30;box-shadow:0 0 7px #ff5c4b;transition:left .32s cubic-bezier(.2,.7,.2,1)}
 .dial-input{position:absolute;inset:-18% -2%;width:104%;height:136%;opacity:0;pointer-events:auto;cursor:pointer;touch-action:pan-y}
 
-/* The control deck is a transparent coordinate plane over the illustrated hardware. */
+/* Transparent live hit areas over the painted controls. A tiny moving highlight is the
+   only extra art, so the knob visibly responds without replacing the rendered hardware. */
 .control-deck{position:absolute;z-index:9;inset:0;width:100%;height:100%;margin:0;display:block;pointer-events:none}
 .knob-control{position:absolute;display:block;color:transparent;pointer-events:auto}
 .volume-control{left:18.3%;top:54.55%;width:13.4%;height:8.1%}
 .tuner-control{left:69.7%;top:54.55%;width:13.4%;height:8.1%}
-.knob-control .knob{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;box-shadow:none}
-.knob-control .knob::after,.knob-control .knob i,.knob-control>b{display:none}
+.knob-control .knob{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;box-shadow:none;transform:rotate(var(--knob-angle,0deg));transition:transform .16s ease}
+.knob-control .knob::after,.knob-control>b{display:none}
+.knob-control .knob i{display:block;position:absolute;left:50%;top:8%;width:2px;height:17%;translate:-50% 0;border-radius:2px;background:#ffe0a0;box-shadow:0 0 5px #ffb445,0 1px 1px #000}
 .knob-control input{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:auto;cursor:pointer;touch-action:pan-y}
+.knob-control:active .knob i,.knob-control:focus-within .knob i{box-shadow:0 0 9px #ffc45e,0 1px 1px #000}
 
 .play-button{position:absolute;z-index:3;left:50.16%;top:58.91%;translate:-50% -50%;width:13.2%;height:auto;aspect-ratio:1;border:0;border-radius:50%;background:transparent;box-shadow:none;pointer-events:auto;cursor:pointer;touch-action:manipulation}
 .play-button .play-icon{opacity:0}
@@ -39,8 +42,8 @@
 .play-button[aria-pressed=true]{background:rgba(20,10,5,.78);box-shadow:0 0 0 2px rgba(244,188,91,.6),inset 0 0 18px #000,0 0 27px rgba(255,171,52,.42)}
 .play-button[aria-pressed=true] .play-icon{opacity:1;display:grid;place-items:center;color:#ffe0a0;font:800 clamp(.8rem,2.8dvh,1.35rem)/1 system-ui,sans-serif;translate:0 0;text-shadow:0 0 10px #ffb33f}
 
-/* 103.1 is baked beautifully into the flagship art. Temporary live readout appears only
-   when another station is selected, until that station receives its own rendered skin. */
+/* 103.1 is baked into the flagship art. Temporary live readout appears only when another
+   station is selected, until that station receives its own rendered skin. */
 .station-readout{display:none}
 body:not([data-station="bb-christmas-radio"]) .station-readout{display:block;position:absolute;z-index:10;left:31%;top:63.45%;width:38%;padding:6px 8px;border:1px solid rgba(227,177,95,.42);border-radius:8px;background:rgba(35,15,7,.91);box-shadow:0 5px 16px #0009;text-align:center;pointer-events:none}
 body:not([data-station="bb-christmas-radio"]) .station-readout>strong{display:block;font-size:clamp(.68rem,1.75dvh,.9rem);color:#ffe0a5}
@@ -48,19 +51,13 @@ body:not([data-station="bb-christmas-radio"]) .station-readout h2{font-size:clam
 body:not([data-station="bb-christmas-radio"]) .station-readout>p{display:none}
 body:not([data-station="bb-christmas-radio"]) .now-line{margin-top:3px;font-size:.42rem;gap:4px}
 
-/* The real navigation intentionally covers the navigation painted into the concept art.
-   This prevents duplicate controls and keeps every target accessible/reliable. */
+/* Real navigation covers the painted concept navigation so there is only one usable layer. */
 .bottom-nav{position:fixed;z-index:30;left:0;right:0;bottom:0;height:calc(var(--nav-h) + env(safe-area-inset-bottom));padding:5px max(4px,env(safe-area-inset-left)) env(safe-area-inset-bottom) max(4px,env(safe-area-inset-right));display:grid;grid-template-columns:repeat(5,1fr);background:repeating-linear-gradient(90deg,rgba(255,255,255,.018) 0 1px,transparent 1px 5px),linear-gradient(180deg,rgba(63,30,14,.985),rgba(28,12,6,.995));border-top:1px solid rgba(235,190,112,.3);box-shadow:0 -8px 25px #0007;backdrop-filter:none}
 .bottom-nav button{min-width:0;border:0;border-right:1px solid rgba(218,170,90,.3);background:transparent;color:#f7e7c6;display:grid;place-items:center;align-content:center;gap:4px;padding:4px 1px;cursor:pointer;touch-action:manipulation}
 .bottom-nav button:last-child{border-right:0}.bottom-nav .nav-icon{font:700 1.24rem/1 system-ui,sans-serif;color:#ffe8b4}.bottom-nav b{font:600 clamp(.52rem,2.5vw,.67rem)/1.05 system-ui,sans-serif;white-space:nowrap}.bottom-nav button:active,.bottom-nav button[aria-current="page"]{background:rgba(238,178,83,.11);box-shadow:inset 0 3px rgba(238,178,83,.48)}
 .app-panel{z-index:40}.panel-scrim{z-index:35}
 
-/* Accessibility stays visible even though the physical hardware is painted. */
 .play-button:focus-visible,.dial-input:focus-visible,.knob-control:focus-within{outline:2px solid #ffe0a0;outline-offset:3px;border-radius:12px}
 
-@media(min-aspect-ratio:941/1672){
-  /* On wider screens keep the entire image visible and let the blurred copy fill gutters. */
-  .scene::after{background-size:auto 100%}
-}
 @media(max-height:700px){:root{--nav-h:70px}.bottom-nav .nav-icon{font-size:1.05rem}.bottom-nav b{font-size:.5rem}}
-@media(prefers-reduced-motion:reduce){.dial-scale i{transition:none}}
+@media(prefers-reduced-motion:reduce){.dial-scale i,.knob-control .knob{transition:none}}
