@@ -21,7 +21,8 @@
 .dial-scale{position:absolute;inset:0;height:100%;padding:0;border:0;background:transparent;box-shadow:none;color:transparent;pointer-events:none}
 .dial-scale span{visibility:hidden}
 .dial-scale span::after{display:none}
-.dial-scale i{position:absolute;z-index:2;top:3%;bottom:3%;left:var(--station-position);width:2px;background:#f03a30;box-shadow:0 0 7px #ff5c4b;transition:left .32s cubic-bezier(.2,.7,.2,1)}
+.dial-scale i{position:absolute;z-index:2;top:3%;bottom:3%;left:var(--station-position);width:2px;background:#f03a30;box-shadow:0 0 7px #ff5c4b;transition:left .32s cubic-bezier(.2,.7,.2,1),opacity .16s ease}
+body[data-station="bb-christmas-radio"] .dial-scale i{opacity:0}
 .dial-input{position:absolute;inset:-18% -2%;width:104%;height:136%;opacity:0;pointer-events:auto;cursor:pointer;touch-action:pan-y}
 
 /* Transparent live hit areas over the painted controls. A tiny moving highlight is the
