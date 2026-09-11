@@ -98,7 +98,15 @@ jobs:
             await page.waitForFunction(()=>document.querySelectorAll('#stationGrid .station-card').length===6,{timeout:10000});
             await page.waitForFunction(()=>document.querySelector('#frequencyLabel')?.textContent.trim()==='103.1',{timeout:10000});
             const domReadyMs=Date.now()-started;
-            const audioState=()=>page.$eval('#christmasRadioAudio',a=>({paused:a.paused,src:a.getAttribute('src'),currentSrc:a.currentSrc,volume:a.volume}));
+            const audioState=()=>page.$eval('#christmasRadioAudio',a=>({
+              paused:a.paused,
+              src:a.getAttribute('src'),
+              currentSrc:a.currentSrc,
+              volume:a.volume,
+              readyState:a.readyState,
+              networkState:a.networkState,
+              currentTime:a.currentTime
+            }));
             const title=()=>page.$eval('#nowPlayingTitle',e=>e.textContent.trim());
             const freq=()=>page.$eval('#frequencyLabel',e=>e.textContent.trim());
             const tune=async index=>{
@@ -106,6 +114,13 @@ jobs:
             };
             const ended=()=>page.$eval('#christmasRadioAudio',a=>a.dispatchEvent(new Event('ended')));
             const waitTitle=t=>page.waitForFunction(t=>document.querySelector('#nowPlayingTitle')?.textContent.trim()===t,{timeout:10000},t);
+            const waitAudioFile=async file=>{
+              await page.waitForFunction(file=>document.querySelector('#christmasRadioAudio')?.getAttribute('src')===`audio/${file}`,{timeout:10000},file);
+              await sleep(250);
+              const state=await audioState();
+              if(!mp3Requests.some(u=>u.includes(file)))throw new Error(`Expected MP3 request not observed for ${file}: ${JSON.stringify({state,mp3Requests})}`);
+              return state;
+            };
 
             if(!(await audioState()).paused)throw new Error('Audio autoplayed on boot');
             if(mp3Requests.length)throw new Error('MP3 requested before explicit Play: '+mp3Requests.join(' | '));
@@ -132,19 +147,18 @@ jobs:
             await page.click('#playButton');
             await page.waitForFunction(()=>!document.querySelector('#christmasRadioAudio').paused,{timeout:15000});
             if(await page.$eval('#signalLabel',e=>e.textContent.trim())!=='ON AIR')throw new Error('ON AIR state did not engage');
-            let state=await audioState();
-            if(!state.currentSrc.endsWith('/christmas-radio/audio/bbxmas-x04-christmas-morning-on-amity.mp3'))throw new Error('Wrong flagship source: '+state.currentSrc);
-            if(!mp3Requests.some(u=>u.includes('bbxmas-x04-christmas-morning-on-amity.mp3')))throw new Error('Flagship MP3 was never requested');
+            let state=await waitAudioFile('bbxmas-x04-christmas-morning-on-amity.mp3');
+            if(state.paused)throw new Error('Flagship source selected but audio is paused: '+JSON.stringify(state));
 
             // Natural end advances in curated order and remains playing.
             await ended();await waitTitle('Lights in the Roastery');
-            await page.waitForFunction(()=>document.querySelector('#christmasRadioAudio').currentSrc.includes('bbxmas-m02-lights-in-the-roastery.mp3'),{timeout:10000});
-            if((await audioState()).paused)throw new Error('Playback stopped after ended event');
+            state=await waitAudioFile('bbxmas-m02-lights-in-the-roastery.mp3');
+            if(state.paused)throw new Error('Playback stopped after ended event: '+JSON.stringify(state));
 
             // Switching stations while ON AIR must continue playback on the new station opener.
             await tune(2);await waitTitle('Christmas on the County Line');
-            await page.waitForFunction(()=>document.querySelector('#christmasRadioAudio').currentSrc.includes('bbxmas-m03-christmas-on-the-county-line.mp3'),{timeout:10000});
-            if((await audioState()).paused)throw new Error('Station switch stopped active playback');
+            state=await waitAudioFile('bbxmas-m03-christmas-on-the-county-line.mp3');
+            if(state.paused)throw new Error('Station switch stopped active playback: '+JSON.stringify(state));
             if(await freq()!=='96.9')throw new Error('Station readout did not follow tuning');
 
             // Pause, retune, and confirm the paused station change does not fetch its audio until Play.
@@ -159,9 +173,17 @@ jobs:
             // Play Snowfall AM and force a complete 4-track loop wrap.
             await page.click('#playButton');
             await page.waitForFunction(()=>!document.querySelector('#christmasRadioAudio').paused,{timeout:15000});
-            for(const nextTitle of ['Christmas at Our House','All Through Louisburg','Snowfall Waltz','Christmas ’49']){
+            await waitAudioFile('bbxmas-m18-christmas-49.mp3');
+            const snowfallLoop=[
+              ['Christmas at Our House','bbxmas-x03-christmas-at-our-house.mp3'],
+              ['All Through Louisburg','bbxmas-m09-all-through-louisburg.mp3'],
+              ['Snowfall Waltz','bbxmas-i01-snowfall-waltz.mp3'],
+              ['Christmas ’49','bbxmas-m18-christmas-49.mp3']
+            ];
+            for(const [nextTitle,file] of snowfallLoop){
               await ended();await waitTitle(nextTitle);
-              await page.waitForFunction(()=>!document.querySelector('#christmasRadioAudio').paused,{timeout:10000});
+              state=await waitAudioFile(file);
+              if(state.paused)throw new Error(`Loop transition stopped playback at ${nextTitle}: ${JSON.stringify(state)}`);
             }
 
             // Volume survives reload but playback intent does not.
