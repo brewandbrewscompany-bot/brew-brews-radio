@@ -1,0 +1,53 @@
+name: Christmas Radio Phase 7.1 Wire Accepted Artwork
+
+on:
+  push:
+    branches:
+      - christmas-radio-phase-7-1-crisp-accepted-art
+    paths:
+      - .github/workflows/christmas-radio-phase-7-1-wire-accepted-art.yml
+
+permissions:
+  contents: write
+
+jobs:
+  wire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout Phase 7.1
+        uses: actions/checkout@v4
+        with:
+          ref: christmas-radio-phase-7-1-crisp-accepted-art
+
+      - name: Point production skin and preload at exact accepted master
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          css=Path('christmas-radio/assets/css/art-skin.css')
+          text=css.read_text()
+          old='flagship-roastery-stage.jpg'
+          if text.count(old) != 2:
+              raise SystemExit(f'expected exactly 2 production JPG references, found {text.count(old)}')
+          css.write_text(text.replace(old,'flagship-roastery-stage-approved.png'))
+
+          index=Path('christmas-radio/index.html')
+          html=index.read_text()
+          old_preload='artwork/flagship-roastery.avif'
+          if old_preload not in html:
+              raise SystemExit('expected AVIF preload reference not found')
+          index.write_text(html.replace(old_preload,'artwork/flagship-roastery-stage-approved.png'))
+          PY
+          git diff --check
+          test "$(grep -o 'flagship-roastery-stage-approved.png' christmas-radio/assets/css/art-skin.css | wc -l)" -eq 2
+          grep -q 'artwork/flagship-roastery-stage-approved.png' christmas-radio/index.html
+
+      - name: Commit accepted artwork wiring
+        run: |
+          git config user.name 'brewandbrewscompany-bot'
+          git config user.email 'brewandbrewscompany@gmail.com'
+          git add christmas-radio/assets/css/art-skin.css christmas-radio/index.html
+          git commit -m 'Use exact accepted artwork for Christmas Radio skin'
+          git push origin HEAD:christmas-radio-phase-7-1-crisp-accepted-art
