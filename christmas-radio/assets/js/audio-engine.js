@@ -55,7 +55,12 @@ export class ChristmasRadioEngine extends EventTarget{
     const volume=clamp(Number(value)||0,0,1);this.audio.volume=volume;
     localStorage.setItem('bbxmas:volume',String(volume));this.#emit('volume',{...this.snapshot(),volume});
   }
-  savedVolume(fallback=.8){const n=Number(localStorage.getItem('bbxmas:volume'));return Number.isFinite(n)?clamp(n,0,1):fallback}
+  savedVolume(fallback=.8){
+    const fallbackNumber=Number(fallback),safeFallback=Number.isFinite(fallbackNumber)?clamp(fallbackNumber,0,1):.8;
+    const stored=localStorage.getItem('bbxmas:volume');
+    if(stored===null||stored.trim()==='')return safeFallback;
+    const n=Number(stored);return Number.isFinite(n)?clamp(n,0,1):safeFallback;
+  }
 
   async selectStation(stationId,{autoplay=this.playbackIntent}={}){
     const id=String(stationId),changed=id!==this.activeStationId;
