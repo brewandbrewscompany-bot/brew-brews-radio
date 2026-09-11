@@ -1,0 +1,215 @@
+name: Christmas Radio Phase 6 Playback Check
+
+on:
+  push:
+    branches: [christmas-radio-phase-6-playback-validation]
+    paths:
+      - 'christmas-radio/**'
+      - '.github/workflows/christmas-radio-playback-check.yml'
+  workflow_dispatch:
+
+jobs:
+  playback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Phase 5 library and source
+        run: |
+          node --input-type=module --check < christmas-radio/assets/js/audio-engine.js
+          node --input-type=module --check < christmas-radio/assets/js/christmas-radio.js
+          python - <<'PY'
+          from collections import Counter
+          from pathlib import Path
+          import hashlib, json
+
+          root=Path('christmas-radio')
+          tracks=json.loads((root/'data/tracks.json').read_text(encoding='utf-8'))
+          mastering=json.loads((root/'data/mastering.json').read_text(encoding='utf-8'))
+          stations=json.loads((root/'data/stations.json').read_text(encoding='utf-8'))
+          rows=tracks['tracks']
+          expected={
+              'snowfall-am':4,
+              'fireside':5,
+              'sleigh-bell-rock':3,
+              'candlelight':6,
+              'bb-christmas-radio':13,
+              'north-pole-after-hours':4,
+          }
+          assert tracks['status']=='phase-5-playable-library'
+          assert tracks['audioPolicy']['initialPreload']=='none'
+          assert tracks['audioPolicy']['prepareNextAfterPlaybackStarts'] is True
+          assert tracks['audioPolicy']['rotationMode']=='curated-loop'
+          assert len(rows)==35, len(rows)
+          assert Counter(r['stationId'] for r in rows)==Counter(expected)
+          assert len(stations['stations'])==6
+          assert stations['defaultStationId']=='bb-christmas-radio'
+          masters={m['catalogId']:m for m in mastering['masters']}
+          assert len(masters)==13
+          assert {r['masterId'] for r in rows}==set(masters)
+          for master in masters.values():
+              path=root/'audio'/master['file']
+              assert path.exists(), path
+              assert path.stat().st_size==master['sizeBytes'], path
+              digest=hashlib.sha256(path.read_bytes()).hexdigest()
+              assert digest==master['sha256'], path
+          html=(root/'index.html').read_text(encoding='utf-8')
+          engine=(root/'assets/js/audio-engine.js').read_text(encoding='utf-8')
+          assert 'preload="none"' in html
+          assert "this.preloader.preload='none'" in engine
+          assert "this.audio.preload='none'" in engine
+          assert '#prepareNext()' in engine
+          print('Phase 6 source gate passed: 13 masters, 35 placements, 6 stations, hashes verified.')
+          PY
+
+      - name: Install browser helper
+        run: npm install --no-save puppeteer-core@24.16.0
+
+      - name: Browser playback regression at 430x932
+        run: |
+          mkdir -p phase6-output
+          python3 -m http.server 8000 --directory . >/tmp/christmas-radio-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_BIN"
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const puppeteer=require('puppeteer-core');
+          const fs=require('fs');
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          (async()=>{
+            const browser=await puppeteer.launch({
+              executablePath:process.env.CHROME_BIN,
+              headless:true,
+              args:['--no-sandbox','--disable-dev-shm-usage','--autoplay-policy=no-user-gesture-required','--mute-audio']
+            });
+            const page=await browser.newPage();
+            await page.setViewport({width:430,height:932,deviceScaleFactor:1});
+            const pageErrors=[];
+            const mp3Requests=[];
+            page.on('pageerror',e=>pageErrors.push(String(e)));
+            page.on('request',r=>{if(/\.mp3(?:\?|$)/i.test(r.url()))mp3Requests.push(r.url())});
+
+            const started=Date.now();
+            await page.goto('http://127.0.0.1:8000/christmas-radio/',{waitUntil:'domcontentloaded'});
+            await page.waitForFunction(()=>document.querySelectorAll('#stationGrid .station-card').length===6,{timeout:10000});
+            await page.waitForFunction(()=>document.querySelector('#frequencyLabel')?.textContent.trim()==='103.1',{timeout:10000});
+            const domReadyMs=Date.now()-started;
+            const audioState=()=>page.$eval('#christmasRadioAudio',a=>({paused:a.paused,src:a.getAttribute('src'),currentSrc:a.currentSrc,volume:a.volume}));
+            const title=()=>page.$eval('#nowPlayingTitle',e=>e.textContent.trim());
+            const freq=()=>page.$eval('#frequencyLabel',e=>e.textContent.trim());
+            const tune=async index=>{
+              await page.$eval('#stationTuner',(el,index)=>{el.value=String(index);el.dispatchEvent(new Event('input',{bubbles:true}))},index);
+            };
+            const ended=()=>page.$eval('#christmasRadioAudio',a=>a.dispatchEvent(new Event('ended')));
+            const waitTitle=t=>page.waitForFunction(t=>document.querySelector('#nowPlayingTitle')?.textContent.trim()===t,{timeout:10000},t);
+
+            if(!(await audioState()).paused)throw new Error('Audio autoplayed on boot');
+            if(mp3Requests.length)throw new Error('MP3 requested before explicit Play: '+mp3Requests.join(' | '));
+            if(await title()!=='Christmas Morning on Amity')throw new Error('Flagship opener is wrong: '+await title());
+
+            // Tuning while paused must stay silent and must not request MP3 files.
+            const expected=[
+              ['88.7','Christmas ’49'],
+              ['92.5','Lights in the Roastery'],
+              ['96.9','Christmas on the County Line'],
+              ['100.3','Winter Highway Lights'],
+              ['103.1','Christmas Morning on Amity'],
+              ['106.7','Midnight Roast']
+            ];
+            for(let i=0;i<expected.length;i++){
+              await tune(i);await page.waitForFunction(f=>document.querySelector('#frequencyLabel')?.textContent.trim()===f,{timeout:5000},expected[i][0]);
+              await waitTitle(expected[i][1]);
+              if(!(await audioState()).paused)throw new Error('Tuning while paused started playback at '+expected[i][0]);
+            }
+            if(mp3Requests.length)throw new Error('Paused tuning requested audio: '+mp3Requests.join(' | '));
+
+            // Return to flagship and start playback from a real user gesture.
+            await tune(4);await waitTitle('Christmas Morning on Amity');
+            await page.click('#playButton');
+            await page.waitForFunction(()=>!document.querySelector('#christmasRadioAudio').paused,{timeout:15000});
+            if(await page.$eval('#signalLabel',e=>e.textContent.trim())!=='ON AIR')throw new Error('ON AIR state did not engage');
+            let state=await audioState();
+            if(!state.currentSrc.endsWith('/christmas-radio/audio/bbxmas-x04-christmas-morning-on-amity.mp3'))throw new Error('Wrong flagship source: '+state.currentSrc);
+            if(!mp3Requests.some(u=>u.includes('bbxmas-x04-christmas-morning-on-amity.mp3')))throw new Error('Flagship MP3 was never requested');
+
+            // Natural end advances in curated order and remains playing.
+            await ended();await waitTitle('Lights in the Roastery');
+            await page.waitForFunction(()=>document.querySelector('#christmasRadioAudio').currentSrc.includes('bbxmas-m02-lights-in-the-roastery.mp3'),{timeout:10000});
+            if((await audioState()).paused)throw new Error('Playback stopped after ended event');
+
+            // Switching stations while ON AIR must continue playback on the new station opener.
+            await tune(2);await waitTitle('Christmas on the County Line');
+            await page.waitForFunction(()=>document.querySelector('#christmasRadioAudio').currentSrc.includes('bbxmas-m03-christmas-on-the-county-line.mp3'),{timeout:10000});
+            if((await audioState()).paused)throw new Error('Station switch stopped active playback');
+            if(await freq()!=='96.9')throw new Error('Station readout did not follow tuning');
+
+            // Pause, retune, and confirm the paused station change does not fetch its audio until Play.
+            await page.click('#playButton');await sleep(150);
+            if(!(await audioState()).paused)throw new Error('Pause failed');
+            const beforePausedTune=mp3Requests.length;
+            await tune(0);await waitTitle('Christmas ’49');
+            await sleep(250);
+            if(!(await audioState()).paused)throw new Error('Paused retune restarted audio');
+            if(mp3Requests.length!==beforePausedTune)throw new Error('Paused retune fetched a new MP3');
+
+            // Play Snowfall AM and force a complete 4-track loop wrap.
+            await page.click('#playButton');
+            await page.waitForFunction(()=>!document.querySelector('#christmasRadioAudio').paused,{timeout:15000});
+            for(const nextTitle of ['Christmas at Our House','All Through Louisburg','Snowfall Waltz','Christmas ’49']){
+              await ended();await waitTitle(nextTitle);
+              await page.waitForFunction(()=>!document.querySelector('#christmasRadioAudio').paused,{timeout:10000});
+            }
+
+            // Volume survives reload but playback intent does not.
+            await page.$eval('#volumeControl',el=>{el.value='0.35';el.dispatchEvent(new Event('input',{bubbles:true}))});
+            await sleep(100);
+            const beforeReloadRequests=mp3Requests.length;
+            await page.reload({waitUntil:'domcontentloaded'});
+            await page.waitForFunction(()=>document.querySelectorAll('#stationGrid .station-card').length===6,{timeout:10000});
+            await waitTitle('Christmas ’49');
+            await sleep(250);
+            state=await audioState();
+            if(!state.paused)throw new Error('Reload restored playback intent');
+            if(Math.abs(state.volume-.35)>.02)throw new Error('Saved volume did not restore: '+state.volume);
+            if(mp3Requests.length!==beforeReloadRequests)throw new Error('Reload requested MP3 before Play');
+
+            // Mobile geometry gate.
+            const geometry=await page.evaluate(()=>{
+              const radio=document.querySelector('.radio').getBoundingClientRect();
+              const nav=document.querySelector('.bottom-nav').getBoundingClientRect();
+              const play=document.querySelector('#playButton').getBoundingClientRect();
+              return {innerWidth,innerHeight,scrollWidth:document.documentElement.scrollWidth,radio:{left:radio.left,right:radio.right,width:radio.width},nav:{top:nav.top,bottom:nav.bottom},play:{left:play.left,right:play.right,width:play.width,height:play.height}};
+            });
+            if(geometry.scrollWidth>geometry.innerWidth+2)throw new Error('Horizontal overflow: '+JSON.stringify(geometry));
+            if(geometry.radio.left<0||geometry.radio.right>geometry.innerWidth+1)throw new Error('Radio exceeds phone viewport: '+JSON.stringify(geometry));
+            if(geometry.nav.bottom>geometry.innerHeight+1||geometry.nav.top<0)throw new Error('Bottom nav is not viewport-safe: '+JSON.stringify(geometry));
+            if(geometry.play.width<44||geometry.play.height<44||geometry.play.left<0||geometry.play.right>geometry.innerWidth)throw new Error('Play control fails touch geometry: '+JSON.stringify(geometry));
+            if(domReadyMs>3000)throw new Error('Local DOM-ready gate exceeded 3s: '+domReadyMs+'ms');
+
+            // Panels must remain usable at the phone viewport.
+            await page.click('.bottom-nav button[data-panel="stationsPanel"]');
+            await page.waitForFunction(()=>!document.querySelector('#stationsPanel').hidden,{timeout:3000});
+            if(await page.$$eval('#stationsPanel .station-card',els=>els.length)!==6)throw new Error('Stations panel does not contain six stations');
+            await page.click('#stationsPanel .panel-close');
+
+            if(pageErrors.length)throw new Error('Page errors: '+pageErrors.join(' | '));
+            await page.screenshot({path:'phase6-output/christmas-radio-430x932.png',fullPage:true});
+            const report={status:'PASS',viewport:'430x932',domReadyMs,mp3RequestCount:mp3Requests.length,geometry,tests:['no autoplay/no MP3 prefetch','six paused station tunes','explicit Play','ended auto-advance','live station switch','pause/retune','four-track loop wrap','volume persistence without autoplay','mobile geometry','stations panel']};
+            fs.writeFileSync('phase6-output/report.json',JSON.stringify(report,null,2));
+            console.log('CHRISTMAS PHASE 6 PLAYBACK GATE PASSED',report);
+            await browser.close();
+          })().catch(async e=>{console.error(e);fs.writeFileSync('phase6-output/failure.txt',String(e.stack||e));process.exit(1)});
+          NODE
+
+      - name: Upload Phase 6 validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: christmas-radio-phase-6-playback-evidence
+          path: phase6-output/
+          if-no-files-found: warn
+          retention-days: 14
