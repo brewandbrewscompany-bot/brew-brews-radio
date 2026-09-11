@@ -5,8 +5,8 @@
 /* Preserve the source artwork's proportions. Tall phones crop only the outer room edges;
    the radio itself is never stretched. */
 .scene{position:fixed;z-index:0;inset:0;background:#120b07;overflow:hidden}
-.scene::before{content:"";position:absolute;inset:-28px;background:url("../../artwork/flagship-roastery-stage.jpg") center/cover no-repeat;filter:blur(22px) brightness(.48) saturate(.9);transform:scale(1.08)}
-.scene::after{content:"";position:absolute;inset:0;background:url("../../artwork/flagship-roastery-stage.jpg") center/auto 100% no-repeat;pointer-events:none}
+.scene::before{content:"";position:absolute;inset:-28px;background:url("../../artwork/flagship-roastery-stage-approved.png") center/cover no-repeat;filter:blur(22px) brightness(.48) saturate(.9);transform:scale(1.08)}
+.scene::after{content:"";position:absolute;inset:0;background:url("../../artwork/flagship-roastery-stage-approved.png") center/auto 100% no-repeat;pointer-events:none}
 .scene>*{display:none!important}
 
 /* This stage exactly follows the rendered image coordinate system. */
