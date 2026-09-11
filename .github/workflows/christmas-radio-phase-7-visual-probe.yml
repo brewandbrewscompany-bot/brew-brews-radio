@@ -1,8 +1,8 @@
-name: Christmas Radio Phase 7 Visual Phone Check
+name: Christmas Radio Phase 7.1 Accepted Art High-DPI Check
 
 on:
   push:
-    branches: [christmas-radio-phase-7-visual-phone-polish]
+    branches: [christmas-radio-phase-7-1-crisp-accepted-art]
     paths:
       - 'christmas-radio/**'
       - '.github/workflows/christmas-radio-phase-7-visual-probe.yml'
@@ -16,11 +16,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Prove branch artwork is the exact accepted 103.1 source
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 \
+            'https://raw.githubusercontent.com/brewandbrewscompany-bot/brew-brews-radio/f41843d2becccb165b7ef6a9b28dfa15af57598e/christmas-radio/artwork/flagship-roastery-stage.png' \
+            --output /tmp/accepted-source.png
+          cmp --silent /tmp/accepted-source.png christmas-radio/artwork/flagship-roastery-stage-approved.png
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct, hashlib
+          p=Path('christmas-radio/artwork/flagship-roastery-stage-approved.png')
+          b=p.read_bytes()
+          if b[:8] != b'\x89PNG\r\n\x1a\n':
+              raise SystemExit('accepted artwork is not PNG')
+          w,h=struct.unpack('>II', b[16:24])
+          if (w,h)!=(709,1536):
+              raise SystemExit(f'accepted artwork dimensions changed: {(w,h)}')
+          print(f'exact accepted source: {w}x{h}; bytes={len(b)}; sha256={hashlib.sha256(b).hexdigest()}')
+          PY
+
       - name: Install browser helper
         run: npm install --no-save puppeteer-core@24.16.0
 
-      - name: Validate approved artwork decode and phone render
+      - name: Validate accepted artwork and 3x phone render
         run: |
+          set -euo pipefail
           mkdir -p phase7-output
           python3 -m http.server 8000 --directory . >/tmp/christmas-radio-http.log 2>&1 &
           SERVER_PID=$!
@@ -38,7 +59,7 @@ jobs:
               args:['--no-sandbox','--disable-dev-shm-usage']
             });
             const page=await browser.newPage();
-            await page.setViewport({width:430,height:932,deviceScaleFactor:1});
+            await page.setViewport({width:430,height:932,deviceScaleFactor:3});
             const httpErrors=[];
             const pageErrors=[];
             page.on('response',r=>{if(r.status()>=400)httpErrors.push({status:r.status(),url:r.url()})});
@@ -50,45 +71,50 @@ jobs:
 
             const probe=await page.evaluate(async()=>{
               const img=new Image();
-              img.src='artwork/flagship-roastery-stage.jpg?phase7-check=1';
+              img.src='artwork/flagship-roastery-stage-approved.png?phase7-1-check=1';
               await img.decode();
               const c=document.createElement('canvas');
               c.width=img.naturalWidth;c.height=img.naturalHeight;
               const ctx=c.getContext('2d',{willReadFrequently:true});
               ctx.drawImage(img,0,0);
               const data=ctx.getImageData(0,0,c.width,c.height).data;
-              let sum=0,sumCenter=0,count=0,countCenter=0,min=255,max=0,bright=0;
-              const cx0=Math.floor(c.width*.15),cx1=Math.ceil(c.width*.85),cy0=Math.floor(c.height*.1),cy1=Math.ceil(c.height*.85);
-              for(let y=0;y<c.height;y+=2){
-                for(let x=0;x<c.width;x+=2){
+              let sum=0,count=0,max=0,bright=0;
+              for(let y=0;y<c.height;y+=3){
+                for(let x=0;x<c.width;x+=3){
                   const i=(y*c.width+x)*4;
                   const lum=.2126*data[i]+.7152*data[i+1]+.0722*data[i+2];
-                  sum+=lum;count++;min=Math.min(min,lum);max=Math.max(max,lum);if(lum>55)bright++;
-                  if(x>=cx0&&x<cx1&&y>=cy0&&y<cy1){sumCenter+=lum;countCenter++}
+                  sum+=lum;count++;max=Math.max(max,lum);if(lum>55)bright++;
                 }
               }
-              const before=getComputedStyle(document.querySelector('.scene'),'::before');
-              const after=getComputedStyle(document.querySelector('.scene'),'::after');
-              const app=document.querySelector('.app').getBoundingClientRect();
+              const scene=document.querySelector('.scene');
+              const before=getComputedStyle(scene,'::before');
+              const after=getComputedStyle(scene,'::after');
+              const play=document.querySelector('.play-button').getBoundingClientRect();
+              const nav=document.querySelector('.bottom-nav').getBoundingClientRect();
               return {
-                image:{width:img.naturalWidth,height:img.naturalHeight,averageLuminance:sum/count,centerLuminance:sumCenter/countCenter,minLuminance:min,maxLuminance:max,brightSampleFraction:bright/count,png:c.toDataURL('image/png')},
-                css:{beforeBackgroundImage:before.backgroundImage,beforeFilter:before.filter,afterBackgroundImage:after.backgroundImage,afterBackgroundSize:after.backgroundSize,afterOpacity:after.opacity},
-                app:{left:app.left,right:app.right,width:app.width,height:app.height},
-                bodyStation:document.body.dataset.station||null
+                image:{width:img.naturalWidth,height:img.naturalHeight,averageLuminance:sum/count,maxLuminance:max,brightSampleFraction:bright/count},
+                css:{beforeBackgroundImage:before.backgroundImage,afterBackgroundImage:after.backgroundImage},
+                viewport:{width:innerWidth,height:innerHeight,dpr:devicePixelRatio,scrollWidth:document.documentElement.scrollWidth},
+                play:{left:play.left,top:play.top,width:play.width,height:play.height},
+                nav:{left:nav.left,top:nav.top,right:nav.right,bottom:nav.bottom,width:nav.width,height:nav.height},
+                bodyStation:document.body.dataset.station||null,
+                frequency:document.querySelector('#frequencyLabel')?.textContent.trim()||null
               };
             });
 
-            const png=probe.image.png.replace(/^data:image\/png;base64,/, '');
-            delete probe.image.png;
-            fs.writeFileSync('phase7-output/source-art.png',Buffer.from(png,'base64'));
-            await page.screenshot({path:'phase7-output/render-430x932.png',fullPage:true});
-            const report={status:'PASS',viewport:'430x932',...probe,httpErrors,pageErrors};
+            await page.screenshot({path:'phase7-output/render-430x932-dpr3.png',fullPage:true});
+            const report={status:'PASS',...probe,httpErrors,pageErrors};
             fs.writeFileSync('phase7-output/report.json',JSON.stringify(report,null,2));
-            console.log('PHASE 7 VISUAL PHONE CHECK',JSON.stringify(report,null,2));
+            console.log('PHASE 7.1 HIGH-DPI CHECK',JSON.stringify(report,null,2));
 
-            if(probe.image.width!==430||probe.image.height!==854)throw new Error('Approved stage artwork dimensions changed');
-            if(probe.image.averageLuminance<20||probe.image.maxLuminance<100||probe.image.brightSampleFraction<.08)throw new Error('Approved stage artwork decoded too dark');
-            if(!probe.css.beforeBackgroundImage.includes('flagship-roastery-stage.jpg')||!probe.css.afterBackgroundImage.includes('flagship-roastery-stage.jpg'))throw new Error('Phone skin is not using the restored approved stage artwork');
+            if(probe.image.width!==709||probe.image.height!==1536)throw new Error('Accepted master dimensions changed');
+            if(probe.viewport.dpr!==3)throw new Error('High-DPI gate did not run at DPR 3');
+            if(probe.image.averageLuminance<20||probe.image.maxLuminance<100||probe.image.brightSampleFraction<.08)throw new Error('Accepted artwork decoded too dark');
+            if(!probe.css.beforeBackgroundImage.includes('flagship-roastery-stage-approved.png')||!probe.css.afterBackgroundImage.includes('flagship-roastery-stage-approved.png'))throw new Error('Production skin is not using the exact accepted master');
+            if(probe.bodyStation!=='bb-christmas-radio'||probe.frequency!=='103.1')throw new Error('Flagship station read changed');
+            if(probe.viewport.scrollWidth>430)throw new Error('Horizontal phone overflow detected');
+            if(probe.play.width<55||probe.play.height<55)throw new Error('Play target is too small');
+            if(Math.abs(probe.nav.bottom-932)>1||probe.nav.left<0||probe.nav.right>431)throw new Error('Bottom navigation is not fully on-screen');
             const criticalHttp=httpErrors.filter(x=>!x.url.endsWith('/favicon.ico'));
             if(criticalHttp.length)throw new Error('HTTP resource errors: '+JSON.stringify(criticalHttp));
             if(pageErrors.length)throw new Error('Page errors: '+pageErrors.join(' | '));
@@ -96,11 +122,21 @@ jobs:
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
 
-      - name: Upload Phase 7 visual evidence
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct
+          b=Path('phase7-output/render-430x932-dpr3.png').read_bytes()
+          w,h=struct.unpack('>II',b[16:24])
+          print(f'physical screenshot: {w}x{h}')
+          if (w,h)!=(1290,2796):
+              raise SystemExit(f'unexpected DPR3 screenshot dimensions: {(w,h)}')
+          PY
+
+      - name: Upload Phase 7.1 visual evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: christmas-radio-phase-7-visual-evidence
+          name: christmas-radio-phase-7-1-high-dpi-evidence
           path: phase7-output/
           if-no-files-found: warn
           retention-days: 14
