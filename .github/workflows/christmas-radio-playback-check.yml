@@ -64,10 +64,16 @@ jobs:
           const puppeteer=require('puppeteer-core');
           const fs=require('fs');
           const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
           (async()=>{
-            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--autoplay-policy=no-user-gesture-required','--mute-audio']});
+            const browser=await puppeteer.launch({
+              executablePath:process.env.CHROME_BIN,
+              headless:true,
+              args:['--no-sandbox','--disable-dev-shm-usage','--autoplay-policy=no-user-gesture-required','--mute-audio']
+            });
             const page=await browser.newPage();
             await page.setViewport({width:430,height:932,deviceScaleFactor:1});
+
             const pageErrors=[],mp3Requests=[],httpErrors=[];
             page.on('pageerror',e=>pageErrors.push(String(e)));
             page.on('request',r=>{if(/\.mp3(?:\?|$)/i.test(r.url()))mp3Requests.push(r.url())});
@@ -78,21 +84,31 @@ jobs:
             await page.waitForFunction(()=>document.querySelectorAll('#stationGrid .station-card').length===6,{timeout:10000});
             await page.waitForFunction(()=>document.querySelector('#frequencyLabel')?.textContent.trim()==='103.1',{timeout:10000});
             const domReadyMs=Date.now()-started;
-            const audioState=()=>page.$eval('#christmasRadioAudio',a=>({paused:a.paused,src:a.getAttribute('src'),currentSrc:a.currentSrc,volume:a.volume,readyState:a.readyState,networkState:a.networkState,currentTime:a.currentTime,duration:a.duration}));
+
+            const audioState=()=>page.$eval('#christmasRadioAudio',a=>({
+              paused:a.paused,src:a.getAttribute('src'),currentSrc:a.currentSrc,volume:a.volume,
+              readyState:a.readyState,networkState:a.networkState,currentTime:a.currentTime,duration:a.duration,playbackRate:a.playbackRate
+            }));
             const title=()=>page.$eval('#nowPlayingTitle',e=>e.textContent.trim());
             const freq=()=>page.$eval('#frequencyLabel',e=>e.textContent.trim());
             const tune=index=>page.$eval('#stationTuner',(el,index)=>{el.value=String(index);el.dispatchEvent(new Event('input',{bubbles:true}))},index);
             const waitTitle=t=>page.waitForFunction(t=>document.querySelector('#nowPlayingTitle')?.textContent.trim()===t,{timeout:12000},t);
             const waitAudioFile=async file=>{
               await page.waitForFunction(file=>document.querySelector('#christmasRadioAudio')?.getAttribute('src')===`audio/${file}`,{timeout:12000},file);
-              await sleep(350);
+              await sleep(300);
               const state=await audioState();
               if(!mp3Requests.some(u=>u.includes(file)))throw new Error(`MP3 request missing for ${file}: ${JSON.stringify({state,mp3Requests})}`);
               return state;
             };
-            const finishNaturally=async()=>{
-              await page.waitForFunction(()=>{const a=document.querySelector('#christmasRadioAudio');return !a.paused&&Number.isFinite(a.duration)&&a.duration>1&&a.readyState>=2},{timeout:15000});
-              await page.$eval('#christmasRadioAudio',a=>{a.currentTime=Math.max(0,a.duration-.08)});
+            const advanceNaturally=async nextTitle=>{
+              await page.waitForFunction(()=>{const a=document.querySelector('#christmasRadioAudio');return !a.paused&&Number.isFinite(a.duration)&&a.duration>3&&a.readyState>=2},{timeout:15000});
+              await page.$eval('#christmasRadioAudio',async a=>{
+                a.playbackRate=16;
+                a.currentTime=Math.max(0,a.duration-2);
+                if(a.paused)await a.play();
+              });
+              await waitTitle(nextTitle);
+              await page.$eval('#christmasRadioAudio',a=>{a.playbackRate=1});
             };
 
             let state=await audioState();
@@ -101,7 +117,10 @@ jobs:
             if(mp3Requests.length)throw new Error('MP3 requested before explicit Play: '+mp3Requests.join(' | '));
             if(await title()!=='Christmas Morning on Amity')throw new Error('Wrong flagship opener: '+await title());
 
-            const expected=[['88.7','Christmas ’49'],['92.5','Lights in the Roastery'],['96.9','Christmas on the County Line'],['100.3','Winter Highway Lights'],['103.1','Christmas Morning on Amity'],['106.7','Midnight Roast']];
+            const expected=[
+              ['88.7','Christmas ’49'],['92.5','Lights in the Roastery'],['96.9','Christmas on the County Line'],
+              ['100.3','Winter Highway Lights'],['103.1','Christmas Morning on Amity'],['106.7','Midnight Roast']
+            ];
             for(let i=0;i<expected.length;i++){
               await tune(i);
               await page.waitForFunction(f=>document.querySelector('#frequencyLabel')?.textContent.trim()===f,{timeout:5000},expected[i][0]);
@@ -117,19 +136,15 @@ jobs:
             state=await waitAudioFile('bbxmas-x04-christmas-morning-on-amity.mp3');
             if(state.paused)throw new Error('Flagship is paused after Play');
 
-            // Exercise a real media-ended event by seeking to the actual end.
-            await finishNaturally();
-            await waitTitle('Lights in the Roastery');
+            await advanceNaturally('Lights in the Roastery');
             state=await waitAudioFile('bbxmas-m02-lights-in-the-roastery.mp3');
             if(state.paused)throw new Error('Playback stopped after natural end');
-            await sleep(500);
+            await sleep(400);
 
-            // Live tune while audio is actually ON AIR.
             await tune(2);await waitTitle('Christmas on the County Line');
             state=await waitAudioFile('bbxmas-m03-christmas-on-the-county-line.mp3');
             if(state.paused||await freq()!=='96.9')throw new Error('Live station switch failed: '+JSON.stringify(state));
 
-            // Pause and retune: selection may change, audio must not fetch/start.
             await page.click('#playButton');await sleep(150);
             if(!(await audioState()).paused)throw new Error('Pause failed');
             const beforePausedTune=mp3Requests.length;
@@ -137,18 +152,21 @@ jobs:
             if(!(await audioState()).paused)throw new Error('Paused retune restarted audio');
             if(mp3Requests.length!==beforePausedTune)throw new Error('Paused retune fetched a new MP3');
 
-            // Play Snowfall AM and validate its full natural loop wrap.
             await page.click('#playButton');
             await page.waitForFunction(()=>!document.querySelector('#christmasRadioAudio').paused,{timeout:15000});
             await waitAudioFile('bbxmas-m18-christmas-49.mp3');
-            const loop=[['Christmas at Our House','bbxmas-x03-christmas-at-our-house.mp3'],['All Through Louisburg','bbxmas-m09-all-through-louisburg.mp3'],['Snowfall Waltz','bbxmas-i01-snowfall-waltz.mp3'],['Christmas ’49','bbxmas-m18-christmas-49.mp3']];
+            const loop=[
+              ['Christmas at Our House','bbxmas-x03-christmas-at-our-house.mp3'],
+              ['All Through Louisburg','bbxmas-m09-all-through-louisburg.mp3'],
+              ['Snowfall Waltz','bbxmas-i01-snowfall-waltz.mp3'],
+              ['Christmas ’49','bbxmas-m18-christmas-49.mp3']
+            ];
             for(const [nextTitle,file] of loop){
-              await finishNaturally();await waitTitle(nextTitle);
+              await advanceNaturally(nextTitle);
               state=await waitAudioFile(file);
               if(state.paused)throw new Error(`Loop stopped at ${nextTitle}`);
             }
 
-            // Persist volume, never playback intent.
             await page.$eval('#volumeControl',el=>{el.value='0.35';el.dispatchEvent(new Event('input',{bubbles:true}))});
             await sleep(100);
             const beforeReloadRequests=mp3Requests.length;
@@ -161,13 +179,20 @@ jobs:
             if(mp3Requests.length!==beforeReloadRequests)throw new Error('Reload requested MP3 before Play');
 
             const geometry=await page.evaluate(()=>{
-              const radio=document.querySelector('.radio').getBoundingClientRect(),nav=document.querySelector('.bottom-nav').getBoundingClientRect(),play=document.querySelector('#playButton').getBoundingClientRect();
-              return {innerWidth,innerHeight,scrollWidth:document.documentElement.scrollWidth,radio:{left:radio.left,right:radio.right,width:radio.width},nav:{top:nav.top,bottom:nav.bottom},play:{left:play.left,right:play.right,width:play.width,height:play.height}};
+              const nav=document.querySelector('.bottom-nav').getBoundingClientRect();
+              const play=document.querySelector('#playButton').getBoundingClientRect();
+              const dial=document.querySelector('.dial-bezel').getBoundingClientRect();
+              return {
+                innerWidth,innerHeight,scrollWidth:document.documentElement.scrollWidth,
+                nav:{left:nav.left,right:nav.right,top:nav.top,bottom:nav.bottom},
+                play:{left:play.left,right:play.right,top:play.top,bottom:play.bottom,width:play.width,height:play.height},
+                dial:{left:dial.left,right:dial.right,top:dial.top,bottom:dial.bottom,width:dial.width,height:dial.height}
+              };
             });
-            if(geometry.scrollWidth>geometry.innerWidth+2)throw new Error('Horizontal overflow: '+JSON.stringify(geometry));
-            if(geometry.radio.left<0||geometry.radio.right>geometry.innerWidth+1)throw new Error('Radio exceeds viewport: '+JSON.stringify(geometry));
-            if(geometry.nav.bottom>geometry.innerHeight+1||geometry.nav.top<0)throw new Error('Bottom nav not viewport-safe: '+JSON.stringify(geometry));
-            if(geometry.play.width<44||geometry.play.height<44||geometry.play.left<0||geometry.play.right>geometry.innerWidth)throw new Error('Play touch target fails: '+JSON.stringify(geometry));
+            if(geometry.scrollWidth>geometry.innerWidth+2)throw new Error('Horizontal page overflow: '+JSON.stringify(geometry));
+            if(geometry.nav.left<0||geometry.nav.right>geometry.innerWidth+1||geometry.nav.top<0||geometry.nav.bottom>geometry.innerHeight+1)throw new Error('Bottom nav not viewport-safe: '+JSON.stringify(geometry));
+            if(geometry.play.width<44||geometry.play.height<44||geometry.play.left<0||geometry.play.right>geometry.innerWidth||geometry.play.top<0||geometry.play.bottom>geometry.innerHeight)throw new Error('Play target fails phone geometry: '+JSON.stringify(geometry));
+            if(geometry.dial.width<100||geometry.dial.left<0||geometry.dial.right>geometry.innerWidth||geometry.dial.top<0||geometry.dial.bottom>geometry.innerHeight)throw new Error('Tuner fails phone geometry: '+JSON.stringify(geometry));
             if(domReadyMs>3000)throw new Error('Local DOM-ready gate exceeded 3s: '+domReadyMs+'ms');
 
             await page.click('.bottom-nav button[data-panel="stationsPanel"]');
@@ -178,12 +203,20 @@ jobs:
             const criticalHttp=httpErrors.filter(x=>!x.url.endsWith('/favicon.ico'));
             if(criticalHttp.length)throw new Error('HTTP resource errors: '+JSON.stringify(criticalHttp));
             if(pageErrors.length)throw new Error('Page errors: '+pageErrors.join(' | '));
+
             await page.screenshot({path:'phase6-output/christmas-radio-430x932.png',fullPage:true});
-            const report={status:'PASS',viewport:'430x932',domReadyMs,mp3RequestCount:mp3Requests.length,httpErrors,geometry,tests:['default volume','no autoplay/no MP3 prefetch','six paused station tunes','explicit Play','natural end auto-advance','live station switch','pause/retune','natural loop wrap','volume persistence without autoplay','mobile geometry','stations panel']};
+            const report={
+              status:'PASS',viewport:'430x932',domReadyMs,mp3RequestCount:mp3Requests.length,httpErrors,geometry,
+              tests:['default volume','no autoplay/no MP3 prefetch','six paused station tunes','explicit Play','accelerated natural end auto-advance','live station switch','pause/retune','full natural loop wrap','volume persistence without autoplay','phone control geometry','stations panel']
+            };
             fs.writeFileSync('phase6-output/report.json',JSON.stringify(report,null,2));
             console.log('CHRISTMAS PHASE 6 PLAYBACK GATE PASSED',report);
             await browser.close();
-          })().catch(e=>{console.error(e);fs.writeFileSync('phase6-output/failure.txt',String(e.stack||e));process.exit(1)});
+          })().catch(e=>{
+            console.error(e);
+            fs.writeFileSync('phase6-output/failure.txt',String(e.stack||e));
+            process.exit(1);
+          });
           NODE
 
       - name: Upload Phase 6 validation evidence
