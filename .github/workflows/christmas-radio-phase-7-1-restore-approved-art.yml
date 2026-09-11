@@ -1,0 +1,49 @@
+name: Christmas Radio Phase 7.1 Restore Accepted Artwork
+
+on:
+  push:
+    branches:
+      - christmas-radio-phase-7-1-crisp-accepted-art
+    paths:
+      - .github/workflows/christmas-radio-phase-7-1-restore-approved-art.yml
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout Phase 7.1
+        uses: actions/checkout@v4
+        with:
+          ref: christmas-radio-phase-7-1-crisp-accepted-art
+
+      - name: Restore exact accepted 103.1 master from approved Git history
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 \
+            'https://raw.githubusercontent.com/brewandbrewscompany-bot/brew-brews-radio/f41843d2becccb165b7ef6a9b28dfa15af57598e/christmas-radio/artwork/flagship-roastery-stage.png' \
+            --output christmas-radio/artwork/flagship-roastery-stage-approved.png
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct, hashlib
+          p=Path('christmas-radio/artwork/flagship-roastery-stage-approved.png')
+          b=p.read_bytes()
+          if b[:8] != b'\x89PNG\r\n\x1a\n':
+              raise SystemExit('restored file is not PNG')
+          width,height=struct.unpack('>II',b[16:24])
+          if (width,height)!=(709,1536):
+              raise SystemExit(f'unexpected accepted artwork dimensions: {(width,height)}')
+          print(f'accepted artwork: {width}x{height}, {len(b)} bytes, sha256={hashlib.sha256(b).hexdigest()}')
+          PY
+
+      - name: Commit exact accepted artwork
+        run: |
+          git config user.name 'brewandbrewscompany-bot'
+          git config user.email 'brewandbrewscompany@gmail.com'
+          git add christmas-radio/artwork/flagship-roastery-stage-approved.png
+          git commit -m 'Restore exact accepted 103.1 Christmas Radio artwork'
+          git push origin HEAD:christmas-radio-phase-7-1-crisp-accepted-art
