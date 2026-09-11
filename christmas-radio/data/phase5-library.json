@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "phase": "phase-5-mastering-programming",
+  "defaultStationId": "bb-christmas-radio",
+  "audioPolicy": {
+    "initialPreload": "none",
+    "prepareNextAfterPlaybackStarts": true,
+    "crossfadeMs": 280,
+    "rotationMode": "curated-loop"
+  },
+  "runtimeStatus": "staged-until-audio-verifies",
+  "rotations": {
+    "snowfall-am": ["M18", "X03", "M09", "I01"],
+    "fireside": ["M02", "M19", "I04", "X03", "X04"],
+    "sleigh-bell-rock": ["M03", "M10", "I05"],
+    "candlelight": ["I04", "M19", "X03", "I01", "M18", "M02"],
+    "bb-christmas-radio": ["X04", "M02", "M10", "I01", "M09", "M03", "M19", "I05", "X03", "M05", "I04", "M22", "M18"],
+    "north-pole-after-hours": ["M05", "M22", "M09", "M18"]
+  }
+}
