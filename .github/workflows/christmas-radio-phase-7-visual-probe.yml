@@ -1,0 +1,101 @@
+name: Christmas Radio Phase 7 Visual Probe
+
+on:
+  push:
+    branches: [christmas-radio-phase-7-visual-phone-polish]
+    paths:
+      - 'christmas-radio/**'
+      - '.github/workflows/christmas-radio-phase-7-visual-probe.yml'
+  workflow_dispatch:
+
+jobs:
+  visual-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install browser helper
+        run: npm install --no-save puppeteer-core@24.16.0
+
+      - name: Probe artwork decode and phone render
+        run: |
+          mkdir -p phase7-output
+          python3 -m http.server 8000 --directory . >/tmp/christmas-radio-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_BIN"
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const puppeteer=require('puppeteer-core');
+          const fs=require('fs');
+          (async()=>{
+            const browser=await puppeteer.launch({
+              executablePath:process.env.CHROME_BIN,
+              headless:true,
+              args:['--no-sandbox','--disable-dev-shm-usage']
+            });
+            const page=await browser.newPage();
+            await page.setViewport({width:430,height:932,deviceScaleFactor:1});
+            const httpErrors=[];
+            const pageErrors=[];
+            page.on('response',r=>{if(r.status()>=400)httpErrors.push({status:r.status(),url:r.url()})});
+            page.on('pageerror',e=>pageErrors.push(String(e)));
+
+            await page.goto('http://127.0.0.1:8000/christmas-radio/',{waitUntil:'domcontentloaded'});
+            await page.waitForFunction(()=>document.querySelectorAll('#stationGrid .station-card').length===6,{timeout:10000});
+            await page.waitForFunction(()=>document.querySelector('#frequencyLabel')?.textContent.trim()==='103.1',{timeout:10000});
+
+            const probe=await page.evaluate(async()=>{
+              const img=new Image();
+              img.src='artwork/flagship-roastery.avif?phase7-probe=1';
+              await img.decode();
+              const c=document.createElement('canvas');
+              c.width=img.naturalWidth;c.height=img.naturalHeight;
+              const ctx=c.getContext('2d',{willReadFrequently:true});
+              ctx.drawImage(img,0,0);
+              const data=ctx.getImageData(0,0,c.width,c.height).data;
+              let sum=0,sumCenter=0,count=0,countCenter=0,min=255,max=0,bright=0;
+              const cx0=Math.floor(c.width*.15),cx1=Math.ceil(c.width*.85),cy0=Math.floor(c.height*.1),cy1=Math.ceil(c.height*.85);
+              for(let y=0;y<c.height;y+=2){
+                for(let x=0;x<c.width;x+=2){
+                  const i=(y*c.width+x)*4;
+                  const lum=.2126*data[i]+.7152*data[i+1]+.0722*data[i+2];
+                  sum+=lum;count++;min=Math.min(min,lum);max=Math.max(max,lum);if(lum>55)bright++;
+                  if(x>=cx0&&x<cx1&&y>=cy0&&y<cy1){sumCenter+=lum;countCenter++}
+                }
+              }
+              const before=getComputedStyle(document.querySelector('.scene'),'::before');
+              const after=getComputedStyle(document.querySelector('.scene'),'::after');
+              const app=document.querySelector('.app').getBoundingClientRect();
+              return {
+                image:{width:img.naturalWidth,height:img.naturalHeight,averageLuminance:sum/count,centerLuminance:sumCenter/countCenter,minLuminance:min,maxLuminance:max,brightSampleFraction:bright/count,png:c.toDataURL('image/png')},
+                css:{beforeBackgroundImage:before.backgroundImage,beforeFilter:before.filter,afterBackgroundImage:after.backgroundImage,afterBackgroundSize:after.backgroundSize,afterOpacity:after.opacity},
+                app:{left:app.left,right:app.right,width:app.width,height:app.height},
+                bodyStation:document.body.dataset.station||null
+              };
+            });
+
+            const png=probe.image.png.replace(/^data:image\/png;base64,/, '');
+            delete probe.image.png;
+            fs.writeFileSync('phase7-output/source-art.png',Buffer.from(png,'base64'));
+            await page.screenshot({path:'phase7-output/render-430x932.png',fullPage:true});
+            const report={status:'PROBE',viewport:'430x932',...probe,httpErrors,pageErrors};
+            fs.writeFileSync('phase7-output/report.json',JSON.stringify(report,null,2));
+            console.log('PHASE 7 VISUAL PROBE',JSON.stringify(report,null,2));
+            if(probe.image.width<400||probe.image.height<700)throw new Error('Approved artwork decoded at unexpected dimensions');
+            if(probe.image.maxLuminance<40)throw new Error('Approved artwork decoded effectively black');
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+
+      - name: Upload Phase 7 visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: christmas-radio-phase-7-visual-probe
+          path: phase7-output/
+          if-no-files-found: warn
+          retention-days: 14
