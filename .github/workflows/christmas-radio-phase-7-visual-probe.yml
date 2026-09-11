@@ -50,7 +50,7 @@ jobs:
 
             const probe=await page.evaluate(async()=>{
               const img=new Image();
-              img.src='artwork/flagship-roastery-stage.webp?phase7-check=1';
+              img.src='artwork/flagship-roastery-stage.jpg?phase7-check=1';
               await img.decode();
               const c=document.createElement('canvas');
               c.width=img.naturalWidth;c.height=img.naturalHeight;
@@ -88,7 +88,7 @@ jobs:
 
             if(probe.image.width!==430||probe.image.height!==854)throw new Error('Approved stage artwork dimensions changed');
             if(probe.image.averageLuminance<20||probe.image.maxLuminance<100||probe.image.brightSampleFraction<.08)throw new Error('Approved stage artwork decoded too dark');
-            if(!probe.css.beforeBackgroundImage.includes('flagship-roastery-stage.webp')||!probe.css.afterBackgroundImage.includes('flagship-roastery-stage.webp'))throw new Error('Phone skin is not using the restored approved stage artwork');
+            if(!probe.css.beforeBackgroundImage.includes('flagship-roastery-stage.jpg')||!probe.css.afterBackgroundImage.includes('flagship-roastery-stage.jpg'))throw new Error('Phone skin is not using the restored approved stage artwork');
             const criticalHttp=httpErrors.filter(x=>!x.url.endsWith('/favicon.ico'));
             if(criticalHttp.length)throw new Error('HTTP resource errors: '+JSON.stringify(criticalHttp));
             if(pageErrors.length)throw new Error('Page errors: '+pageErrors.join(' | '));
