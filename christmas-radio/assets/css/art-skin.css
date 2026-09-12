@@ -114,7 +114,7 @@ body:not([data-station="bb-christmas-radio"]) .station-readout{opacity:1;visibil
 .panel-scrim{z-index:35;background:rgba(4,3,2,.72);backdrop-filter:blur(3px)}
 .app-panel:not([hidden]){animation:bb-panel-in .18s cubic-bezier(.2,.8,.2,1)}
 .panel-scrim:not([hidden]){animation:bb-scrim-in .16s ease-out}
-@keyframes bb-panel-in{from{opacity:0;transform:translate(-50%,14px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes bb-panel-in{from{opacity:0}to{opacity:1}}
 @keyframes bb-scrim-in{from{opacity:0}to{opacity:1}}
 
 /* Phase 9: real transport controls inside Now Playing, without altering the approved radio face. */
