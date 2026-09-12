@@ -57,7 +57,7 @@ jobs:
             const cold=await page.evaluate(()=>({station:document.body.dataset.station,frequency:document.querySelector('#frequencyLabel')?.textContent.trim(),skin:getComputedStyle(document.querySelector('.scene'),'::before').backgroundImage,dpr:devicePixelRatio,width:innerWidth,height:innerHeight}));
             if(cold.station!=='bb-christmas-radio'||cold.frequency!=='103.1'||!cold.skin.includes('christmas-radio-approved-skin.avif'))throw new Error('Cold visual state regressed: '+JSON.stringify(cold));
 
-            await page.dispatchEvent('#playButton','pointerdown',{pointerType:'touch'});
+            await page.$eval('#playButton',el=>el.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerType:'touch'})));
             await page.waitForFunction(()=>document.querySelector('#christmasRadioAudio').src.length>0,{timeout:5000});
             const prime=await page.$eval('#christmasRadioAudio',a=>({src:a.src,preload:a.preload,paused:a.paused}));
             if(!prime.src||prime.preload!=='metadata'||prime.paused!==true)throw new Error('Play intent prime failed: '+JSON.stringify(prime));
