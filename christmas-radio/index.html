@@ -3,10 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#160d08">
+  <meta name="theme-color" content="#063d2f">
+  <meta name="color-scheme" content="dark">
+  <meta name="application-name" content="B&B Christmas Radio">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="B&B Christmas">
+  <meta name="format-detection" content="telephone=no">
   <meta name="description" content="Brew & Brews Christmas Radio — Christmas music from our Louisburg, Kansas coffee roastery.">
   <title>Brew & Brews Christmas Radio</title>
   <!-- BREW & BREWS CHRISTMAS RADIO | Main app entry | /christmas-radio/index.html -->
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="preload" as="image" href="artwork/render-430x932(1).png" type="image/png" fetchpriority="high">
   <link rel="stylesheet" href="assets/css/christmas-radio.css">
   <link rel="stylesheet" href="assets/css/art-skin.css">
@@ -61,7 +70,7 @@
         </label>
 
         <button id="playButton" class="play-button" type="button" aria-pressed="false" aria-label="Play Christmas Radio">
-          <span class="play-icon">▶</span>
+          <span class="play-icon" aria-hidden="true">▶</span>
         </button>
 
         <label class="knob-control tuner-control">
@@ -81,23 +90,23 @@
   </main>
 
   <nav class="bottom-nav" aria-label="Christmas Radio navigation">
-    <button data-panel="stationsPanel" type="button"><span class="nav-icon">▣</span><b>Stations</b></button>
-    <button data-panel="nowPanel" type="button"><span class="nav-icon">♫</span><b>Now Playing</b></button>
-    <button data-panel="aboutPanel" type="button"><span class="nav-icon">i</span><b>About</b></button>
-    <button data-panel="gamesPanel" type="button"><span class="nav-icon">✦</span><b>Games</b></button>
-    <button data-panel="shopPanel" type="button"><span class="nav-icon">▰</span><b>Shop</b></button>
+    <button data-panel="stationsPanel" aria-controls="stationsPanel" type="button"><span class="nav-icon" aria-hidden="true">▣</span><b>Stations</b></button>
+    <button data-panel="nowPanel" aria-controls="nowPanel" type="button"><span class="nav-icon" aria-hidden="true">♫</span><b>Now Playing</b></button>
+    <button data-panel="aboutPanel" aria-controls="aboutPanel" type="button"><span class="nav-icon" aria-hidden="true">i</span><b>About</b></button>
+    <button data-panel="gamesPanel" aria-controls="gamesPanel" type="button"><span class="nav-icon" aria-hidden="true">✦</span><b>Games</b></button>
+    <button data-panel="shopPanel" aria-controls="shopPanel" type="button"><span class="nav-icon" aria-hidden="true">▰</span><b>Shop</b></button>
   </nav>
 
   <div class="panel-scrim" id="panelScrim" hidden></div>
-  <section class="app-panel" id="stationsPanel" hidden aria-labelledby="stationsHeading">
+  <section class="app-panel" id="stationsPanel" role="dialog" aria-modal="true" hidden aria-labelledby="stationsHeading">
     <button class="panel-close" type="button" aria-label="Close panel">×</button>
     <header><small>TURN THE DIAL</small><h2 id="stationsHeading">Christmas Stations</h2><p>Each station changes the sound and the room around the radio.</p></header>
     <div class="station-grid" id="stationGrid"></div>
   </section>
-  <section class="app-panel compact-panel" id="nowPanel" hidden><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>ON AIR</small><h2>Now Playing</h2></header><div class="panel-now"><strong id="panelStation">103.1 · B&amp;B Christmas Radio</strong><b id="panelTrack">Christmas broadcast ready</b><span id="panelArtist">Tap Play to begin.</span></div></section>
-  <section class="app-panel compact-panel" id="aboutPanel" hidden><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>FROM THE ROASTERY</small><h2>About Christmas Radio</h2><p>Original seasonal music and radio moments from Brew &amp; Brews in Louisburg, Kansas.</p></header></section>
-  <section class="app-panel compact-panel" id="gamesPanel" hidden><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>COMING THIS SEASON</small><h2>Christmas Games</h2><p>Small holiday experiences will live here without interrupting the music.</p></header></section>
-  <section class="app-panel compact-panel" id="shopPanel" hidden><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>BREW SOMETHING BOLD</small><h2>Shop Brew &amp; Brews</h2><p>Christmas coffee and seasonal releases will connect here.</p></header></section>
+  <section class="app-panel compact-panel" id="nowPanel" role="dialog" aria-modal="true" aria-labelledby="nowHeading" hidden><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>ON AIR</small><h2 id="nowHeading">Now Playing</h2></header><div class="panel-now"><strong id="panelStation">103.1 · B&amp;B Christmas Radio</strong><b id="panelTrack">Christmas broadcast ready</b><span id="panelArtist">Tap Play to begin.</span></div></section>
+  <section class="app-panel compact-panel" id="aboutPanel" role="dialog" aria-modal="true" aria-labelledby="aboutHeading" hidden><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>FROM THE ROASTERY</small><h2 id="aboutHeading">About Christmas Radio</h2><p>Original seasonal music and radio moments from Brew &amp; Brews in Louisburg, Kansas.</p></header></section>
+  <section class="app-panel compact-panel" id="gamesPanel" role="dialog" aria-modal="true" aria-labelledby="gamesHeading" hidden><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>COMING THIS SEASON</small><h2 id="gamesHeading">Christmas Games</h2><p>Small holiday experiences will live here without interrupting the music.</p></header></section>
+  <section class="app-panel compact-panel" id="shopPanel" role="dialog" aria-modal="true" aria-labelledby="shopHeading" hidden><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>BREW SOMETHING BOLD</small><h2 id="shopHeading">Shop Brew &amp; Brews</h2><p>Christmas coffee and seasonal releases will connect here.</p></header></section>
 
   <audio id="christmasRadioAudio" preload="none"></audio>
 </body>
