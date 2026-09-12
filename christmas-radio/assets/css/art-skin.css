@@ -99,6 +99,7 @@ body:not([data-station="bb-christmas-radio"]) .station-readout{opacity:1;visibil
   width:var(--stage-w);height:calc(var(--nav-h) + env(safe-area-inset-bottom));
   padding:0 0 env(safe-area-inset-bottom);display:grid;grid-template-columns:repeat(5,1fr);
   background:transparent;border:0;box-shadow:none;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
 }
 .bottom-nav::before{display:none!important}
 .bottom-nav button{
