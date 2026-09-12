@@ -34,10 +34,10 @@ jobs:
           import hashlib
           p=Path('christmas-radio/artwork/christmas-radio-approved-skin.avif')
           b=p.read_bytes()
-          expected='a5d36d5f67f56b1bdd0ccb6a68857c4511e2025bd83861946a12cfa71b10417c'
+          expected='6fb7bafa67c31df8feed90d76cf3defb137d90b41d34ac3bc6b82a1821492b8d'
           if hashlib.sha256(b).hexdigest()!=expected: raise SystemExit('AVIF SHA-256 mismatch')
           if b[4:12]!=b'ftypavif': raise SystemExit('Not AVIF')
-          if len(b)!=69571: raise SystemExit(f'Unexpected AVIF byte size: {len(b)}')
+          if len(b)!=37448: raise SystemExit(f'Unexpected AVIF byte size: {len(b)}')
           print('Verified AVIF bytes',len(b),expected)
           PY
       - name: Wire verified AVIF and update gate
