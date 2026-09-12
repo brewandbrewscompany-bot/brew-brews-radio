@@ -61,7 +61,25 @@
 
   <div class="panel-scrim" id="panelScrim" hidden></div>
   <section class="app-panel" id="stationsPanel" role="dialog" aria-modal="true" hidden aria-labelledby="stationsHeading"><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>TURN THE DIAL</small><h2 id="stationsHeading">Christmas Stations</h2><p>Each station changes the sound and the room around the radio.</p></header><div class="station-grid" id="stationGrid"></div></section>
-  <section class="app-panel compact-panel" id="nowPanel" role="dialog" aria-modal="true" aria-labelledby="nowHeading" hidden><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>ON AIR</small><h2 id="nowHeading">Now Playing</h2></header><div class="panel-now"><strong id="panelStation">103.1 · B&B Christmas Radio</strong><b id="panelTrack">Christmas broadcast ready</b><span id="panelArtist">Tap Play to begin.</span></div></section>
+  <section class="app-panel compact-panel" id="nowPanel" role="dialog" aria-modal="true" aria-labelledby="nowHeading" hidden>
+    <button class="panel-close" type="button" aria-label="Close panel">×</button>
+    <header><small>ON AIR</small><h2 id="nowHeading">Now Playing</h2></header>
+    <div class="panel-now">
+      <strong id="panelStation">103.1 · B&B Christmas Radio</strong>
+      <b id="panelTrack">Christmas broadcast ready</b>
+      <span id="panelArtist">Tap Play to begin.</span>
+      <div class="panel-progress-wrap">
+        <div class="panel-time-row"><span id="panelElapsed">0:00</span><span id="panelDuration">--:--</span></div>
+        <div id="panelProgress" class="panel-progress" role="progressbar" aria-label="Track progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
+      </div>
+      <div class="panel-transport" aria-label="Playback controls">
+        <button id="panelPrev" type="button" aria-label="Previous track">⏮</button>
+        <button id="panelPlay" class="transport-play" type="button" aria-pressed="false" aria-label="Play Christmas Radio">▶</button>
+        <button id="panelNext" type="button" aria-label="Next track">⏭</button>
+      </div>
+      <div class="panel-up-next"><small>UP NEXT</small><span id="panelNextTrack">Christmas broadcast ready</span></div>
+    </div>
+  </section>
   <section class="app-panel compact-panel" id="aboutPanel" role="dialog" aria-modal="true" aria-labelledby="aboutHeading" hidden><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>FROM THE ROASTERY</small><h2 id="aboutHeading">About Christmas Radio</h2><p>Original seasonal music and radio moments from Brew & Brews in Louisburg, Kansas.</p></header></section>
   <section class="app-panel compact-panel" id="gamesPanel" role="dialog" aria-modal="true" aria-labelledby="gamesHeading" hidden><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>COMING THIS SEASON</small><h2 id="gamesHeading">Christmas Games</h2><p>Small holiday experiences will live here without interrupting the music.</p></header></section>
   <section class="app-panel compact-panel" id="shopPanel" role="dialog" aria-modal="true" aria-labelledby="shopHeading" hidden><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>BREW SOMETHING BOLD</small><h2 id="shopHeading">Shop Brew & Brews</h2><p>Christmas coffee and seasonal releases will connect here.</p></header></section>

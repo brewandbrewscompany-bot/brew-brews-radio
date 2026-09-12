@@ -1,0 +1,134 @@
+name: Christmas Radio Phase 9 Interaction Gate
+
+on:
+  push:
+    branches: [christmas-radio-phase-9-interaction-polish]
+    paths:
+      - 'christmas-radio/**'
+      - '.github/workflows/christmas-radio-phase-9-interaction.yml'
+  workflow_dispatch:
+
+jobs:
+  phone-interaction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify Phase 9 guardrails
+        run: |
+          set -euo pipefail
+          grep -q 'id="panelPrev"' christmas-radio/index.html
+          grep -q 'id="panelPlay"' christmas-radio/index.html
+          grep -q 'id="panelNext"' christmas-radio/index.html
+          grep -q 'id="panelProgress"' christmas-radio/index.html
+          grep -q "engine.next({reason:'panel'})" christmas-radio/assets/js/christmas-radio.js
+          grep -q "engine.previous()" christmas-radio/assets/js/christmas-radio.js
+          grep -q "'time'" christmas-radio/assets/js/christmas-radio.js
+          grep -q 'phase9-v1' christmas-radio/sw.js
+          grep -q "pathname.includes('/audio/')" christmas-radio/sw.js
+          grep -q 'christmas-radio-approved-skin.avif' christmas-radio/assets/css/art-skin.css
+          ! grep -q '<audio[^>]*autoplay' christmas-radio/index.html
+
+      - name: Install browser helper
+        run: npm install --no-save puppeteer-core@24.16.0
+
+      - name: Exercise phone interaction at 430x932 DPR 3
+        run: |
+          set -euo pipefail
+          mkdir -p phase9-output
+          python3 -m http.server 8000 --directory . >/tmp/christmas-radio-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_BIN"
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const puppeteer=require('puppeteer-core');
+          const fs=require('fs');
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+            const page=await browser.newPage();
+            await page.setViewport({width:430,height:932,deviceScaleFactor:3});
+            const errors=[];page.on('pageerror',e=>errors.push(String(e)));
+            await page.goto('http://127.0.0.1:8000/christmas-radio/',{waitUntil:'networkidle0'});
+            await page.waitForFunction(()=>document.querySelectorAll('#stationGrid .station-card').length===6,{timeout:10000});
+            const mainState=await page.evaluate(()=>({
+              station:document.body.dataset.station,
+              frequency:document.querySelector('#frequencyLabel')?.textContent.trim(),
+              skin:getComputedStyle(document.querySelector('.scene'),'::before').backgroundImage,
+              panelHidden:document.querySelector('#nowPanel').hidden,
+              dpr:devicePixelRatio,width:innerWidth,height:innerHeight
+            }));
+            if(mainState.station!=='bb-christmas-radio'||mainState.frequency!=='103.1'||!mainState.skin.includes('christmas-radio-approved-skin.avif')||!mainState.panelHidden)throw new Error('Main state regressed: '+JSON.stringify(mainState));
+            await page.screenshot({path:'phase9-output/main-430x932-dpr3.png',fullPage:false});
+
+            const nowButton='button[data-panel="nowPanel"]';
+            await page.click(nowButton);
+            await page.waitForFunction(()=>!document.querySelector('#nowPanel').hidden);
+            await page.waitForFunction(()=>document.activeElement?.classList.contains('panel-close'));
+            const opened=await page.evaluate(()=>({
+              track:document.querySelector('#panelTrack')?.textContent.trim(),
+              duration:document.querySelector('#panelDuration')?.textContent.trim(),
+              next:document.querySelector('#panelNextTrack')?.textContent.trim(),
+              current:document.querySelector(nowButton)?.getAttribute('aria-current'),
+              focus:document.activeElement?.className||''
+            }));
+            if(!opened.track||opened.duration==='--:--'||!opened.next||opened.current!=='page'||!opened.focus.includes('panel-close'))throw new Error('Now Playing panel incomplete: '+JSON.stringify(opened));
+
+            const originalTrack=opened.track;
+            await page.click('#panelNext');
+            await page.waitForFunction(title=>document.querySelector('#panelTrack')?.textContent.trim()!==title,{timeout:5000},originalTrack);
+            const afterNext=await page.evaluate(()=>({track:document.querySelector('#panelTrack').textContent.trim(),paused:document.querySelector('#christmasRadioAudio').paused,pressed:document.querySelector('#panelPlay').getAttribute('aria-pressed')}));
+            if(afterNext.track===originalTrack||afterNext.paused!==true||afterNext.pressed!=='false')throw new Error('Paused next-track behavior regressed: '+JSON.stringify(afterNext));
+            await page.click('#panelPrev');
+            await page.waitForFunction(title=>document.querySelector('#panelTrack')?.textContent.trim()===title,{timeout:5000},originalTrack);
+
+            await page.$eval('#panelPlay',button=>button.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerType:'touch'})));
+            await page.waitForFunction(()=>document.querySelector('#christmasRadioAudio').src.length>0,{timeout:5000});
+            const prime=await page.$eval('#christmasRadioAudio',a=>({src:a.src,preload:a.preload,paused:a.paused}));
+            if(!prime.src||prime.preload!=='metadata'||prime.paused!==true)throw new Error('Panel play prime failed: '+JSON.stringify(prime));
+            await page.screenshot({path:'phase9-output/now-playing-430x932-dpr3.png',fullPage:false});
+
+            await page.click('#nowPanel .panel-close');
+            await page.waitForFunction(()=>document.querySelector('#nowPanel').hidden);
+            await page.waitForFunction(()=>document.activeElement?.dataset?.panel==='nowPanel');
+            const closed=await page.evaluate(()=>({hidden:document.querySelector('#nowPanel').hidden,focus:document.activeElement?.dataset?.panel||null}));
+            if(!closed.hidden||closed.focus!=='nowPanel')throw new Error('Panel focus restore failed: '+JSON.stringify(closed));
+
+            await page.evaluate(()=>navigator.serviceWorker.ready.then(()=>true));
+            await page.reload({waitUntil:'networkidle0'});
+            await page.waitForFunction(()=>!!navigator.serviceWorker.controller,{timeout:10000});
+            const warm=await page.evaluate(async()=>{
+              const key=(await caches.keys()).find(k=>k==='bb-christmas-radio-shell-phase9-v1');
+              const urls=key?[...(await (await caches.open(key)).keys())].map(r=>r.url):[];
+              return{key,urls,station:document.body.dataset.station,frequency:document.querySelector('#frequencyLabel')?.textContent.trim()};
+            });
+            if(!warm.key||warm.urls.some(u=>u.includes('/audio/'))||warm.station!=='bb-christmas-radio'||warm.frequency!=='103.1')throw new Error('Phase 9 warm shell regressed: '+JSON.stringify(warm));
+            if(errors.length)throw new Error('Page errors: '+errors.join(' | '));
+
+            const report={status:'PASS',mainState,opened,afterNext,prime,closed,warm:{...warm,urls:warm.urls.map(u=>new URL(u).pathname)},pageErrors:errors};
+            fs.writeFileSync('phase9-output/report.json',JSON.stringify(report,null,2));
+            console.log('PHASE 9 INTERACTION',JSON.stringify(report,null,2));
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          python3 - <<'PY2'
+          from pathlib import Path
+          import struct
+          for name in ('main-430x932-dpr3.png','now-playing-430x932-dpr3.png'):
+              b=(Path('phase9-output')/name).read_bytes()
+              w,h=struct.unpack('>II',b[16:24])
+              print(name,w,h)
+              if (w,h)!=(1290,2796): raise SystemExit(f'unexpected DPR3 screenshot dimensions for {name}: {(w,h)}')
+          PY2
+
+      - name: Upload Phase 9 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: christmas-radio-phase-9-interaction-evidence
+          path: phase9-output/
+          if-no-files-found: warn
+          retention-days: 14

@@ -3,6 +3,7 @@ import {ChristmasRadioEngine} from './audio-engine.js';
 const STATIONS_URL='data/stations.json';
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+let lastPanelTrigger=null;
 
 function scheduleAppShell(){
   if(!('serviceWorker'in navigator))return;
@@ -18,26 +19,57 @@ function paintKnob(input){
   input.closest('.knob-control')?.style.setProperty('--knob-angle',`${angle}deg`);
 }
 
-function closePanels(){
+function formatTime(seconds){
+  if(!Number.isFinite(seconds)||seconds<0)return'--:--';
+  const total=Math.floor(seconds),minutes=Math.floor(total/60),secs=String(total%60).padStart(2,'0');
+  return`${minutes}:${secs}`;
+}
+
+function closePanels({restoreFocus=true}={}){
+  const open=$$('.app-panel').some(p=>!p.hidden),trigger=lastPanelTrigger;
   const scrim=$('#panelScrim');if(scrim)scrim.hidden=true;
   $$('.app-panel').forEach(p=>p.hidden=true);
   $$('.bottom-nav button').forEach(b=>b.removeAttribute('aria-current'));
+  document.body.classList.remove('panel-open');lastPanelTrigger=null;
+  if(restoreFocus&&open&&trigger?.isConnected)requestAnimationFrame(()=>trigger.focus({preventScroll:true}));
 }
 
 function openPanel(id,button){
-  closePanels();const panel=document.getElementById(id);if(!panel)return;
-  $('#panelScrim').hidden=false;panel.hidden=false;button.setAttribute('aria-current','page');
+  const panel=document.getElementById(id);if(!panel)return;
+  if(!panel.hidden&&button.getAttribute('aria-current')==='page'){closePanels();return}
+  closePanels({restoreFocus:false});lastPanelTrigger=button;
+  $('#panelScrim').hidden=false;panel.hidden=false;button.setAttribute('aria-current','page');document.body.classList.add('panel-open');
+  requestAnimationFrame(()=>$('.panel-close',panel)?.focus({preventScroll:true}));
+}
+
+function trapPanelFocus(event){
+  if(event.key!=='Tab')return;
+  const panel=$$('.app-panel').find(p=>!p.hidden);if(!panel)return;
+  const focusable=$$('button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])',panel).filter(el=>!el.hidden);
+  if(!focusable.length)return;
+  const first=focusable[0],last=focusable.at(-1),active=document.activeElement;
+  if(event.shiftKey&&active===first){event.preventDefault();last.focus()}
+  else if(!event.shiftKey&&active===last){event.preventDefault();first.focus()}
 }
 
 function syncAudioUI(engine,el){
   const state=engine.snapshot(),track=state.track;
   const title=track?.title||(state.playbackIntent?'Christmas broadcast ready':'Tap Play to begin');
   const artist=track?.artist||(state.count?'Brew & Brews Christmas Radio':'Christmas broadcast ready');
+  const duration=Number.isFinite(state.duration)?state.duration:Number(track?.durationSeconds);
+  const elapsed=Math.max(0,Number(state.currentTime)||0),progress=Number.isFinite(duration)&&duration>0?Math.min(100,(elapsed/duration)*100):0;
+  const next=state.stationId&&state.count>1?engine.trackAt(state.stationId,state.index+1):null;
   el.signal.textContent=state.playing?'ON AIR':'READY';
   el.title.textContent=title;el.artist.textContent=artist;
   el.panelTrack.textContent=title;el.panelArtist.textContent=artist;
-  el.play.setAttribute('aria-pressed',state.playbackIntent?'true':'false');
+  el.panelElapsed.textContent=formatTime(elapsed);el.panelDuration.textContent=formatTime(duration);
+  el.panelProgress.style.setProperty('--progress',`${progress}%`);el.panelProgress.setAttribute('aria-valuenow',String(Math.round(progress)));
+  el.panelNextTrack.textContent=next?.title||(state.count?'Rotation continues here':'Christmas broadcast ready');
+  const pressed=state.playbackIntent?'true':'false',label=state.playbackIntent?'Pause Christmas Radio':'Play Christmas Radio';
+  el.play.setAttribute('aria-pressed',pressed);el.play.setAttribute('aria-label',label);
+  el.panelPlay.setAttribute('aria-pressed',pressed);el.panelPlay.setAttribute('aria-label',label);el.panelPlay.textContent=state.playbackIntent?'Ⅱ':'▶';
   $('.play-icon',el.play).textContent=state.playbackIntent?'Ⅱ':'▶';
+  const disableTransport=state.count<2;el.panelPrev.disabled=disableTransport;el.panelNext.disabled=disableTransport;
 }
 
 class ChristmasStationController{
@@ -46,7 +78,8 @@ class ChristmasStationController{
     const f=document.createDocumentFragment();
     this.stations.forEach((s,i)=>{
       const b=document.createElement('button');b.type='button';b.className='station-card';
-      b.innerHTML=`<small>${s.frequency}</small><h3>${s.name}</h3><p>${s.tagline}</p>`;
+      const count=this.engine.stationTrackCount(s.id),countText=count===1?'1 track':`${count} tracks`;
+      b.innerHTML=`<small>${s.frequency}</small><h3>${s.name}</h3><p>${s.tagline}</p><span class="station-count">${countText}</span>`;
       b.addEventListener('click',()=>{this.tune(i,'card');closePanels()});f.append(b);
     });
     this.el.grid.replaceChildren(f);
@@ -72,7 +105,9 @@ async function init(){
     frequency:$('#frequencyLabel'),name:$('#stationName'),tagline:$('#stationTagline'),signal:$('#signalLabel'),
     title:$('#nowPlayingTitle'),artist:$('#nowPlayingArtist'),tuner:$('#stationTuner'),tuningKnob:$('#tuningKnob'),
     grid:$('#stationGrid'),play:$('#playButton'),volume:$('#volumeControl'),audio:$('#christmasRadioAudio'),
-    panelStation:$('#panelStation'),panelTrack:$('#panelTrack'),panelArtist:$('#panelArtist')
+    panelStation:$('#panelStation'),panelTrack:$('#panelTrack'),panelArtist:$('#panelArtist'),
+    panelPrev:$('#panelPrev'),panelPlay:$('#panelPlay'),panelNext:$('#panelNext'),panelElapsed:$('#panelElapsed'),panelDuration:$('#panelDuration'),
+    panelProgress:$('#panelProgress'),panelNextTrack:$('#panelNextTrack')
   };
   const engine=new ChristmasRadioEngine(el.audio);
   try{
@@ -93,18 +128,21 @@ async function init(){
     await controller.tune(restoredIndex>=0?restoredIndex:defaultIndex,'boot');
 
     const update=()=>syncAudioUI(engine,el);
-    ['ready','track','trackchange','station','playback','volume','error'].forEach(type=>engine.addEventListener(type,update));
+    ['ready','track','trackchange','station','playback','volume','error','time'].forEach(type=>engine.addEventListener(type,update));
+    const togglePlayback=async()=>{if(engine.playbackIntent)engine.pause();else await engine.play();syncAudioUI(engine,el)};
 
     el.tuner.addEventListener('input',e=>controller.tune(e.target.value,'tuner'));
     el.tuningKnob.addEventListener('input',e=>{paintKnob(e.target);controller.tune(e.target.value,'knob')});
     el.volume.addEventListener('input',e=>{engine.setVolume(e.target.value);paintKnob(e.target)});
-    el.play.addEventListener('pointerdown',()=>engine.prepare(),{passive:true});
-    el.play.addEventListener('click',async()=>{if(engine.playbackIntent)engine.pause();else await engine.play();syncAudioUI(engine,el)});
+    [el.play,el.panelPlay].forEach(button=>button.addEventListener('pointerdown',()=>engine.prepare(),{passive:true}));
+    el.play.addEventListener('click',togglePlayback);el.panelPlay.addEventListener('click',togglePlayback);
+    el.panelPrev.addEventListener('click',async()=>{await engine.previous();syncAudioUI(engine,el)});
+    el.panelNext.addEventListener('click',async()=>{await engine.next({reason:'panel'});syncAudioUI(engine,el)});
 
     $$('.bottom-nav button').forEach(b=>b.addEventListener('click',()=>openPanel(b.dataset.panel,b)));
-    $$('.panel-close').forEach(b=>b.addEventListener('click',closePanels));
-    $('#panelScrim').addEventListener('click',closePanels);
-    document.addEventListener('keydown',e=>{if(e.key==='Escape')closePanels()});
+    $$('.panel-close').forEach(b=>b.addEventListener('click',()=>closePanels()));
+    $('#panelScrim').addEventListener('click',()=>closePanels());
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')closePanels();else trapPanelFocus(e)});
     syncAudioUI(engine,el);
   }catch(err){
     console.error('[B&B Christmas Radio]',err);el.signal.textContent='OFFLINE';
