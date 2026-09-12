@@ -17,7 +17,7 @@
 }
 .scene::before{
   content:"";position:absolute;inset:0;
-  background:url("../../artwork/christmas-radio-approved-skin.webp") center top/100% 100% no-repeat;
+  background:url("../../artwork/christmas-radio-approved-skin.avif") center top/100% 100% no-repeat;
 }
 .scene::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.05),transparent 8% 92%,rgba(0,0,0,.05))}
 .scene>*{display:none!important}
