@@ -5,7 +5,7 @@ on:
     branches:
       - christmas-radio-phase-7-1-crisp-accepted-art
     paths:
-      - .phase7-2-production/part-06.txt
+      - .phase7-2-production/part-04.txt
 
 permissions:
   contents: write
@@ -40,8 +40,6 @@ jobs:
           test -f .phase7-2-production/part-02.txt
           test -f .phase7-2-production/part-03.txt
           test -f .phase7-2-production/part-04.txt
-          test -f .phase7-2-production/part-05.txt
-          test -f .phase7-2-production/part-06.txt
           mkdir -p christmas-radio/artwork
           cat .phase7-2-production/part-*.txt | base64 -d > christmas-radio/artwork/christmas-roastery-production.webp
           python -m pip install --quiet pillow
