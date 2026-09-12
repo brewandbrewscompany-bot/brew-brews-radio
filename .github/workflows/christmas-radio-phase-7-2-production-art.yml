@@ -5,7 +5,7 @@ on:
     branches:
       - christmas-radio-phase-7-1-crisp-accepted-art
     paths:
-      - .phase7-2-production/christmas-roastery-production.webp.b64
+      - .phase7-2-production/part-06.txt
 
 permissions:
   contents: write
@@ -32,12 +32,18 @@ jobs:
           echo "main=$(git rev-parse origin/main)"
           echo "target=$current_remote"
 
-      - name: Reconstruct exact generated production WebP
+      - name: Reconstruct generated production WebP
         shell: bash
         run: |
           set -euo pipefail
+          test -f .phase7-2-production/part-01.txt
+          test -f .phase7-2-production/part-02.txt
+          test -f .phase7-2-production/part-03.txt
+          test -f .phase7-2-production/part-04.txt
+          test -f .phase7-2-production/part-05.txt
+          test -f .phase7-2-production/part-06.txt
           mkdir -p christmas-radio/artwork
-          base64 -d .phase7-2-production/christmas-roastery-production.webp.b64 > christmas-radio/artwork/christmas-roastery-production.webp
+          cat .phase7-2-production/part-*.txt | base64 -d > christmas-radio/artwork/christmas-roastery-production.webp
           python -m pip install --quiet pillow
           python - <<'PY'
           from PIL import Image
@@ -46,7 +52,7 @@ jobs:
           p = Path('christmas-radio/artwork/christmas-roastery-production.webp')
           data = p.read_bytes()
           digest = hashlib.sha256(data).hexdigest()
-          if digest != '2b484f55ce9c5bd71b4810b4babc05b22d3f6a433a74177067c38911b39a4cb8':
+          if digest != '5fae0022ada8fecd5fb1d067cdf74ccebe5ddece2108b1e26ae1d949da76fe50':
               raise SystemExit(f'Unexpected SHA-256: {digest}')
           with Image.open(p) as im:
               if im.size != (852, 1846):
@@ -63,6 +69,6 @@ jobs:
           git config user.name "brewandbrewscompany-bot"
           git config user.email "brewandbrewscompany@gmail.com"
           git add christmas-radio/artwork/christmas-roastery-production.webp
-          git rm .phase7-2-production/christmas-roastery-production.webp.b64
+          git rm -r .phase7-2-production
           git commit -m "Add clear Christmas Radio production artwork"
           git push origin HEAD:christmas-radio-phase-7-1-crisp-accepted-art
