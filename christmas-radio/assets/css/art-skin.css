@@ -7,7 +7,7 @@
    but no text or control depends on those pixels anymore. */
 .scene{position:fixed;z-index:0;inset:0;background:#120b07;overflow:hidden}
 .scene::before{content:"";position:absolute;inset:-20px;background:url("../../artwork/render-430x932(1).png") center/cover no-repeat;filter:saturate(1.05) contrast(1.03) brightness(.83);transform:scale(1.035)}
-.scene::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,7,4,.32) 0%,rgba(12,7,4,.14) 21%,rgba(12,7,4,.16) 34%,rgba(11,6,3,.48) 47%,rgba(9,5,3,.66) 64%,rgba(7,4,2,.91) 74%,rgba(5,3,2,.98) 86%,rgba(4,2,1,.995) 100%),radial-gradient(ellipse at 50% 53%,transparent 0 32%,rgba(0,0,0,.22) 72%,rgba(0,0,0,.52) 100%);pointer-events:none}
+.scene::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,7,4,.32) 0%,rgba(12,7,4,.14) 21%,rgba(12,7,4,.16) 34%,rgba(11,6,3,.48) 47%,rgba(9,5,3,.68) 60%,rgba(7,4,2,.96) 68%,rgb(5,3,2) 72%,rgb(4,2,1) 100%),radial-gradient(ellipse at 50% 53%,transparent 0 32%,rgba(0,0,0,.22) 72%,rgba(0,0,0,.52) 100%);pointer-events:none}
 .scene>*{display:none!important}
 
 /* Phone-first stage. The radio becomes the sharp foreground object while the roastery reads as depth. */
@@ -16,7 +16,7 @@
 .scene-copy p{margin:0;color:#fff1d0;font:700 clamp(.76rem,3vw,.92rem)/1.25 Georgia,'Times New Roman',serif;letter-spacing:.015em;font-style:normal}
 .scene-copy span{display:block;margin-top:4px;color:#e8c98f;font:700 clamp(.43rem,1.8vw,.54rem)/1.2 system-ui,sans-serif;letter-spacing:.14em}
 
-.radio{position:relative;z-index:4;width:min(100%,410px);margin:clamp(190px,24dvh,255px) auto 0;padding:22px 15px 14px;border:2px solid rgba(224,169,77,.68);border-radius:34px 34px 24px 24px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.027) 0 1px,transparent 1px 5px),linear-gradient(145deg,#9a572b 0,#6b3518 24%,#45200e 58%,#211008 100%);box-shadow:0 24px 55px #000e,inset 0 2px rgba(255,255,255,.18),inset 0 -20px 32px #0009;pointer-events:auto;isolation:isolate}
+.radio{position:relative;z-index:4;width:min(100%,410px);margin:clamp(215px,27dvh,260px) auto 0;padding:22px 15px 14px;border:2px solid rgba(224,169,77,.68);border-radius:34px 34px 24px 24px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.027) 0 1px,transparent 1px 5px),linear-gradient(145deg,#9a572b 0,#6b3518 24%,#45200e 58%,#211008 100%);box-shadow:0 24px 55px #000e,inset 0 2px rgba(255,255,255,.18),inset 0 -20px 32px #0009;pointer-events:auto;isolation:isolate}
 .radio::before{content:"";position:absolute;z-index:-1;inset:7px;border:1px solid rgba(34,13,5,.86);border-radius:27px 27px 18px 18px;box-shadow:inset 0 0 22px rgba(0,0,0,.28);pointer-events:none}
 .radio::after{content:"";position:absolute;z-index:-1;left:3%;right:3%;top:2%;height:36%;border-radius:28px 28px 9px 9px;background:linear-gradient(110deg,rgba(255,255,255,.08),transparent 22% 75%,rgba(255,255,255,.035));pointer-events:none}
 
