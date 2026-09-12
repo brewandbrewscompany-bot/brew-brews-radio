@@ -21,7 +21,7 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import struct, hashlib
+          import json, struct, hashlib
           p=Path('christmas-radio/artwork/render-430x932(1).png')
           if not p.exists():
               raise SystemExit('atmosphere artwork is missing')
@@ -34,10 +34,17 @@ jobs:
           if len(b)!=572728:
               raise SystemExit(f'atmosphere artwork byte size changed: {len(b)}')
           print(f'atmosphere art: {w}x{h}; bytes={len(b)}; sha256={hashlib.sha256(b).hexdigest()}')
+          manifest=json.loads(Path('christmas-radio/manifest.webmanifest').read_text())
+          if manifest.get('display')!='standalone' or manifest.get('orientation')!='portrait':
+              raise SystemExit('app manifest lost standalone portrait configuration')
+          if not Path('christmas-radio/favicon.svg').exists():
+              raise SystemExit('Christmas Radio favicon is missing')
           PY
           test "$(grep -o 'render-430x932(1).png' christmas-radio/assets/css/art-skin.css | wc -l)" -ge 1
           grep -q 'artwork/render-430x932(1).png' christmas-radio/index.html
           grep -q 'type="image/png"' christmas-radio/index.html
+          grep -q 'rel="manifest" href="manifest.webmanifest"' christmas-radio/index.html
+          grep -q 'rel="icon" href="favicon.svg"' christmas-radio/index.html
           grep -q 'Phase 7.2 production vector skin' christmas-radio/assets/css/art-skin.css
           grep -q '\.radio-crown' christmas-radio/assets/css/art-skin.css
           grep -q '\.station-readout' christmas-radio/assets/css/art-skin.css
@@ -47,7 +54,7 @@ jobs:
       - name: Install browser helper
         run: npm install --no-save puppeteer-core@24.16.0
 
-      - name: Validate crisp live UI at 430x932 DPR 3
+      - name: Validate crisp live UI and interactions at 430x932 DPR 3
         run: |
           set -euo pipefail
           mkdir -p phase7-output
@@ -77,6 +84,50 @@ jobs:
             await page.waitForFunction(()=>document.querySelectorAll('#stationGrid .station-card').length===6,{timeout:10000});
             await page.waitForFunction(()=>document.querySelector('#frequencyLabel')?.textContent.trim()==='103.1',{timeout:10000});
 
+            const assetStatus=await page.evaluate(async()=>{
+              const [manifest,favicon]=await Promise.all([fetch('manifest.webmanifest'),fetch('favicon.svg')]);
+              const manifestJson=await manifest.json();
+              return {manifest:manifest.status,favicon:favicon.status,display:manifestJson.display,orientation:manifestJson.orientation};
+            });
+            if(assetStatus.manifest!==200||assetStatus.favicon!==200||assetStatus.display!=='standalone'||assetStatus.orientation!=='portrait'){
+              throw new Error('App shell assets failed: '+JSON.stringify(assetStatus));
+            }
+
+            // Exercise Stations panel, station selection, and restore the flagship station.
+            await page.click('.bottom-nav button[data-panel="stationsPanel"]');
+            await page.waitForFunction(()=>!document.querySelector('#stationsPanel').hidden&&!document.querySelector('#panelScrim').hidden);
+            const stationCount=await page.$$eval('#stationGrid .station-card',cards=>cards.length);
+            if(stationCount!==6)throw new Error(`Expected 6 station cards, found ${stationCount}`);
+            await page.click('#stationGrid .station-card:nth-child(1)');
+            await page.waitForFunction(()=>document.body.dataset.station==='snowfall-am'&&document.querySelector('#frequencyLabel')?.textContent.trim()==='88.7');
+            const tunedSnowfall=await page.evaluate(()=>({station:document.body.dataset.station,frequency:document.querySelector('#frequencyLabel').textContent.trim()}));
+
+            await page.click('.bottom-nav button[data-panel="stationsPanel"]');
+            await page.waitForFunction(()=>!document.querySelector('#stationsPanel').hidden);
+            await page.click('#stationGrid .station-card:nth-child(5)');
+            await page.waitForFunction(()=>document.body.dataset.station==='bb-christmas-radio'&&document.querySelector('#frequencyLabel')?.textContent.trim()==='103.1');
+
+            // Exercise Now Playing panel and close behavior.
+            await page.click('.bottom-nav button[data-panel="nowPanel"]');
+            await page.waitForFunction(()=>!document.querySelector('#nowPanel').hidden&&!document.querySelector('#panelScrim').hidden);
+            const nowPanelVisible=await page.evaluate(()=>!document.querySelector('#nowPanel').hidden);
+            await page.click('#nowPanel .panel-close');
+            await page.waitForFunction(()=>document.querySelector('#nowPanel').hidden&&document.querySelector('#panelScrim').hidden);
+
+            // Exercise volume control without starting audio.
+            const volumeProbe=await page.evaluate(()=>{
+              const input=document.querySelector('#volumeControl');
+              const control=input.closest('.knob-control');
+              const before=getComputedStyle(control).getPropertyValue('--knob-angle').trim();
+              input.value='0.55';
+              input.dispatchEvent(new Event('input',{bubbles:true}));
+              const after=getComputedStyle(control).getPropertyValue('--knob-angle').trim();
+              return {value:input.value,before,after};
+            });
+            if(volumeProbe.value!=='0.55'||!volumeProbe.after||volumeProbe.after===volumeProbe.before){
+              throw new Error('Volume UI did not respond: '+JSON.stringify(volumeProbe));
+            }
+
             const probe=await page.evaluate(async()=>{
               const img=new Image();
               img.src='artwork/render-430x932(1).png?phase7-2-check=1';
@@ -105,6 +156,7 @@ jobs:
               const crown=rect('.radio-crown');
               const readout=rect('.station-readout');
               const sceneCopy=rect('.scene-copy');
+              const panels=[...document.querySelectorAll('.app-panel')].map(p=>({id:p.id,hidden:p.hidden}));
               return {
                 image:{width:img.naturalWidth,height:img.naturalHeight,averageLuminance:sum/count,maxLuminance:max,brightSampleFraction:bright/count},
                 css:{beforeBackgroundImage:before.backgroundImage,afterBackgroundImage:after.backgroundImage},
@@ -118,20 +170,20 @@ jobs:
                 bodyStation:document.body.dataset.station||null,
                 frequency:document.querySelector('#frequencyLabel')?.textContent.trim()||null,
                 stationName:document.querySelector('#stationName')?.textContent.trim()||null,
-                navLabels:[...document.querySelectorAll('.bottom-nav b')].map(x=>x.textContent.trim())
+                navLabels:[...document.querySelectorAll('.bottom-nav b')].map(x=>x.textContent.trim()),
+                panels
               };
             });
 
-            await page.screenshot({path:'phase7-output/render-430x932-dpr3.png',fullPage:false});
-            const report={status:'PASS',...probe,httpErrors,pageErrors};
-            fs.writeFileSync('phase7-output/report.json',JSON.stringify(report,null,2));
-            console.log('PHASE 7.2 CRISP LIVE UI CHECK',JSON.stringify(report,null,2));
+            const interactions={assetStatus,tunedSnowfall,nowPanelVisible,volumeProbe};
+            const criticalHttp=httpErrors.filter(x=>!x.url.endsWith('/favicon.ico'));
+            const report={status:'PASS',...probe,interactions,httpErrors,pageErrors};
 
             if(probe.image.width!==430||probe.image.height!==932)throw new Error('Atmosphere art dimensions changed');
             if(probe.viewport.dpr!==3)throw new Error('High-DPI gate did not run at DPR 3');
             if(probe.image.averageLuminance<20||probe.image.maxLuminance<100||probe.image.brightSampleFraction<.08)throw new Error('Atmosphere artwork decoded too dark');
             if(!probe.css.beforeBackgroundImage.includes('render-430x932(1).png'))throw new Error('Atmosphere artwork is not loaded behind the live UI');
-            if(probe.bodyStation!=='bb-christmas-radio'||probe.frequency!=='103.1')throw new Error('Flagship station read changed');
+            if(probe.bodyStation!=='bb-christmas-radio'||probe.frequency!=='103.1')throw new Error('Flagship station was not restored after interaction test');
             if(!probe.stationName.includes('Christmas Radio'))throw new Error('Live station name is missing');
             if(probe.viewport.scrollWidth>430)throw new Error('Horizontal phone overflow detected');
             if(probe.play.width<55||probe.play.height<55)throw new Error('Play target is too small');
@@ -142,9 +194,13 @@ jobs:
             if(probe.navLabels.join('|')!=='Stations|Now Playing|About|Games|Shop')throw new Error('Navigation labels changed');
             if(Math.abs(probe.nav.bottom-932)>1||probe.nav.left<0||probe.nav.right>431)throw new Error('Bottom navigation is not fully on-screen');
             if(probe.radio.top>=probe.nav.top)throw new Error('Radio starts below navigation');
-            const criticalHttp=httpErrors.filter(x=>!x.url.endsWith('/favicon.ico'));
+            if(probe.panels.some(p=>!p.hidden))throw new Error('A panel remained open after interaction test: '+JSON.stringify(probe.panels));
             if(criticalHttp.length)throw new Error('HTTP resource errors: '+JSON.stringify(criticalHttp));
             if(pageErrors.length)throw new Error('Page errors: '+pageErrors.join(' | '));
+
+            await page.screenshot({path:'phase7-output/render-430x932-dpr3.png',fullPage:false});
+            fs.writeFileSync('phase7-output/report.json',JSON.stringify(report,null,2));
+            console.log('PHASE 7.2 CRISP LIVE UI + INTERACTION CHECK',JSON.stringify(report,null,2));
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
