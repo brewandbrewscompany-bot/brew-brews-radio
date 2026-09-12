@@ -4,6 +4,13 @@ const STATIONS_URL='data/stations.json';
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 
+function scheduleAppShell(){
+  if(!('serviceWorker'in navigator))return;
+  const register=()=>navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(err=>console.warn('[B&B Christmas Radio] app shell unavailable',err));
+  const schedule=()=>('requestIdleCallback'in window?requestIdleCallback(register,{timeout:1200}):setTimeout(register,0));
+  if(document.readyState==='complete')schedule();else window.addEventListener('load',schedule,{once:true});
+}
+
 function paintKnob(input){
   if(!input)return;
   const min=Number(input.min)||0,max=Number(input.max)||1,value=Number(input.value)||0;
@@ -69,7 +76,7 @@ async function init(){
   };
   const engine=new ChristmasRadioEngine(el.audio);
   try{
-    const [stationResponse]=await Promise.all([fetch(STATIONS_URL,{cache:'no-cache'}),engine.init()]);
+    const [stationResponse]=await Promise.all([fetch(STATIONS_URL,{cache:'default'}),engine.init()]);
     if(!stationResponse.ok)throw new Error(`Station manifest ${stationResponse.status}`);
     const stationManifest=await stationResponse.json(),stations=stationManifest.stations||[];
     if(!stations.length)throw new Error('Station manifest is empty');
@@ -91,6 +98,7 @@ async function init(){
     el.tuner.addEventListener('input',e=>controller.tune(e.target.value,'tuner'));
     el.tuningKnob.addEventListener('input',e=>{paintKnob(e.target);controller.tune(e.target.value,'knob')});
     el.volume.addEventListener('input',e=>{engine.setVolume(e.target.value);paintKnob(e.target)});
+    el.play.addEventListener('pointerdown',()=>engine.prepare(),{passive:true});
     el.play.addEventListener('click',async()=>{if(engine.playbackIntent)engine.pause();else await engine.play();syncAudioUI(engine,el)});
 
     $$('.bottom-nav button').forEach(b=>b.addEventListener('click',()=>openPanel(b.dataset.panel,b)));
@@ -104,4 +112,5 @@ async function init(){
   }
 }
 
+scheduleAppShell();
 document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init,{once:true}):init();

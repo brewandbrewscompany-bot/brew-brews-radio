@@ -1,0 +1,105 @@
+name: Christmas Radio Phase 8 Experience + Performance Gate
+
+on:
+  push:
+    branches: [christmas-radio-phase-8-experience-performance]
+    paths:
+      - 'christmas-radio/**'
+      - '.github/workflows/christmas-radio-phase-8-performance.yml'
+  workflow_dispatch:
+
+jobs:
+  phone-performance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify Phase 8 shell rules
+        run: |
+          set -euo pipefail
+          test -s christmas-radio/sw.js
+          grep -q 'modulepreload.*audio-engine.js' christmas-radio/index.html
+          grep -q 'preload.*data/stations.json' christmas-radio/index.html
+          grep -q 'preload.*data/tracks.json' christmas-radio/index.html
+          grep -q "addEventListener('pointerdown'.*engine.prepare" christmas-radio/assets/js/christmas-radio.js
+          grep -q "serviceWorker.register('./sw.js'" christmas-radio/assets/js/christmas-radio.js
+          grep -q "prepare(stationId=this.activeStationId" christmas-radio/assets/js/audio-engine.js
+          grep -q "request.headers.has('range')" christmas-radio/sw.js
+          grep -q "pathname.includes('/audio/')" christmas-radio/sw.js
+          ! grep -q "'./audio/" christmas-radio/sw.js
+          grep -q 'christmas-radio-approved-skin.avif' christmas-radio/assets/css/art-skin.css
+
+      - name: Install browser helper
+        run: npm install --no-save puppeteer-core@24.16.0
+
+      - name: Test cold + warm app shell at 430x932 DPR 3
+        run: |
+          set -euo pipefail
+          mkdir -p phase8-output
+          python3 -m http.server 8000 --directory . >/tmp/christmas-radio-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_BIN"
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const puppeteer=require('puppeteer-core');
+          const fs=require('fs');
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+            const page=await browser.newPage();
+            await page.setViewport({width:430,height:932,deviceScaleFactor:3});
+            const errors=[];page.on('pageerror',e=>errors.push(String(e)));
+            await page.goto('http://127.0.0.1:8000/christmas-radio/',{waitUntil:'networkidle0'});
+            await page.waitForFunction(()=>document.querySelectorAll('#stationGrid .station-card').length===6,{timeout:10000});
+            const cold=await page.evaluate(()=>({station:document.body.dataset.station,frequency:document.querySelector('#frequencyLabel')?.textContent.trim(),skin:getComputedStyle(document.querySelector('.scene'),'::before').backgroundImage,dpr:devicePixelRatio,width:innerWidth,height:innerHeight}));
+            if(cold.station!=='bb-christmas-radio'||cold.frequency!=='103.1'||!cold.skin.includes('christmas-radio-approved-skin.avif'))throw new Error('Cold visual state regressed: '+JSON.stringify(cold));
+
+            await page.dispatchEvent('#playButton','pointerdown',{pointerType:'touch'});
+            await page.waitForFunction(()=>document.querySelector('#christmasRadioAudio').src.length>0,{timeout:5000});
+            const prime=await page.$eval('#christmasRadioAudio',a=>({src:a.src,preload:a.preload,paused:a.paused}));
+            if(!prime.src||prime.preload!=='metadata'||prime.paused!==true)throw new Error('Play intent prime failed: '+JSON.stringify(prime));
+
+            await page.evaluate(()=>navigator.serviceWorker.ready.then(()=>true));
+            await page.reload({waitUntil:'networkidle0'});
+            await page.waitForFunction(()=>!!navigator.serviceWorker.controller,{timeout:10000});
+            await page.waitForFunction(()=>document.querySelectorAll('#stationGrid .station-card').length===6,{timeout:10000});
+            const warm=await page.evaluate(async()=>{
+              const keys=await caches.keys();
+              const key=keys.find(k=>k.startsWith('bb-christmas-radio-shell-'));
+              const urls=key?[...(await (await caches.open(key)).keys())].map(r=>r.url):[];
+              return {key,urls,controller:navigator.serviceWorker.controller?.scriptURL||null,station:document.body.dataset.station,frequency:document.querySelector('#frequencyLabel')?.textContent.trim()};
+            });
+            if(!warm.key||!warm.controller)throw new Error('Warm service-worker shell missing: '+JSON.stringify(warm));
+            const required=['christmas-radio-approved-skin.avif','assets/js/audio-engine.js','data/stations.json','data/tracks.json'];
+            for(const name of required)if(!warm.urls.some(u=>u.includes(name)))throw new Error('Missing warm cache entry '+name);
+            if(warm.urls.some(u=>u.includes('/audio/')))throw new Error('Audio file entered app-shell cache');
+            if(warm.station!=='bb-christmas-radio'||warm.frequency!=='103.1')throw new Error('Warm state regressed');
+            if(errors.length)throw new Error('Page errors: '+errors.join(' | '));
+
+            await page.screenshot({path:'phase8-output/render-430x932-dpr3.png',fullPage:false});
+            const report={status:'PASS',cold,prime,warm:{...warm,urls:warm.urls.map(u=>new URL(u).pathname)},pageErrors:errors};
+            fs.writeFileSync('phase8-output/report.json',JSON.stringify(report,null,2));
+            console.log('PHASE 8 EXPERIENCE + PERFORMANCE',JSON.stringify(report,null,2));
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct
+          b=Path('phase8-output/render-430x932-dpr3.png').read_bytes()
+          w,h=struct.unpack('>II',b[16:24])
+          print(f'physical viewport screenshot: {w}x{h}')
+          if (w,h)!=(1290,2796): raise SystemExit(f'unexpected DPR3 screenshot dimensions: {(w,h)}')
+          PY
+
+      - name: Upload Phase 8 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: christmas-radio-phase-8-experience-performance-evidence
+          path: phase8-output/
+          if-no-files-found: warn
+          retention-days: 14

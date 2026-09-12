@@ -19,7 +19,7 @@ export class ChristmasRadioEngine extends EventTarget{
   }
 
   async init(){
-    const res=await fetch(this.manifestUrl,{cache:'no-cache'});
+    const res=await fetch(this.manifestUrl,{cache:'default'});
     if(!res.ok)throw new Error(`Track manifest ${res.status}`);
     const manifest=await res.json();
     this.policy={...DEFAULT_POLICY,...(manifest.audioPolicy||{})};
@@ -72,13 +72,24 @@ export class ChristmasRadioEngine extends EventTarget{
     this.#emit('station',this.snapshot());return this.snapshot();
   }
 
+  prepare(stationId=this.activeStationId,{preload='metadata'}={}){
+    const id=stationId==null?'':String(stationId);if(!id)return false;
+    const selected=this.selectedTrack(id),track=this.currentTrack?.stationId===id&&this.currentTrack===selected?this.currentTrack:selected;
+    if(!track?.src)return false;
+    const absolute=new URL(track.src,document.baseURI).href,changed=this.audio.src!==absolute;
+    this.audio.preload=preload;
+    if(changed){this.audio.src=track.src;this.audio.load()}
+    else if(this.audio.networkState===HTMLMediaElement.NETWORK_EMPTY)this.audio.load();
+    if(this.currentTrack!==track){this.currentTrack=track;this.#updateMediaSession();this.#emit('track',this.snapshot())}
+    return true;
+  }
+
   async play(){
     this.playbackIntent=true;
     if(!this.activeStationId)return{started:false,reason:'no-station'};
     const track=this.currentTrack?.stationId===this.activeStationId?this.currentTrack:this.selectedTrack();
     if(!track){this.#emit('playback',this.snapshot());return{started:false,reason:'no-track'}}
-    const absolute=new URL(track.src,document.baseURI).href;
-    if(this.currentTrack!==track||this.audio.src!==absolute)await this.#loadTrack(track,{autoplay:false,prime:true});
+    this.prepare(this.activeStationId,{preload:'auto'});
     try{await this.audio.play();this.#prepareNext();this.#updateMediaSession();return{started:true,track:this.currentTrack}}
     catch(error){this.playbackIntent=false;this.#emit('error',{type:'play',error,snapshot:this.snapshot()});return{started:false,reason:'play-rejected',error}}
   }
