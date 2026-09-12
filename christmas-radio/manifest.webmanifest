@@ -1,0 +1,20 @@
+{
+  "name": "Brew & Brews Christmas Radio",
+  "short_name": "B&B Christmas",
+  "description": "Christmas music from Brew & Brews in Louisburg, Kansas.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#120b07",
+  "theme_color": "#063d2f",
+  "categories": ["music", "entertainment"],
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
