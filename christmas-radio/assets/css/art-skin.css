@@ -7,7 +7,7 @@
    but no text or control depends on those pixels anymore. */
 .scene{position:fixed;z-index:0;inset:0;background:#120b07;overflow:hidden}
 .scene::before{content:"";position:absolute;inset:-20px;background:url("../../artwork/render-430x932(1).png") center/cover no-repeat;filter:saturate(1.05) contrast(1.03) brightness(.83);transform:scale(1.035)}
-.scene::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,7,4,.32) 0%,rgba(12,7,4,.14) 21%,rgba(12,7,4,.16) 34%,rgba(11,6,3,.48) 47%,rgba(8,4,2,.82) 82%,rgba(4,2,1,.95) 100%),radial-gradient(ellipse at 50% 53%,transparent 0 32%,rgba(0,0,0,.22) 72%,rgba(0,0,0,.52) 100%);pointer-events:none}
+.scene::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,7,4,.32) 0%,rgba(12,7,4,.14) 21%,rgba(12,7,4,.16) 34%,rgba(11,6,3,.48) 47%,rgba(9,5,3,.66) 64%,rgba(7,4,2,.91) 74%,rgba(5,3,2,.98) 86%,rgba(4,2,1,.995) 100%),radial-gradient(ellipse at 50% 53%,transparent 0 32%,rgba(0,0,0,.22) 72%,rgba(0,0,0,.52) 100%);pointer-events:none}
 .scene>*{display:none!important}
 
 /* Phone-first stage. The radio becomes the sharp foreground object while the roastery reads as depth. */
