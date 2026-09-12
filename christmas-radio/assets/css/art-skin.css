@@ -1,69 +1,117 @@
-/* Brew & Brews Christmas Radio — Phase 7.2 production vector skin.
-   The photograph is atmosphere only. Every readable/tappable radio element stays live HTML/CSS
-   so text, controls and navigation remain crisp at high-DPI phone resolutions. */
-:root{--nav-h:92px;--station-position:66.5%;--cream:#fff0d1;--gold:#dca64f;--gold2:#ffd98a;--evergreen:#063d2f}
+/* Brew & Brews Christmas Radio — Phase 7.3 approved-art overlay skin.
+   The approved artwork is the visible radio. Working HTML controls stay aligned above it as
+   transparent hit areas, so playback/tuning/volume behavior remains real without redrawing the radio. */
+:root{
+  --nav-h:108px;
+  --stage-w:min(100vw,calc(100dvh * 430 / 932));
+  --cream:#fff0d1;
+  --gold:#dca64f;
+  --evergreen:#063d2f;
+}
 
-/* Keep the approved roastery composition as the room layer. It may be soft at native 430px,
-   but no text or control depends on those pixels anymore. */
-.scene{position:fixed;z-index:0;inset:0;background:#120b07;overflow:hidden}
-.scene::before{content:"";position:absolute;inset:-20px;background:url("../../artwork/render-430x932(1).png") center/cover no-repeat;filter:saturate(1.05) contrast(1.03) brightness(.83);transform:scale(1.035)}
-.scene::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,7,4,.32) 0%,rgba(12,7,4,.14) 21%,rgba(12,7,4,.16) 34%,rgba(11,6,3,.48) 47%,rgba(9,5,3,.68) 60%,rgba(7,4,2,.96) 68%,rgb(5,3,2) 72%,rgb(4,2,1) 100%),radial-gradient(ellipse at 50% 53%,transparent 0 32%,rgba(0,0,0,.22) 72%,rgba(0,0,0,.52) 100%);pointer-events:none}
+/* Exact approved scene/radio skin. 852x1846 source is downsampled in-browser for a cleaner phone read. */
+.scene{
+  position:fixed;z-index:0;top:0;bottom:0;left:50%;
+  width:var(--stage-w);height:100dvh;transform:translateX(-50%);
+  overflow:hidden;background:#160d08;
+}
+.scene::before{
+  content:"";position:absolute;inset:0;
+  background:url("../../artwork/christmas-radio-approved-skin.webp") center top/100% 100% no-repeat;
+}
+.scene::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.05),transparent 8% 92%,rgba(0,0,0,.05))}
 .scene>*{display:none!important}
 
-/* Phone-first stage. The radio becomes the sharp foreground object while the roastery reads as depth. */
-.app{position:relative;z-index:5;width:min(94vw,430px);min-height:100dvh;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) 8px calc(var(--nav-h) + env(safe-area-inset-bottom) + 18px);pointer-events:none}
-.scene-copy{display:block;position:relative;z-index:2;width:min(92%,365px);margin:0 auto;padding:9px 13px 8px;border:1px solid rgba(238,190,105,.46);border-radius:9px;background:linear-gradient(180deg,rgba(57,28,13,.93),rgba(31,14,7,.92));box-shadow:0 9px 28px #0009,inset 0 1px rgba(255,255,255,.08);text-align:center;text-shadow:0 2px 8px #000;pointer-events:none}
-.scene-copy p{margin:0;color:#fff1d0;font:700 clamp(.76rem,3vw,.92rem)/1.25 Georgia,'Times New Roman',serif;letter-spacing:.015em;font-style:normal}
-.scene-copy span{display:block;margin-top:4px;color:#e8c98f;font:700 clamp(.43rem,1.8vw,.54rem)/1.2 system-ui,sans-serif;letter-spacing:.14em}
+/* Full-screen interaction plane. The drawn radio remains in the approved artwork below. */
+.app{
+  position:fixed;z-index:10;top:0;bottom:0;left:50%;
+  width:var(--stage-w);height:100dvh;min-height:0;margin:0;padding:0;
+  transform:translateX(-50%);pointer-events:none;overflow:visible;
+}
+.scene-copy{display:none!important}
+.radio{
+  position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;
+  border:0;border-radius:0;background:none;box-shadow:none;isolation:auto;pointer-events:none;
+}
+.radio::before,.radio::after,.radio-garland,.radio-crown{display:none!important}
 
-.radio{position:relative;z-index:4;width:min(100%,410px);margin:clamp(215px,27dvh,260px) auto 0;padding:22px 15px 14px;border:2px solid rgba(224,169,77,.68);border-radius:34px 34px 24px 24px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.027) 0 1px,transparent 1px 5px),linear-gradient(145deg,#9a572b 0,#6b3518 24%,#45200e 58%,#211008 100%);box-shadow:0 24px 55px #000e,inset 0 2px rgba(255,255,255,.18),inset 0 -20px 32px #0009;pointer-events:auto;isolation:isolate}
-.radio::before{content:"";position:absolute;z-index:-1;inset:7px;border:1px solid rgba(34,13,5,.86);border-radius:27px 27px 18px 18px;box-shadow:inset 0 0 22px rgba(0,0,0,.28);pointer-events:none}
-.radio::after{content:"";position:absolute;z-index:-1;left:3%;right:3%;top:2%;height:36%;border-radius:28px 28px 9px 9px;background:linear-gradient(110deg,rgba(255,255,255,.08),transparent 22% 75%,rgba(255,255,255,.035));pointer-events:none}
+/* The old dial UI is retained in the DOM for controller synchronization but has no visible surface.
+   The physical-looking TUNING knob in the artwork is the user-facing tuner. */
+.dial-bezel{
+  position:absolute!important;left:50%;top:50%;width:1px!important;height:1px!important;
+  margin:0!important;padding:0!important;border:0!important;opacity:0!important;
+  overflow:hidden!important;pointer-events:none!important;
+}
+.dial-scale{display:none!important}.dial-input{width:1px!important;height:1px!important;pointer-events:none!important}
 
-.radio-garland{position:absolute;z-index:5;left:-2%;right:-2%;top:-20px;height:45px;border-top:15px solid #214d2d;border-radius:50%;filter:drop-shadow(0 5px 4px #0009)}
-.radio-garland::before{content:"";position:absolute;left:11%;right:11%;top:-13px;height:31px;background:radial-gradient(ellipse,#285c35 0 18%,transparent 20%) 0 0/34px 18px}
-.radio-garland i{top:-10px;width:9px;height:9px}
+/* Actual control centers measured from the approved 852x1846 artwork and expressed as percentages
+   of the 430x932 stage so they remain aligned on normal portrait phone sizes. */
+.control-deck{position:absolute;inset:0;width:100%;height:100%;margin:0;display:block;pointer-events:none}
+.knob-control{
+  position:absolute;display:block;width:17.2%;aspect-ratio:1;margin:0;
+  color:transparent;pointer-events:auto;touch-action:pan-y;
+}
+.volume-control{left:24.7%;top:59.7%;transform:translate(-50%,-50%)}
+.tuner-control{left:73.7%;top:59.7%;transform:translate(-50%,-50%)}
+.knob-control .knob,.knob-control>b{display:none!important}
+.knob-control input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;pointer-events:auto;cursor:pointer;touch-action:pan-y}
 
-.radio-crown{position:relative;z-index:2;text-align:center;padding:6px 0 12px}
-.tree-mark{display:block;color:#fff0cb;font-size:.9rem;line-height:1}
-.radio-crown small{display:block;margin-top:3px;color:#f1d9ac;font:800 .56rem/1 system-ui,sans-serif;letter-spacing:.16em}
-.radio-crown h1{margin:5px 0 0;color:#fff4d8;font-size:clamp(1.48rem,6.5vw,1.9rem);font-style:italic;font-weight:500;line-height:1;text-shadow:0 2px 10px #000}
+/* A very small live indicator gives the invisible range inputs tactile/visual feedback without
+   replacing the approved knob artwork. */
+.knob-control::after{
+  content:"";position:absolute;left:50%;top:15%;width:2px;height:18%;border-radius:2px;
+  background:rgba(255,239,195,.92);box-shadow:0 0 4px rgba(255,188,74,.75);
+  transform-origin:50% 195%;transform:translateX(-50%) rotate(var(--knob-angle,0deg));
+  pointer-events:none;opacity:.8;
+}
 
-.dial-bezel{position:relative;z-index:2;width:84%;margin:0 auto;padding:5px;border:2px solid #c88936;border-radius:9px;background:linear-gradient(#2c160b,#9f5c24 12%,#47210e 19% 82%,#a86628 90%,#271309);box-shadow:inset 0 0 8px #000,0 4px 9px #0009;pointer-events:auto}
-.dial-scale{position:relative;display:flex;justify-content:space-between;align-items:center;height:39px;padding:0 8px;border-radius:4px;background:linear-gradient(#0b0a08,#1b120b 52%,#080706);color:#efd296;font:700 .66rem/1 Georgia,serif;box-shadow:inset 0 0 14px #000}
-.dial-scale span::after{top:15px;height:7px}.dial-scale i{left:var(--station-position);top:-3px;bottom:-3px;width:2px;background:#ef3e32;box-shadow:0 0 8px #ff5c4b;transition:left .32s cubic-bezier(.2,.7,.2,1)}
-.dial-input{position:absolute;inset:-12% 0;width:100%;height:124%;opacity:0;cursor:pointer;touch-action:pan-y}
+.play-button{
+  position:absolute;z-index:12;left:50%;top:58.55%;width:21%;aspect-ratio:1;
+  transform:translate(-50%,-50%);margin:0;padding:0;border:0;border-radius:50%;
+  background:transparent;box-shadow:none;pointer-events:auto;cursor:pointer;touch-action:manipulation;
+}
+.play-button .play-icon{display:none!important}
+.play-button:active{transform:translate(-50%,-50%) scale(.96)}
+.play-button[aria-pressed="true"]::after{
+  content:"Ⅱ";position:absolute;inset:0;display:grid;place-items:center;
+  color:#fff1bc;font:900 1.7rem/1 system-ui,sans-serif;text-shadow:0 0 11px #ffae35,0 2px 5px #000;
+}
 
-.control-deck{position:relative;z-index:2;display:grid;grid-template-columns:72px 1fr 72px;align-items:center;gap:9px;width:88%;margin:14px auto 4px;pointer-events:none}
-.knob-control{position:relative;display:grid;justify-items:center;gap:6px;color:#f3dfb9;font:800 .48rem/1 system-ui,sans-serif;letter-spacing:.08em;pointer-events:auto}
-.knob-control .knob{position:relative;display:block;width:54px;aspect-ratio:1;border:3px solid #8f5728;border-radius:50%;background:radial-gradient(circle at 33% 30%,#ffe09b 0 5%,#c78438 19%,#68401e 45%,#27140a 72%);box-shadow:0 0 0 3px #1b0d07,0 0 0 4px #c17c34,inset -8px -8px 10px #0007,inset 5px 5px 9px #ffffff20,0 7px 12px #0009;transform:rotate(var(--knob-angle,0deg));transition:transform .16s ease}
-.knob-control .knob::after{content:"";position:absolute;inset:6px;border-radius:50%;border:1px solid rgba(255,217,138,.28)}
-.knob-control .knob i{display:block;position:absolute;left:50%;top:5px;width:2px;height:13px;translate:-50% 0;border-radius:2px;background:#ffe2a1;box-shadow:0 0 5px #ffbc55}
-.knob-control input{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:auto;cursor:pointer;touch-action:pan-y}
+/* 103.1 is already baked into the approved flagship artwork. Only reveal a live plaque when a
+   different station is selected, preventing duplicate text while keeping tuning truthful. */
+.station-readout{
+  position:absolute;z-index:11;left:50%;top:48.5%;width:50%;min-height:86px;
+  transform:translate(-50%,-50%);margin:0;padding:7px 10px;
+  border:1px solid rgba(225,172,83,.72);border-radius:8px;
+  background:linear-gradient(180deg,rgba(29,17,10,.985),rgba(17,10,7,.985));
+  box-shadow:0 3px 12px #000a,inset 0 0 12px #0007;
+  text-align:center;pointer-events:none;opacity:0;visibility:hidden;
+  transition:opacity .16s ease;
+}
+body:not([data-station="bb-christmas-radio"]) .station-readout{opacity:1;visibility:visible}
+.station-readout>strong{display:block;color:#fff0c9;font:700 1.15rem/1 Georgia,serif;text-shadow:0 1px 4px #000}
+.station-readout h2{margin:3px 0 0;color:#fff1d1;font:600 .72rem/1.1 Georgia,serif}
+.station-readout>p{display:none}.now-line{display:none!important}.radio-location{display:none!important}
 
-.play-button{justify-self:center;position:relative;z-index:3;width:82px;aspect-ratio:1;border:3px solid #9b602d;border-radius:50%;background:radial-gradient(circle at 35% 28%,#714722 0,#27150b 62%,#0c0806);box-shadow:0 0 0 4px #1b0d07,0 0 0 6px #c27d34,inset 0 0 20px #000,0 0 26px rgba(255,171,52,.42),0 8px 16px #000b;pointer-events:auto;cursor:pointer;touch-action:manipulation}
-.play-button .play-icon{opacity:1;display:grid;place-items:center;color:#fff1b3;font:900 2rem/1 system-ui,sans-serif;translate:3px 0;text-shadow:0 0 13px #ffb33f}
-.play-button:active{transform:scale(.97)}
-.play-button[aria-pressed=true]{background:radial-gradient(circle at 35% 28%,#714722 0,#241309 65%,#090604);box-shadow:0 0 0 4px #1b0d07,0 0 0 6px #d18b3d,inset 0 0 20px #000,0 0 34px rgba(255,184,66,.64),0 8px 16px #000b}
-.play-button[aria-pressed=true] .play-icon{font-size:0;translate:0 0}
-.play-button[aria-pressed=true] .play-icon::before{content:"Ⅱ";font:900 1.55rem/1 system-ui,sans-serif;color:#fff1b3}
+/* The approved artwork already contains the finished nav artwork. These real buttons sit over it. */
+.bottom-nav{
+  position:fixed;z-index:30;left:50%;right:auto;bottom:0;transform:translateX(-50%);
+  width:var(--stage-w);height:calc(var(--nav-h) + env(safe-area-inset-bottom));
+  padding:0 0 env(safe-area-inset-bottom);display:grid;grid-template-columns:repeat(5,1fr);
+  background:transparent;border:0;box-shadow:none;
+}
+.bottom-nav::before{display:none!important}
+.bottom-nav button{
+  position:relative;z-index:1;min-width:0;border:0;background:transparent;color:transparent;
+  display:block;padding:0;cursor:pointer;touch-action:manipulation;
+}
+.bottom-nav .nav-icon,.bottom-nav b{opacity:0!important;pointer-events:none}
+.bottom-nav button[aria-current="page"]{background:rgba(255,241,198,.07);box-shadow:inset 0 3px rgba(255,218,139,.6)}
 
-.station-readout{display:block;position:relative;z-index:2;width:92%;margin:5px auto 0;padding:8px 8px 5px;border-top:1px solid rgba(229,185,107,.42);text-align:center;pointer-events:none}
-.station-readout>strong{display:block;color:#fff0c9;font:600 1.05rem/1 Georgia,serif;text-shadow:0 1px 5px #000}
-.station-readout h2{margin:2px 0 0;color:#fff4db;font:600 .92rem/1.05 Georgia,serif}
-.station-readout>p{margin:3px auto 0;max-width:330px;color:#d7c09a;font:.58rem/1.2 system-ui,sans-serif}
-.now-line{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 7px;margin-top:6px;color:#dfc9a6;font:700 .5rem/1.2 system-ui,sans-serif}
-.now-line span{color:#ffd47d;font-size:.43rem;letter-spacing:.13em}.now-line small{color:#bba98c}.radio-location{display:block;position:relative;z-index:2;margin:8px auto 0;width:76%;padding-top:7px;border-top:1px solid rgba(217,179,109,.46);color:#ebcc98;text-align:center;font:800 .5rem/1 system-ui,sans-serif;letter-spacing:.2em}
+/* Panels remain true UI because they contain dynamic information not baked into the artwork. */
+.app-panel{z-index:40;max-height:calc(100dvh - var(--nav-h) - 22px);overflow:auto;background:linear-gradient(180deg,rgba(57,28,13,.985),rgba(24,11,6,.995));border-color:rgba(222,170,82,.54);box-shadow:0 22px 60px #000e}
+.panel-scrim{z-index:35;background:rgba(4,3,2,.72);backdrop-filter:blur(3px)}
+.play-button:focus-visible,.knob-control:focus-within,.bottom-nav button:focus-visible{outline:2px solid #ffe0a0;outline-offset:3px}
 
-/* Deep evergreen navigation from the accepted visual direction. All type/icons are vector text. */
-.bottom-nav{position:fixed;z-index:30;left:0;right:0;bottom:0;height:calc(var(--nav-h) + env(safe-area-inset-bottom));padding:5px max(4px,env(safe-area-inset-left)) env(safe-area-inset-bottom) max(4px,env(safe-area-inset-right));display:grid;grid-template-columns:repeat(5,1fr);background:linear-gradient(180deg,rgba(5,71,51,.985),rgba(3,42,31,.997));border-top:1px solid rgba(244,218,166,.42);box-shadow:0 -8px 26px #0009}
-.bottom-nav::before{content:"";position:absolute;left:0;right:0;top:-10px;height:10px;background:linear-gradient(180deg,rgba(13,35,25,0),rgba(5,71,51,.96));pointer-events:none}
-.bottom-nav button{position:relative;z-index:1;min-width:0;border:0;border-right:1px solid rgba(240,217,169,.18);background:transparent;color:#fff0d3;display:grid;place-items:center;align-content:center;gap:5px;padding:4px 1px;cursor:pointer;touch-action:manipulation}
-.bottom-nav button:last-child{border-right:0}.bottom-nav .nav-icon{font:800 1.34rem/1 system-ui,sans-serif;color:#fff0cf;text-shadow:0 1px 5px #0005}.bottom-nav b{font:700 clamp(.53rem,2.7vw,.69rem)/1.05 system-ui,sans-serif;white-space:nowrap}.bottom-nav button:active,.bottom-nav button[aria-current="page"]{background:rgba(255,239,199,.09);box-shadow:inset 0 3px #e4b75e}
-
-.app-panel{z-index:40;max-height:calc(100dvh - var(--nav-h) - 22px);overflow:auto;background:linear-gradient(180deg,rgba(57,28,13,.985),rgba(24,11,6,.995));border-color:rgba(222,170,82,.54);box-shadow:0 22px 60px #000e}.panel-scrim{z-index:35;background:rgba(4,3,2,.72);backdrop-filter:blur(3px)}
-.play-button:focus-visible,.dial-input:focus-visible,.knob-control:focus-within,.bottom-nav button:focus-visible{outline:2px solid #ffe0a0;outline-offset:3px;border-radius:12px}
-
-@media(max-height:780px){:root{--nav-h:78px}.radio{margin-top:clamp(145px,19dvh,180px);padding-top:18px}.radio-crown{padding-bottom:9px}.radio-crown h1{font-size:1.36rem}.dial-scale{height:34px}.control-deck{margin-top:10px}.play-button{width:72px}.knob-control .knob{width:48px}.station-readout>p{display:none}.radio-location{margin-top:5px}.bottom-nav .nav-icon{font-size:1.15rem}.bottom-nav b{font-size:.52rem}}
-@media(max-height:660px){:root{--nav-h:70px}.scene-copy{padding:6px 10px}.scene-copy span{display:none}.radio{margin-top:105px;transform:scale(.9);transform-origin:top center}.app{padding-bottom:calc(var(--nav-h) + 4px)}}
-@media(prefers-reduced-motion:reduce){.dial-scale i,.knob-control .knob,.play-button{transition:none}}
+@media(max-height:760px){:root{--nav-h:88px}.station-readout{min-height:68px;padding:5px 8px}.station-readout>strong{font-size:1rem}.station-readout h2{font-size:.64rem}}
+@media(prefers-reduced-motion:reduce){.station-readout{transition:none}.play-button:active{transform:translate(-50%,-50%)}}

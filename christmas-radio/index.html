@@ -16,7 +16,7 @@
   <!-- BREW & BREWS CHRISTMAS RADIO | Main app entry | /christmas-radio/index.html -->
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="preload" as="image" href="artwork/render-430x932(1).png" type="image/png" fetchpriority="high">
+  <link rel="preload" as="image" href="artwork/christmas-radio-approved-skin.webp" type="image/webp" fetchpriority="high">
   <link rel="stylesheet" href="assets/css/christmas-radio.css">
   <link rel="stylesheet" href="assets/css/art-skin.css">
   <script type="module" src="assets/js/christmas-radio.js"></script>
@@ -24,67 +24,26 @@
 <body data-station="bb-christmas-radio" data-scene="roastery-snow">
   <div class="scene" aria-hidden="true">
     <div class="room-glow"></div>
-    <div class="left-wall">
-      <div class="shelf shelf-one"><i></i><i></i><i></i><i></i></div>
-      <div class="shelf shelf-two"><i></i><i></i><i></i></div>
-      <div class="wall-sign">GOOD<br>COFFEE<br><b>BRIGHTER<br>DAYS</b></div>
-      <div class="wall-lamp"><span></span></div>
-    </div>
-    <div class="window">
-      <div class="snow-town"><span class="tower">LOUISBURG<br><b>KANSAS</b></span><i class="tree t1"></i><i class="tree t2"></i><i class="tree t3"></i></div>
-      <span class="mullion v"></span><span class="mullion h"></span>
-    </div>
-    <div class="counter"></div>
-    <div class="coffee-sack sack-one">BREW &amp; BREWS</div>
-    <div class="coffee-sack sack-two">COFFEE CO.</div>
-    <div class="mug"><span>B&amp;B</span></div>
-    <div class="lantern"><i></i></div>
-    <div class="foreground-greenery"></div>
-    <div class="snow"></div>
-    <div class="scene-vignette"></div>
+    <div class="left-wall"><div class="shelf shelf-one"><i></i><i></i><i></i><i></i></div><div class="shelf shelf-two"><i></i><i></i><i></i></div><div class="wall-sign">GOOD<br>COFFEE<br><b>BRIGHTER<br>DAYS</b></div><div class="wall-lamp"><span></span></div></div>
+    <div class="window"><div class="snow-town"><span class="tower">LOUISBURG<br><b>KANSAS</b></span><i class="tree t1"></i><i class="tree t2"></i><i class="tree t3"></i></div><span class="mullion v"></span><span class="mullion h"></span></div>
+    <div class="counter"></div><div class="coffee-sack sack-one">BREW &amp; BREWS</div><div class="coffee-sack sack-two">COFFEE CO.</div><div class="mug"><span>B&B</span></div><div class="lantern"><i></i></div><div class="foreground-greenery"></div><div class="snow"></div><div class="scene-vignette"></div>
   </div>
 
   <main class="app" id="christmasRadioApp">
-    <header class="scene-copy">
-      <p>CHRISTMAS MUSIC · GOOD COFFEE · BRIGHTER DAYS</p>
-      <span>BREW &amp; BREWS CO. · LOUISBURG, KANSAS</span>
-    </header>
-
+    <header class="scene-copy"><p>CHRISTMAS MUSIC · GOOD COFFEE · BRIGHTER DAYS</p><span>BREW &amp; BREWS CO. · LOUISBURG, KANSAS</span></header>
     <section class="radio" aria-label="Brew & Brews Christmas Radio">
       <div class="radio-garland" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-      <div class="radio-crown">
-        <span class="tree-mark" aria-hidden="true">▲</span>
-        <small>BREW &amp; BREWS</small>
-        <h1>B&amp;B Christmas Radio</h1>
-      </div>
-
+      <div class="radio-crown"><span class="tree-mark" aria-hidden="true">▲</span><small>BREW &amp; BREWS</small><h1>B&B Christmas Radio</h1></div>
       <div class="dial-bezel">
         <div class="dial-scale" aria-hidden="true"><span>88</span><span>92</span><span>96</span><span>100</span><span>103</span><span>106</span><span>110</span><i id="dialNeedle"></i></div>
-        <input id="stationTuner" class="dial-input" type="range" min="0" max="5" step="1" value="4" aria-label="Tune Christmas Radio station">
+        <input id="stationTuner" class="dial-input" type="range" min="0" max="5" step="1" value="4" tabindex="-1" aria-hidden="true" aria-label="Tune Christmas Radio station">
       </div>
-
       <div class="control-deck">
-        <label class="knob-control volume-control">
-          <span class="knob" aria-hidden="true"><i></i></span><b>VOLUME</b>
-          <input id="volumeControl" type="range" min="0" max="1" step="0.05" value="0.8" aria-label="Volume">
-        </label>
-
-        <button id="playButton" class="play-button" type="button" aria-pressed="false" aria-label="Play Christmas Radio">
-          <span class="play-icon" aria-hidden="true">▶</span>
-        </button>
-
-        <label class="knob-control tuner-control">
-          <span class="knob" aria-hidden="true"><i></i></span><b>TUNING</b>
-          <input id="tuningKnob" type="range" min="0" max="5" step="1" value="4" aria-label="Tuning knob">
-        </label>
+        <label class="knob-control volume-control"><span class="knob" aria-hidden="true"><i></i></span><b>VOLUME</b><input id="volumeControl" type="range" min="0" max="1" step="0.05" value="0.8" aria-label="Volume"></label>
+        <button id="playButton" class="play-button" type="button" aria-pressed="false" aria-label="Play Christmas Radio"><span class="play-icon" aria-hidden="true">▶</span></button>
+        <label class="knob-control tuner-control"><span class="knob" aria-hidden="true"><i></i></span><b>TUNING</b><input id="tuningKnob" type="range" min="0" max="5" step="1" value="4" aria-label="Tuning knob"></label>
       </div>
-
-      <div class="station-readout" aria-live="polite">
-        <strong id="frequencyLabel">103.1</strong>
-        <h2 id="stationName">B&amp;B Christmas Radio</h2>
-        <p id="stationTagline">The complete Brew &amp; Brews Christmas mix.</p>
-        <div class="now-line"><span id="signalLabel">READY</span><b id="nowPlayingTitle">Tap Play to begin</b><small id="nowPlayingArtist">Christmas broadcast ready</small></div>
-      </div>
+      <div class="station-readout" aria-live="polite"><strong id="frequencyLabel">103.1</strong><h2 id="stationName">B&B Christmas Radio</h2><p id="stationTagline">The complete Brew & Brews Christmas mix.</p><div class="now-line"><span id="signalLabel">READY</span><b id="nowPlayingTitle">Tap Play to begin</b><small id="nowPlayingArtist">Christmas broadcast ready</small></div></div>
       <div class="radio-location">LOUISBURG, KANSAS</div>
     </section>
   </main>
@@ -98,16 +57,11 @@
   </nav>
 
   <div class="panel-scrim" id="panelScrim" hidden></div>
-  <section class="app-panel" id="stationsPanel" role="dialog" aria-modal="true" hidden aria-labelledby="stationsHeading">
-    <button class="panel-close" type="button" aria-label="Close panel">×</button>
-    <header><small>TURN THE DIAL</small><h2 id="stationsHeading">Christmas Stations</h2><p>Each station changes the sound and the room around the radio.</p></header>
-    <div class="station-grid" id="stationGrid"></div>
-  </section>
-  <section class="app-panel compact-panel" id="nowPanel" role="dialog" aria-modal="true" aria-labelledby="nowHeading" hidden><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>ON AIR</small><h2 id="nowHeading">Now Playing</h2></header><div class="panel-now"><strong id="panelStation">103.1 · B&amp;B Christmas Radio</strong><b id="panelTrack">Christmas broadcast ready</b><span id="panelArtist">Tap Play to begin.</span></div></section>
-  <section class="app-panel compact-panel" id="aboutPanel" role="dialog" aria-modal="true" aria-labelledby="aboutHeading" hidden><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>FROM THE ROASTERY</small><h2 id="aboutHeading">About Christmas Radio</h2><p>Original seasonal music and radio moments from Brew &amp; Brews in Louisburg, Kansas.</p></header></section>
+  <section class="app-panel" id="stationsPanel" role="dialog" aria-modal="true" hidden aria-labelledby="stationsHeading"><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>TURN THE DIAL</small><h2 id="stationsHeading">Christmas Stations</h2><p>Each station changes the sound and the room around the radio.</p></header><div class="station-grid" id="stationGrid"></div></section>
+  <section class="app-panel compact-panel" id="nowPanel" role="dialog" aria-modal="true" aria-labelledby="nowHeading" hidden><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>ON AIR</small><h2 id="nowHeading">Now Playing</h2></header><div class="panel-now"><strong id="panelStation">103.1 · B&B Christmas Radio</strong><b id="panelTrack">Christmas broadcast ready</b><span id="panelArtist">Tap Play to begin.</span></div></section>
+  <section class="app-panel compact-panel" id="aboutPanel" role="dialog" aria-modal="true" aria-labelledby="aboutHeading" hidden><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>FROM THE ROASTERY</small><h2 id="aboutHeading">About Christmas Radio</h2><p>Original seasonal music and radio moments from Brew & Brews in Louisburg, Kansas.</p></header></section>
   <section class="app-panel compact-panel" id="gamesPanel" role="dialog" aria-modal="true" aria-labelledby="gamesHeading" hidden><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>COMING THIS SEASON</small><h2 id="gamesHeading">Christmas Games</h2><p>Small holiday experiences will live here without interrupting the music.</p></header></section>
-  <section class="app-panel compact-panel" id="shopPanel" role="dialog" aria-modal="true" aria-labelledby="shopHeading" hidden><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>BREW SOMETHING BOLD</small><h2 id="shopHeading">Shop Brew &amp; Brews</h2><p>Christmas coffee and seasonal releases will connect here.</p></header></section>
-
+  <section class="app-panel compact-panel" id="shopPanel" role="dialog" aria-modal="true" aria-labelledby="shopHeading" hidden><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>BREW SOMETHING BOLD</small><h2 id="shopHeading">Shop Brew & Brews</h2><p>Christmas coffee and seasonal releases will connect here.</p></header></section>
   <audio id="christmasRadioAudio" preload="none"></audio>
 </body>
 </html>
