@@ -1,0 +1,68 @@
+name: Christmas Radio Phase 7.2 production art
+
+on:
+  push:
+    branches:
+      - christmas-radio-phase-7-1-crisp-accepted-art
+    paths:
+      - .phase7-2-production/christmas-roastery-production.webp.b64
+
+permissions:
+  contents: write
+
+jobs:
+  reconstruct-production-art:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out triggering revision
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Re-check branch safety before write
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main christmas-radio-phase-7-1-crisp-accepted-art
+          current_remote="$(git rev-parse origin/christmas-radio-phase-7-1-crisp-accepted-art)"
+          if [ "$current_remote" != "$GITHUB_SHA" ]; then
+            echo "Target branch changed after this workflow started; refusing to write."
+            exit 1
+          fi
+          echo "main=$(git rev-parse origin/main)"
+          echo "target=$current_remote"
+
+      - name: Reconstruct exact generated production WebP
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p christmas-radio/artwork
+          base64 -d .phase7-2-production/christmas-roastery-production.webp.b64 > christmas-radio/artwork/christmas-roastery-production.webp
+          python -m pip install --quiet pillow
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          import hashlib
+          p = Path('christmas-radio/artwork/christmas-roastery-production.webp')
+          data = p.read_bytes()
+          digest = hashlib.sha256(data).hexdigest()
+          if digest != '2b484f55ce9c5bd71b4810b4babc05b22d3f6a433a74177067c38911b39a4cb8':
+              raise SystemExit(f'Unexpected SHA-256: {digest}')
+          with Image.open(p) as im:
+              if im.size != (852, 1846):
+                  raise SystemExit(f'Unexpected dimensions: {im.size}')
+              if im.format != 'WEBP':
+                  raise SystemExit(f'Unexpected format: {im.format}')
+          print('Verified production art: 852x1846 WebP', digest)
+          PY
+
+      - name: Commit only reconstructed art and remove staging payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "brewandbrewscompany-bot"
+          git config user.email "brewandbrewscompany@gmail.com"
+          git add christmas-radio/artwork/christmas-roastery-production.webp
+          git rm .phase7-2-production/christmas-roastery-production.webp.b64
+          git commit -m "Add clear Christmas Radio production artwork"
+          git push origin HEAD:christmas-radio-phase-7-1-crisp-accepted-art
