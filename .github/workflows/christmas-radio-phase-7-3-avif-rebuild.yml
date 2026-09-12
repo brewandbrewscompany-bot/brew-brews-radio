@@ -1,0 +1,72 @@
+name: Christmas Radio Phase 7.3 verified AVIF rebuild
+
+on:
+  push:
+    branches: [christmas-radio-phase-7-1-crisp-accepted-art]
+    paths:
+      - '.phase7-3-avif/part-03.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild-approved-skin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Re-check branch safety
+        run: |
+          set -euo pipefail
+          git fetch origin main christmas-radio-phase-7-1-crisp-accepted-art
+          current="$(git rev-parse origin/christmas-radio-phase-7-1-crisp-accepted-art)"
+          test "$current" = "$GITHUB_SHA"
+          echo "main=$(git rev-parse origin/main)"
+          echo "target=$current"
+      - name: Reconstruct and verify approved skin
+        run: |
+          set -euo pipefail
+          cat .phase7-3-avif/part-*.txt | base64 -d > christmas-radio/artwork/christmas-radio-approved-skin.avif
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          p=Path('christmas-radio/artwork/christmas-radio-approved-skin.avif')
+          b=p.read_bytes()
+          expected='a5d36d5f67f56b1bdd0ccb6a68857c4511e2025bd83861946a12cfa71b10417c'
+          if hashlib.sha256(b).hexdigest()!=expected: raise SystemExit('AVIF SHA-256 mismatch')
+          if b[4:12]!=b'ftypavif': raise SystemExit('Not AVIF')
+          if len(b)!=69571: raise SystemExit(f'Unexpected AVIF byte size: {len(b)}')
+          print('Verified AVIF bytes',len(b),expected)
+          PY
+      - name: Wire verified AVIF and update gate
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          css=Path('christmas-radio/assets/css/art-skin.css')
+          s=css.read_text().replace('christmas-radio-approved-skin.webp','christmas-radio-approved-skin.avif')
+          css.write_text(s)
+          idx=Path('christmas-radio/index.html')
+          s=idx.read_text().replace('christmas-radio-approved-skin.webp','christmas-radio-approved-skin.avif').replace('type="image/webp"','type="image/avif"')
+          idx.write_text(s)
+          gate=Path('.github/workflows/christmas-radio-phase-7-visual-probe.yml')
+          s=gate.read_text().replace('christmas-radio-approved-skin.webp','christmas-radio-approved-skin.avif').replace('type="image/webp"','type="image/avif"')
+          s=s.replace("if b[:4] != b'RIFF' or b[8:12] != b'WEBP':\n              raise SystemExit('approved skin is not WebP')","if b[4:12] != b'ftypavif':\n              raise SystemExit('approved skin is not AVIF')")
+          gate.write_text(s)
+          PY
+          git rm -f christmas-radio/artwork/christmas-radio-approved-skin.webp
+          git rm -r .phase7-3-avif
+          git rm .github/workflows/christmas-radio-phase-7-3-avif-rebuild.yml
+      - name: Commit verified production skin
+        run: |
+          set -euo pipefail
+          git fetch origin main christmas-radio-phase-7-1-crisp-accepted-art
+          current="$(git rev-parse origin/christmas-radio-phase-7-1-crisp-accepted-art)"
+          test "$current" = "$GITHUB_SHA"
+          git config user.name 'brewandbrewscompany-bot'
+          git config user.email 'brewandbrewscompany@gmail.com'
+          git add christmas-radio/artwork/christmas-radio-approved-skin.avif christmas-radio/assets/css/art-skin.css christmas-radio/index.html .github/workflows/christmas-radio-phase-7-visual-probe.yml
+          git commit -m 'Rebuild approved Christmas skin as verified AVIF'
+          git push origin HEAD:christmas-radio-phase-7-1-crisp-accepted-art
