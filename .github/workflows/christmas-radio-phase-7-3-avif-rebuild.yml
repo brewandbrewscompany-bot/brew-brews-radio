@@ -60,6 +60,7 @@ jobs:
           test "$current" = "$GITHUB_SHA"
           git config user.name 'brewandbrewscompany-bot'
           git config user.email 'brewandbrewscompany@gmail.com'
-          git add -A christmas-radio/artwork/christmas-radio-approved-skin.avif christmas-radio/artwork/christmas-radio-approved-skin.webp christmas-radio/assets/css/art-skin.css christmas-radio/index.html .phase7-3-avif
+          git status --short
+          git add -A
           git commit -m 'Rebuild approved Christmas skin as verified AVIF'
           git push origin HEAD:christmas-radio-phase-7-1-crisp-accepted-art
