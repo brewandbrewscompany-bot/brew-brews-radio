@@ -5,6 +5,7 @@ on:
     branches: [christmas-radio-phase-7-1-crisp-accepted-art]
     paths:
       - '.phase7-3-avif/part-03.txt'
+      - '.github/workflows/christmas-radio-phase-7-3-avif-rebuild.yml'
 
 permissions:
   contents: write
