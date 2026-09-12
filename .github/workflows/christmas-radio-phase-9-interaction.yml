@@ -26,7 +26,7 @@ jobs:
           grep -q "engine.next({reason:'panel'})" christmas-radio/assets/js/christmas-radio.js
           grep -q "engine.previous()" christmas-radio/assets/js/christmas-radio.js
           grep -q "'time'" christmas-radio/assets/js/christmas-radio.js
-          grep -q 'phase9-v1' christmas-radio/sw.js
+          grep -q 'phase9-v2' christmas-radio/sw.js
           grep -q "pathname.includes('/audio/')" christmas-radio/sw.js
           grep -q 'christmas-radio-approved-skin.avif' christmas-radio/assets/css/art-skin.css
           ! grep -q '<audio[^>]*autoplay' christmas-radio/index.html
@@ -101,7 +101,7 @@ jobs:
             await page.reload({waitUntil:'networkidle0'});
             await page.waitForFunction(()=>!!navigator.serviceWorker.controller,{timeout:10000});
             const warm=await page.evaluate(async()=>{
-              const key=(await caches.keys()).find(k=>k==='bb-christmas-radio-shell-phase9-v1');
+              const key=(await caches.keys()).find(k=>k==='bb-christmas-radio-shell-phase9-v2');
               const urls=key?[...(await (await caches.open(key)).keys())].map(r=>r.url):[];
               return{key,urls,station:document.body.dataset.station,frequency:document.querySelector('#frequencyLabel')?.textContent.trim()};
             });
