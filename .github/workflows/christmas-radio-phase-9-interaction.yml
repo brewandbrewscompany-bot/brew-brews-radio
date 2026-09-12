@@ -68,13 +68,13 @@ jobs:
             await page.click(nowButton);
             await page.waitForFunction(()=>!document.querySelector('#nowPanel').hidden);
             await page.waitForFunction(()=>document.activeElement?.classList.contains('panel-close'));
-            const opened=await page.evaluate(()=>({
+            const opened=await page.evaluate(selector=>({
               track:document.querySelector('#panelTrack')?.textContent.trim(),
               duration:document.querySelector('#panelDuration')?.textContent.trim(),
               next:document.querySelector('#panelNextTrack')?.textContent.trim(),
-              current:document.querySelector(nowButton)?.getAttribute('aria-current'),
+              current:document.querySelector(selector)?.getAttribute('aria-current'),
               focus:document.activeElement?.className||''
-            }));
+            }),nowButton);
             if(!opened.track||opened.duration==='--:--'||!opened.next||opened.current!=='page'||!opened.focus.includes('panel-close'))throw new Error('Now Playing panel incomplete: '+JSON.stringify(opened));
 
             const originalTrack=opened.track;
