@@ -16,25 +16,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prove branch artwork is the exact accepted 103.1 source
+      - name: Prove branch artwork is the accepted owner upload
         run: |
           set -euo pipefail
-          curl --fail --location --retry 3 \
-            'https://raw.githubusercontent.com/brewandbrewscompany-bot/brew-brews-radio/f41843d2becccb165b7ef6a9b28dfa15af57598e/christmas-radio/artwork/flagship-roastery-stage.png' \
-            --output /tmp/accepted-source.png
-          cmp --silent /tmp/accepted-source.png christmas-radio/artwork/flagship-roastery-stage-approved.png
           python3 - <<'PY'
           from pathlib import Path
           import struct, hashlib
-          p=Path('christmas-radio/artwork/flagship-roastery-stage-approved.png')
+          p=Path('christmas-radio/artwork/render-430x932(1).png')
+          if not p.exists():
+              raise SystemExit('accepted owner-uploaded artwork is missing')
           b=p.read_bytes()
           if b[:8] != b'\x89PNG\r\n\x1a\n':
               raise SystemExit('accepted artwork is not PNG')
           w,h=struct.unpack('>II', b[16:24])
-          if (w,h)!=(709,1536):
+          if (w,h)!=(430,932):
               raise SystemExit(f'accepted artwork dimensions changed: {(w,h)}')
-          print(f'exact accepted source: {w}x{h}; bytes={len(b)}; sha256={hashlib.sha256(b).hexdigest()}')
+          if len(b)!=572728:
+              raise SystemExit(f'accepted artwork byte size changed: {len(b)}')
+          print(f'accepted owner upload: {w}x{h}; bytes={len(b)}; sha256={hashlib.sha256(b).hexdigest()}')
           PY
+          test "$(grep -o 'render-430x932(1).png' christmas-radio/assets/css/art-skin.css | wc -l)" -eq 2
+          grep -q 'artwork/render-430x932(1).png' christmas-radio/index.html
+          grep -q 'type="image/png"' christmas-radio/index.html
+          ! grep -Eq 'flagship-roastery-stage-approved\.png|flagship-roastery-stage\.jpg|flagship-roastery-stage\.webp|flagship-roastery\.avif' christmas-radio/index.html christmas-radio/assets/css/art-skin.css
 
       - name: Install browser helper
         run: npm install --no-save puppeteer-core@24.16.0
@@ -71,7 +75,7 @@ jobs:
 
             const probe=await page.evaluate(async()=>{
               const img=new Image();
-              img.src='artwork/flagship-roastery-stage-approved.png?phase7-1-check=1';
+              img.src='artwork/render-430x932(1).png?phase7-1-check=1';
               await img.decode();
               const c=document.createElement('canvas');
               c.width=img.naturalWidth;c.height=img.naturalHeight;
@@ -107,10 +111,10 @@ jobs:
             fs.writeFileSync('phase7-output/report.json',JSON.stringify(report,null,2));
             console.log('PHASE 7.1 HIGH-DPI CHECK',JSON.stringify(report,null,2));
 
-            if(probe.image.width!==709||probe.image.height!==1536)throw new Error('Accepted master dimensions changed');
+            if(probe.image.width!==430||probe.image.height!==932)throw new Error('Accepted owner upload dimensions changed');
             if(probe.viewport.dpr!==3)throw new Error('High-DPI gate did not run at DPR 3');
             if(probe.image.averageLuminance<20||probe.image.maxLuminance<100||probe.image.brightSampleFraction<.08)throw new Error('Accepted artwork decoded too dark');
-            if(!probe.css.beforeBackgroundImage.includes('flagship-roastery-stage-approved.png')||!probe.css.afterBackgroundImage.includes('flagship-roastery-stage-approved.png'))throw new Error('Production skin is not using the exact accepted master');
+            if(!probe.css.beforeBackgroundImage.includes('render-430x932(1).png')||!probe.css.afterBackgroundImage.includes('render-430x932(1).png'))throw new Error('Production skin is not using the accepted owner upload');
             if(probe.bodyStation!=='bb-christmas-radio'||probe.frequency!=='103.1')throw new Error('Flagship station read changed');
             if(probe.viewport.scrollWidth>430)throw new Error('Horizontal phone overflow detected');
             if(probe.play.width<55||probe.play.height<55)throw new Error('Play target is too small');
