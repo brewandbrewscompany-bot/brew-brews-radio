@@ -40,25 +40,18 @@ jobs:
           if len(b)!=37448: raise SystemExit(f'Unexpected AVIF byte size: {len(b)}')
           print('Verified AVIF bytes',len(b),expected)
           PY
-      - name: Wire verified AVIF and update gate
+      - name: Wire verified AVIF
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
           css=Path('christmas-radio/assets/css/art-skin.css')
-          s=css.read_text().replace('christmas-radio-approved-skin.webp','christmas-radio-approved-skin.avif')
-          css.write_text(s)
+          css.write_text(css.read_text().replace('christmas-radio-approved-skin.webp','christmas-radio-approved-skin.avif'))
           idx=Path('christmas-radio/index.html')
-          s=idx.read_text().replace('christmas-radio-approved-skin.webp','christmas-radio-approved-skin.avif').replace('type="image/webp"','type="image/avif"')
-          idx.write_text(s)
-          gate=Path('.github/workflows/christmas-radio-phase-7-visual-probe.yml')
-          s=gate.read_text().replace('christmas-radio-approved-skin.webp','christmas-radio-approved-skin.avif').replace('type="image/webp"','type="image/avif"')
-          s=s.replace("if b[:4] != b'RIFF' or b[8:12] != b'WEBP':\n              raise SystemExit('approved skin is not WebP')","if b[4:12] != b'ftypavif':\n              raise SystemExit('approved skin is not AVIF')")
-          gate.write_text(s)
+          idx.write_text(idx.read_text().replace('christmas-radio-approved-skin.webp','christmas-radio-approved-skin.avif').replace('type="image/webp"','type="image/avif"'))
           PY
           git rm -f christmas-radio/artwork/christmas-radio-approved-skin.webp
           git rm -r .phase7-3-avif
-          git rm .github/workflows/christmas-radio-phase-7-3-avif-rebuild.yml
       - name: Commit verified production skin
         run: |
           set -euo pipefail
@@ -67,6 +60,6 @@ jobs:
           test "$current" = "$GITHUB_SHA"
           git config user.name 'brewandbrewscompany-bot'
           git config user.email 'brewandbrewscompany@gmail.com'
-          git add christmas-radio/artwork/christmas-radio-approved-skin.avif christmas-radio/assets/css/art-skin.css christmas-radio/index.html .github/workflows/christmas-radio-phase-7-visual-probe.yml
+          git add -A christmas-radio/artwork/christmas-radio-approved-skin.avif christmas-radio/artwork/christmas-radio-approved-skin.webp christmas-radio/assets/css/art-skin.css christmas-radio/index.html .phase7-3-avif
           git commit -m 'Rebuild approved Christmas skin as verified AVIF'
           git push origin HEAD:christmas-radio-phase-7-1-crisp-accepted-art
