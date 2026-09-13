@@ -1,0 +1,161 @@
+name: Witch Ride 3D Pass 18 Traffic Collision Cleanup
+
+on:
+  push:
+    branches: [witch-ride-3d-traffic-collision-cleanup-pass-18]
+    paths:
+      - 'halloween-radio/games/witch-ride-3d/index.html'
+      - 'halloween-radio/games/witch-ride-3d/pass18-traffic-cleanup.js'
+      - '.github/workflows/witch-ride-3d-pass18-traffic-cleanup.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  pass18-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify Pass 17 visual source is locked
+        shell: bash
+        run: |
+          git fetch origin main witch-ride-3d-environment-headlight-bean-pass-17 witch-ride-3d-traffic-collision-cleanup-pass-18
+          BASE=3734a92cb1c5f2a680f208856c4db35316e9a7f1
+          test "$(git rev-parse origin/witch-ride-3d-traffic-collision-cleanup-pass-18)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/witch-ride-3d-environment-headlight-bean-pass-17)" = "$BASE"
+          for path in \
+            halloween-radio/games/witch-ride-3d/game.js \
+            halloween-radio/games/witch-ride-3d/game.css \
+            halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js \
+            halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js \
+            halloween-radio/games/witch-ride-3d/illumination-pass.js \
+            halloween-radio/games/witch-ride-3d/composition-pass.js \
+            halloween-radio/games/witch-ride-3d/assets/witch-rider.glb; do
+            git diff --quiet "$BASE" HEAD -- "$path" || { echo "LOCKED PASS 17 SOURCE CHANGED: $path"; exit 1; }
+          done
+          CHANGED="$(git diff --name-only "$BASE" HEAD)"
+          echo "$CHANGED"
+          test -z "$(printf '%s\n' "$CHANGED" | grep -Ev '^(halloween-radio/games/witch-ride-3d/index.html|halloween-radio/games/witch-ride-3d/pass18-traffic-cleanup.js|.github/workflows/witch-ride-3d-pass18-traffic-cleanup.yml)$' || true)"
+          ! printf '%s\n' "$CHANGED" | grep -q '^louisburg-local/'
+          node --check halloween-radio/games/witch-ride-3d/pass18-traffic-cleanup.js
+
+      - name: Real PlayCanvas 430x932 collision and cleanup gate
+        shell: bash
+        run: |
+          npm install --no-save puppeteer-core@24.16.0
+          rm -rf /tmp/pass17-base
+          git worktree add --detach /tmp/pass17-base 3734a92cb1c5f2a680f208856c4db35316e9a7f1
+          python3 -m http.server 8010 --directory . >/tmp/pass18.log 2>&1 &
+          PID18=$!
+          python3 -m http.server 8011 --directory /tmp/pass17-base >/tmp/pass17.log 2>&1 &
+          PID17=$!
+          trap 'kill $PID18 $PID17 || true' EXIT
+          sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_BIN"
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const fs=require('fs'),puppeteer=require('puppeteer-core');
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          const assert=(v,m)=>{if(!v)throw new Error(m)};
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader']});
+            const errors=[];
+            async function open(port,want18){
+              const p=await browser.newPage();
+              p.setDefaultTimeout(60000);
+              await p.setViewport({width:430,height:932,deviceScaleFactor:1,isMobile:true,hasTouch:true});
+              p.on('pageerror',e=>errors.push(String(e)));
+              p.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+              await p.goto(`http://127.0.0.1:${port}/halloween-radio/games/witch-ride-3d/`,{waitUntil:'domcontentloaded'});
+              await p.waitForFunction(w=>window.WitchRide3D?.ready&&window.WitchRidePass17Environment?.active===true&&(!w||window.WitchRidePass18Traffic?.active===true),{},want18);
+              return p;
+            }
+            const base=await open(8011,false),page=await open(8010,true);
+
+            const detail=await page.evaluate(()=>window.WitchRidePass18Traffic.detail);
+            assert(detail.legacyTrafficRetired===7,'legacy traffic count');
+            assert(detail.movingTrafficManaged===4,'moving traffic count');
+            assert(detail.pass17TrafficVisualsPreserved&&detail.pass17RoadReflectionsPreserved,'Pass 17 visual preservation flags');
+
+            await page.click('#play');
+            await page.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');
+            let a=await page.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app;return {legacy:Array.from({length:7},(_,i)=>{const e=app.root.findByName(`1938 Coupe ${i}`);return [e.enabled,e.__active]}),moving:Array.from({length:4},(_,i)=>{const e=app.root.findByName(`Oncoming Traffic ${i}`);return [e.enabled,e.getPosition().z]})}});
+            assert(a.legacy.every(v=>v[0]===false&&v[1]===false),'legacy parked cars still active');
+            assert(a.moving.every(v=>v[0]===true),'moving traffic not active while playing');
+            await sleep(500);
+            let b=await page.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app;return Array.from({length:4},(_,i)=>app.root.findByName(`Oncoming Traffic ${i}`).getPosition().z)});
+            assert(b.filter((z,i)=>Math.abs(z-a.moving[i][1])>.5).length>=3,'moving traffic did not move');
+
+            const score0=await page.evaluate(()=>window.WitchRide3D.state.score);await sleep(300);const score1=await page.evaluate(()=>window.WitchRide3D.state.score);assert(score1>score0,'score did not advance');
+            const x0=await page.evaluate(()=>window.WitchRide3D.state.x);await page.keyboard.down('ArrowRight');await sleep(350);await page.keyboard.up('ArrowRight');await sleep(120);const x1=await page.evaluate(()=>window.WitchRide3D.state.x);assert(x1>x0+.02,'steering did not move witch');
+
+            const beans0=await page.evaluate(()=>window.WitchRide3D.state.beans);
+            await page.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,s=window.WitchRide3D.state,b=app.root.findByName('Coffee Bean 0');b.__active=true;b.enabled=true;b.setPosition(s.x,1.15,1.4);s.spawnClock=999});
+            await page.waitForFunction(n=>window.WitchRide3D.state.beans>n,{},beans0);
+
+            await page.click('#pause');await page.waitForFunction(()=>window.WitchRide3D.state.mode==='paused');await sleep(80);
+            const pausedTraffic=await page.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app;return Array.from({length:4},(_,i)=>app.root.findByName(`Oncoming Traffic ${i}`).enabled)});
+            assert(pausedTraffic.every(v=>v===false),'traffic left visibly stationary while paused');
+            await page.click('#resume');await page.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(100);
+
+            const setupNear=await page.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,s=window.WitchRide3D.state,d=window.WitchRidePass18Traffic.detail,c=app.root.findByName('Oncoming Traffic 1');for(const i of [0,2,3])app.root.findByName(`Oncoming Traffic ${i}`).setPosition(app.root.findByName(`Oncoming Traffic ${i}`).__lane,0,-160-i*12);const lane=c.__lane;c.setPosition(lane,0,-9);const px=lane-(d.collisionHalfWidthTotal+.45);s.x=s.targetX=px;s.velocityX=0;s.spawnClock=999;return {lane,px,limit:d.collisionHalfWidthTotal}});
+            await sleep(1250);
+            assert(await page.evaluate(()=>window.WitchRide3D.state.mode==='playing'),'near miss falsely ended game');
+
+            await page.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,s=window.WitchRide3D.state,c=app.root.findByName('Oncoming Traffic 1');c.setPosition(c.__lane,0,-9);s.x=s.targetX=c.__lane;s.velocityX=0;s.spawnClock=999});
+            await page.waitForFunction(()=>window.WitchRide3D.state.mode==='over');
+            assert(await page.evaluate(()=>window.WitchRide3D.pass18CollisionCount===1),'moving traffic collision did not trigger exactly once');
+            await page.screenshot({path:'pass18-collision-gameover-430x932.png'});
+
+            await page.click('#again');await page.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(120);
+            const restart=await page.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app;return {legacy:Array.from({length:7},(_,i)=>app.root.findByName(`1938 Coupe ${i}`).enabled),moving:Array.from({length:4},(_,i)=>app.root.findByName(`Oncoming Traffic ${i}`).enabled)}});
+            assert(restart.legacy.every(v=>v===false),'legacy traffic returned after restart');
+            assert(restart.moving.every(v=>v===true),'moving traffic failed after restart');
+            await sleep(2500);
+            const audit=await page.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app;return {legacy:Array.from({length:7},(_,i)=>{const e=app.root.findByName(`1938 Coupe ${i}`);return {enabled:e.enabled,active:e.__active}}),mode:window.WitchRide3D.state.mode}});
+            assert(audit.mode==='playing','game unexpectedly ended during stationary audit');
+            assert(audit.legacy.every(v=>v.enabled===false&&v.active===false),'stationary legacy traffic resurfaced');
+            await page.screenshot({path:'pass18-mobile-gameplay-430x932.png'});
+
+            async function cleanVisual(p){await p.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app;document.querySelector('#hud')?.classList.add('hidden');for(const el of document.querySelectorAll('.screen'))el.classList.remove('open');for(let i=0;i<7;i++){const e=app.root.findByName(`1938 Coupe ${i}`);if(e)e.enabled=false}for(let i=0;i<4;i++){const e=app.root.findByName(`Oncoming Traffic ${i}`);if(e)e.enabled=false}});await sleep(80)}
+            await cleanVisual(base);await cleanVisual(page);
+            await base.screenshot({path:'pass17-locked-visual-430x932.png'});await page.screenshot({path:'pass18-locked-visual-430x932.png'});
+            fs.writeFileSync('pass18-runtime.json',JSON.stringify({detail,nearMiss:setupNear,collisionCount:1,restart,audit,errors},null,2));
+            assert(errors.length===0,`console/page errors: ${errors.join(' | ')}`);
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+
+      - name: Locked visual luma sanity check
+        shell: bash
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow
+          python3 - <<'PY'
+          from PIL import Image,ImageStat
+          import json
+          def luma(path):
+              im=Image.open(path).convert('L').crop((20,140,410,900))
+              return ImageStat.Stat(im).mean[0]
+          a=luma('pass17-locked-visual-430x932.png');b=luma('pass18-locked-visual-430x932.png');ratio=b/max(a,1e-9)
+          print(json.dumps({'pass17Luma':a,'pass18Luma':b,'ratio':ratio},indent=2))
+          if not .94 <= ratio <= 1.06: raise SystemExit('locked scene brightness drifted')
+          PY
+
+      - name: Upload Pass 18 proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: witch-pass18-traffic-cleanup-proof
+          if-no-files-found: warn
+          path: |
+            pass18-mobile-gameplay-430x932.png
+            pass18-collision-gameover-430x932.png
+            pass17-locked-visual-430x932.png
+            pass18-locked-visual-430x932.png
+            pass18-runtime.json
