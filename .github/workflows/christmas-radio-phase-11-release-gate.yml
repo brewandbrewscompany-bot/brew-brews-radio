@@ -1,0 +1,180 @@
+name: Christmas Radio Phase 11 Release Gate
+
+on:
+  push:
+    branches: [christmas-radio-phase-11-release-candidate]
+    paths:
+      - 'christmas-radio/**'
+      - '.github/workflows/christmas-radio-phase-11-release-gate.yml'
+  workflow_dispatch:
+
+jobs:
+  release-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Audit source, library, masters, install shell
+        run: |
+          set -euo pipefail
+          node --input-type=module --check < christmas-radio/assets/js/audio-engine.js
+          node --input-type=module --check < christmas-radio/assets/js/christmas-radio.js
+          python3 - <<'PY'
+          from collections import Counter
+          from pathlib import Path
+          import hashlib, json
+          root=Path('christmas-radio')
+          tracks=json.loads((root/'data/tracks.json').read_text())
+          mastering=json.loads((root/'data/mastering.json').read_text())
+          stations=json.loads((root/'data/stations.json').read_text())
+          manifest=json.loads((root/'manifest.webmanifest').read_text())
+          rows=tracks['tracks']
+          expected={'snowfall-am':4,'fireside':5,'sleigh-bell-rock':3,'candlelight':6,'bb-christmas-radio':13,'north-pole-after-hours':4}
+          assert len(rows)==35, len(rows)
+          assert Counter(r['stationId'] for r in rows)==Counter(expected)
+          assert len(stations['stations'])==6 and stations['defaultStationId']=='bb-christmas-radio'
+          masters={m['catalogId']:m for m in mastering['masters']}
+          assert len(masters)==13 and {r['masterId'] for r in rows}==set(masters)
+          for master in masters.values():
+              p=root/'audio'/master['file']
+              assert p.exists(), p
+              assert p.stat().st_size==master['sizeBytes'], p
+              assert hashlib.sha256(p.read_bytes()).hexdigest()==master['sha256'], p
+          assert manifest['display']=='standalone' and manifest['orientation']=='portrait'
+          assert manifest['start_url']=='./' and manifest['scope']=='./'
+          html=(root/'index.html').read_text()
+          sw=(root/'sw.js').read_text()
+          engine=(root/'assets/js/audio-engine.js').read_text()
+          assert 'preload="none"' in html
+          assert "this.preloader.preload='none'" in engine and "this.audio.preload='none'" in engine
+          assert 'phase10-2-v3' in sw and "pathname.includes('/audio/')" in sw and "request.headers.has('range')" in sw
+          for sid in ['snowfall-am','fireside','sleigh-bell-rock','candlelight','north-pole-after-hours']:
+              assert f'artwork/stations/{sid}.avif' in html
+              assert (root/'artwork'/'stations'/f'{sid}.avif').stat().st_size>20000
+          print('Static release audit passed: 13 hashed masters, 35 placements, 6 stations, install shell valid.')
+          PY
+
+      - name: Install browser helper
+        run: npm install --no-save puppeteer-core@24.16.0
+
+      - name: Real phone release regression
+        run: |
+          set -euo pipefail
+          rm -rf phase11-output && mkdir -p phase11-output
+          python3 -m http.server 8000 --directory . >/tmp/christmas-radio-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_BIN"
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const puppeteer=require('puppeteer-core');
+          const fs=require('fs');
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--autoplay-policy=no-user-gesture-required','--mute-audio']});
+            const page=await browser.newPage();
+            await page.setViewport({width:430,height:932,deviceScaleFactor:3});
+            const pageErrors=[],httpErrors=[],mp3Requests=[];
+            page.on('pageerror',e=>pageErrors.push(String(e)));
+            page.on('response',r=>{if(r.status()>=400)httpErrors.push({status:r.status(),url:r.url()})});
+            page.on('request',r=>{if(/\.mp3(?:\?|$)/i.test(r.url()))mp3Requests.push(r.url())});
+
+            await page.goto('http://127.0.0.1:8000/christmas-radio/',{waitUntil:'networkidle0'});
+            await page.waitForFunction(()=>document.querySelectorAll('#stationGrid .station-card').length===6,{timeout:10000});
+            const boot=await page.evaluate(async()=>{
+              const a=document.querySelector('#christmasRadioAudio');
+              const m=await fetch('manifest.webmanifest').then(r=>r.json());
+              return{station:document.body.dataset.station,frequency:document.querySelector('#frequencyLabel')?.textContent.trim(),paused:a.paused,src:a.getAttribute('src'),volume:a.volume,manifest:{display:m.display,orientation:m.orientation,start_url:m.start_url},scrollWidth:document.documentElement.scrollWidth,innerWidth,innerHeight,preloads:[...document.querySelectorAll('link[rel="preload"][as="image"]')].map(x=>x.getAttribute('href'))};
+            });
+            if(boot.station!=='bb-christmas-radio'||boot.frequency!=='103.1'||!boot.paused||boot.src||mp3Requests.length)throw new Error('Boot/autoplay regression '+JSON.stringify({boot,mp3Requests}));
+            if(boot.manifest.display!=='standalone'||boot.manifest.orientation!=='portrait'||boot.scrollWidth>430)throw new Error('Install/layout regression '+JSON.stringify(boot));
+            if(boot.preloads.length<6)throw new Error('Station art preloads missing '+JSON.stringify(boot.preloads));
+
+            const stationIds=['snowfall-am','fireside','sleigh-bell-rock','candlelight','bb-christmas-radio','north-pole-after-hours'];
+            const freqs=['88.7','92.5','96.9','100.3','103.1','106.7'];
+            for(let i=0;i<6;i++){
+              await page.$eval('#tuningKnob',(el,i)=>{el.value=String(i);el.dispatchEvent(new Event('input',{bubbles:true}))},i);
+              await page.waitForFunction(({id,f})=>document.body.dataset.station===id&&document.querySelector('#frequencyLabel')?.textContent.trim()===f,{timeout:5000},{id:stationIds[i],f:freqs[i]});
+              if(!(await page.$eval('#christmasRadioAudio',a=>a.paused)))throw new Error('Tuning autoplayed at '+freqs[i]);
+            }
+            if(mp3Requests.length)throw new Error('Tuning fetched audio before Play '+JSON.stringify(mp3Requests));
+
+            await page.$eval('#tuningKnob',el=>{el.value='4';el.dispatchEvent(new Event('input',{bubbles:true}))});
+            await page.waitForFunction(()=>document.body.dataset.station==='bb-christmas-radio',{timeout:5000});
+            await page.screenshot({path:'phase11-output/flagship-before-play-430x932-dpr3.png'});
+
+            await page.click('#playButton');
+            await page.waitForFunction(()=>{const a=document.querySelector('#christmasRadioAudio');return !a.paused&&a.currentSrc.includes('.mp3')&&a.readyState>=2},{timeout:15000});
+            await sleep(1200);
+            const playing=await page.$eval('#christmasRadioAudio',a=>({paused:a.paused,currentTime:a.currentTime,duration:a.duration,src:a.currentSrc,volume:a.volume}));
+            if(playing.paused||playing.currentTime<=0||!Number.isFinite(playing.duration)||playing.duration<30||!mp3Requests.length)throw new Error('Real playback failed '+JSON.stringify({playing,mp3Requests}));
+            if(await page.$eval('#signalLabel',e=>e.textContent.trim())!=='ON AIR')throw new Error('ON AIR state missing');
+
+            await page.click('.bottom-nav button[data-panel="nowPanel"]');
+            await page.waitForFunction(()=>!document.querySelector('#nowPanel').hidden,{timeout:3000});
+            const nowPanel=await page.evaluate(()=>({track:document.querySelector('#panelTrack')?.textContent.trim(),duration:document.querySelector('#panelDuration')?.textContent.trim(),pressed:document.querySelector('#panelPlay')?.getAttribute('aria-pressed')}));
+            if(!nowPanel.track||nowPanel.duration==='--:--'||nowPanel.pressed!=='true')throw new Error('Now Playing panel failed '+JSON.stringify(nowPanel));
+            const firstSrc=playing.src;
+            await page.click('#panelNext');
+            await page.waitForFunction(src=>{const a=document.querySelector('#christmasRadioAudio');return !a.paused&&a.currentSrc&&a.currentSrc!==src},{timeout:15000},firstSrc);
+            await page.click('#nowPanel .panel-close');
+
+            await page.click('.bottom-nav button[data-panel="stationsPanel"]');
+            await page.waitForFunction(()=>!document.querySelector('#stationsPanel').hidden,{timeout:3000});
+            if(await page.$$eval('#stationsPanel .station-card',x=>x.length)!==6)throw new Error('Stations panel incomplete');
+            await page.click('#stationsPanel .panel-close');
+
+            await page.$eval('#volumeControl',el=>{el.value='0.42';el.dispatchEvent(new Event('input',{bubbles:true}))});
+            await page.click('#playButton');
+            await sleep(150);
+            if(!(await page.$eval('#christmasRadioAudio',a=>a.paused)))throw new Error('Pause failed');
+
+            await page.evaluate(()=>navigator.serviceWorker.ready.then(()=>true));
+            await page.reload({waitUntil:'networkidle0'});
+            await page.waitForFunction(()=>!!navigator.serviceWorker.controller,{timeout:10000});
+            const warm=await page.evaluate(async()=>{
+              const a=document.querySelector('#christmasRadioAudio');
+              const keys=await caches.keys();
+              const key=keys.find(k=>k==='bb-christmas-radio-shell-phase10-2-v3');
+              const urls=key?[...(await (await caches.open(key)).keys())].map(r=>r.url):[];
+              return{key,urls,station:document.body.dataset.station,paused:a.paused,volume:a.volume,frequency:document.querySelector('#frequencyLabel')?.textContent.trim()};
+            });
+            if(!warm.key||warm.urls.some(u=>u.includes('/audio/'))||!warm.paused||Math.abs(warm.volume-.42)>.02)throw new Error('Warm cache/persistence failed '+JSON.stringify(warm));
+
+            await page.$eval('#tuningKnob',el=>{el.value='5';el.dispatchEvent(new Event('input',{bubbles:true}))});
+            await page.waitForFunction(()=>document.body.dataset.station==='north-pole-after-hours'&&getComputedStyle(document.querySelector('.scene'),'::before').backgroundImage.includes('north-pole-after-hours.avif'),{timeout:5000});
+            await sleep(200);
+            await page.screenshot({path:'phase11-output/north-pole-430x932-dpr3.png'});
+            await page.$eval('#tuningKnob',el=>{el.value='4';el.dispatchEvent(new Event('input',{bubbles:true}))});
+            await page.waitForFunction(()=>document.body.dataset.station==='bb-christmas-radio'&&getComputedStyle(document.querySelector('.scene'),'::before').backgroundImage.includes('christmas-radio-approved-skin.avif'),{timeout:5000});
+            await sleep(200);
+            await page.screenshot({path:'phase11-output/final-1031-430x932-dpr3.png'});
+
+            const critical=httpErrors.filter(x=>!x.url.endsWith('/favicon.ico'));
+            if(pageErrors.length||critical.length)throw new Error('Browser errors '+JSON.stringify({pageErrors,critical}));
+            const report={status:'PASS',viewport:{css:'430x932',dpr:3,physical:'1290x2796'},boot,playing:{...playing,src:new URL(playing.src).pathname},nowPanel,warm:{...warm,urls:warm.urls.map(u=>new URL(u).pathname)},mp3RequestCount:mp3Requests.length,pageErrors,httpErrors};
+            fs.writeFileSync('phase11-output/report.json',JSON.stringify(report,null,2));
+            console.log('PHASE 11 RELEASE GATE PASS',JSON.stringify(report,null,2));
+            await browser.close();
+          })().catch(e=>{console.error(e);fs.writeFileSync('phase11-output/failure.txt',String(e.stack||e));process.exit(1)});
+          NODE
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct
+          shots=list(Path('phase11-output').glob('*.png'))
+          assert len(shots)==3, shots
+          for p in shots:
+              b=p.read_bytes(); w,h=struct.unpack('>II',b[16:24]); print(p.name,w,h); assert (w,h)==(1290,2796)
+          PY
+
+      - name: Upload Phase 11 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: christmas-radio-phase-11-release-evidence
+          path: phase11-output/
+          if-no-files-found: warn
+          retention-days: 30
