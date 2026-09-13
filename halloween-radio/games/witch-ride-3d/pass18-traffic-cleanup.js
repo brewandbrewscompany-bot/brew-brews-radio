@@ -1,6 +1,6 @@
 import * as pc from 'playcanvas';
 
-const VERSION='pass18-traffic-collision-cleanup-v1';
+const VERSION='pass18-traffic-collision-cleanup-v2';
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const LEGACY_NAMES=Array.from({length:7},(_,i)=>`1938 Coupe ${i}`);
 const MOVING_NAMES=Array.from({length:4},(_,i)=>`Oncoming Traffic ${i}`);
@@ -13,11 +13,14 @@ const TRUCK_HALF_Z=2.42;
 const COLLISION_X=PLAYER_HALF_X+TRUCK_HALF_X;
 const COLLISION_Z=PLAYER_HALF_Z+TRUCK_HALF_Z;
 
-function hideLegacyTraffic(cars){
+function retireLegacyTraffic(cars){
   let hidden=0;
-  for(const car of cars){
+  for(let i=0;i<cars.length;i++){
+    const car=cars[i];
     if(!car)continue;
-    car.__active=false;
+    car.__active=true;
+    car.__pass18Retired=true;
+    car.setPosition(1000+i*8,-50,-10000-i*25);
     if(car.enabled!==false){car.enabled=false;hidden++}
   }
   return hidden;
@@ -50,8 +53,7 @@ function enterExistingGameOver(car){
 }
 
 function sweptTrafficCollision(previousZ,currentZ,carX,playerX){
-  const lateral=Math.abs(carX-playerX)<COLLISION_X;
-  if(!lateral)return false;
+  if(Math.abs(carX-playerX)>=COLLISION_X)return false;
   if(previousZ===null||previousZ===undefined)return Math.abs(currentZ-PLAYER_Z)<=COLLISION_Z;
   if(currentZ<previousZ-60)return false;
   const lo=Math.min(previousZ,currentZ),hi=Math.max(previousZ,currentZ);
@@ -67,28 +69,47 @@ async function install(){
         const moving=MOVING_NAMES.map(name=>app.root.findByName(name)).filter(Boolean);
         if(legacy.length!==7)throw new Error(`expected 7 legacy traffic roots, found ${legacy.length}`);
         if(moving.length!==4)throw new Error(`expected 4 moving traffic roots, found ${moving.length}`);
-        hideLegacyTraffic(legacy);
+
+        retireLegacyTraffic(legacy);
         setMovingTraffic(moving,false,false);
         const previousZ=new WeakMap();
         let wasPlaying=false,collisionLatched=false;
 
-        const enforceLegacy=()=>hideLegacyTraffic(legacy);
+        const rememberMoving=()=>{for(const car of moving)previousZ.set(car,car.getPosition().z)};
+        const activateRun=reset=>{
+          if(w.state?.mode!=='playing')return;
+          collisionLatched=false;
+          retireLegacyTraffic(legacy);
+          setMovingTraffic(moving,true,reset);
+          rememberMoving();
+          wasPlaying=true;
+        };
+        const suspendTraffic=()=>{
+          retireLegacyTraffic(legacy);
+          setMovingTraffic(moving,false,false);
+          wasPlaying=false;
+        };
+
+        document.getElementById('play')?.addEventListener('click',()=>activateRun(true));
+        document.getElementById('again')?.addEventListener('click',()=>activateRun(true));
+        document.getElementById('resume')?.addEventListener('click',()=>activateRun(false));
+        document.getElementById('pause')?.addEventListener('click',()=>{if(w.state?.mode!=='playing')suspendTraffic()});
+
+        const enforceLegacy=()=>retireLegacyTraffic(legacy);
         app.on('prerender',enforceLegacy);
         app.on('update',()=>{
           const state=w.state||{},playing=state.mode==='playing';
-          hideLegacyTraffic(legacy);
+          retireLegacyTraffic(legacy);
 
           if(!playing){
-            if(wasPlaying)setMovingTraffic(moving,false,false);
-            else for(const car of moving)if(car.enabled!==false)car.enabled=false;
+            if(wasPlaying||moving.some(car=>car.enabled!==false))setMovingTraffic(moving,false,false);
             wasPlaying=false;
             return;
           }
 
           if(!wasPlaying){
-            collisionLatched=false;
-            setMovingTraffic(moving,true,true);
-            for(const car of moving)previousZ.set(car,car.getPosition().z);
+            setMovingTraffic(moving,true,false);
+            rememberMoving();
             wasPlaying=true;
             return;
           }
@@ -116,6 +137,7 @@ async function install(){
           truckHalfZ:TRUCK_HALF_Z,
           collisionHalfWidthTotal:COLLISION_X,
           collisionHalfDepthTotal:COLLISION_Z,
+          legacySpawnPoolBlocked:true,
           visualSourcesChanged:false,
           pass17TrafficVisualsPreserved:true,
           pass17RoadReflectionsPreserved:true
