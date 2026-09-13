@@ -1,0 +1,143 @@
+name: Witch Ride 3D Pass 22 Bean Readability
+
+on:
+  push:
+    branches: [witch-ride-3d-bean-readability-pass-22]
+    paths:
+      - 'halloween-radio/games/witch-ride-3d/index.html'
+      - 'halloween-radio/games/witch-ride-3d/pass22-bean-readability.js'
+      - '.github/workflows/witch-ride-3d-pass22-bean-readability.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  pass22-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify Pass 21 remains locked
+        shell: bash
+        run: |
+          git fetch origin main witch-ride-3d-surprise-hazards-manual-boost-pass-21 witch-ride-3d-bean-readability-pass-22
+          BASE=cd8173644f253bcfbb763228062f48eca88f5d1c
+          test "$(git rev-parse origin/witch-ride-3d-surprise-hazards-manual-boost-pass-21)" = "$BASE"
+          test "$(git rev-parse origin/witch-ride-3d-bean-readability-pass-22)" = "$GITHUB_SHA"
+          for path in \
+            halloween-radio/games/witch-ride-3d/game.js \
+            halloween-radio/games/witch-ride-3d/game.css \
+            halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js \
+            halloween-radio/games/witch-ride-3d/pass18-traffic-cleanup.js \
+            halloween-radio/games/witch-ride-3d/pass19-bean-witch-material.js \
+            halloween-radio/games/witch-ride-3d/pass20-obstacles-boost.js \
+            halloween-radio/games/witch-ride-3d/pass21-surprise-hazards-manual-boost.js \
+            halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js \
+            halloween-radio/games/witch-ride-3d/illumination-pass.js \
+            halloween-radio/games/witch-ride-3d/composition-pass.js \
+            halloween-radio/games/witch-ride-3d/assets/witch-rider.glb \
+            halloween-radio/games/witch-ride-3d/assets/coffee-bean.glb; do
+            git diff --quiet "$BASE" HEAD -- "$path" || { echo "LOCKED PASS 21 SOURCE CHANGED: $path"; exit 1; }
+          done
+          CHANGED="$(git diff --name-only "$BASE" HEAD)"
+          echo "$CHANGED"
+          test -z "$(printf '%s\n' "$CHANGED" | grep -Ev '^(halloween-radio/games/witch-ride-3d/index.html|halloween-radio/games/witch-ride-3d/pass22-bean-readability.js|.github/workflows/witch-ride-3d-pass22-bean-readability.yml)$' || true)"
+          ! printf '%s\n' "$CHANGED" | grep -q '^louisburg-local/'
+          node --check halloween-radio/games/witch-ride-3d/pass22-bean-readability.js
+          grep -q 'pass22-bean-readability.js' halloween-radio/games/witch-ride-3d/index.html
+
+      - name: Real 430x932 bean readability gate
+        shell: bash
+        run: |
+          npm install --no-save puppeteer-core@24.16.0
+          python3 -m http.server 8022 --directory . >/tmp/pass22.log 2>&1 & PID=$!
+          trap 'kill $PID || true' EXIT
+          sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_BIN"
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const fs=require('fs'),puppeteer=require('puppeteer-core');
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          const assert=(v,m)=>{if(!v)throw new Error(m)};
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--disable-background-timer-throttling','--disable-renderer-backgrounding','--disable-backgrounding-occluded-windows']});
+            const page=await browser.newPage();page.setDefaultTimeout(70000);
+            await page.setViewport({width:430,height:932,deviceScaleFactor:1,isMobile:true,hasTouch:true});
+            const errors=[];page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+            await page.goto('http://127.0.0.1:8022/halloween-radio/games/witch-ride-3d/',{waitUntil:'domcontentloaded'});
+            await page.waitForFunction(()=>window.WitchRide3D?.ready&&window.WitchRidePass21Gameplay?.active===true&&window.WitchRidePass22Bean?.active===true);
+
+            const setup=await page.evaluate(()=>({
+              p22:window.WitchRidePass22Bean.detail,
+              p21:window.WitchRidePass21Gameplay.detail,
+              p20:window.WitchRidePass20Gameplay.detail,
+              witch:{geometry:window.WitchRideWitchCenterpiecePass.geometryLocked,stance:window.WitchRideWitchCenterpiecePass.stanceLocked}
+            }));
+            assert(setup.p22.stats.beans===16&&setup.p22.stats.scalePreserved===16,'bean count/scale lock failed');
+            assert(setup.p22.stats.creases===16&&setup.p22.stats.creaseEdges===16,'bean crease treatment incomplete');
+            assert(setup.p22.stats.burningHalosPreserved===16,'Pass20 burning halo missing');
+            assert(setup.p22.rootScaleChanged===false&&setup.p22.pickupLogicChanged===false&&setup.p22.haloChanged===false,'bean gameplay/halo lock failed');
+            assert(setup.p22.witchChanged===false&&setup.p22.trafficChanged===false&&setup.p22.hazardsChanged===false&&setup.p22.boostChanged===false&&setup.p22.roadChanged===false&&setup.p22.reflectionsChanged===false&&setup.p22.cameraChanged===false,'locked Pass21 systems changed');
+            assert(setup.p21.manualBoostMultiplier===1.45&&setup.p21.manualBoostCooldown===8,'Pass21 boost regressed');
+            assert(setup.p20.totalMovingTrucks===7&&setup.witch.geometry&&setup.witch.stance,'traffic/witch foundation regressed');
+            assert(setup.p22.bodyDiffuse[0]>.25&&setup.p22.bodyDiffuse[1]>.08,'bean body is not materially lighter than prior espresso-dark treatment');
+
+            await page.click('#play');await page.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(300);
+
+            const runtime=await page.evaluate(()=>{
+              const app=globalThis.pc?.app||window.pc?.app||null;
+              const root=window.WitchRidePass20Gameplay.extraTraffic[0]?.root;
+              const bean=root?.findByName?.('Coffee Bean 0');
+              if(!bean)return null;
+              const mats=[],nodes=[];
+              const walk=n=>{nodes.push(n.name||'');for(const mi of n.render?.meshInstances||[])mats.push({name:mi.material?.name||'',diffuse:mi.material?.diffuse?[mi.material.diffuse.r,mi.material.diffuse.g,mi.material.diffuse.b]:null,gloss:mi.material?.gloss});for(const c of n.children||[])walk(c)};walk(bean);
+              return {scale:[bean.getLocalScale().x,bean.getLocalScale().y,bean.getLocalScale().z],hasCrease:!!bean.findByName('Pass22 Bean Crease 0'),hasEdge:!!bean.findByName('Pass22 Bean Crease Edge 0'),hasBurning:!!bean.findByName('Pass20 Bean Burning Halo 0'),mats,nodes};
+            });
+            assert(runtime&&runtime.hasCrease&&runtime.hasEdge&&runtime.hasBurning,'runtime bean readability pieces missing');
+            assert(Math.abs(runtime.scale[0]-1)<.01&&Math.abs(runtime.scale[1]-1)<.01&&Math.abs(runtime.scale[2]-1)<.01,'bean gameplay scale changed');
+            const body=runtime.mats.find(m=>/^Pass22 medium roast bean/.test(m.name));
+            assert(body&&body.diffuse[0]>.25&&body.gloss>.35,'lighter bean body material not active');
+
+            // Stage a normal-size bean in the actual gameplay view for phone-size visual inspection.
+            await page.evaluate(()=>{
+              const p20=window.WitchRidePass20Gameplay,s=window.WitchRide3D.state,root=p20.extraTraffic[0]?.root,bean=root?.findByName?.('Coffee Bean 0');
+              // Keep hazards/traffic away for the proof frame only; source/gameplay behavior is unchanged.
+              for(const e of p20.extraTraffic){e.__pass20Active=false;e.enabled=false}
+              for(const e of p20.crossers){e.__pass20Active=false;e.enabled=false}
+              for(let i=0;i<4;i++){const e=root?.findByName?.(`Oncoming Traffic ${i}`);if(e)e.setPosition(50,0,-500-i*40)}
+              s.x=s.targetX=-1.65;s.velocityX=0;
+              if(bean){bean.enabled=true;bean.__active=false;bean.setPosition(.95,1.25,-4.5);bean.setEulerAngles(0,0,0)}
+            });
+            await sleep(120);
+            await page.screenshot({path:'pass22-bean-gameplay-430x932.png'});
+
+            // Close proof at the same gameplay scale family, not a replacement oversized collectible.
+            await page.evaluate(()=>{
+              const root=window.WitchRidePass20Gameplay.extraTraffic[0]?.root,bean=root?.findByName?.('Coffee Bean 0');
+              if(bean){bean.setPosition(.65,1.25,-1.8);bean.setEulerAngles(0,0,0)}
+            });
+            await sleep(100);
+            await page.screenshot({path:'pass22-bean-close-430x932.png'});
+
+            const finalState=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,p22:window.WitchRidePass22Bean.detail,boost:window.WitchRidePass21Gameplay.manual.state}));
+            fs.writeFileSync('pass22-runtime.json',JSON.stringify({setup,runtime,finalState,errors},null,2));
+            assert(errors.length===0,`console/page errors: ${errors.join(' | ')}`);
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+
+      - name: Upload Pass 22 proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: witch-pass22-bean-readability-proof
+          if-no-files-found: warn
+          path: |
+            pass22-bean-gameplay-430x932.png
+            pass22-bean-close-430x932.png
+            pass22-runtime.json
