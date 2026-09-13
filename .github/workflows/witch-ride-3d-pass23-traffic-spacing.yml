@@ -1,0 +1,122 @@
+name: Witch Ride 3D Pass 23 Traffic Spacing
+
+on:
+  push:
+    branches: [witch-ride-3d-traffic-spacing-pass-23]
+    paths:
+      - 'halloween-radio/games/witch-ride-3d/index.html'
+      - 'halloween-radio/games/witch-ride-3d/pass23-traffic-spacing.js'
+      - '.github/workflows/witch-ride-3d-pass23-traffic-spacing.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  pass23-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify Pass 22 remains locked
+        shell: bash
+        run: |
+          git fetch origin main witch-ride-3d-bean-readability-pass-22 witch-ride-3d-traffic-spacing-pass-23
+          BASE=53f7a492d29cec1332e393fbae88624b46b7e7e0
+          test "$(git rev-parse origin/witch-ride-3d-bean-readability-pass-22)" = "$BASE"
+          test "$(git rev-parse origin/witch-ride-3d-traffic-spacing-pass-23)" = "$GITHUB_SHA"
+          for path in \
+            halloween-radio/games/witch-ride-3d/game.js \
+            halloween-radio/games/witch-ride-3d/game.css \
+            halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js \
+            halloween-radio/games/witch-ride-3d/pass18-traffic-cleanup.js \
+            halloween-radio/games/witch-ride-3d/pass19-bean-witch-material.js \
+            halloween-radio/games/witch-ride-3d/pass20-obstacles-boost.js \
+            halloween-radio/games/witch-ride-3d/pass21-surprise-hazards-manual-boost.js \
+            halloween-radio/games/witch-ride-3d/pass22-bean-readability.js \
+            halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js \
+            halloween-radio/games/witch-ride-3d/illumination-pass.js \
+            halloween-radio/games/witch-ride-3d/composition-pass.js \
+            halloween-radio/games/witch-ride-3d/assets/witch-rider.glb \
+            halloween-radio/games/witch-ride-3d/assets/coffee-bean.glb; do
+            git diff --quiet "$BASE" HEAD -- "$path" || { echo "LOCKED PASS 22 SOURCE CHANGED: $path"; exit 1; }
+          done
+          CHANGED="$(git diff --name-only "$BASE" HEAD)"
+          echo "$CHANGED"
+          test -z "$(printf '%s\n' "$CHANGED" | grep -Ev '^(halloween-radio/games/witch-ride-3d/index.html|halloween-radio/games/witch-ride-3d/pass23-traffic-spacing.js|.github/workflows/witch-ride-3d-pass23-traffic-spacing.yml)$' || true)"
+          ! printf '%s\n' "$CHANGED" | grep -q '^louisburg-local/'
+          node --check halloween-radio/games/witch-ride-3d/pass23-traffic-spacing.js
+          grep -q 'pass23-traffic-spacing.js' halloween-radio/games/witch-ride-3d/index.html
+
+      - name: Real 430x932 traffic spacing gate
+        shell: bash
+        run: |
+          npm install --no-save puppeteer-core@24.16.0
+          python3 -m http.server 8023 --directory . >/tmp/pass23.log 2>&1 & PID=$!
+          trap 'kill $PID || true' EXIT
+          sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_BIN"
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const fs=require('fs'),puppeteer=require('puppeteer-core');
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          const assert=(v,m)=>{if(!v)throw new Error(m)};
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--disable-background-timer-throttling','--disable-renderer-backgrounding','--disable-backgrounding-occluded-windows']});
+            const page=await browser.newPage();page.setDefaultTimeout(70000);
+            await page.setViewport({width:430,height:932,deviceScaleFactor:1,isMobile:true,hasTouch:true});
+            const errors=[];page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+            await page.goto('http://127.0.0.1:8023/halloween-radio/games/witch-ride-3d/',{waitUntil:'domcontentloaded'});
+            await page.waitForFunction(()=>window.WitchRide3D?.ready&&window.WitchRidePass22Bean?.active===true&&window.WitchRidePass23TrafficSpacing?.active===true);
+
+            const setup=await page.evaluate(()=>({p23:window.WitchRidePass23TrafficSpacing.detail,p22:window.WitchRidePass22Bean.detail,p20:window.WitchRidePass20Gameplay.detail}));
+            assert(setup.p23.trucksManaged===7,'Pass23 must manage all 7 moving trucks');
+            assert(setup.p23.maxActivePerRow===2,'Pass23 row limit must be 2');
+            assert(setup.p23.lanePositionsChanged===false&&setup.p23.truckVisualsChanged===false&&setup.p23.reflectionsChanged===false&&setup.p23.collisionVolumesChanged===false,'locked truck systems changed');
+            assert(setup.p23.witchChanged===false&&setup.p23.beanChanged===false&&setup.p23.hazardsChanged===false&&setup.p23.boostChanged===false&&setup.p23.roadChanged===false&&setup.p23.cameraChanged===false,'locked Pass22 systems changed');
+            assert(setup.p22.stats.beans===16&&setup.p20.totalMovingTrucks===7,'Pass22 bean/traffic foundation regressed');
+
+            await page.click('#play');await page.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(350);
+
+            const forced=await page.evaluate(()=>{
+              const p=window.WitchRidePass23TrafficSpacing;
+              const trucks=p.trucks;
+              const before=trucks.slice(0,3).map(t=>({name:t.name,x:t.getPosition().x,z:t.getPosition().z}));
+              for(let i=0;i<3;i++){
+                const t=trucks[i],pos=t.getPosition();
+                t.enabled=true;
+                if(t.name.startsWith('Oncoming Traffic '))t.__pass18Active=true;else t.__pass20Active=true;
+                t.setPosition(pos.x,pos.y,-70-i*2);
+              }
+              p.test.resolve();
+              const after=trucks.slice(0,3).map(t=>({name:t.name,x:t.getPosition().x,z:t.getPosition().z}));
+              return {before,after,maxRow:p.test.maxRow(),interventions:p.detail.stats.interventions};
+            });
+            assert(forced.maxRow<=2,'three-truck row was not resolved');
+            assert(forced.interventions>=1,'traffic spacing guard did not intervene');
+            for(let i=0;i<3;i++)assert(Math.abs(forced.before[i].x-forced.after[i].x)<0.001,'truck lane changed');
+
+            await sleep(1200);
+            const live=await page.evaluate(()=>({maxRow:window.WitchRidePass23TrafficSpacing.test.maxRow(),mode:window.WitchRide3D.state.mode,stats:window.WitchRidePass23TrafficSpacing.detail.stats}));
+            assert(live.maxRow<=2,'live traffic formed a three-truck row');
+            assert(live.mode==='playing','game unexpectedly ended during spacing test');
+            await page.screenshot({path:'pass23-traffic-spacing-430x932.png'});
+            fs.writeFileSync('pass23-runtime.json',JSON.stringify({setup,forced,live,errors},null,2));
+            assert(errors.length===0,`console/page errors: ${errors.join(' | ')}`);
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+
+      - name: Upload Pass 23 proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: witch-pass23-traffic-spacing-proof
+          if-no-files-found: warn
+          path: |
+            pass23-traffic-spacing-430x932.png
+            pass23-runtime.json
