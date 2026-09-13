@@ -1,0 +1,156 @@
+name: Witch Ride 3D Pass 21 Final Gate
+
+on:
+  push:
+    branches: [witch-ride-3d-surprise-hazards-manual-boost-pass-21]
+    paths:
+      - '.github/workflows/witch-ride-3d-pass21-final-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  final-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify locked Pass 20 source
+        shell: bash
+        run: |
+          git fetch origin main witch-ride-3d-obstacles-boost-pass-20 witch-ride-3d-surprise-hazards-manual-boost-pass-21
+          BASE=6f67411c8985844730ce339ed071ebfd1426f441
+          test "$(git rev-parse origin/witch-ride-3d-obstacles-boost-pass-20)" = "$BASE"
+          test "$(git rev-parse origin/witch-ride-3d-surprise-hazards-manual-boost-pass-21)" = "$GITHUB_SHA"
+          for path in \
+            halloween-radio/games/witch-ride-3d/game.js \
+            halloween-radio/games/witch-ride-3d/game.css \
+            halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js \
+            halloween-radio/games/witch-ride-3d/pass18-traffic-cleanup.js \
+            halloween-radio/games/witch-ride-3d/pass19-bean-witch-material.js \
+            halloween-radio/games/witch-ride-3d/pass20-obstacles-boost.js \
+            halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js \
+            halloween-radio/games/witch-ride-3d/illumination-pass.js \
+            halloween-radio/games/witch-ride-3d/composition-pass.js \
+            halloween-radio/games/witch-ride-3d/assets/witch-rider.glb \
+            halloween-radio/games/witch-ride-3d/assets/coffee-bean.glb; do
+            git diff --quiet "$BASE" HEAD -- "$path" || { echo "LOCKED SOURCE CHANGED: $path"; exit 1; }
+          done
+          CHANGED="$(git diff --name-only "$BASE" HEAD)"
+          echo "$CHANGED"
+          test -z "$(printf '%s\n' "$CHANGED" | grep -Ev '^(halloween-radio/games/witch-ride-3d/index.html|halloween-radio/games/witch-ride-3d/pass21-surprise-hazards-manual-boost.js|.github/workflows/witch-ride-3d-pass21-surprise-hazards-manual-boost.yml|.github/workflows/witch-ride-3d-pass21-final-gate.yml)$' || true)"
+          ! printf '%s\n' "$CHANGED" | grep -q '^louisburg-local/'
+          node --check halloween-radio/games/witch-ride-3d/pass21-surprise-hazards-manual-boost.js
+
+      - name: Real 430x932 Pass 21 acceptance
+        shell: bash
+        run: |
+          npm install --no-save puppeteer-core@24.16.0
+          python3 -m http.server 8022 --directory . >/tmp/pass21-final.log 2>&1 & PID=$!
+          trap 'kill $PID || true' EXIT
+          sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_BIN"
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const fs=require('fs'),puppeteer=require('puppeteer-core');
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          const assert=(v,m)=>{if(!v)throw new Error(m)};
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--disable-background-timer-throttling','--disable-renderer-backgrounding','--disable-backgrounding-occluded-windows']});
+            const page=await browser.newPage();page.setDefaultTimeout(70000);
+            await page.setViewport({width:430,height:932,deviceScaleFactor:1,isMobile:true,hasTouch:true});
+            const errors=[];page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+            await page.goto('http://127.0.0.1:8022/halloween-radio/games/witch-ride-3d/',{waitUntil:'domcontentloaded'});
+            await page.waitForFunction(()=>window.WitchRide3D?.ready&&window.WitchRidePass20Gameplay?.active===true&&window.WitchRidePass21Gameplay?.active===true);
+
+            const setup=await page.evaluate(()=>({
+              p20:window.WitchRidePass20Gameplay.detail,
+              p21:window.WitchRidePass21Gameplay.detail,
+              witch:{geometry:window.WitchRideWitchCenterpiecePass.geometryLocked,stance:window.WitchRideWitchCenterpiecePass.stanceLocked},
+              p19:window.WitchRidePass19Material.detail
+            }));
+            assert(setup.p20.totalMovingTrucks===7&&setup.p20.beanBurningHalos===16,'Pass20 foundation regressed');
+            assert(setup.p19.geometryChanged===false&&setup.p19.poseChanged===false&&setup.witch.geometry&&setup.witch.stance,'witch lock regressed');
+            assert(setup.p21.manualBoostMultiplier===1.45&&setup.p21.manualBoostDuration===3&&setup.p21.manualBoostCooldown===8,'boost tuning incorrect');
+            assert(setup.p21.pass20VisualsChanged===false&&setup.p21.reflectionsChanged===false&&setup.p21.beanHaloChanged===false,'visual lock regressed');
+
+            await page.click('#play');await page.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(300);
+            const ready=await page.evaluate(()=>{const p=window.WitchRidePass21Gameplay,b=p.ui.button,r=b.getBoundingClientRect(),s=window.WitchRide3D.state;return {display:getComputedStyle(b).display,left:r.left,right:r.right,width:r.width,height:r.height,state:p.manual.state,text:b.innerText,targetX:s.targetX,speed:s.speed}});
+            assert(ready.display==='flex'&&ready.state==='ready'&&/READY/.test(ready.text),'boost not ready/visible');
+            assert(ready.left<30&&ready.right<125&&ready.width>=88&&ready.height>=88,'boost button not in left thumb zone');
+
+            const center=await page.evaluate(()=>{const r=document.getElementById('pass21-manual-boost').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,targetX:window.WitchRide3D.state.targetX,speed:window.WitchRide3D.state.speed}});
+            await page.touchscreen.tap(center.x,center.y);await sleep(100);
+            const active=await page.evaluate(()=>{const p=window.WitchRidePass21Gameplay,s=window.WitchRide3D.state;return {state:p.manual.state,remaining:p.manual.activeRemaining,speed:s.speed,targetX:s.targetX,text:p.ui.button.innerText}});
+            assert(active.state==='active'&&active.remaining>2.7,'manual boost failed to activate');
+            assert(active.speed>center.speed*1.30,'manual boost did not accelerate');
+            assert(Math.abs(active.targetX-center.targetX)<.08,'boost touch steered witch');
+            assert(/BOOST!/.test(active.text),'active button state missing');
+            await page.screenshot({path:'pass21-final-boost-430x932.png'});
+
+            // Keep the real player safely outside traffic only while proving timer behavior.
+            await page.evaluate(()=>{const s=window.WitchRide3D.state;s.x=15;s.targetX=15;s.velocityX=0;const p20=window.WitchRidePass20Gameplay,root=p20.extraTraffic[0]?.root;for(const e of p20.extraTraffic){e.__pass20Active=false;e.enabled=false}for(const e of p20.crossers){e.__pass20Active=false;e.enabled=false}for(let i=0;i<4;i++){const e=root?.findByName?.(`Oncoming Traffic ${i}`);if(e)e.setPosition(50,0,-500-i*40)}});
+            await page.click('#pause');await page.waitForFunction(()=>window.WitchRide3D.state.mode==='paused');
+            const pauseA=await page.evaluate(()=>window.WitchRidePass21Gameplay.manual.activeRemaining);await sleep(500);
+            const pauseB=await page.evaluate(()=>window.WitchRidePass21Gameplay.manual.activeRemaining);
+            assert(Math.abs(pauseA-pauseB)<.06,'boost timer did not freeze on pause');
+            await page.click('#resume');await page.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');
+            await page.evaluate(()=>{const p20=window.WitchRidePass20Gameplay,root=p20.extraTraffic[0]?.root;for(let i=0;i<4;i++){const e=root?.findByName?.(`Oncoming Traffic ${i}`);if(e)e.setPosition(50,0,-500-i*40)}});
+            const resumeStart=await page.evaluate(()=>window.WitchRidePass21Gameplay.manual.activeRemaining);
+            await page.waitForFunction(start=>window.WitchRidePass21Gameplay.manual.activeRemaining<start-.05,{timeout:12000},resumeStart);
+            const resumeEnd=await page.evaluate(()=>window.WitchRidePass21Gameplay.manual.activeRemaining);
+            assert(resumeEnd<resumeStart-.05,'boost timer did not resume');
+
+            // Deterministically cross the already-proven active timer boundary to validate cooldown/reset logic without SwiftShader wall-clock distortion.
+            await page.evaluate(()=>{const m=window.WitchRidePass21Gameplay.manual;m.tick(m.activeRemaining+.02,true)});await sleep(80);
+            const cooldown=await page.evaluate(()=>{const p=window.WitchRidePass21Gameplay;return {state:p.manual.state,remaining:p.manual.cooldownRemaining,retrigger:p.test.activateManual(),text:p.ui.button.innerText}});
+            assert(cooldown.state==='cooldown'&&cooldown.remaining>7.7&&cooldown.retrigger===false&&/RECHARGE/.test(cooldown.text),'cooldown lockout failed');
+            await page.evaluate(()=>{const m=window.WitchRidePass21Gameplay.manual;m.tick(m.cooldownRemaining+.02,true)});await sleep(80);
+            const resetReady=await page.evaluate(()=>({state:window.WitchRidePass21Gameplay.manual.state,text:window.WitchRidePass21Gameplay.ui.button.innerText}));
+            assert(resetReady.state==='ready'&&/READY/.test(resetReady.text),'cooldown did not reset to READY');
+
+            // Return to center and prove normal Pass20 spawns are converted into close/faster Pass21 ambushes.
+            await page.evaluate(()=>{const s=window.WitchRide3D.state;s.x=0;s.targetX=0;s.velocityX=0;for(const e of window.WitchRidePass21Gameplay.crossers){e.enabled=false;e.__pass20Active=false}});
+            const beforeCount=await page.evaluate(()=>window.WitchRidePass21Gameplay.repositionCount);
+            await page.evaluate(()=>window.WitchRidePass20Gameplay.test.spawnCrosser());
+            await page.waitForFunction(before=>window.WitchRidePass21Gameplay.repositionCount>before,{timeout:8000},beforeCount);
+            const surprise=await page.evaluate(()=>{const p=window.WitchRidePass21Gameplay,e=p.crossers.find(x=>x.__pass20Active);if(!e)return null;const q=e.getPosition();return {type:e.__type,x:q.x,z:q.z,crossSpeed:e.__crossSpeed,marked:e.__pass21Surprise,spawnZ:e.__pass21SpawnZ,reaction:e.__pass21ReactionDistance}});
+            assert(surprise&&surprise.marked,'Pass20 spawn not converted to surprise mode');
+            assert(surprise.spawnZ>-38&&surprise.spawnZ<-15&&surprise.crossSpeed>4.7,'hazard is not close/fast enough');
+
+            // Near miss stays safe; direct ghost contact ends run.
+            await page.evaluate(()=>{const p=window.WitchRidePass21Gameplay,s=window.WitchRide3D.state;for(const e of p.crossers){e.enabled=false;e.__pass20Active=false}const g=p.test.spawnSurprise('ghost');g.setPosition(s.x+3.2,g.__baseY,2)});
+            await sleep(140);assert(await page.evaluate(()=>window.WitchRide3D.state.mode)==='playing','ghost near miss falsely crashed');
+            await page.evaluate(()=>{const p=window.WitchRidePass21Gameplay,s=window.WitchRide3D.state,g=p.crossers.find(e=>e.__pass20Active&&e.__type==='ghost');g.setPosition(s.x,g.__baseY,2)});
+            await page.waitForFunction(()=>window.WitchRide3D.state.mode==='over');
+            assert(await page.evaluate(()=>window.WitchRidePass21Gameplay.manual.state)==='ready','game over did not reset manual boost');
+
+            await page.click('#again');await page.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(220);
+            assert(await page.evaluate(()=>window.WitchRidePass21Gameplay.manual.state)==='ready','restart did not restore READY');
+
+            // Visual proof: close ghost + goblin, center truck, locked burning bean, left boost button.
+            await page.evaluate(()=>{const p21=window.WitchRidePass21Gameplay,p20=window.WitchRidePass20Gameplay,s=window.WitchRide3D.state;for(const e of p21.crossers){e.enabled=false;e.__pass20Active=false}const g=p21.test.spawnSurprise('ghost'),b=p21.test.spawnSurprise('goblin');g.__crossSpeed=.2;g.setPosition(-3.5,g.__baseY,-10.5);b.__crossSpeed=.2;b.setPosition(3.6,b.__baseY,-14);const t=p20.extraTraffic[0];t.enabled=true;t.__pass20Active=true;t.setPosition(0,0,-28);const root=t.root,bean=root?.findByName?.('Coffee Bean 0');if(bean){bean.enabled=true;bean.__active=false;bean.setPosition(2.5,1.15,-6.5)}s.x=s.targetX=0;s.velocityX=0});
+            await sleep(80);await page.screenshot({path:'pass21-final-gameplay-430x932.png'});
+
+            const finalState=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,speed:window.WitchRide3D.state.speed,manual:window.WitchRidePass21Gameplay.manual.state,detail:window.WitchRidePass21Gameplay.detail,repositionCount:window.WitchRidePass21Gameplay.repositionCount,button:window.WitchRidePass21Gameplay.ui.button.innerText}));
+            fs.writeFileSync('pass21-final-runtime.json',JSON.stringify({setup,ready,center,active,pauseA,pauseB,resumeStart,resumeEnd,cooldown,resetReady,surprise,finalState,errors},null,2));
+            assert(errors.length===0,`console/page errors: ${errors.join(' | ')}`);
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+
+      - name: Upload final Pass 21 proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: witch-pass21-final-proof
+          if-no-files-found: warn
+          path: |
+            pass21-final-gameplay-430x932.png
+            pass21-final-boost-430x932.png
+            pass21-final-runtime.json
