@@ -1,0 +1,61 @@
+name: Christmas Radio Phase 10.2 Scene Asset Builder
+
+on:
+  push:
+    branches: [christmas-radio-phase-10-2-station-scenes]
+    paths:
+      - '.phase10-2-scenes/READY'
+
+permissions:
+  contents: write
+
+jobs:
+  build-scenes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Rebuild and verify station scene AVIFs
+        run: |
+          set -euo pipefail
+          test -f .phase10-2-scenes/READY
+          mkdir -p christmas-radio/artwork/stations
+
+          build_scene () {
+            name="$1"
+            expected_size="$2"
+            expected_sha="$3"
+            src=".phase10-2-scenes/${name}.b64"
+            out="christmas-radio/artwork/stations/${name}.avif"
+            test -s "$src"
+            tr -d '\r\n ' < "$src" | base64 -d > "$out"
+            actual_size="$(wc -c < "$out" | tr -d ' ')"
+            actual_sha="$(sha256sum "$out" | awk '{print $1}')"
+            echo "$name size=$actual_size sha256=$actual_sha"
+            test "$actual_size" = "$expected_size"
+            test "$actual_sha" = "$expected_sha"
+          }
+
+          build_scene snowfall-am 30343 be45d2e4b4f9e680639be1355f8f43f31dc3126cff4d529a6cb2cdfad974a626
+          build_scene fireside 30096 de4d7bc5860bb04e17f7a558e9d2c3ae8872babc761415f1bcb7be25bb2d7beb
+          build_scene sleigh-bell-rock 31314 a2a2d5320b7db34adf1fe89f7eb1a758ad93a89c5d38c54a5f234ad666f0d8e3
+          build_scene candlelight 30184 636bc09809bc9af3039df0962956540b3bb8d63c18da1f9e876f5342061364d3
+          build_scene north-pole-after-hours 30309 05ff665bc7fd4a0a1a5f787825288fd54992d9787288ff98ec24a8a42cd3b2c2
+
+      - name: Commit verified scene assets
+        run: |
+          set -euo pipefail
+          rm -rf .phase10-2-scenes
+          git config user.name "brewandbrewscompany-bot"
+          git config user.email "brewandbrewscompany@gmail.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No scene asset changes to commit"
+            exit 0
+          fi
+          git commit -m "Add verified Phase 10.2 station scene assets"
+          git push origin HEAD:christmas-radio-phase-10-2-station-scenes
