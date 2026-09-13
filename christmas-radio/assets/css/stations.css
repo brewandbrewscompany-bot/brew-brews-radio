@@ -1,0 +1,45 @@
+/* Brew & Brews Christmas Radio — Phase 10 station selector and alternate-frequency overlay.
+   Loaded after the approved art skin; does not alter the locked flagship scene when 103.1 is selected. */
+#stationsPanel header p{max-width:330px;margin-left:auto;margin-right:auto}
+#stationsPanel .station-grid{display:grid!important;grid-template-columns:1fr!important;gap:10px!important;margin-top:16px}
+#stationsPanel .station-card{
+  position:relative;display:block!important;width:100%;min-height:0!important;padding:13px 14px!important;
+  border:1px solid rgba(220,166,79,.28)!important;border-radius:15px!important;text-align:left!important;
+  background:linear-gradient(145deg,rgba(76,38,17,.96),rgba(34,15,8,.985))!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.05),0 7px 18px rgba(0,0,0,.25)!important;
+  color:#fff0d1!important;cursor:pointer;touch-action:manipulation;
+}
+#stationsPanel .station-card .station-frequency{display:block;color:#ffd47d;font:800 .72rem/1 system-ui,sans-serif;letter-spacing:.1em}
+#stationsPanel .station-card h3{margin:4px 0 3px;color:#fff0d1;font:700 1.05rem/1.1 Georgia,serif}
+#stationsPanel .station-card p{margin:0;color:#e0c9a5;font:600 .72rem/1.35 system-ui,sans-serif}
+#stationsPanel .station-description{display:block;margin-top:7px;color:#bda98c;font:500 .64rem/1.38 system-ui,sans-serif}
+#stationsPanel .station-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(220,166,79,.18)}
+#stationsPanel .station-count,#stationsPanel .station-state{margin:0;color:#dca64f;font:800 .54rem/1 system-ui,sans-serif;letter-spacing:.09em;text-transform:uppercase}
+#stationsPanel .station-state{color:#c8b28f}
+#stationsPanel .station-card[aria-current="true"]{border-color:rgba(255,212,125,.78)!important;background:linear-gradient(145deg,rgba(101,55,23,.98),rgba(43,20,9,.99))!important;box-shadow:inset 4px 0 #dca64f,inset 0 1px rgba(255,255,255,.07),0 9px 22px rgba(0,0,0,.36)!important}
+#stationsPanel .station-card[aria-current="true"] .station-state{color:#fff0b8}
+#stationsPanel .station-card:active{transform:scale(.992)}
+#stationsPanel .station-card:focus-visible{outline:2px solid #ffe0a0;outline-offset:2px}
+
+/* The 103.1 branding is baked into the approved image. For another station, cover only that
+   small display area with a live, radio-matched plaque so the frequency shown is always truthful. */
+body:not([data-station="bb-christmas-radio"]) .station-readout{
+  top:48.6%;width:56%;min-height:104px;padding:9px 12px 10px;
+  border:1px solid rgba(224,166,72,.86);border-radius:9px;
+  background:linear-gradient(180deg,rgba(37,20,10,.995),rgba(15,9,6,.998));
+  box-shadow:0 4px 15px rgba(0,0,0,.75),inset 0 0 18px rgba(0,0,0,.58),inset 0 1px rgba(255,220,150,.08);
+}
+body:not([data-station="bb-christmas-radio"]) .station-readout::before{content:"NOW TUNED";display:block;margin-bottom:4px;color:#dca64f;font:800 .48rem/1 system-ui,sans-serif;letter-spacing:.16em}
+body:not([data-station="bb-christmas-radio"]) .station-readout>strong{font-size:1.28rem;line-height:1;color:#fff0c9}
+body:not([data-station="bb-christmas-radio"]) .station-readout h2{margin-top:4px;font-size:.78rem;line-height:1.08;color:#fff2d5}
+body:not([data-station="bb-christmas-radio"]) .station-readout>p{display:block!important;margin:5px auto 0;max-width:215px;color:#cdb997;font:600 .55rem/1.25 system-ui,sans-serif}
+
+@media(max-height:760px){
+  #stationsPanel .station-card{padding:10px 12px!important}
+  #stationsPanel .station-description{display:none}
+  #stationsPanel .station-meta{margin-top:7px;padding-top:6px}
+  body:not([data-station="bb-christmas-radio"]) .station-readout{min-height:88px;padding:7px 10px}
+  body:not([data-station="bb-christmas-radio"]) .station-readout::before{margin-bottom:3px}
+  body:not([data-station="bb-christmas-radio"]) .station-readout>p{font-size:.5rem}
+}
+@media(prefers-reduced-motion:reduce){#stationsPanel .station-card:active{transform:none}}

@@ -1,8 +1,8 @@
 const CACHE_PREFIX='bb-christmas-radio-shell-';
-const CACHE_NAME=`${CACHE_PREFIX}phase9-v2`;
+const CACHE_NAME=`${CACHE_PREFIX}phase10-v1`;
 const SHELL=[
   './','./index.html','./manifest.webmanifest','./favicon.svg',
-  './assets/css/christmas-radio.css','./assets/css/art-skin.css',
+  './assets/css/christmas-radio.css','./assets/css/art-skin.css','./assets/css/stations.css',
   './assets/js/christmas-radio.js','./assets/js/audio-engine.js',
   './artwork/christmas-radio-approved-skin.avif',
   './data/stations.json','./data/tracks.json'

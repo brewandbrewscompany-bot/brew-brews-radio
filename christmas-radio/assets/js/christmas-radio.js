@@ -39,7 +39,10 @@ function openPanel(id,button){
   if(!panel.hidden&&button.getAttribute('aria-current')==='page'){closePanels();return}
   closePanels({restoreFocus:false});lastPanelTrigger=button;
   $('#panelScrim').hidden=false;panel.hidden=false;button.setAttribute('aria-current','page');document.body.classList.add('panel-open');
-  requestAnimationFrame(()=>$('.panel-close',panel)?.focus({preventScroll:true}));
+  requestAnimationFrame(()=>{
+    $('.panel-close',panel)?.focus({preventScroll:true});
+    if(id==='stationsPanel')$('#stationGrid [aria-current="true"]')?.scrollIntoView({block:'nearest'});
+  });
 }
 
 function trapPanelFocus(event){
@@ -77,10 +80,11 @@ class ChristmasStationController{
   renderCards(){
     const f=document.createDocumentFragment();
     this.stations.forEach((s,i)=>{
-      const b=document.createElement('button');b.type='button';b.className='station-card';
-      const count=this.engine.stationTrackCount(s.id),countText=count===1?'1 track':`${count} tracks`;
-      b.innerHTML=`<small>${s.frequency}</small><h3>${s.name}</h3><p>${s.tagline}</p><span class="station-count">${countText}</span>`;
-      b.addEventListener('click',()=>{this.tune(i,'card');closePanels()});f.append(b);
+      const b=document.createElement('button');b.type='button';b.className='station-card';b.dataset.stationId=s.id;
+      const count=this.engine.stationTrackCount(s.id),countText=count===1?'1 track':`${count} tracks`,description=s.description||s.tagline;
+      b.setAttribute('aria-label',`${s.frequency} ${s.name}. ${s.tagline}`);
+      b.innerHTML=`<small class="station-frequency">${s.frequency}</small><h3>${s.name}</h3><p>${s.tagline}</p><span class="station-description">${description}</span><span class="station-meta"><span class="station-count">${countText}</span><span class="station-state">TAP TO TUNE</span></span>`;
+      b.addEventListener('click',async()=>{await this.tune(i,'card');closePanels()});f.append(b);
     });
     this.el.grid.replaceChildren(f);
   }
@@ -94,7 +98,11 @@ class ChristmasStationController{
     if(source!=='tuner')this.el.tuner.value=String(i);
     if(source!=='knob')this.el.tuningKnob.value=String(i);
     paintKnob(this.el.tuningKnob);
-    [...this.el.grid.children].forEach((card,n)=>card.setAttribute('aria-current',n===i?'true':'false'));
+    [...this.el.grid.children].forEach((card,n)=>{
+      const active=n===i;card.setAttribute('aria-current',active?'true':'false');
+      const state=$('.station-state',card);if(state)state.textContent=active?'TUNED':'TAP TO TUNE';
+    });
+    this.el.grid.setAttribute('aria-label',`Christmas stations. Currently tuned to ${s.frequency} ${s.name}.`);
     await this.engine.selectStation(s.id,{autoplay:this.engine.playbackIntent});
     syncAudioUI(this.engine,this.el);
   }

@@ -22,6 +22,7 @@
   <link rel="preload" as="fetch" href="data/tracks.json" crossorigin="anonymous">
   <link rel="stylesheet" href="assets/css/christmas-radio.css">
   <link rel="stylesheet" href="assets/css/art-skin.css">
+  <link rel="stylesheet" href="assets/css/stations.css">
   <script type="module" src="assets/js/christmas-radio.js"></script>
 </head>
 <body data-station="bb-christmas-radio" data-scene="roastery-snow">
@@ -60,7 +61,7 @@
   </nav>
 
   <div class="panel-scrim" id="panelScrim" hidden></div>
-  <section class="app-panel" id="stationsPanel" role="dialog" aria-modal="true" hidden aria-labelledby="stationsHeading"><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>TURN THE DIAL</small><h2 id="stationsHeading">Christmas Stations</h2><p>Each station changes the sound and the room around the radio.</p></header><div class="station-grid" id="stationGrid"></div></section>
+  <section class="app-panel" id="stationsPanel" role="dialog" aria-modal="true" hidden aria-labelledby="stationsHeading"><button class="panel-close" type="button" aria-label="Close panel">×</button><header><small>TURN THE DIAL</small><h2 id="stationsHeading">Christmas Stations</h2><p>Six curated Christmas sounds. Tune one, then hit Play.</p></header><div class="station-grid" id="stationGrid" aria-label="Christmas stations"></div></section>
   <section class="app-panel compact-panel" id="nowPanel" role="dialog" aria-modal="true" aria-labelledby="nowHeading" hidden>
     <button class="panel-close" type="button" aria-label="Close panel">×</button>
     <header><small>ON AIR</small><h2 id="nowHeading">Now Playing</h2></header>
