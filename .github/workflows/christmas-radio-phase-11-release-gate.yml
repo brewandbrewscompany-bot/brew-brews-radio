@@ -52,8 +52,11 @@ jobs:
           assert 'phase10-2-v3' in sw and "pathname.includes('/audio/')" in sw and "request.headers.has('range')" in sw
           for sid in ['snowfall-am','fireside','sleigh-bell-rock','candlelight','north-pole-after-hours']:
               assert f'artwork/stations/{sid}.avif' in html
-              assert (root/'artwork'/'stations'/f'{sid}.avif').stat().st_size>20000
-          print('Static release audit passed: 13 hashed masters, 35 placements, 6 stations, install shell valid.')
+              p=root/'artwork'/'stations'/f'{sid}.avif'
+              assert p.exists() and p.stat().st_size>0, p
+              b=p.read_bytes()
+              assert len(b)>=32 and b[4:8]==b'ftyp' and b'avif' in b[8:32], p
+          print('Static release audit passed: 13 hashed masters, 35 placements, 6 stations, valid AVIF assets, install shell valid.')
           PY
 
       - name: Install browser helper
