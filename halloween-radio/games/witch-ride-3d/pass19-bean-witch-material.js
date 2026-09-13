@@ -1,19 +1,22 @@
 import * as pc from 'playcanvas';
 
-const VERSION='pass19-bean-witch-material-v1';
+const VERSION='pass19-bean-witch-material-v2';
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
+
+// Final surface treatment only. Geometry, pose, gameplay scale, traffic and world lighting stay locked.
 const palette={
-  skin:{diffuse:[.50,.30,.225],gloss:.24,metalness:0},
-  hair:{diffuse:[.060,.026,.018],gloss:.38,metalness:0},
-  cape:{diffuse:[.105,.025,.135],gloss:.27,metalness:0},
-  hat:{diffuse:[.075,.018,.100],gloss:.24,metalness:0},
-  cloth:{diffuse:[.055,.044,.070],gloss:.22,metalness:0},
-  leather:{diffuse:[.038,.022,.018],gloss:.50,metalness:.015},
-  broomWood:{diffuse:[.185,.078,.028],gloss:.33,metalness:0},
-  straw:{diffuse:[.225,.112,.038],gloss:.13,metalness:0},
-  bean:{diffuse:[.175,.050,.018],gloss:.47,metalness:0},
-  beanCrease:{diffuse:[.055,.012,.006],gloss:.24,metalness:0}
+  skin:{diffuse:[.39,.215,.155],gloss:.16,metalness:0},
+  hair:{diffuse:[.026,.012,.009],gloss:.17,metalness:0},
+  cape:{diffuse:[.070,.016,.047],gloss:.14,metalness:0},
+  hat:{diffuse:[.036,.010,.040],gloss:.13,metalness:0},
+  cloth:{diffuse:[.026,.023,.032],gloss:.11,metalness:0},
+  leather:{diffuse:[.030,.015,.010],gloss:.25,metalness:.008},
+  broomWood:{diffuse:[.115,.045,.015],gloss:.17,metalness:0},
+  straw:{diffuse:[.175,.074,.020],gloss:.075,metalness:0},
+  bean:{diffuse:[.105,.025,.006],gloss:.34,metalness:0},
+  beanCrease:{diffuse:[.255,.105,.022],gloss:.18,metalness:0}
 };
+
 function walk(root,fn,path=''){
   if(!root)return;
   const here=path?`${path}/${root.name||'unnamed'}`:(root.name||'unnamed');
@@ -22,13 +25,14 @@ function walk(root,fn,path=''){
 }
 function classify(label){
   const s=String(label||'').toLowerCase();
-  if(/broom.*(bristle|straw|bundle|brush)|bristle|straw|bundle/.test(s))return 'straw';
+  if(/bundle_neck|seat_wrap|broom.*(tie|wrap)|\btie\b|\bwrap\b/.test(s))return 'leather';
+  if(/broom.*(bristle|straw|brush)|bristle|straw|straw_mass|straw_primary/.test(s))return 'straw';
   if(/broom.*(handle|shaft|wood)|broom_handle|handle/.test(s))return 'broomWood';
   if(/hair|mane|lock|strand|haircap/.test(s))return 'hair';
   if(/cape|cloak/.test(s))return 'cape';
   if(/hat|brim|crown/.test(s))return 'hat';
   if(/boot|shoe|leather|belt|glove/.test(s))return 'leather';
-  if(/skin|face|head|hand|arm|nose|neck/.test(s))return 'skin';
+  if(/skin|face|head|hand|finger|arm|nose|neck/.test(s))return 'skin';
   if(/dress|bodice|torso|body|sleeve|skirt|cloth|garment|pants|trouser|thigh|calf|leg/.test(s))return 'cloth';
   return null;
 }
@@ -37,7 +41,9 @@ function tuneMaterial(m,kind,name){
   m.name=`Pass19 ${kind} ${name}`;
   m.diffuse=new pc.Color(...p.diffuse);
   m.useMetalness=true;m.metalness=p.metalness;m.gloss=p.gloss;
-  if(kind!=='bean'&&kind!=='beanCrease'){m.emissive=new pc.Color(0,0,0);m.emissiveIntensity=0}
+  if(kind!=='bean'&&kind!=='beanCrease'){
+    m.emissive=new pc.Color(0,0,0);m.emissiveIntensity=0;
+  }
   m.update();
 }
 function isolateAndTuneNode(node,path,stats){
@@ -49,7 +55,9 @@ function isolateAndTuneNode(node,path,stats){
     const kind=classify(label);
     stats.labels.push(label);
     if(!kind){stats.unknown++;continue}
-    const m=source.clone();tuneMaterial(m,kind,`${stats.cloned}-${i}`);mi.material=m;stats.cloned++;stats[kind]=(stats[kind]||0)+1;
+    const m=source.clone();
+    tuneMaterial(m,kind,`${stats.cloned}-${i}`);
+    mi.material=m;stats.cloned++;stats[kind]=(stats[kind]||0)+1;
   }
 }
 function polishWitch(app){
@@ -67,9 +75,11 @@ function cloneBeanMaterial(mi,name,kind='bean'){
   const source=mi?.material;if(!source?.clone)return null;
   const m=source.clone();tuneMaterial(m,kind,name);
   if(kind==='bean'){
-    m.emissive=new pc.Color(.024,.0035,.001);m.emissiveIntensity=.10;
-  }else if(kind==='beanCrease'){
-    m.emissive=new pc.Color(0,0,0);m.emissiveIntensity=0;
+    // Rich roasted body: readable highlight, but not a glowing orange object.
+    m.emissive=new pc.Color(.012,.0022,.0004);m.emissiveIntensity=.055;
+  }else{
+    // A warm crease makes the small model unmistakably read as a coffee bean at phone size.
+    m.emissive=new pc.Color(.060,.012,.0015);m.emissiveIntensity=.10;
   }
   m.update();mi.material=m;return m;
 }
@@ -82,7 +92,9 @@ function polishBeans(app){
     walk(bean,(node,path)=>{
       if((node.name||'').startsWith('Coffee Bean Halo'))return;
       for(const mi of node?.render?.meshInstances||[]){
-        const label=`${path} ${mi.material?.name||''}`.toLowerCase(),crease=/seam|crease|groove|split/.test(label),m=cloneBeanMaterial(mi,`Bean ${i} ${stats.bodyMaterials+stats.creaseMaterials}`,crease?'beanCrease':'bean');
+        const label=`${path} ${mi.material?.name||''}`.toLowerCase();
+        const crease=/seam|crease|groove|split/.test(label);
+        const m=cloneBeanMaterial(mi,`Bean ${i} ${stats.bodyMaterials+stats.creaseMaterials}`,crease?'beanCrease':'bean');
         if(m){if(crease)stats.creaseMaterials++;else stats.bodyMaterials++}
       }
     });
@@ -90,12 +102,18 @@ function polishBeans(app){
     if(halo){
       stats.halos++;
       for(const mi of halo?.render?.meshInstances||[]){
-        const source=mi.material;if(!source?.clone)continue;const m=source.clone();m.name=`Pass19 amber bean halo ${i}`;
-        m.diffuse=new pc.Color(.48,.075,.006);m.emissive=new pc.Color(1,.20,.025);m.emissiveIntensity=.42;m.opacity=.050;m.blendType=pc.BLEND_NORMAL;m.depthWrite=false;m.cull=pc.CULLFACE_NONE;m.update();mi.material=m;stats.haloMaterials++;
+        const source=mi.material;if(!source?.clone)continue;
+        const m=source.clone();m.name=`Pass19 soft amber bean halo ${i}`;
+        m.diffuse=new pc.Color(.50,.105,.012);
+        m.emissive=new pc.Color(1,.245,.035);m.emissiveIntensity=.62;
+        m.opacity=.090;m.blendType=pc.BLEND_NORMAL;m.depthWrite=false;m.cull=pc.CULLFACE_NONE;
+        m.update();mi.material=m;stats.haloMaterials++;
       }
     }
     const light=bean.findByName?.(`Pass11 Bean Warm Light ${i}`);
-    if(light?.light){light.light.intensity=.105;light.light.range=2.45;light.light.color=new pc.Color(1,.30,.075);stats.lights++}
+    if(light?.light){
+      light.light.intensity=.145;light.light.range=2.70;light.light.color=new pc.Color(1,.36,.095);stats.lights++;
+    }
     if(scale.equals(bean.getLocalScale()))stats.scalePreserved++;
   }
   return stats;
