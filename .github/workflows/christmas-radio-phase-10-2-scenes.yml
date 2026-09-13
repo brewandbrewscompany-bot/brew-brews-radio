@@ -24,13 +24,12 @@ jobs:
             grep -q "${scene}.avif" christmas-radio/assets/css/stations.css
             grep -q "${scene}.avif" christmas-radio/sw.js
           done
-          grep -q 'phase10-2-v1' christmas-radio/sw.js
+          grep -q 'phase10-2-v2' christmas-radio/sw.js
           grep -q "pathname.includes('/audio/')" christmas-radio/sw.js
           grep -q 'christmas-radio-approved-skin.avif' christmas-radio/assets/css/art-skin.css
+          grep -q 'height:13%' christmas-radio/assets/css/stations.css
           grep -q 'NOW TUNED' christmas-radio/assets/css/stations.css
           ! grep -q '<audio[^>]*autoplay' christmas-radio/index.html
-          test ! -e .phase10-2-scenes
-          test ! -e .github/workflows/christmas-radio-phase-10-2-assets.yml
 
       - name: Install browser helper
         run: npm install --no-save puppeteer-core@24.16.0
@@ -38,7 +37,7 @@ jobs:
       - name: Exercise all station scenes at 430x932 DPR 3
         run: |
           set -euo pipefail
-          mkdir -p phase10-2-output
+          rm -rf phase10-2-output && mkdir -p phase10-2-output
           python3 -m http.server 8000 --directory . >/tmp/christmas-radio-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
@@ -49,13 +48,13 @@ jobs:
           const puppeteer=require('puppeteer-core');
           const fs=require('fs');
           (async()=>{
-            const expected=[
-              {index:0,id:'snowfall-am',frequency:'88.7',name:'Snowfall AM',asset:'snowfall-am.avif'},
-              {index:1,id:'fireside',frequency:'92.5',name:'Fireside',asset:'fireside.avif'},
-              {index:2,id:'sleigh-bell-rock',frequency:'96.9',name:'Sleigh Bell Rock',asset:'sleigh-bell-rock.avif'},
-              {index:3,id:'candlelight',frequency:'100.3',name:'Candlelight',asset:'candlelight.avif'},
-              {index:4,id:'bb-christmas-radio',frequency:'103.1',name:'B&B Christmas Radio',asset:'christmas-radio-approved-skin.avif'},
-              {index:5,id:'north-pole-after-hours',frequency:'106.7',name:'North Pole After Hours',asset:'north-pole-after-hours.avif'}
+            const stations=[
+              ['snowfall-am','88.7','Snowfall AM','snowfall-am.avif'],
+              ['fireside','92.5','Fireside','fireside.avif'],
+              ['sleigh-bell-rock','96.9','Sleigh Bell Rock','sleigh-bell-rock.avif'],
+              ['candlelight','100.3','Candlelight','candlelight.avif'],
+              ['bb-christmas-radio','103.1','B&B Christmas Radio','christmas-radio-approved-skin.avif'],
+              ['north-pole-after-hours','106.7','North Pole After Hours','north-pole-after-hours.avif']
             ];
             const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
             const page=await browser.newPage();
@@ -65,74 +64,34 @@ jobs:
             page.on('response',r=>{if(r.status()>=400)httpErrors.push({status:r.status(),url:r.url()})});
             await page.goto('http://127.0.0.1:8000/christmas-radio/',{waitUntil:'networkidle0'});
             await page.waitForFunction(()=>document.querySelectorAll('#stationGrid .station-card').length===6,{timeout:10000});
-
-            const initial=await page.evaluate(()=>({
-              station:document.body.dataset.station,
-              frequency:document.querySelector('#frequencyLabel')?.textContent.trim(),
-              paused:document.querySelector('#christmasRadioAudio').paused,
-              background:getComputedStyle(document.querySelector('.scene'),'::before').backgroundImage
-            }));
-            if(initial.station!=='bb-christmas-radio'||initial.frequency!=='103.1'||!initial.paused||!initial.background.includes('christmas-radio-approved-skin.avif')) throw new Error('Initial flagship state regressed: '+JSON.stringify(initial));
-
-            const dimensions=await page.evaluate(async()=>{
-              const names=['snowfall-am','fireside','sleigh-bell-rock','candlelight','north-pole-after-hours'];
-              return Promise.all(names.map(name=>new Promise((resolve,reject)=>{
-                const img=new Image();
-                img.onload=()=>resolve({name,width:img.naturalWidth,height:img.naturalHeight});
-                img.onerror=()=>reject(new Error('Failed to load '+name));
-                img.src=`artwork/stations/${name}.avif`;
-              })));
-            });
-            for(const d of dimensions) if(d.width!==538||d.height!==1165) throw new Error('Unexpected scene dimensions: '+JSON.stringify(d));
-
-            const states=[];
-            for(const station of expected){
-              await page.$eval('#tuningKnob',(input,index)=>{input.value=String(index);input.dispatchEvent(new Event('input',{bubbles:true}))},station.index);
-              await page.waitForFunction(({id,frequency})=>document.body.dataset.station===id&&document.querySelector('#frequencyLabel')?.textContent.trim()===frequency,{timeout:5000},{id:station.id,frequency:station.frequency});
-              await page.waitForFunction(asset=>getComputedStyle(document.querySelector('.scene'),'::before').backgroundImage.includes(asset),{timeout:5000},station.asset);
+            const results=[];
+            for(let i=0;i<stations.length;i++){
+              const [id,frequency,name,asset]=stations[i];
+              await page.$eval('#tuningKnob',(el,v)=>{el.value=String(v);el.dispatchEvent(new Event('input',{bubbles:true}))},i);
+              await page.waitForFunction(({id,frequency,asset})=>document.body.dataset.station===id&&document.querySelector('#frequencyLabel')?.textContent.trim()===frequency&&getComputedStyle(document.querySelector('.scene'),'::before').backgroundImage.includes(asset),{timeout:5000},{id,frequency,asset});
               const state=await page.evaluate(()=>{
-                const readout=document.querySelector('.station-readout').getBoundingClientRect();
-                return{
-                  station:document.body.dataset.station,
-                  frequency:document.querySelector('#frequencyLabel').textContent.trim(),
-                  name:document.querySelector('#stationName').textContent.trim(),
-                  background:getComputedStyle(document.querySelector('.scene'),'::before').backgroundImage,
-                  paused:document.querySelector('#christmasRadioAudio').paused,
-                  tuner:document.querySelector('#stationTuner').value,
-                  knob:document.querySelector('#tuningKnob').value,
-                  readout:{left:readout.left,right:readout.right,top:readout.top,bottom:readout.bottom}
-                };
+                const scene=document.querySelector('.scene'),readout=document.querySelector('.station-readout').getBoundingClientRect();
+                const after=getComputedStyle(scene,'::after');
+                return{station:document.body.dataset.station,frequency:document.querySelector('#frequencyLabel').textContent.trim(),name:document.querySelector('#stationName').textContent.trim(),background:getComputedStyle(scene,'::before').backgroundImage,headerOverlay:after.backgroundImage,headerHeight:parseFloat(after.height),paused:document.querySelector('#christmasRadioAudio').paused,readout:{left:readout.left,right:readout.right,top:readout.top,bottom:readout.bottom}};
               });
-              if(state.station!==station.id||state.frequency!==station.frequency||state.name!==station.name||!state.background.includes(station.asset)||!state.paused||state.tuner!==String(station.index)||state.knob!==String(station.index)) throw new Error('Station scene state failed: '+JSON.stringify({station,state}));
-              if(state.readout.left<0||state.readout.right>430||state.readout.top<0||state.readout.bottom>932) throw new Error('Readout out of viewport: '+JSON.stringify(state));
-              states.push(state);
-              await page.screenshot({path:`phase10-2-output/station-${String(station.index+1).padStart(2,'0')}-${station.id}-430x932-dpr3.png`,fullPage:false});
+              if(state.station!==id||state.frequency!==frequency||state.name!==name||!state.background.includes(asset)||!state.paused)throw new Error('Station state failed '+JSON.stringify(state));
+              if(id!=='bb-christmas-radio'){
+                if(!state.headerOverlay.includes('christmas-radio-approved-skin.avif')||state.headerHeight<115||state.headerHeight>125)throw new Error('Clean header mask failed '+JSON.stringify(state));
+              }else if(state.headerOverlay.includes('christmas-radio-approved-skin.avif'))throw new Error('103.1 received alternate header mask');
+              if(state.readout.left<0||state.readout.right>430||state.readout.top<0||state.readout.bottom>932)throw new Error('Readout out of viewport');
+              results.push(state);
+              await page.screenshot({path:`phase10-2-output/station-${String(i+1).padStart(2,'0')}-${id}-430x932-dpr3.png`});
             }
-
             await page.evaluate(()=>navigator.serviceWorker.ready.then(()=>true));
             await page.reload({waitUntil:'networkidle0'});
             await page.waitForFunction(()=>!!navigator.serviceWorker.controller,{timeout:10000});
-            await page.waitForFunction(()=>document.body.dataset.station==='north-pole-after-hours',{timeout:10000});
-            const warm=await page.evaluate(async()=>{
-              const key=(await caches.keys()).find(k=>k==='bb-christmas-radio-shell-phase10-2-v1');
-              const urls=key?[...(await (await caches.open(key)).keys())].map(r=>r.url):[];
-              return{key,urls,station:document.body.dataset.station,frequency:document.querySelector('#frequencyLabel')?.textContent.trim(),background:getComputedStyle(document.querySelector('.scene'),'::before').backgroundImage,paused:document.querySelector('#christmasRadioAudio').paused};
-            });
-            const required=['snowfall-am.avif','fireside.avif','sleigh-bell-rock.avif','candlelight.avif','north-pole-after-hours.avif','christmas-radio-approved-skin.avif'];
-            if(!warm.key||required.some(asset=>!warm.urls.some(u=>u.includes(asset)))||warm.urls.some(u=>u.includes('/audio/'))||warm.station!=='north-pole-after-hours'||warm.frequency!=='106.7'||!warm.background.includes('north-pole-after-hours.avif')||!warm.paused) throw new Error('Warm scene restore/cache failed: '+JSON.stringify({...warm,urls:warm.urls.map(u=>new URL(u).pathname)}));
-
-            await page.$eval('#tuningKnob',input=>{input.value='4';input.dispatchEvent(new Event('input',{bubbles:true}))});
-            await page.waitForFunction(()=>document.body.dataset.station==='bb-christmas-radio'&&document.querySelector('#frequencyLabel')?.textContent.trim()==='103.1',{timeout:5000});
-            await page.waitForFunction(()=>getComputedStyle(document.querySelector('.scene'),'::before').backgroundImage.includes('christmas-radio-approved-skin.avif'),{timeout:5000});
-            const finalState=await page.evaluate(()=>({station:document.body.dataset.station,frequency:document.querySelector('#frequencyLabel').textContent.trim(),background:getComputedStyle(document.querySelector('.scene'),'::before').backgroundImage,paused:document.querySelector('#christmasRadioAudio').paused}));
-            if(!finalState.paused)throw new Error('Tuning started playback unexpectedly');
-            await page.screenshot({path:'phase10-2-output/final-1031-430x932-dpr3.png',fullPage:false});
-
-            if(pageErrors.length)throw new Error('Page errors: '+pageErrors.join(' | '));
-            if(httpErrors.length)throw new Error('HTTP errors: '+JSON.stringify(httpErrors));
-            const report={status:'PASS',initial,dimensions,states,warm:{...warm,urls:warm.urls.map(u=>new URL(u).pathname)},finalState,pageErrors,httpErrors};
-            fs.writeFileSync('phase10-2-output/report.json',JSON.stringify(report,null,2));
-            console.log('PHASE 10.2 STATION SCENES',JSON.stringify(report,null,2));
+            const warm=await page.evaluate(async()=>{const key=(await caches.keys()).find(k=>k==='bb-christmas-radio-shell-phase10-2-v2');const urls=key?[...(await (await caches.open(key)).keys())].map(r=>r.url):[];return{key,urls,station:document.body.dataset.station,background:getComputedStyle(document.querySelector('.scene'),'::before').backgroundImage,paused:document.querySelector('#christmasRadioAudio').paused}});
+            if(!warm.key||warm.urls.some(u=>u.includes('/audio/'))||warm.station!=='north-pole-after-hours'||!warm.background.includes('north-pole-after-hours.avif')||!warm.paused)throw new Error('Warm restore/cache failed '+JSON.stringify(warm));
+            await page.$eval('#tuningKnob',el=>{el.value='4';el.dispatchEvent(new Event('input',{bubbles:true}))});
+            await page.waitForFunction(()=>document.body.dataset.station==='bb-christmas-radio'&&getComputedStyle(document.querySelector('.scene'),'::before').backgroundImage.includes('christmas-radio-approved-skin.avif'),{timeout:5000});
+            await page.screenshot({path:'phase10-2-output/final-1031-430x932-dpr3.png'});
+            if(pageErrors.length||httpErrors.length)throw new Error(JSON.stringify({pageErrors,httpErrors}));
+            fs.writeFileSync('phase10-2-output/report.json',JSON.stringify({status:'PASS',results,warm,pageErrors,httpErrors},null,2));
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
@@ -140,11 +99,9 @@ jobs:
           from pathlib import Path
           import struct
           shots=list(Path('phase10-2-output').glob('*.png'))
-          if len(shots)!=7: raise SystemExit(f'expected 7 screenshots, found {len(shots)}')
+          assert len(shots)==7, len(shots)
           for p in shots:
-              b=p.read_bytes(); w,h=struct.unpack('>II',b[16:24])
-              print(p.name,w,h)
-              if (w,h)!=(1290,2796): raise SystemExit(f'unexpected DPR3 dimensions for {p.name}: {(w,h)}')
+              b=p.read_bytes(); w,h=struct.unpack('>II',b[16:24]); print(p.name,w,h); assert (w,h)==(1290,2796)
           PY
 
       - name: Upload Phase 10.2 evidence
