@@ -1,0 +1,135 @@
+name: Witch Ride 3D Pass 20 Obstacles Boost
+
+on:
+  push:
+    branches: [witch-ride-3d-obstacles-boost-pass-20]
+    paths:
+      - 'halloween-radio/games/witch-ride-3d/index.html'
+      - 'halloween-radio/games/witch-ride-3d/pass20-obstacles-boost.js'
+      - '.github/workflows/witch-ride-3d-pass20-obstacles-boost.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  pass20-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify Pass 19 remains locked
+        shell: bash
+        run: |
+          git fetch origin main witch-ride-3d-bean-witch-material-pass-19 witch-ride-3d-obstacles-boost-pass-20
+          BASE=597505f01d41dac972b488fa066084e05bf732b1
+          test "$(git rev-parse origin/witch-ride-3d-bean-witch-material-pass-19)" = "$BASE"
+          test "$(git rev-parse origin/witch-ride-3d-obstacles-boost-pass-20)" = "$GITHUB_SHA"
+          for path in \
+            halloween-radio/games/witch-ride-3d/game.js \
+            halloween-radio/games/witch-ride-3d/game.css \
+            halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js \
+            halloween-radio/games/witch-ride-3d/pass18-traffic-cleanup.js \
+            halloween-radio/games/witch-ride-3d/pass19-bean-witch-material.js \
+            halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js \
+            halloween-radio/games/witch-ride-3d/illumination-pass.js \
+            halloween-radio/games/witch-ride-3d/composition-pass.js \
+            halloween-radio/games/witch-ride-3d/assets/witch-rider.glb \
+            halloween-radio/games/witch-ride-3d/assets/coffee-bean.glb; do
+            git diff --quiet "$BASE" HEAD -- "$path" || { echo "LOCKED PASS 19 SOURCE CHANGED: $path"; exit 1; }
+          done
+          CHANGED="$(git diff --name-only "$BASE" HEAD)"
+          echo "$CHANGED"
+          test -z "$(printf '%s\n' "$CHANGED" | grep -Ev '^(halloween-radio/games/witch-ride-3d/index.html|halloween-radio/games/witch-ride-3d/pass20-obstacles-boost.js|.github/workflows/witch-ride-3d-pass20-obstacles-boost.yml)$' || true)"
+          ! printf '%s\n' "$CHANGED" | grep -q '^louisburg-local/'
+          node --check halloween-radio/games/witch-ride-3d/pass20-obstacles-boost.js
+          grep -q 'pass20-obstacles-boost.js' halloween-radio/games/witch-ride-3d/index.html
+
+      - name: Real PlayCanvas 430x932 Pass 20 gameplay gate
+        shell: bash
+        run: |
+          npm install --no-save puppeteer-core@24.16.0
+          python3 -m http.server 8020 --directory . >/tmp/pass20.log 2>&1 & PID=$!
+          trap 'kill $PID || true' EXIT
+          sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_BIN"
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const fs=require('fs'),puppeteer=require('puppeteer-core');
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          const assert=(v,m)=>{if(!v)throw new Error(m)};
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--disable-background-timer-throttling','--disable-renderer-backgrounding','--disable-backgrounding-occluded-windows']});
+            const page=await browser.newPage();page.setDefaultTimeout(70000);
+            await page.setViewport({width:430,height:932,deviceScaleFactor:1,isMobile:true,hasTouch:true});
+            const errors=[];page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+            await page.goto('http://127.0.0.1:8020/halloween-radio/games/witch-ride-3d/',{waitUntil:'domcontentloaded'});
+            await page.waitForFunction(()=>window.WitchRide3D?.ready&&window.WitchRidePass18Traffic?.active===true&&window.WitchRidePass19Material?.active===true&&window.WitchRidePass20Gameplay?.active===true);
+            const setup=await page.evaluate(()=>({p19:window.WitchRidePass19Material.detail,p20:window.WitchRidePass20Gameplay.detail,witch:window.WitchRideWitchCenterpiecePass,legacy:Array.from({length:7},(_,i)=>{const e=pc.app.root.findByName(`1938 Coupe ${i}`);return !!e&&e.enabled})}));
+            assert(setup.p19.geometryChanged===false&&setup.p19.poseChanged===false&&setup.p19.scaleChanged===false,'Pass19 witch lock regressed');
+            assert(setup.p20.extraMovingTrucks===3,'expected 3 extra moving trucks');
+            assert(setup.p20.centerLaneTrucks>=1,'no center-lane truck added');
+            assert(setup.p20.totalMovingTrucks===7,'expected 7 moving trucks total');
+            assert(setup.p20.crossingGhosts===2&&setup.p20.crossingGoblins===2,'crossing hazard pool incorrect');
+            assert(setup.p20.beanBurningHalos===16&&setup.p20.beanFlameTongues===128,'burning bean halos incomplete');
+            assert(setup.witch.geometryLocked===true&&setup.witch.stanceLocked===true,'witch geometry/stance lock lost');
+            assert(setup.legacy.every(v=>v===false),'legacy stationary traffic reappeared');
+
+            await page.click('#play');await page.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(650);
+            const movingA=await page.evaluate(()=>{const p=window.WitchRidePass20Gameplay,e=p.extraTraffic[0];return {x:e.getPosition().x,z:e.getPosition().z,enabled:e.enabled,speed:window.WitchRide3D.state.speed}});
+            await sleep(450);
+            const movingB=await page.evaluate(()=>{const p=window.WitchRidePass20Gameplay,e=p.extraTraffic[0];return {x:e.getPosition().x,z:e.getPosition().z,enabled:e.enabled,speed:window.WitchRide3D.state.speed}});
+            assert(Math.abs(movingA.x)<.1&&Math.abs(movingB.x)<.1,'center truck left middle lane');
+            assert(movingA.enabled&&movingB.enabled&&movingB.z>movingA.z+.5,'center truck is not moving');
+
+            // New truck near-miss must be safe.
+            await page.evaluate(()=>{const p=window.WitchRidePass20Gameplay,s=window.WitchRide3D.state,e=p.extraTraffic[0];e.setPosition(4.2,0,2);s.targetX=s.x=0});
+            await sleep(180);assert(await page.evaluate(()=>window.WitchRide3D.state.mode)==='playing','new truck near miss caused false game over');
+
+            // Direct center-truck impact must end the run.
+            await page.evaluate(()=>{const p=window.WitchRidePass20Gameplay,s=window.WitchRide3D.state,e=p.extraTraffic[0];e.setPosition(s.x,0,2)});
+            await page.waitForFunction(()=>window.WitchRide3D.state.mode==='over');
+            await page.click('#again');await page.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(250);
+
+            // Crossing ghost must be a real obstacle.
+            await page.evaluate(()=>{const p=window.WitchRidePass20Gameplay,s=window.WitchRide3D.state,e=p.crossers.find(x=>x.__type==='ghost');e.__pass20Active=true;e.enabled=true;e.__dir=1;e.__crossSpeed=0;e.setPosition(s.x,e.__baseY,2)});
+            await page.waitForFunction(()=>window.WitchRide3D.state.mode==='over');
+            await page.click('#again');await page.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(250);
+
+            // Brew Boost must be collectible and materially increase speed.
+            const baseSpeed=await page.evaluate(()=>window.WitchRide3D.state.speed);
+            await page.evaluate(()=>{const p=window.WitchRidePass20Gameplay,s=window.WitchRide3D.state,e=p.boost;e.__active=true;e.enabled=true;e.setPosition(s.x,1.2,2)});
+            await page.waitForFunction(()=>window.WitchRidePass20Gameplay.speedBridge.remaining>3.5);
+            const boosted=await page.evaluate(()=>({speed:window.WitchRide3D.state.speed,mult:window.WitchRidePass20Gameplay.speedBridge.multiplier,badge:getComputedStyle(document.getElementById('pass20-boost-status')).display}));
+            assert(boosted.speed>baseSpeed*1.30,'speed boost did not materially accelerate witch');
+            assert(boosted.mult>1.4&&boosted.badge!=='none','boost feedback/multiplier missing');
+
+            // Stage a readable gameplay proof: middle truck, crossing hazards, boost and burning bean halo.
+            await page.evaluate(()=>{const app=pc.app,p=window.WitchRidePass20Gameplay,s=window.WitchRide3D.state;const t=p.extraTraffic[0];t.enabled=true;t.__pass20Active=true;t.setPosition(0,0,-28);const g=p.crossers.find(x=>x.__type==='ghost'),b=p.crossers.find(x=>x.__type==='goblin');g.enabled=true;g.__pass20Active=true;g.__dir=1;g.__crossSpeed=.4;g.setPosition(-3.6,g.__baseY,-18);b.enabled=true;b.__pass20Active=true;b.__dir=-1;b.__crossSpeed=.35;b.setPosition(3.7,b.__baseY,-22);const bean=app.root.findByName('Coffee Bean 0');bean.enabled=true;bean.__active=false;bean.setPosition(2.6,1.15,-7);p.boost.enabled=true;p.boost.__active=false;p.boost.setPosition(-3.2,1.2,-11);s.targetX=s.x=0});
+            await sleep(120);await page.screenshot({path:'pass20-gameplay-430x932.png'});
+
+            // Freeze motion and bring one bean forward solely to prove the subtle burning halo at phone size.
+            await page.evaluate(()=>{const app=pc.app,s=window.WitchRide3D.state;s.mode='paused';document.querySelectorAll('.screen').forEach(e=>e.classList.remove('open'));const bean=app.root.findByName('Coffee Bean 1');bean.enabled=true;bean.__active=false;bean.setPosition(0,1.35,-2.4)});
+            await sleep(120);await page.screenshot({path:'pass20-bean-burning-halo-430x932.png'});
+
+            const finalState=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,speed:window.WitchRide3D.state.speed,pass20:window.WitchRidePass20Gameplay.detail,boostRemaining:window.WitchRidePass20Gameplay.speedBridge.remaining,centerTruck:window.WitchRidePass20Gameplay.extraTraffic[0].getPosition().toString()}));
+            fs.writeFileSync('pass20-runtime.json',JSON.stringify({setup,movingA,movingB,baseSpeed,boosted,finalState,errors},null,2));
+            assert(errors.length===0,`console/page errors: ${errors.join(' | ')}`);
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+
+      - name: Upload Pass 20 proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: witch-pass20-obstacles-boost-proof
+          if-no-files-found: warn
+          path: |
+            pass20-gameplay-430x932.png
+            pass20-bean-burning-halo-430x932.png
+            pass20-runtime.json
