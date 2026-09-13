@@ -72,20 +72,20 @@ jobs:
             await page.waitForFunction(()=>window.WitchRide3D?.ready&&window.WitchRidePass20Gameplay?.active===true&&window.WitchRidePass21Gameplay?.active===true);
 
             const setup=await page.evaluate(()=>{
-              const p20=window.WitchRidePass20Gameplay,p21=window.WitchRidePass21Gameplay,b=p21.ui.button,r=b.getBoundingClientRect();
-              return {p20:p20.detail,p21:p21.detail,button:{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,display:getComputedStyle(b).display},witch:{geometry:window.WitchRideWitchCenterpiecePass.geometryLocked,stance:window.WitchRideWitchCenterpiecePass.stanceLocked},p19:window.WitchRidePass19Material.detail};
+              const p20=window.WitchRidePass20Gameplay,p21=window.WitchRidePass21Gameplay,b=p21.ui.button;
+              return {p20:p20.detail,p21:p21.detail,button:{display:getComputedStyle(b).display},witch:{geometry:window.WitchRideWitchCenterpiecePass.geometryLocked,stance:window.WitchRideWitchCenterpiecePass.stanceLocked},p19:window.WitchRidePass19Material.detail};
             });
             assert(setup.p20.totalMovingTrucks===7&&setup.p20.beanBurningHalos===16,'Pass20 gameplay foundation regressed');
             assert(setup.p19.geometryChanged===false&&setup.p19.poseChanged===false,'Pass19 witch lock regressed');
             assert(setup.witch.geometry===true&&setup.witch.stance===true,'witch geometry/stance lock lost');
             assert(setup.p21.manualBoostMultiplier===1.45&&setup.p21.manualBoostDuration===3&&setup.p21.manualBoostCooldown===8,'manual boost tuning incorrect');
             assert(setup.p21.pass20VisualsChanged===false&&setup.p21.reflectionsChanged===false&&setup.p21.beanHaloChanged===false,'locked visual flag regressed');
-            assert(setup.button.left<30&&setup.button.width>=88&&setup.button.height>=88,'boost button not in left-thumb position');
             assert(setup.button.display==='none','boost button should be hidden before gameplay');
 
             await page.click('#play');await page.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(350);
-            const ready=await page.evaluate(()=>{const p=window.WitchRidePass21Gameplay,b=p.ui.button,r=b.getBoundingClientRect(),s=window.WitchRide3D.state;return {display:getComputedStyle(b).display,left:r.left,bottom:r.bottom,state:p.manual.state,speed:s.speed,targetX:s.targetX,x:s.x,text:b.innerText}});
+            const ready=await page.evaluate(()=>{const p=window.WitchRidePass21Gameplay,b=p.ui.button,r=b.getBoundingClientRect(),s=window.WitchRide3D.state;return {display:getComputedStyle(b).display,left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,state:p.manual.state,speed:s.speed,targetX:s.targetX,x:s.x,text:b.innerText}});
             assert(ready.display==='flex'&&ready.state==='ready'&&/READY/.test(ready.text),'left boost button not READY during play');
+            assert(ready.left<30&&ready.width>=88&&ready.height>=88&&ready.right<125,'boost button not in left-thumb position');
 
             // Real touchscreen tap: boost must accelerate without becoming a steering touch.
             const center=await page.evaluate(()=>{const r=document.getElementById('pass21-manual-boost').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,targetX:window.WitchRide3D.state.targetX,speed:window.WitchRide3D.state.speed}});
