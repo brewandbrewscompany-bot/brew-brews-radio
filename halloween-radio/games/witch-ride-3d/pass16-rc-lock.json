@@ -1,0 +1,39 @@
+{
+  "pass": "pass-16-release-candidate",
+  "source_branch": "witch-ride-3d-witch-material-pass-15",
+  "source_commit": "431decb3fd91975455a8e949c3464af24b716851",
+  "approved_pass14_commit": "fc57a127836225f61a17f57e8af1540415dd6f18",
+  "approved_witch_glb_blob": "4b6b7009e86a53dc35d9216ea8d29133584b280d",
+  "approved_witch_manifest_blob": "ecd1aab936d770bcb135dddce0b03020801e052a",
+  "gameplay_scale": 0.24,
+  "locked_files": {
+    "halloween-radio/games/witch-ride-3d/game.js": "a4d32f486d0b70900924196a0307cf2b2faa4583",
+    "halloween-radio/games/witch-ride-3d/game.css": "326523f0cf15c3515d154433e7c301a1c51e9c4c",
+    "halloween-radio/games/witch-ride-3d/index.html": "654a2c5da88e3cc35be6106e0e5de094248e8614",
+    "halloween-radio/games/witch-ride-3d/witch-centerpiece-pass.js": "b06b59f706d57b014b63802e5a2c1d24e304a358",
+    "halloween-radio/games/witch-ride-3d/pass15-environment-traffic.js": "3abe399a343638b45c7fe143423df0cc3ca53f90",
+    "halloween-radio/games/witch-ride-3d/atmosphere-pass.js": "b994b94f3d7a7d4fa2dd0414696fb323e7946ef7",
+    "halloween-radio/games/witch-ride-3d/cinematic-camera-pass.js": "37061039ce1a9ba75f5ed871959fe0ca0d233253",
+    "halloween-radio/games/witch-ride-3d/composition-pass.js": "6c55751b5b7c8c5d9f41c6e09772eb932438e933",
+    "halloween-radio/games/witch-ride-3d/illumination-pass.js": "4eed64f7abcd7a07c9bbff051922fe3fb21aa833",
+    "halloween-radio/games/witch-ride-3d/realism-pass.js": "5b509c024dcf214ff30ed536c735528725172323",
+    "halloween-radio/games/witch-ride-3d/assets/models/witch-rider.glb": "4b6b7009e86a53dc35d9216ea8d29133584b280d",
+    "halloween-radio/games/witch-ride-3d/assets/witch-mesh-pass14.json": "ecd1aab936d770bcb135dddce0b03020801e052a"
+  },
+  "frozen_environment": {
+    "roadNeutralCharcoal": true,
+    "roadSegments": 9,
+    "headlightLensesAdjusted": 14,
+    "headlightMountsAdjusted": 14,
+    "headlightPointsAdjusted": 14,
+    "softWetReflections": 14,
+    "oncomingTraffic": 4,
+    "beanHalos": 16,
+    "beansRescaled": 16,
+    "beanScale": 0.92,
+    "beanHaloScale": 0.27,
+    "beanHaloOpacity": 0.015,
+    "beanHaloIntensity": 0.1,
+    "witchTouched": false
+  }
+}
