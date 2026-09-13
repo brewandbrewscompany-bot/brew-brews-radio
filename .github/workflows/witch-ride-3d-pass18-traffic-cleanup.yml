@@ -81,12 +81,13 @@ jobs:
             const detail=await page.evaluate(()=>window.WitchRidePass18Traffic.detail);
             assert(detail.legacyTrafficRetired===7,'legacy traffic count');
             assert(detail.movingTrafficManaged===4,'moving traffic count');
+            assert(detail.legacySpawnPoolBlocked===true,'legacy spawn pool not blocked');
             assert(detail.pass17TrafficVisualsPreserved&&detail.pass17RoadReflectionsPreserved,'Pass 17 visual preservation flags');
 
             await page.click('#play');
             await page.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');
-            let a=await page.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app;return {legacy:Array.from({length:7},(_,i)=>{const e=app.root.findByName(`1938 Coupe ${i}`);return [e.enabled,e.__active]}),moving:Array.from({length:4},(_,i)=>{const e=app.root.findByName(`Oncoming Traffic ${i}`);return [e.enabled,e.getPosition().z]})}});
-            assert(a.legacy.every(v=>v[0]===false&&v[1]===false),'legacy parked cars still active');
+            let a=await page.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app;return {legacy:Array.from({length:7},(_,i)=>{const e=app.root.findByName(`1938 Coupe ${i}`),p=e.getPosition();return {enabled:e.enabled,active:e.__active,retired:e.__pass18Retired,x:p.x,z:p.z}}),moving:Array.from({length:4},(_,i)=>{const e=app.root.findByName(`Oncoming Traffic ${i}`);return [e.enabled,e.getPosition().z]})}});
+            assert(a.legacy.every(v=>v.enabled===false&&v.active===true&&v.retired===true&&v.x>900&&v.z<-9000),'legacy parked cars not hard-retired');
             assert(a.moving.every(v=>v[0]===true),'moving traffic not active while playing');
             await sleep(500);
             let b=await page.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app;return Array.from({length:4},(_,i)=>app.root.findByName(`Oncoming Traffic ${i}`).getPosition().z)});
@@ -114,13 +115,13 @@ jobs:
             await page.screenshot({path:'pass18-collision-gameover-430x932.png'});
 
             await page.click('#again');await page.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(120);
-            const restart=await page.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app;return {legacy:Array.from({length:7},(_,i)=>app.root.findByName(`1938 Coupe ${i}`).enabled),moving:Array.from({length:4},(_,i)=>app.root.findByName(`Oncoming Traffic ${i}`).enabled)}});
-            assert(restart.legacy.every(v=>v===false),'legacy traffic returned after restart');
+            const restart=await page.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app;return {legacy:Array.from({length:7},(_,i)=>{const e=app.root.findByName(`1938 Coupe ${i}`),p=e.getPosition();return {enabled:e.enabled,active:e.__active,retired:e.__pass18Retired,x:p.x,z:p.z}}),moving:Array.from({length:4},(_,i)=>app.root.findByName(`Oncoming Traffic ${i}`).enabled)}});
+            assert(restart.legacy.every(v=>v.enabled===false&&v.active===true&&v.retired===true&&v.x>900&&v.z<-9000),'legacy traffic returned after restart');
             assert(restart.moving.every(v=>v===true),'moving traffic failed after restart');
             await sleep(2500);
-            const audit=await page.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app;return {legacy:Array.from({length:7},(_,i)=>{const e=app.root.findByName(`1938 Coupe ${i}`);return {enabled:e.enabled,active:e.__active}}),mode:window.WitchRide3D.state.mode}});
+            const audit=await page.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app;return {legacy:Array.from({length:7},(_,i)=>{const e=app.root.findByName(`1938 Coupe ${i}`),p=e.getPosition();return {enabled:e.enabled,active:e.__active,retired:e.__pass18Retired,x:p.x,z:p.z}}),mode:window.WitchRide3D.state.mode}});
             assert(audit.mode==='playing','game unexpectedly ended during stationary audit');
-            assert(audit.legacy.every(v=>v.enabled===false&&v.active===false),'stationary legacy traffic resurfaced');
+            assert(audit.legacy.every(v=>v.enabled===false&&v.active===true&&v.retired===true&&v.x>900&&v.z<-9000),'stationary legacy traffic resurfaced');
             await page.screenshot({path:'pass18-mobile-gameplay-430x932.png'});
 
             async function cleanVisual(p){await p.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app;document.querySelector('#hud')?.classList.add('hidden');for(const el of document.querySelectorAll('.screen'))el.classList.remove('open');for(let i=0;i<7;i++){const e=app.root.findByName(`1938 Coupe ${i}`);if(e)e.enabled=false}for(let i=0;i<4;i++){const e=app.root.findByName(`Oncoming Traffic ${i}`);if(e)e.enabled=false}});await sleep(80)}
