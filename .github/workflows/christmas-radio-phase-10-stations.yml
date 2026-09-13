@@ -69,11 +69,12 @@ jobs:
 
             await page.click('#stationGrid .station-card[data-station-id="snowfall-am"]');
             await page.waitForFunction(()=>document.body.dataset.station==='snowfall-am'&&document.querySelector('#frequencyLabel')?.textContent.trim()==='88.7',{timeout:5000});
+            await page.waitForFunction(()=>Number.parseFloat(getComputedStyle(document.querySelector('.station-readout')).opacity)>.99,{timeout:2000});
             const snowfall=await page.evaluate(()=>{
               const r=document.querySelector('.station-readout'),box=r.getBoundingClientRect();
               return{station:document.body.dataset.station,frequency:document.querySelector('#frequencyLabel').textContent.trim(),name:document.querySelector('#stationName').textContent.trim(),tagline:document.querySelector('#stationTagline').textContent.trim(),paused:document.querySelector('#christmasRadioAudio').paused,stored:sessionStorage.getItem('bbxmas:station'),opacity:getComputedStyle(r).opacity,visibility:getComputedStyle(r).visibility,box:{left:box.left,right:box.right,top:box.top,bottom:box.bottom}};
             });
-            if(snowfall.name!=='Snowfall AM'||snowfall.paused!==true||snowfall.stored!=='snowfall-am'||snowfall.opacity!=='1'||snowfall.visibility!=='visible'||snowfall.box.left<0||snowfall.box.right>430)throw new Error('Snowfall tuning state regressed: '+JSON.stringify(snowfall));
+            if(snowfall.name!=='Snowfall AM'||snowfall.paused!==true||snowfall.stored!=='snowfall-am'||Number.parseFloat(snowfall.opacity)<.99||snowfall.visibility!=='visible'||snowfall.box.left<0||snowfall.box.right>430)throw new Error('Snowfall tuning state regressed: '+JSON.stringify(snowfall));
             await page.screenshot({path:'phase10-output/alternate-station-430x932-dpr3.png',fullPage:false});
 
             await page.click('button[data-panel="stationsPanel"]');
@@ -102,8 +103,9 @@ jobs:
 
             await page.$eval('#tuningKnob',input=>{input.value='4';input.dispatchEvent(new Event('input',{bubbles:true}))});
             await page.waitForFunction(()=>document.body.dataset.station==='bb-christmas-radio'&&document.querySelector('#frequencyLabel')?.textContent.trim()==='103.1',{timeout:5000});
+            await page.waitForFunction(()=>{const s=getComputedStyle(document.querySelector('.station-readout'));return Number.parseFloat(s.opacity)<.01&&s.visibility==='hidden'},{timeout:2000});
             const flagshipReturn=await page.evaluate(()=>({opacity:getComputedStyle(document.querySelector('.station-readout')).opacity,visibility:getComputedStyle(document.querySelector('.station-readout')).visibility,station:document.body.dataset.station}));
-            if(flagshipReturn.opacity!=='0'||flagshipReturn.visibility!=='hidden')throw new Error('Flagship baked display was not restored: '+JSON.stringify(flagshipReturn));
+            if(Number.parseFloat(flagshipReturn.opacity)>.01||flagshipReturn.visibility!=='hidden')throw new Error('Flagship baked display was not restored: '+JSON.stringify(flagshipReturn));
             await page.screenshot({path:'phase10-output/flagship-return-430x932-dpr3.png',fullPage:false});
             if(errors.length)throw new Error('Page errors: '+errors.join(' | '));
 
