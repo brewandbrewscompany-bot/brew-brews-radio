@@ -1,0 +1,50 @@
+name: Phase 12 High-Resolution Asset Builder
+
+on:
+  push:
+    branches: [christmas-radio-phase-12-hires-station-scenes]
+    paths:
+      - '.phase12-hires/READY'
+
+permissions:
+  contents: write
+
+jobs:
+  build-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Rebuild exact AVIF station assets
+        run: |
+          set -euo pipefail
+          mkdir -p christmas-radio/artwork/stations
+          build () {
+            name="$1"; expected="$2"
+            cat .phase12-hires/${name}.part-*.b64 | tr -d '\r\n ' | base64 -d > "christmas-radio/artwork/stations/${name}.avif"
+            actual="$(sha256sum "christmas-radio/artwork/stations/${name}.avif" | awk '{print $1}')"
+            test "$actual" = "$expected"
+            echo "$name $actual $(wc -c < christmas-radio/artwork/stations/${name}.avif) bytes"
+          }
+          build snowfall-am 9b9d0acf53f3b4ec8bae45b0931f0d43750707a4a7c9dca89f3ffa7bd9434816
+          build fireside 756d097f999901c3a0c919c0f0c80c61bed85c98d640a3219bf722a725b18d45
+          build sleigh-bell-rock 3e225fae42c26679577fbc38cf6b9d84f5ed96a18e9cc4f7c39458b7b9b6ba38
+          build candlelight 3ea7773824fe56486d87b438411be64c70019a8c8c786625f5c266e721a63ac8
+          build north-pole-after-hours b16ae36594390656c5ccbfc9a6719fbe080bbd35de76212f509608a91066ec67
+          for f in christmas-radio/artwork/stations/*.avif; do
+            dims="$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$f")"
+            test "$dims" = "852x1846"
+          done
+          sed -i 's/phase10-2-v3/phase12-hires-v1/' christmas-radio/sw.js
+          rm -rf .phase12-hires
+          rm -f .github/workflows/phase12-hires-assets.yml
+      - name: Commit verified high-resolution assets
+        run: |
+          set -euo pipefail
+          git config user.name "brewandbrewscompany-bot"
+          git config user.email "brewandbrewscompany@gmail.com"
+          git add -A
+          git commit -m "Replace alternate station scenes with high-resolution approved art"
+          git push origin HEAD:christmas-radio-phase-12-hires-station-scenes
