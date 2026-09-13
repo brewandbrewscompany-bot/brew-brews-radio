@@ -1,0 +1,93 @@
+name: Christmas Radio Phase 12 High-Resolution Asset Builder
+
+on:
+  push:
+    branches: [christmas-radio-phase-12-hires-final]
+    paths:
+      - '.phase12-hires-final/READY'
+
+permissions:
+  contents: write
+
+jobs:
+  build-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Rebuild exact high-resolution station AVIFs
+        shell: bash
+        run: |
+          set -euo pipefail
+          declare -A expected
+          expected[candlelight]='3ea7773824fe56486d87b438411be64c70019a8c8c786625f5c266e721a63ac8'
+          expected[fireside]='756d097f999901c3a0c919c0f0c80c61bed85c98d640a3219bf722a725b18d45'
+          expected[north-pole-after-hours]='b16ae36594390656c5ccbfc9a6719fbe080bbd35de76212f509608a91066ec67'
+          expected[sleigh-bell-rock]='3e225fae42c26679577fbc38cf6b9d84f5ed96a18e9cc4f7c39458b7b9b6ba38'
+          expected[snowfall-am]='9b9d0acf53f3b4ec8bae45b0931f0d43750707a4a7c9dca89f3ffa7bd9434816'
+          mkdir -p christmas-radio/artwork/stations
+          for name in candlelight fireside north-pole-after-hours sleigh-bell-rock snowfall-am; do
+            cat .phase12-hires-final/${name}.part-*.b64 | tr -d '\n\r' | base64 --decode > christmas-radio/artwork/stations/${name}.avif
+            actual="$(sha256sum christmas-radio/artwork/stations/${name}.avif | awk '{print $1}')"
+            test "$actual" = "${expected[$name]}"
+          done
+
+      - name: Verify 852x1846 AVIF geometry
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct
+          for p in sorted(Path('christmas-radio/artwork/stations').glob('*.avif')):
+              b=p.read_bytes()
+              i=b.find(b'ispe')
+              if i < 0:
+                  raise SystemExit(f'no ispe box in {p}')
+              w,h=struct.unpack('>II',b[i+8:i+16])
+              print(p.name, len(b), w, h)
+              if (w,h)!=(852,1846):
+                  raise SystemExit(f'bad dimensions for {p}: {(w,h)}')
+              if len(b) < 60000:
+                  raise SystemExit(f'asset unexpectedly small: {p} {len(b)}')
+          PY
+
+      - name: Bump station-scene shell cache
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('christmas-radio/sw.js')
+          s=p.read_text()
+          old="const CACHE_NAME=`${CACHE_PREFIX}phase10-2-v3`;"
+          new="const CACHE_NAME=`${CACHE_PREFIX}phase12-hires-v1`;"
+          if old not in s:
+              raise SystemExit('expected Phase 11 cache name not found')
+          p.write_text(s.replace(old,new,1))
+          PY
+
+      - name: Preserve locked application geometry
+        run: |
+          set -euo pipefail
+          git diff --exit-code 184647c049bba266f8d9c5475dba832c25e66b21 -- \
+            christmas-radio/index.html \
+            christmas-radio/assets/css/art-skin.css \
+            christmas-radio/assets/css/stations.css \
+            christmas-radio/assets/css/christmas-radio.css \
+            christmas-radio/assets/js/christmas-radio.js \
+            christmas-radio/assets/js/audio-engine.js \
+            christmas-radio/artwork/christmas-radio-approved-skin.avif \
+            christmas-radio/data/stations.json \
+            christmas-radio/data/tracks.json
+
+      - name: Commit final assets and remove transfer staging
+        run: |
+          set -euo pipefail
+          git config user.name 'brewandbrewscompany-bot'
+          git config user.email 'brewandbrewscompany@gmail.com'
+          git rm -r .phase12-hires-final
+          git rm .github/workflows/christmas-radio-phase-12-hires-builder.yml
+          git add christmas-radio/artwork/stations/*.avif christmas-radio/sw.js
+          git commit -m 'Replace Christmas stations with high-resolution scenes'
+          git push origin HEAD:christmas-radio-phase-12-hires-final
