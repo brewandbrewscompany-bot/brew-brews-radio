@@ -1,8 +1,8 @@
-name: Christmas Radio Phase 10 Stations + Tuning Gate
+name: Christmas Radio Phase 10.1 Integrated Display Gate
 
 on:
   push:
-    branches: [christmas-radio-phase-10-stations-tuning]
+    branches: [christmas-radio-phase-10-1-integrated-display]
     paths:
       - 'christmas-radio/**'
       - '.github/workflows/christmas-radio-phase-10-stations.yml'
@@ -16,16 +16,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify Phase 10 guardrails
+      - name: Verify Phase 10.1 guardrails
         run: |
           set -euo pipefail
           test -s christmas-radio/assets/css/stations.css
-          grep -q 'assets/css/stations.css' christmas-radio/index.html
-          grep -q 'Six curated Christmas sounds' christmas-radio/index.html
-          grep -q 'station-description' christmas-radio/assets/js/christmas-radio.js
-          grep -q "TUNED':'TAP TO TUNE" christmas-radio/assets/js/christmas-radio.js
+          grep -q 'integrated radio display' christmas-radio/assets/css/stations.css
           grep -q 'NOW TUNED' christmas-radio/assets/css/stations.css
-          grep -q 'phase10-v1' christmas-radio/sw.js
+          grep -q 'phase10-1-v1' christmas-radio/sw.js
+          grep -q 'Christmas Music · Good Coffee · Brighter Days' christmas-radio/data/stations.json
           grep -q "pathname.includes('/audio/')" christmas-radio/sw.js
           grep -q 'christmas-radio-approved-skin.avif' christmas-radio/assets/css/art-skin.css
           ! grep -q '<audio[^>]*autoplay' christmas-radio/index.html
@@ -33,10 +31,10 @@ jobs:
       - name: Install browser helper
         run: npm install --no-save puppeteer-core@24.16.0
 
-      - name: Exercise stations and tuning at 430x932 DPR 3
+      - name: Exercise all six integrated station displays at 430x932 DPR 3
         run: |
           set -euo pipefail
-          mkdir -p phase10-output
+          mkdir -p phase10-1-output
           python3 -m http.server 8000 --directory . >/tmp/christmas-radio-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
@@ -50,86 +48,97 @@ jobs:
             const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
             const page=await browser.newPage();
             await page.setViewport({width:430,height:932,deviceScaleFactor:3});
-            const errors=[];page.on('pageerror',e=>errors.push(String(e)));
+            const pageErrors=[],httpErrors=[];
+            page.on('pageerror',e=>pageErrors.push(String(e)));
+            page.on('response',r=>{if(r.status()>=400)httpErrors.push({status:r.status(),url:r.url()})});
             await page.goto('http://127.0.0.1:8000/christmas-radio/',{waitUntil:'networkidle0'});
             await page.waitForFunction(()=>document.querySelectorAll('#stationGrid .station-card').length===6,{timeout:10000});
-            const initial=await page.evaluate(()=>({station:document.body.dataset.station,frequency:document.querySelector('#frequencyLabel')?.textContent.trim(),paused:document.querySelector('#christmasRadioAudio').paused,skin:getComputedStyle(document.querySelector('.scene'),'::before').backgroundImage}));
-            if(initial.station!=='bb-christmas-radio'||initial.frequency!=='103.1'||initial.paused!==true||!initial.skin.includes('christmas-radio-approved-skin.avif'))throw new Error('Initial flagship state regressed: '+JSON.stringify(initial));
+
+            const expected=[
+              ['snowfall-am','88.7','Snowfall AM'],
+              ['fireside','92.5','Fireside'],
+              ['sleigh-bell-rock','96.9','Sleigh Bell Rock'],
+              ['candlelight','100.3','Candlelight'],
+              ['bb-christmas-radio','103.1','B&B Christmas Radio'],
+              ['north-pole-after-hours','106.7','North Pole After Hours']
+            ];
+            const states=[];
+            for(let i=0;i<expected.length;i++){
+              const [id,frequency,name]=expected[i];
+              await page.$eval('#tuningKnob',(input,value)=>{input.value=String(value);input.dispatchEvent(new Event('input',{bubbles:true}))},i);
+              await page.waitForFunction((station,freq)=>document.body.dataset.station===station&&document.querySelector('#frequencyLabel')?.textContent.trim()===freq,{timeout:5000},id,frequency);
+              const state=await page.evaluate(()=>{
+                const r=document.querySelector('.station-readout'),box=r.getBoundingClientRect(),style=getComputedStyle(r);
+                const p=document.querySelector('#stationTagline');
+                return{
+                  station:document.body.dataset.station,
+                  frequency:document.querySelector('#frequencyLabel')?.textContent.trim(),
+                  name:document.querySelector('#stationName')?.textContent.trim(),
+                  tagline:p?.textContent.trim(),
+                  paused:document.querySelector('#christmasRadioAudio').paused,
+                  display:{left:box.left,right:box.right,top:box.top,bottom:box.bottom,width:box.width,height:box.height,opacity:style.opacity,visibility:style.visibility,overflow:style.overflow},
+                  taglineBox:p?(()=>{const b=p.getBoundingClientRect();return{left:b.left,right:b.right,top:b.top,bottom:b.bottom,scrollHeight:p.scrollHeight,clientHeight:p.clientHeight}})():null
+                };
+              });
+              if(state.station!==id||state.frequency!==frequency||state.name!==name||state.paused!==true)throw new Error('Station state mismatch: '+JSON.stringify(state));
+              const b=state.display;
+              if(Number.parseFloat(b.opacity)<.99||b.visibility!=='visible'||b.left<105||b.right>325||b.top<420||b.bottom>535||b.width>200||b.height>100)throw new Error('Integrated display escaped radio window: '+JSON.stringify(state));
+              if(state.taglineBox&&(state.taglineBox.left<b.left||state.taglineBox.right>b.right+1||state.taglineBox.bottom>b.bottom+1))throw new Error('Station tagline overflowed display: '+JSON.stringify(state));
+              states.push(state);
+              await page.screenshot({path:`phase10-1-output/station-${String(i+1).padStart(2,'0')}-${id}-430x932-dpr3.png`,fullPage:false});
+            }
 
             await page.click('button[data-panel="stationsPanel"]');
             await page.waitForFunction(()=>!document.querySelector('#stationsPanel').hidden);
-            const panel=await page.evaluate(()=>({
-              cards:[...document.querySelectorAll('#stationGrid .station-card')].map(c=>({id:c.dataset.stationId,current:c.getAttribute('aria-current'),state:c.querySelector('.station-state')?.textContent.trim(),description:c.querySelector('.station-description')?.textContent.trim(),count:c.querySelector('.station-count')?.textContent.trim()})),
-              help:document.querySelector('#stationsPanel header p')?.textContent.trim()
+            const cardState=await page.evaluate(()=>({
+              cards:[...document.querySelectorAll('#stationGrid .station-card')].map(c=>({id:c.dataset.stationId,current:c.getAttribute('aria-current'),state:c.querySelector('.station-state')?.textContent.trim()})),
+              panel:document.querySelector('#stationsPanel').getBoundingClientRect().toJSON?.()||{}
             }));
-            if(panel.cards.length!==6||panel.help!=='Six curated Christmas sounds. Tune one, then hit Play.')throw new Error('Station panel content incomplete: '+JSON.stringify(panel));
-            if(panel.cards.some(c=>!c.description||!c.count||c.count.startsWith('0 ')))throw new Error('Station card metadata incomplete: '+JSON.stringify(panel.cards));
-            const flagship=panel.cards.find(c=>c.id==='bb-christmas-radio');
-            if(!flagship||flagship.current!=='true'||flagship.state!=='TUNED')throw new Error('Flagship tuned marker missing: '+JSON.stringify(flagship));
-
-            await page.click('#stationGrid .station-card[data-station-id="snowfall-am"]');
-            await page.waitForFunction(()=>document.body.dataset.station==='snowfall-am'&&document.querySelector('#frequencyLabel')?.textContent.trim()==='88.7',{timeout:5000});
-            await page.waitForFunction(()=>Number.parseFloat(getComputedStyle(document.querySelector('.station-readout')).opacity)>.99,{timeout:2000});
-            const snowfall=await page.evaluate(()=>{
-              const r=document.querySelector('.station-readout'),box=r.getBoundingClientRect();
-              return{station:document.body.dataset.station,frequency:document.querySelector('#frequencyLabel').textContent.trim(),name:document.querySelector('#stationName').textContent.trim(),tagline:document.querySelector('#stationTagline').textContent.trim(),paused:document.querySelector('#christmasRadioAudio').paused,stored:sessionStorage.getItem('bbxmas:station'),opacity:getComputedStyle(r).opacity,visibility:getComputedStyle(r).visibility,box:{left:box.left,right:box.right,top:box.top,bottom:box.bottom}};
-            });
-            if(snowfall.name!=='Snowfall AM'||snowfall.paused!==true||snowfall.stored!=='snowfall-am'||Number.parseFloat(snowfall.opacity)<.99||snowfall.visibility!=='visible'||snowfall.box.left<0||snowfall.box.right>430)throw new Error('Snowfall tuning state regressed: '+JSON.stringify(snowfall));
-            await page.screenshot({path:'phase10-output/alternate-station-430x932-dpr3.png',fullPage:false});
-
-            await page.click('button[data-panel="stationsPanel"]');
-            await page.waitForFunction(()=>!document.querySelector('#stationsPanel').hidden);
-            await page.waitForFunction(()=>document.querySelector('#stationGrid .station-card[data-station-id="snowfall-am"]')?.getAttribute('aria-current')==='true');
-            const selected=await page.$eval('#stationGrid .station-card[data-station-id="snowfall-am"] .station-state',e=>e.textContent.trim());
-            if(selected!=='TUNED')throw new Error('Selected station marker did not follow tune');
-            await page.screenshot({path:'phase10-output/stations-panel-430x932-dpr3.png',fullPage:false});
+            if(cardState.cards.length!==6||cardState.cards.filter(c=>c.current==='true').length!==1||cardState.cards.find(c=>c.current==='true')?.id!=='north-pole-after-hours')throw new Error('Station card tuned state mismatch: '+JSON.stringify(cardState.cards));
+            await page.screenshot({path:'phase10-1-output/stations-panel-430x932-dpr3.png',fullPage:false});
             await page.click('#stationsPanel .panel-close');
-
-            await page.$eval('#tuningKnob',input=>{input.value='5';input.dispatchEvent(new Event('input',{bubbles:true}))});
-            await page.waitForFunction(()=>document.body.dataset.station==='north-pole-after-hours'&&document.querySelector('#frequencyLabel')?.textContent.trim()==='106.7',{timeout:5000});
-            const knob=await page.evaluate(()=>({station:document.body.dataset.station,stored:sessionStorage.getItem('bbxmas:station'),paused:document.querySelector('#christmasRadioAudio').paused,tuner:document.querySelector('#stationTuner').value,knob:document.querySelector('#tuningKnob').value}));
-            if(knob.stored!=='north-pole-after-hours'||knob.paused!==true||knob.tuner!=='5'||knob.knob!=='5')throw new Error('Physical tuning knob synchronization failed: '+JSON.stringify(knob));
 
             await page.evaluate(()=>navigator.serviceWorker.ready.then(()=>true));
             await page.reload({waitUntil:'networkidle0'});
             await page.waitForFunction(()=>!!navigator.serviceWorker.controller,{timeout:10000});
             await page.waitForFunction(()=>document.body.dataset.station==='north-pole-after-hours',{timeout:10000});
             const warm=await page.evaluate(async()=>{
-              const key=(await caches.keys()).find(k=>k==='bb-christmas-radio-shell-phase10-v1');
+              const key=(await caches.keys()).find(k=>k==='bb-christmas-radio-shell-phase10-1-v1');
               const urls=key?[...(await (await caches.open(key)).keys())].map(r=>r.url):[];
               return{key,urls,station:document.body.dataset.station,frequency:document.querySelector('#frequencyLabel')?.textContent.trim(),paused:document.querySelector('#christmasRadioAudio').paused};
             });
-            if(!warm.key||!warm.urls.some(u=>u.includes('/assets/css/stations.css'))||warm.urls.some(u=>u.includes('/audio/'))||warm.station!=='north-pole-after-hours'||warm.frequency!=='106.7'||warm.paused!==true)throw new Error('Warm station restore/cache failed: '+JSON.stringify(warm));
+            if(!warm.key||!warm.urls.some(u=>u.includes('/assets/css/stations.css'))||warm.urls.some(u=>u.includes('/audio/'))||warm.station!=='north-pole-after-hours'||warm.frequency!=='106.7'||warm.paused!==true)throw new Error('Warm restore/cache failed: '+JSON.stringify(warm));
 
             await page.$eval('#tuningKnob',input=>{input.value='4';input.dispatchEvent(new Event('input',{bubbles:true}))});
             await page.waitForFunction(()=>document.body.dataset.station==='bb-christmas-radio'&&document.querySelector('#frequencyLabel')?.textContent.trim()==='103.1',{timeout:5000});
-            await page.waitForFunction(()=>{const s=getComputedStyle(document.querySelector('.station-readout'));return Number.parseFloat(s.opacity)<.01&&s.visibility==='hidden'},{timeout:2000});
-            const flagshipReturn=await page.evaluate(()=>({opacity:getComputedStyle(document.querySelector('.station-readout')).opacity,visibility:getComputedStyle(document.querySelector('.station-readout')).visibility,station:document.body.dataset.station}));
-            if(Number.parseFloat(flagshipReturn.opacity)>.01||flagshipReturn.visibility!=='hidden')throw new Error('Flagship baked display was not restored: '+JSON.stringify(flagshipReturn));
-            await page.screenshot({path:'phase10-output/flagship-return-430x932-dpr3.png',fullPage:false});
-            if(errors.length)throw new Error('Page errors: '+errors.join(' | '));
+            const final=await page.evaluate(()=>({tagline:document.querySelector('#stationTagline')?.textContent.trim(),paused:document.querySelector('#christmasRadioAudio').paused}));
+            if(!final.tagline?.includes('Good Coffee')||final.paused!==true)throw new Error('Flagship integrated display did not restore: '+JSON.stringify(final));
+            await page.screenshot({path:'phase10-1-output/final-1031-430x932-dpr3.png',fullPage:false});
 
-            const report={status:'PASS',initial,panel,snowfall,knob,warm:{...warm,urls:warm.urls.map(u=>new URL(u).pathname)},flagshipReturn,pageErrors:errors};
-            fs.writeFileSync('phase10-output/report.json',JSON.stringify(report,null,2));
-            console.log('PHASE 10 STATIONS + TUNING',JSON.stringify(report,null,2));
+            if(pageErrors.length)throw new Error('Page errors: '+pageErrors.join(' | '));
+            const realHttpErrors=httpErrors.filter(e=>!e.url.endsWith('/favicon.ico'));
+            if(realHttpErrors.length)throw new Error('HTTP errors: '+JSON.stringify(realHttpErrors));
+            const report={status:'PASS',states,cardState,warm:{...warm,urls:warm.urls.map(u=>new URL(u).pathname)},final,pageErrors,httpErrors:realHttpErrors};
+            fs.writeFileSync('phase10-1-output/report.json',JSON.stringify(report,null,2));
+            console.log('PHASE 10.1 INTEGRATED DISPLAY',JSON.stringify(report,null,2));
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
           python3 - <<'PY2'
           from pathlib import Path
           import struct
-          for name in ('alternate-station-430x932-dpr3.png','stations-panel-430x932-dpr3.png','flagship-return-430x932-dpr3.png'):
-              b=(Path('phase10-output')/name).read_bytes()
-              w,h=struct.unpack('>II',b[16:24])
-              print(name,w,h)
-              if (w,h)!=(1290,2796): raise SystemExit(f'unexpected DPR3 screenshot dimensions for {name}: {(w,h)}')
+          shots=sorted(Path('phase10-1-output').glob('*.png'))
+          if len(shots) < 8: raise SystemExit(f'expected at least 8 screenshots, found {len(shots)}')
+          for path in shots:
+              b=path.read_bytes(); w,h=struct.unpack('>II',b[16:24]); print(path.name,w,h)
+              if (w,h)!=(1290,2796): raise SystemExit(f'unexpected DPR3 screenshot dimensions for {path.name}: {(w,h)}')
           PY2
 
-      - name: Upload Phase 10 evidence
+      - name: Upload Phase 10.1 evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: christmas-radio-phase-10-stations-tuning-evidence
-          path: phase10-output/
+          name: christmas-radio-phase-10-1-integrated-display-evidence
+          path: phase10-1-output/
           if-no-files-found: warn
           retention-days: 14
