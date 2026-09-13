@@ -18,7 +18,7 @@ document.head.appendChild(style);
 
 const extra=document.createElement('div');
 extra.className='witch-ride-extra';
-extra.innerHTML='<small>Extras</small><button class="witch-ride-launch" type="button">WITCH RIDE<span>2.5D haunted broom run · open game</span></button>';
+extra.innerHTML='<small>Extras</small><button class="witch-ride-launch" type="button">WITCH RIDE<span>3D haunted broom run · open game</span></button>';
 const closeButton=drawer.querySelector('#closeDrawer');
 drawer.insertBefore(extra,closeButton||null);
 
@@ -32,7 +32,7 @@ const close=launcher.querySelector('#witchRideClose');
 
 function openGame(){
   drawer.classList.remove('open');drawer.setAttribute('aria-hidden','true');
-  if(!frame.src)frame.src='games/witch-ride/';
+  if(!frame.src)frame.src='games/witch-ride-3d/';
   launcher.classList.add('open');launcher.setAttribute('aria-hidden','false');
   document.body.classList.add('witch-ride-open');
   close.focus({preventScroll:true});
