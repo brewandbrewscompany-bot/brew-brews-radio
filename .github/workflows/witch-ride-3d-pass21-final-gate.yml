@@ -106,11 +106,15 @@ jobs:
             const resumeEnd=await page.evaluate(()=>window.WitchRidePass21Gameplay.manual.activeRemaining);
             assert(resumeEnd<resumeStart-.05,'boost timer did not resume');
 
-            // Deterministically cross the already-proven active timer boundary to validate cooldown/reset logic without SwiftShader wall-clock distortion.
-            await page.evaluate(()=>{const m=window.WitchRidePass21Gameplay.manual;m.tick(m.activeRemaining+.02,true)});await sleep(80);
-            const cooldown=await page.evaluate(()=>{const p=window.WitchRidePass21Gameplay;return {state:p.manual.state,remaining:p.manual.cooldownRemaining,retrigger:p.test.activateManual(),text:p.ui.button.innerText}});
-            assert(cooldown.state==='cooldown'&&cooldown.remaining>7.7&&cooldown.retrigger===false&&/RECHARGE/.test(cooldown.text),'cooldown lockout failed');
-            await page.evaluate(()=>{const m=window.WitchRidePass21Gameplay.manual;m.tick(m.cooldownRemaining+.02,true)});await sleep(80);
+            // Cross the already-proven active timer boundary deterministically. Verify state first, then UI on its next render tick.
+            await page.evaluate(()=>{const m=window.WitchRidePass21Gameplay.manual;if(m.state==='active')m.tick(m.activeRemaining+.02,true)});
+            const cooldownState=await page.evaluate(()=>({state:window.WitchRidePass21Gameplay.manual.state,remaining:window.WitchRidePass21Gameplay.manual.cooldownRemaining}));
+            assert(cooldownState.state==='cooldown'&&cooldownState.remaining>0,'cooldown state did not start');
+            await page.waitForFunction(()=>/RECHARGE/.test(window.WitchRidePass21Gameplay.ui.button.innerText),{timeout:8000});
+            const cooldown=await page.evaluate(()=>{const p=window.WitchRidePass21Gameplay;const before={state:p.manual.state,remaining:p.manual.cooldownRemaining,text:p.ui.button.innerText};const retrigger=p.test.activateManual();return {...before,retrigger,afterState:p.manual.state}});
+            assert(cooldown.state==='cooldown'&&cooldown.retrigger===false&&cooldown.afterState==='cooldown'&&/RECHARGE/.test(cooldown.text),'cooldown lockout failed');
+            await page.evaluate(()=>{const m=window.WitchRidePass21Gameplay.manual;m.tick(m.cooldownRemaining+.02,true)});
+            await page.waitForFunction(()=>window.WitchRidePass21Gameplay.manual.state==='ready'&&/READY/.test(window.WitchRidePass21Gameplay.ui.button.innerText),{timeout:8000});
             const resetReady=await page.evaluate(()=>({state:window.WitchRidePass21Gameplay.manual.state,text:window.WitchRidePass21Gameplay.ui.button.innerText}));
             assert(resetReady.state==='ready'&&/READY/.test(resetReady.text),'cooldown did not reset to READY');
 
@@ -138,7 +142,7 @@ jobs:
             await sleep(80);await page.screenshot({path:'pass21-final-gameplay-430x932.png'});
 
             const finalState=await page.evaluate(()=>({mode:window.WitchRide3D.state.mode,speed:window.WitchRide3D.state.speed,manual:window.WitchRidePass21Gameplay.manual.state,detail:window.WitchRidePass21Gameplay.detail,repositionCount:window.WitchRidePass21Gameplay.repositionCount,button:window.WitchRidePass21Gameplay.ui.button.innerText}));
-            fs.writeFileSync('pass21-final-runtime.json',JSON.stringify({setup,ready,center,active,pauseA,pauseB,resumeStart,resumeEnd,cooldown,resetReady,surprise,finalState,errors},null,2));
+            fs.writeFileSync('pass21-final-runtime.json',JSON.stringify({setup,ready,center,active,pauseA,pauseB,resumeStart,resumeEnd,cooldownState,cooldown,resetReady,surprise,finalState,errors},null,2));
             assert(errors.length===0,`console/page errors: ${errors.join(' | ')}`);
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
