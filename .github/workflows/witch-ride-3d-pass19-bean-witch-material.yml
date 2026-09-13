@@ -69,6 +69,8 @@ jobs:
             await page.goto('http://127.0.0.1:8019/halloween-radio/games/witch-ride-3d/',{waitUntil:'domcontentloaded'});
             await page.waitForFunction(()=>window.WitchRide3D?.ready&&window.WitchRidePass18Traffic?.active===true&&window.WitchRidePass19Material?.active===true);
             const detail=await page.evaluate(()=>window.WitchRidePass19Material.detail);
+            fs.writeFileSync('pass19-preflight.json',JSON.stringify({detail,errors},null,2));
+            console.log('PASS19_DETAIL',JSON.stringify(detail));
             assert(detail.geometryChanged===false&&detail.poseChanged===false&&detail.scaleChanged===false,'witch geometry/pose/scale flag changed');
             assert(detail.trafficChanged===false&&detail.environmentChanged===false,'locked world flag changed');
             assert(detail.broomFireAdded===false,'broom fire must not be part of Pass 19');
@@ -77,10 +79,11 @@ jobs:
             assert(detail.beans.beans===16,'all 16 beans not found');
             assert(detail.beans.scalePreserved===16,'bean gameplay scale changed');
             assert(detail.beans.bodyMaterials>=16,'bean body materials missing');
-            assert(window.WitchRideWitchCenterpiecePass.materialsApplied===true,'witch material state not marked applied');
+            assert(await page.evaluate(()=>window.WitchRideWitchCenterpiecePass.materialsApplied===true),'witch material state not marked applied');
 
             await page.click('#play');await page.waitForFunction(()=>window.WitchRide3D.state.mode==='playing');await sleep(1200);
             const runtime=await page.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,s=window.WitchRide3D.state;return {mode:s.mode,score:s.score,traffic:Array.from({length:4},(_,i)=>{const e=app.root.findByName(`Oncoming Traffic ${i}`);return {enabled:e.enabled,z:e.getPosition().z}}),legacy:Array.from({length:7},(_,i)=>{const e=app.root.findByName(`1938 Coupe ${i}`);return {enabled:e.enabled,retired:e.__pass18Retired}})}});
+            fs.writeFileSync('pass19-runtime-partial.json',JSON.stringify({detail,runtime,errors},null,2));
             assert(runtime.mode==='playing'&&runtime.score>0,'gameplay did not advance');
             assert(runtime.traffic.every(v=>v.enabled),'moving traffic regression');
             assert(runtime.legacy.every(v=>!v.enabled&&v.retired===true),'stationary traffic regression');
@@ -95,7 +98,7 @@ jobs:
             fs.writeFileSync('pass19-runtime.json',JSON.stringify({detail,runtime,finalState,errors},null,2));
             assert(errors.length===0,`console/page errors: ${errors.join(' | ')}`);
             await browser.close();
-          })().catch(e=>{console.error(e);process.exit(1)});
+          })().catch(e=>{console.error('PASS19_GATE_ERROR',e.stack||String(e));process.exit(1)});
           NODE
 
       - name: Upload Pass 19 proof
@@ -105,6 +108,8 @@ jobs:
           name: witch-pass19-bean-witch-material-proof
           if-no-files-found: warn
           path: |
+            pass19-preflight.json
+            pass19-runtime-partial.json
             pass19-bean-approach-430x932.png
             pass19-gameplay-430x932.png
             pass19-runtime.json
