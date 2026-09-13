@@ -17,6 +17,11 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preload" as="image" href="artwork/christmas-radio-approved-skin.avif" type="image/avif" fetchpriority="high">
+  <link rel="preload" as="image" href="artwork/stations/snowfall-am.avif" type="image/avif" fetchpriority="low">
+  <link rel="preload" as="image" href="artwork/stations/fireside.avif" type="image/avif" fetchpriority="low">
+  <link rel="preload" as="image" href="artwork/stations/sleigh-bell-rock.avif" type="image/avif" fetchpriority="low">
+  <link rel="preload" as="image" href="artwork/stations/candlelight.avif" type="image/avif" fetchpriority="low">
+  <link rel="preload" as="image" href="artwork/stations/north-pole-after-hours.avif" type="image/avif" fetchpriority="low">
   <link rel="modulepreload" href="assets/js/audio-engine.js">
   <link rel="preload" as="fetch" href="data/stations.json" crossorigin="anonymous">
   <link rel="preload" as="fetch" href="data/tracks.json" crossorigin="anonymous">
@@ -69,10 +74,7 @@
       <strong id="panelStation">103.1 · B&B Christmas Radio</strong>
       <b id="panelTrack">Christmas broadcast ready</b>
       <span id="panelArtist">Tap Play to begin.</span>
-      <div class="panel-progress-wrap">
-        <div class="panel-time-row"><span id="panelElapsed">0:00</span><span id="panelDuration">--:--</span></div>
-        <div id="panelProgress" class="panel-progress" role="progressbar" aria-label="Track progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
-      </div>
+      <div class="panel-progress-wrap"><div class="panel-time-row"><span id="panelElapsed">0:00</span><span id="panelDuration">--:--</span></div><div id="panelProgress" class="panel-progress" role="progressbar" aria-label="Track progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div></div>
       <div class="panel-transport" aria-label="Playback controls">
         <button id="panelPrev" type="button" aria-label="Previous track"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M5 5h2v14H5zM19 5v14l-10-7 10-7z"/></svg></button>
         <button id="panelPlay" class="transport-play" type="button" aria-pressed="false" aria-label="Play Christmas Radio">▶</button>
