@@ -87,7 +87,7 @@ jobs:
             const moved=await waitForMotion(page,start);
             assert(moved.score>start.score,'score did not advance');
 
-            const x0=await page.evaluate(()=>window.WitchRide3D.state.x);await page.keyboard.down('ArrowRight');await sleep(350);await page.keyboard.up('ArrowRight');await sleep(150);const x1=await page.evaluate(()=>window.WitchRide3D.state.x);assert(x1>x0+.02,'steering did not move witch');
+            const x0=await page.evaluate(()=>window.WitchRide3D.state.x);const canvas=await page.$('#game-canvas'),box=await canvas.boundingBox();assert(box&&box.width>0&&box.height>0,'canvas has no touch area');await page.touchscreen.tap(box.x+box.width*.82,box.y+box.height*.55);await sleep(650);const x1=await page.evaluate(()=>window.WitchRide3D.state.x);assert(x1>x0+.02,'mobile touch steering did not move witch');
 
             const beans0=await page.evaluate(()=>window.WitchRide3D.state.beans);
             await page.evaluate(async()=>{const pc=await import('playcanvas'),app=pc.app,s=window.WitchRide3D.state,b=app.root.findByName('Coffee Bean 0');b.__active=true;b.enabled=true;b.setPosition(s.x,1.15,1.4);s.spawnClock=999});
