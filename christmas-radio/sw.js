@@ -1,10 +1,15 @@
 const CACHE_PREFIX='bb-christmas-radio-shell-';
-const CACHE_NAME=`${CACHE_PREFIX}phase10-1-v1`;
+const CACHE_NAME=`${CACHE_PREFIX}phase10-2-v1`;
 const SHELL=[
   './','./index.html','./manifest.webmanifest','./favicon.svg',
   './assets/css/christmas-radio.css','./assets/css/art-skin.css','./assets/css/stations.css',
   './assets/js/christmas-radio.js','./assets/js/audio-engine.js',
   './artwork/christmas-radio-approved-skin.avif',
+  './artwork/stations/snowfall-am.avif',
+  './artwork/stations/fireside.avif',
+  './artwork/stations/sleigh-bell-rock.avif',
+  './artwork/stations/candlelight.avif',
+  './artwork/stations/north-pole-after-hours.avif',
   './data/stations.json','./data/tracks.json'
 ];
 

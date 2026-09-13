@@ -1,6 +1,6 @@
-/* Brew & Brews Christmas Radio — Phase 10.1 station selector + integrated radio display.
-   Loaded after the approved art skin. All six stations use the radio's own dark display window;
-   there is no floating station card over the tree or radio body. */
+/* Brew & Brews Christmas Radio — Phase 10.2 station selector, integrated radio display + scene switching.
+   Loaded after the approved art skin. 103.1 keeps the locked Brew & Brews flagship scene; the five
+   alternate stations swap only the visual skin while retaining the same live controls and readout. */
 #stationsPanel header p{max-width:330px;margin-left:auto;margin-right:auto}
 #stationsPanel .station-grid{display:grid!important;grid-template-columns:1fr!important;gap:10px!important;margin-top:16px}
 #stationsPanel .station-card{
@@ -22,9 +22,8 @@
 #stationsPanel .station-card:active{transform:scale(.992)}
 #stationsPanel .station-card:focus-visible{outline:2px solid #ffe0a0;outline-offset:2px}
 
-/* Integrated radio readout. These dimensions track the black display already drawn into the
-   approved 430x932 composition. The live panel intentionally covers the baked 103.1 lettering,
-   so every station uses one consistent, truthful display without altering the rest of the skin. */
+/* Integrated radio readout. The live panel intentionally covers any station lettering drawn into a
+   scene, so every station uses one consistent truthful display while the physical radio remains fixed. */
 .station-readout{
   top:51.3%!important;width:42%!important;height:92px!important;min-height:92px!important;
   padding:7px 9px 7px!important;border:1px solid rgba(224,166,72,.78)!important;border-radius:7px!important;
@@ -45,6 +44,14 @@
 }
 .station-readout .now-line{display:none!important}
 .radio-location{display:none!important}
+
+/* Phase 10.2 station environments. No override for 103.1: it falls back to the locked flagship
+   christmas-radio-approved-skin.avif declared in art-skin.css. */
+body[data-station="snowfall-am"] .scene::before{background-image:url("../../artwork/stations/snowfall-am.avif")}
+body[data-station="fireside"] .scene::before{background-image:url("../../artwork/stations/fireside.avif")}
+body[data-station="sleigh-bell-rock"] .scene::before{background-image:url("../../artwork/stations/sleigh-bell-rock.avif")}
+body[data-station="candlelight"] .scene::before{background-image:url("../../artwork/stations/candlelight.avif")}
+body[data-station="north-pole-after-hours"] .scene::before{background-image:url("../../artwork/stations/north-pole-after-hours.avif")}
 
 @media(max-height:760px){
   #stationsPanel .station-card{padding:10px 12px!important}
