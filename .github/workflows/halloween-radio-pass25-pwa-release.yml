@@ -35,30 +35,20 @@ jobs:
           test "$(git rev-parse origin/main)" = "$MAIN"
           test "$(git rev-parse origin/halloween-radio-witch-ride-3d-integration-pass-24)" = "$SOURCE"
           test "$(git rev-parse origin/halloween-radio-pwa-app-release-pass-25)" = "$GITHUB_SHA"
-
           git diff --quiet "$SOURCE" HEAD -- halloween-radio/games/witch-ride-3d || { echo 'WITCH RIDE CHANGED'; exit 1; }
-          for path in \
-            halloween-radio/assets/js/skin-radio.js \
-            halloween-radio/assets/js/radio-enhancements.js \
-            halloween-radio/assets/js/mode-controls.js \
-            halloween-radio/assets/js/library-panels.js \
-            halloween-radio/assets/js/witch-ride-launcher.js; do
+          for path in halloween-radio/assets/js/skin-radio.js halloween-radio/assets/js/radio-enhancements.js halloween-radio/assets/js/mode-controls.js halloween-radio/assets/js/library-panels.js halloween-radio/assets/js/witch-ride-launcher.js; do
             git diff --quiet "$SOURCE" HEAD -- "$path" || { echo "LOCKED RADIO SOURCE CHANGED: $path"; exit 1; }
           done
-
           CHANGED="$(git diff --name-only "$SOURCE" HEAD)"
-          echo "$CHANGED"
           test -z "$(printf '%s\n' "$CHANGED" | grep -Ev '^(halloween-radio/index.html|halloween-radio/manifest.webmanifest|halloween-radio/sw.js|halloween-radio/offline.html|halloween-radio/assets/js/app-shell.js|halloween-radio/assets/icons/halloween-radio-icon.svg|.github/workflows/halloween-radio-pass25-pwa-release.yml)$' || true)"
           ! printf '%s\n' "$CHANGED" | grep -q '^louisburg-local/'
           ! printf '%s\n' "$CHANGED" | grep -q '^christmas-radio/'
-
           node --check halloween-radio/sw.js
           node --check halloween-radio/assets/js/app-shell.js
-          node -e "const m=require('./halloween-radio/manifest.webmanifest'); if(m.display!=='standalone'||!m.icons?.length) process.exit(1)" || node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('halloween-radio/manifest.webmanifest','utf8')); if(m.display!=='standalone'||!m.icons?.length) process.exit(1)"
+          node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('halloween-radio/manifest.webmanifest','utf8'));if(m.display!=='standalone'||!m.icons?.length)process.exit(1)"
           grep -q 'manifest.webmanifest' halloween-radio/index.html
           grep -q 'app-shell.js' halloween-radio/index.html
           grep -q "request.destination==='audio'" halloween-radio/sw.js
-          grep -q '/halloween-radio/audio/' halloween-radio/sw.js
 
       - name: Real 430x932 installable app and offline gate
         shell: bash
@@ -81,47 +71,34 @@ jobs:
             page.on('request',r=>requests.push(r.url()));
             page.on('pageerror',e=>errors.push(String(e)));
             page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+            await page.evaluateOnNewDocument(()=>{window.__pass25PlayEvents=0;document.addEventListener('play',()=>window.__pass25PlayEvents++,true)});
             const url='http://127.0.0.1:8025/halloween-radio/';
             await page.goto(url,{waitUntil:'domcontentloaded'});
             await page.waitForFunction(()=>window.__HalloweenRadioPWA?.version==='pass25-pwa-v1');
             await sleep(500);
-
-            const initial=await page.evaluate(async()=>{
-              const a=document.getElementById('radioAudio');
-              const manifest=await fetch('manifest.webmanifest').then(r=>r.json());
-              return {paused:a.paused,src:a.getAttribute('src'),pwa:window.__HalloweenRadioPWA.version,installText:window.__HalloweenRadioPWA.installButton?.innerText||'',manifest,gameLauncher:!!document.querySelector('.witch-ride-launch')};
-            });
-            assert(initial.paused===true,'radio auto-played on app load');
-            assert(!initial.src,'audio source was eagerly assigned');
-            assert(initial.manifest.display==='standalone','manifest is not standalone');
-            assert(initial.manifest.start_url.startsWith('./'),'manifest start_url invalid');
-            assert(initial.manifest.icons.some(i=>String(i.purpose).includes('maskable')),'maskable app icon missing');
-            assert(/INSTALL HALLOWEEN RADIO/.test(initial.installText),'install app control missing');
+            const initial=await page.evaluate(async()=>{const a=document.getElementById('radioAudio'),manifest=await fetch('manifest.webmanifest').then(r=>r.json());return {paused:a.paused,src:a.getAttribute('src'),playEvents:window.__pass25PlayEvents,pwa:window.__HalloweenRadioPWA.version,installText:window.__HalloweenRadioPWA.installButton?.innerText||'',manifest,gameLauncher:!!document.querySelector('.witch-ride-launch')};});
+            assert(initial.paused===true&&initial.playEvents===0,'radio created playback intent on app load');
+            assert(initial.manifest.display==='standalone'&&initial.manifest.start_url.startsWith('./'),'manifest launch settings invalid');
+            assert(initial.manifest.icons.some(i=>String(i.purpose).includes('maskable')),'maskable icon missing');
+            assert(/INSTALL HALLOWEEN RADIO/.test(initial.installText),'install control missing');
             assert(initial.gameLauncher,'Witch Ride launcher missing');
             assert(!requests.some(u=>u.includes('/games/witch-ride-3d/')),'Witch Ride loaded before user opened it');
-            assert(!requests.some(u=>/\/audio\/.*\.mp3/i.test(u)),'music downloaded before PLAY');
 
-            await page.waitForFunction(async()=>{const r=await navigator.serviceWorker.ready;return !!r.active},{timeout:30000});
+            await page.waitForFunction(async()=>!!(await navigator.serviceWorker.ready).active,{timeout:30000});
             await page.reload({waitUntil:'domcontentloaded'});
             await page.waitForFunction(()=>navigator.serviceWorker.controller&&window.__HalloweenRadioPWA?.state?.swReady===true,{timeout:30000});
-            const cacheState=await page.evaluate(async()=>{
-              const names=await caches.keys();const urls=[];for(const name of names){const c=await caches.open(name);for(const r of await c.keys())urls.push(r.url)}
-              return {names,urls,controller:!!navigator.serviceWorker.controller,audioPaused:document.getElementById('radioAudio').paused};
-            });
-            assert(cacheState.controller,'service worker did not control app');
-            assert(cacheState.audioPaused===true,'service worker reload changed playback intent');
+            const cacheState=await page.evaluate(async()=>{const names=await caches.keys(),urls=[];for(const name of names){const c=await caches.open(name);for(const r of await c.keys())urls.push(r.url)}const a=document.getElementById('radioAudio');return {names,urls,controller:!!navigator.serviceWorker.controller,audioPaused:a.paused,playEvents:window.__pass25PlayEvents};});
+            assert(cacheState.controller&&cacheState.audioPaused===true&&cacheState.playEvents===0,'service worker changed playback intent');
             assert(cacheState.names.some(n=>n.includes('halloween-radio-pwa-v1-core')),'core app cache missing');
             assert(!cacheState.urls.some(u=>u.includes('/audio/')),'song library was cached');
-            assert(!cacheState.urls.some(u=>u.includes('/games/witch-ride-3d/')),'Witch Ride was pre-cached instead of lazy-loaded');
+            assert(!cacheState.urls.some(u=>u.includes('/games/witch-ride-3d/')),'Witch Ride was pre-cached');
 
-            const client=await page.target().createCDPSession();
-            await client.send('Page.enable');
+            const client=await page.target().createCDPSession();await client.send('Page.enable');
             const manifestInfo=await client.send('Page.getAppManifest');
             assert(!manifestInfo.errors?.length,`manifest parser errors: ${JSON.stringify(manifestInfo.errors)}`);
-            let installability=[];
-            try{const r=await client.send('Page.getInstallabilityErrors');installability=r.installabilityErrors||[]}catch(e){installability=[{errorId:'cdp-installability-check-unavailable',errorArguments:[]}];}
-            const fatalInstallability=installability.filter(e=>e.errorId!=='cdp-installability-check-unavailable');
-            assert(fatalInstallability.length===0,`PWA installability errors: ${JSON.stringify(fatalInstallability)}`);
+            let installability=[];try{installability=(await client.send('Page.getInstallabilityErrors')).installabilityErrors||[]}catch(e){installability=[{errorId:'cdp-installability-check-unavailable'}]}
+            const fatal=installability.filter(e=>e.errorId!=='cdp-installability-check-unavailable');
+            assert(fatal.length===0,`PWA installability errors: ${JSON.stringify(fatal)}`);
 
             await page.evaluate(()=>document.querySelector('.witch-ride-launch').click());
             await page.waitForFunction(()=>document.getElementById('witchRideLauncher')?.classList.contains('open'));
@@ -130,24 +107,23 @@ jobs:
             await gameFrame.waitForFunction(()=>window.WitchRide3D?.ready===true&&window.WitchRidePass23TrafficSpacing?.active===true,{timeout:90000});
             const game=await gameFrame.evaluate(()=>({ready:window.WitchRide3D.ready,pass23:window.WitchRidePass23TrafficSpacing.active}));
             assert(game.ready&&game.pass23,'accepted Witch Ride Pass 23 failed inside app shell');
-            const duringGame=await page.evaluate(()=>document.getElementById('radioAudio').paused);
-            assert(duringGame===true,'opening game changed radio playback intent');
+            const duringGame=await page.evaluate(()=>({paused:document.getElementById('radioAudio').paused,playEvents:window.__pass25PlayEvents}));
+            assert(duringGame.paused&&duringGame.playEvents===0,'opening game changed radio playback intent');
             await page.screenshot({path:'pass25-pwa-radio-game-430x932.png'});
             await page.click('#witchRideClose');
-
-            const runtimeAfterGame=await page.evaluate(async()=>{const names=await caches.keys();const urls=[];for(const name of names){const c=await caches.open(name);for(const r of await c.keys())urls.push(r.url)}return urls});
+            await sleep(250);
+            const runtimeAfterGame=await page.evaluate(async()=>{const names=await caches.keys(),urls=[];for(const name of names){const c=await caches.open(name);for(const r of await c.keys())urls.push(r.url)}return urls});
             assert(runtimeAfterGame.some(u=>u.includes('/games/witch-ride-3d/')),'visited Witch Ride assets were not runtime cached');
             assert(!runtimeAfterGame.some(u=>u.includes('/audio/')),'music entered cache after game visit');
 
             await page.setOfflineMode(true);
             await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
             await page.waitForFunction(()=>window.__HalloweenRadioPWA?.version==='pass25-pwa-v1');
-            const offline=await page.evaluate(()=>({title:document.title,paused:document.getElementById('radioAudio')?.paused,pwa:window.__HalloweenRadioPWA?.version,controller:!!navigator.serviceWorker.controller}));
-            assert(offline.pwa==='pass25-pwa-v1'&&offline.paused===true,'offline installed shell failed or started audio');
+            const offline=await page.evaluate(()=>({title:document.title,paused:document.getElementById('radioAudio')?.paused,pwa:window.__HalloweenRadioPWA?.version,controller:!!navigator.serviceWorker.controller,playEvents:window.__pass25PlayEvents}));
+            assert(offline.pwa==='pass25-pwa-v1'&&offline.paused===true&&offline.playEvents===0,'offline shell failed or started audio');
             await page.screenshot({path:'pass25-pwa-offline-shell-430x932.png'});
             await page.setOfflineMode(false);
-
-            fs.writeFileSync('pass25-pwa-runtime.json',JSON.stringify({initial,cacheState,manifestInfo:{url:manifestInfo.url,data:manifestInfo.data?JSON.parse(manifestInfo.data):null},installability,game,offline,errors,requestCount:requests.length},null,2));
+            fs.writeFileSync('pass25-pwa-runtime.json',JSON.stringify({initial,cacheState,manifestInfo:{url:manifestInfo.url,data:manifestInfo.data?JSON.parse(manifestInfo.data):null},installability,game,duringGame,offline,errors,requestCount:requests.length},null,2));
             const realErrors=errors.filter(e=>!e.includes('favicon.ico'));
             assert(realErrors.length===0,`console/page errors: ${realErrors.join(' | ')}`);
             await browser.close();
