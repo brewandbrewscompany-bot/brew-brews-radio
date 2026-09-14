@@ -4,19 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#17100b">
-<title>Brew & Brews Radio · 103.1</title>
-<meta name="description" content="Brew & Brews Radio from the Brew And Brews Co LLC coffee roastery in Louisburg, Kansas.">
+<title>Brew & Brews Radio · Regular</title>
+<meta name="description" content="Brew & Brews Radio — a radio-only listening experience from Brew And Brews Co LLC in Louisburg, Kansas.">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="radio-experience.css">
 </head>
 <body>
 <main class="page-shell">
-  <section class="radio" aria-label="Brew & Brews Radio physical console">
+  <section class="radio" aria-label="Regular Brew and Brews Radio physical console">
     <div class="radio__cabinet">
       <div class="radio__inner-edge">
         <div class="radio__face">
           <header class="brand-bar">
-            <div class="brand-mark" aria-label="Brew and Brews Radio">
+            <div class="brand-mark" aria-label="Regular Brew and Brews Radio">
+              <span class="brand-kicker">REGULAR</span>
               <span class="brand-main">BREW &amp; BREWS</span>
               <span class="brand-sub">RADIO · LOUISBURG, KANSAS</span>
             </div>
@@ -35,7 +37,10 @@
                       <span style="--p:60%">100</span><span style="--p:80%">104</span><span style="--p:100%">108</span>
                     </div>
                     <div class="tuner__ticks" aria-hidden="true"></div>
+                    <div class="tuner__station-mark" style="--p:68.5%"><b>R1</b><small>101.7</small></div>
                     <div class="tuner__station-mark" style="--p:75.5%"><b>B&amp;B</b><small>103.1</small></div>
+                    <div class="tuner__station-mark" style="--p:92.5%"><b>AH</b><small>106.5</small></div>
+                    <div class="tuner__station-mark" style="--p:18.5%"><b>AM</b><small>91.7</small></div>
                     <div class="tuner__needle" id="tunerNeedle" data-testid="tuner-needle" aria-hidden="true"></div>
                     <input id="tunerRange" class="tuner__hit-area" type="range" min="88" max="108" step="0.1" value="103.1" aria-label="FM tuning, 103.1 megahertz">
                   </div>
@@ -48,6 +53,13 @@
             </div>
           </section>
 
+          <nav class="station-presets" aria-label="Radio station presets">
+            <button class="station-preset" type="button" data-station="morning" data-frequency="91.7"><span class="station-preset__freq">91.7</span><span class="station-preset__name">MORNING</span></button>
+            <button class="station-preset" type="button" data-station="roastery" data-frequency="101.7"><span class="station-preset__freq">101.7</span><span class="station-preset__name">ROASTERY</span></button>
+            <button class="station-preset is-active" type="button" data-station="regular" data-frequency="103.1" aria-current="true"><span class="station-preset__freq">103.1</span><span class="station-preset__name">REGULAR</span></button>
+            <button class="station-preset" type="button" data-station="after-hours" data-frequency="106.5"><span class="station-preset__freq">106.5</span><span class="station-preset__name">AFTER HOURS</span></button>
+          </nav>
+
           <div class="console-grid">
             <section class="speaker" aria-label="Radio speaker"><div class="speaker__grille"></div><span>ROASTERY RADIO</span></section>
 
@@ -55,9 +67,15 @@
               <div class="now-brewing__frame">
                 <div class="now-brewing__screen">
                   <div class="now-brewing__label">NOW BREWING</div>
-                  <div class="now-brewing__title" id="trackTitle">Love in Every Brew</div>
-                  <div class="now-brewing__meta"><span id="stationMeta">Brew &amp; Brews Radio · 103.1</span><span id="timeText">0:00 / 0:00</span></div>
-                  <input id="progress" class="progress" type="range" min="0" max="1000" value="0" aria-label="Playback position">
+                  <div class="now-brewing__body">
+                    <img id="trackArtwork" class="now-brewing__art" alt="" hidden>
+                    <div class="now-brewing__copy">
+                      <div class="now-brewing__title" id="trackTitle">Love in Every Brew</div>
+                      <div class="now-brewing__meta"><span id="stationMeta">Regular · 103.1 FM</span><span id="timeText">0:00 / 0:00</span></div>
+                      <input id="progress" class="progress" type="range" min="0" max="1000" value="0" aria-label="Playback position">
+                      <div class="station-hint" id="stationHint">Press PLAY to begin. Tuning and station presets never start audio by themselves.</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
@@ -85,7 +103,7 @@
               <input id="volumeRange" type="range" min="0" max="1" step="0.01" value="0.72" aria-label="Volume">
               <output id="volumeValue">72%</output>
             </label>
-            <div class="center-badge"><b>BREW SOMETHING BOLD.</b><span>BREW AND BREWS CO LLC · COFFEE ROASTERY</span></div>
+            <div class="center-badge"><b>BREW SOMETHING BOLD.</b><span>REGULAR BREW &amp; BREWS RADIO</span></div>
             <label class="knob-control">
               <span class="knob-label">TUNING</span>
               <span class="knob" id="tuneKnob" style="--angle:79deg"><i></i></span>
@@ -96,7 +114,7 @@
         </div>
       </div>
     </div>
-    <p class="radio-note">Original Brew &amp; Brews Radio · streamed from our coffee roastery in Louisburg, Kansas</p>
+    <p class="radio-note"><span class="desktop-only">Tune the dial or use a preset. </span><strong>Only PLAY starts the music.</strong><span class="mobile-only"> Station, tuning, volume, PREV and NEXT stay silent until you press PLAY.</span></p>
   </section>
 </main>
 <audio id="audio" preload="none"></audio>
