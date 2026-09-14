@@ -7,6 +7,7 @@ on:
       - 'index.html'
       - 'style.css'
       - 'radio-experience.css'
+      - 'materials-polish.css'
       - 'player.js'
       - 'playlist.js'
       - 'manifest.json'
@@ -61,7 +62,9 @@ jobs:
           const js=fs.readFileSync('player.js','utf8');
           const sw=fs.readFileSync('service-worker.js','utf8');
           assert(fs.existsSync('radio-experience.css'),'radio experience stylesheet missing');
+          assert(fs.existsSync('materials-polish.css'),'locked materials stylesheet missing');
           assert(html.includes('radio-experience.css'),'radio experience stylesheet not linked');
+          assert(html.includes('materials-polish.css'),'locked materials stylesheet not linked');
           assert((html.match(/class="tuner__needle"/g)||[]).length===1,'must have exactly one tuner needle');
           assert((html.match(/class="station-preset(?:\s|")/g)||[]).length===4,'must have exactly four station presets');
           assert(!/baked-needle|hotspot|Witching Hour|Dead Air|Graveyard/i.test(html+js),'seasonal/hotspot regression detected');
@@ -75,7 +78,10 @@ jobs:
           assert(js.includes("id:'regular',frequency:103.1"),'regular station missing');
           assert(js.includes("id:'after-hours',frequency:106.5"),'after-hours station missing');
           assert(js.includes('continueIfIntent:true'),'continuous radio transition guard missing');
+          assert(js.includes("trackIndexById.get('midnight-in-the-cafe')"),'approved default track missing');
+          assert(js.includes('wireRotary('),'rotary interaction wiring missing');
           assert(sw.includes('radio-experience.css'),'responsive stylesheet missing from app shell cache');
+          assert(sw.includes('materials-polish.css'),'locked materials stylesheet missing from app shell cache');
           NODE
 
       - name: Full audio integrity audit
@@ -121,10 +127,9 @@ jobs:
           const {chromium}=require('playwright');const assert=require('assert');
           (async()=>{const browser=await chromium.launch({headless:true,args:['--mute-audio']});
           for(const vp of [{name:'mobile-430x932',width:430,height:932},{name:'desktop-1280x900',width:1280,height:900}]){
-            const page=await browser.newPage({viewport:{width:vp.width,height:vp.height}});const errors=[],requests=[];
+            const page=await browser.newPage({viewport:{width:vp.width,height:vp.height}});const errors=[];
             page.on('pageerror',e=>errors.push(e.message));
             page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
-            page.on('request',r=>requests.push(r.url()));
             await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'networkidle'});
             const dims=await page.evaluate(()=>({w:innerWidth,scroll:document.documentElement.scrollWidth,h:innerHeight,bodyH:document.body.scrollHeight}));
             assert(dims.scroll<=dims.w+2,`horizontal overflow ${vp.name}`);
@@ -132,10 +137,10 @@ jobs:
             assert.strictEqual(await page.locator('.station-preset').count(),4,'station preset count');
             assert.strictEqual(await page.locator('#audio').getAttribute('preload'),'none','audio preload');
             assert((await page.locator('#audio').evaluate(a=>a.paused)),'autoplayed');
-            assert(await page.locator('#trackArtwork').isHidden(),'artwork visible before PLAY');
-            assert.strictEqual(await page.locator('#trackArtwork').getAttribute('src'),null,'cover art src set before PLAY');
-            const initialPng=requests.filter(u=>/\.png($|\?)/i.test(u)&&!/icon-/i.test(u));
-            assert.strictEqual(initialPng.length,0,`cover art loaded during initial radio shell: ${initialPng.join(',')}`);
+            assert.strictEqual(await page.evaluate(()=>window.__BB_RADIO__.state.playbackIntent),false,'playback intent created on load');
+            await page.waitForFunction(()=>{const a=document.querySelector('#trackArtwork');return a&&!a.hidden&&a.getAttribute('src')&&a.complete&&a.naturalWidth>0});
+            assert(await page.locator('#trackArtwork').isVisible(),'current cover art not visible on radio face');
+            assert((await page.locator('#trackTitle').textContent()).toLowerCase().includes('midnight in the cafe'),'approved default track not loaded');
 
             await page.locator('[data-station="morning"]').click();
             assert((await page.locator('#audio').evaluate(a=>a.paused)),'Morning preset started audio');
@@ -152,6 +157,16 @@ jobs:
             await page.locator('#volumeRange').evaluate(e=>{e.value=.35;e.dispatchEvent(new Event('input',{bubbles:true}))});
             assert((await page.locator('#audio').evaluate(a=>a.paused)),'volume started audio');
 
+            if(vp.name==='mobile-430x932'){
+              const rotary=page.locator('#volumeRange');const box=await rotary.boundingBox();
+              const before=await page.evaluate(()=>window.__BB_RADIO__.state.volume);
+              await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();
+              await page.mouse.move(box.x+box.width/2+30,box.y+box.height/2,{steps:4});await page.mouse.up();
+              const after=await page.evaluate(()=>window.__BB_RADIO__.state.volume);
+              assert(after>before,'rotary volume drag did not increase value');
+              assert((await page.locator('#audio').evaluate(a=>a.paused)),'rotary volume drag started audio');
+            }
+
             await page.locator('#tuneRange').evaluate(e=>{e.value=99.5;e.dispatchEvent(new Event('input',{bubbles:true}))});
             assert((await page.locator('#audio').evaluate(a=>a.paused)),'tuning started audio');
             assert.strictEqual(await page.locator('#frequencyValue').textContent(),'99.5 FM');
@@ -167,8 +182,7 @@ jobs:
             await page.locator('#playBtn').click();
             await page.waitForFunction(()=>!document.querySelector('#audio').paused);
             assert.strictEqual(await page.evaluate(()=>window.__BB_RADIO__.state.playbackIntent),true);
-            await page.waitForFunction(()=>!document.querySelector('#trackArtwork').hidden&&document.querySelector('#trackArtwork').getAttribute('src'));
-            assert(await page.locator('#trackArtwork').isVisible(),'artwork not shown after PLAY');
+            assert(await page.locator('#trackArtwork').isVisible(),'artwork disappeared after PLAY');
 
             await page.locator('#nextBtn').click();
             await page.waitForFunction(()=>!document.querySelector('#audio').paused);
