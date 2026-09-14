@@ -73,6 +73,7 @@ jobs:
             'photoreal-interaction.js','assets/regular-radio/radio-desktop-approved.avif','assets/regular-radio/radio-mobile-approved.avif'
           ];
           requiredFiles.forEach(file=>assert(fs.existsSync(file),`required production file missing: ${file}`));
+          assert(!fs.existsSync('.github/workflows/assemble-regular-radio-skins.yml'),'obsolete skin assembler must not remain in production branch');
           ['radio-experience.css','materials-polish.css','photoreal-skin.css','photoreal-final-polish.css'].forEach(file=>{
             assert(html.includes(file),`${file} not linked`);
           });
@@ -102,6 +103,7 @@ jobs:
             assert(head.includes('ftypavif'),`${file} is not an AVIF skin`);
           }
 
+          assert(sw.includes("brew-brews-radio-regular-final-v4"),'service-worker cache version is stale');
           [
             'radio-experience.css','materials-polish.css','photoreal-skin.css','photoreal-final-polish.css',
             'photoreal-interaction.js','assets/regular-radio/radio-desktop-approved.avif','assets/regular-radio/radio-mobile-approved.avif'
