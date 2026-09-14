@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#17100b">
+<meta name="theme-color" content="#120b07">
 <title>Brew & Brews Radio · Regular</title>
 <meta name="description" content="Brew & Brews Radio — a radio-only listening experience from Brew And Brews Co LLC in Louisburg, Kansas.">
 <link rel="manifest" href="manifest.json">
@@ -18,103 +18,100 @@
         <div class="radio__face">
           <header class="brand-bar">
             <div class="brand-mark" aria-label="Regular Brew and Brews Radio">
-              <span class="brand-kicker">REGULAR</span>
+              <span class="brand-kicker">LOUISBURG · KANSAS</span>
               <span class="brand-main">BREW &amp; BREWS</span>
-              <span class="brand-sub">RADIO · LOUISBURG, KANSAS</span>
+              <span class="brand-sub">ROASTERY RADIO</span>
             </div>
             <div class="on-air" id="onAir" aria-live="polite"><i aria-hidden="true"></i><span>READY</span></div>
           </header>
 
-          <section class="tuner" aria-label="FM tuner">
-            <div class="tuner__outer-frame">
-              <div class="tuner__bevel">
-                <div class="tuner__cavity">
-                  <div class="tuner__glass" id="tunerGlass">
-                    <div class="tuner__reflection" aria-hidden="true"></div>
-                    <div class="tuner__band-label">FM</div>
-                    <div class="tuner__scale" aria-hidden="true">
-                      <span style="--p:0%">88</span><span style="--p:20%">92</span><span style="--p:40%">96</span>
-                      <span style="--p:60%">100</span><span style="--p:80%">104</span><span style="--p:100%">108</span>
-                    </div>
-                    <div class="tuner__ticks" aria-hidden="true"></div>
-                    <div class="tuner__station-mark" style="--p:68.5%"><b>R1</b><small>101.7</small></div>
-                    <div class="tuner__station-mark" style="--p:75.5%"><b>B&amp;B</b><small>103.1</small></div>
-                    <div class="tuner__station-mark" style="--p:92.5%"><b>AH</b><small>106.5</small></div>
-                    <div class="tuner__station-mark" style="--p:18.5%"><b>AM</b><small>91.7</small></div>
-                    <div class="tuner__needle" id="tunerNeedle" data-testid="tuner-needle" aria-hidden="true"></div>
-                    <input id="tunerRange" class="tuner__hit-area" type="range" min="88" max="108" step="0.1" value="103.1" aria-label="FM tuning, 103.1 megahertz">
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="station-plate" aria-live="polite">
-              <strong id="stationName">B&amp;B 103.1</strong>
-              <span id="stationLocation">LOUISBURG, KS</span>
-            </div>
-          </section>
+          <div class="hifi-stage">
+            <aside class="speaker speaker--left" aria-label="Left radio speaker"><div class="speaker__grille"><i></i><i></i></div></aside>
 
-          <nav class="station-presets" aria-label="Radio station presets">
-            <button class="station-preset" type="button" data-station="morning" data-frequency="91.7"><span class="station-preset__freq">91.7</span><span class="station-preset__name">MORNING</span></button>
-            <button class="station-preset" type="button" data-station="roastery" data-frequency="101.7"><span class="station-preset__freq">101.7</span><span class="station-preset__name">ROASTERY</span></button>
-            <button class="station-preset is-active" type="button" data-station="regular" data-frequency="103.1" aria-current="true"><span class="station-preset__freq">103.1</span><span class="station-preset__name">REGULAR</span></button>
-            <button class="station-preset" type="button" data-station="after-hours" data-frequency="106.5"><span class="station-preset__freq">106.5</span><span class="station-preset__name">AFTER HOURS</span></button>
-          </nav>
-
-          <div class="console-grid">
-            <section class="speaker" aria-label="Radio speaker"><div class="speaker__grille"></div><span>ROASTERY RADIO</span></section>
-
-            <section class="now-brewing" aria-label="Now brewing">
-              <div class="now-brewing__frame">
-                <div class="now-brewing__screen">
-                  <div class="now-brewing__label">NOW BREWING</div>
-                  <div class="now-brewing__body">
-                    <img id="trackArtwork" class="now-brewing__art" alt="" hidden>
-                    <div class="now-brewing__copy">
-                      <div class="now-brewing__title" id="trackTitle">Love in Every Brew</div>
-                      <div class="now-brewing__meta"><span id="stationMeta">Regular · 103.1 FM</span><span id="timeText">0:00 / 0:00</span></div>
-                      <input id="progress" class="progress" type="range" min="0" max="1000" value="0" aria-label="Playback position">
-                      <div class="station-hint" id="stationHint">Press PLAY to begin. Tuning and station presets never start audio by themselves.</div>
+            <div class="radio-core">
+              <section class="tuner" aria-label="FM tuner">
+                <div class="tuner__outer-frame">
+                  <div class="tuner__bevel">
+                    <div class="tuner__cavity">
+                      <div class="tuner__glass" id="tunerGlass">
+                        <div class="tuner__reflection" aria-hidden="true"></div>
+                        <div class="tuner__band-label">FM</div>
+                        <div class="tuner__scale" aria-hidden="true">
+                          <span style="--p:0%">88</span><span style="--p:20%">92</span><span style="--p:40%">96</span>
+                          <span style="--p:60%">100</span><span style="--p:80%">104</span><span style="--p:100%">108</span>
+                        </div>
+                        <div class="tuner__ticks" aria-hidden="true"></div>
+                        <div class="tuner__station-mark" style="--p:18.5%"><b>MORNING</b><small>91.7</small></div>
+                        <div class="tuner__station-mark" style="--p:68.5%"><b>ROASTERY</b><small>101.7</small></div>
+                        <div class="tuner__station-mark" style="--p:75.5%"><b>B&amp;B</b><small>103.1</small></div>
+                        <div class="tuner__station-mark" style="--p:92.5%"><b>AFTER</b><small>106.5</small></div>
+                        <div class="tuner__needle" id="tunerNeedle" data-testid="tuner-needle" aria-hidden="true"></div>
+                        <input id="tunerRange" class="tuner__hit-area" type="range" min="88" max="108" step="0.1" value="103.1" aria-label="FM tuning, 103.1 megahertz">
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </section>
+                <div class="station-plate" aria-live="polite">
+                  <strong id="stationName">B&amp;B 103.1</strong>
+                  <span id="stationLocation">LOUISBURG, KS</span>
+                </div>
+              </section>
 
-            <section class="meter-cluster" aria-label="Signal meter and vacuum tube">
-              <div class="meter">
-                <span class="meter__label">SIGNAL</span>
-                <div class="meter__scale" aria-hidden="true">1&nbsp;&nbsp;2&nbsp;&nbsp;3&nbsp;&nbsp;4&nbsp;&nbsp;5</div>
-                <i id="meterNeedle" class="meter__needle" aria-hidden="true"></i>
-              </div>
-              <div class="tube" aria-hidden="true"><i class="tube__glass"></i><i class="tube__filament"></i><i class="tube__base"></i></div>
-            </section>
+              <nav class="station-presets" aria-label="Radio station presets">
+                <button class="station-preset" type="button" data-station="morning" data-frequency="91.7"><span class="station-preset__freq">91.7</span><span class="station-preset__name">MORNING</span></button>
+                <button class="station-preset" type="button" data-station="roastery" data-frequency="101.7"><span class="station-preset__freq">101.7</span><span class="station-preset__name">ROASTERY</span></button>
+                <button class="station-preset is-active" type="button" data-station="regular" data-frequency="103.1" aria-current="true"><span class="station-preset__freq">103.1</span><span class="station-preset__name">REGULAR</span></button>
+                <button class="station-preset" type="button" data-station="after-hours" data-frequency="106.5"><span class="station-preset__freq">106.5</span><span class="station-preset__name">AFTER HOURS</span></button>
+              </nav>
+
+              <section class="now-brewing" aria-label="Now brewing">
+                <div class="now-brewing__frame">
+                  <div class="now-brewing__screen">
+                    <div class="now-brewing__label">NOW BREWING</div>
+                    <div class="now-brewing__body">
+                      <div class="artwork-well" aria-hidden="true"><span>B&amp;B</span><img id="trackArtwork" class="now-brewing__art" alt="" hidden></div>
+                      <div class="now-brewing__copy">
+                        <div class="now-brewing__title" id="trackTitle">Love in Every Brew</div>
+                        <div class="now-brewing__meta"><span id="stationMeta">Regular · 103.1 FM</span><span id="timeText">0:00 / 0:00</span></div>
+                        <input id="progress" class="progress" type="range" min="0" max="1000" value="0" aria-label="Playback position">
+                        <div class="station-hint" id="stationHint">Press PLAY to begin.</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="control-deck" aria-label="Radio controls">
+                <label class="knob-control knob-control--volume">
+                  <span class="knob-label">VOLUME</span>
+                  <span class="knob" id="volumeKnob" style="--angle:36deg"><i></i></span>
+                  <input id="volumeRange" type="range" min="0" max="1" step="0.01" value="0.72" aria-label="Volume">
+                  <output id="volumeValue">72%</output>
+                </label>
+
+                <section class="transport" aria-label="Playback controls">
+                  <button id="prevBtn" class="hardware-button hardware-button--side" type="button" aria-label="Previous track"><span>PREV</span><b>◀</b></button>
+                  <button id="playBtn" class="hardware-button hardware-button--play" type="button" aria-label="Play" aria-pressed="false"><span id="playLabel">PLAY</span><b id="playIcon">▶</b></button>
+                  <button id="nextBtn" class="hardware-button hardware-button--side" type="button" aria-label="Next track"><span>NEXT</span><b>▶</b></button>
+                </section>
+
+                <label class="knob-control knob-control--tune">
+                  <span class="knob-label">TUNING</span>
+                  <span class="knob" id="tuneKnob" style="--angle:79deg"><i></i></span>
+                  <input id="tuneRange" type="range" min="88" max="108" step="0.1" value="103.1" aria-label="Tuning frequency">
+                  <output id="frequencyValue">103.1 FM</output>
+                </label>
+              </section>
+            </div>
+
+            <aside class="speaker speaker--right" aria-label="Right radio speaker"><div class="speaker__grille"><i></i><i></i></div></aside>
           </div>
 
-          <section class="transport" aria-label="Playback controls">
-            <button id="prevBtn" class="hardware-button hardware-button--side" type="button" aria-label="Previous track"><span>PREV</span><b>◀</b></button>
-            <button id="playBtn" class="hardware-button hardware-button--play" type="button" aria-label="Play" aria-pressed="false"><span id="playLabel">PLAY</span><b id="playIcon">▶</b></button>
-            <button id="nextBtn" class="hardware-button hardware-button--side" type="button" aria-label="Next track"><span>NEXT</span><b>▶</b></button>
-          </section>
-
-          <section class="knob-row" aria-label="Radio knobs">
-            <label class="knob-control">
-              <span class="knob-label">VOLUME</span>
-              <span class="knob" id="volumeKnob" style="--angle:36deg"><i></i></span>
-              <input id="volumeRange" type="range" min="0" max="1" step="0.01" value="0.72" aria-label="Volume">
-              <output id="volumeValue">72%</output>
-            </label>
-            <div class="center-badge"><b>BREW SOMETHING BOLD.</b><span>REGULAR BREW &amp; BREWS RADIO</span></div>
-            <label class="knob-control">
-              <span class="knob-label">TUNING</span>
-              <span class="knob" id="tuneKnob" style="--angle:79deg"><i></i></span>
-              <input id="tuneRange" type="range" min="88" max="108" step="0.1" value="103.1" aria-label="Tuning frequency">
-              <output id="frequencyValue">103.1 FM</output>
-            </label>
-          </section>
+          <div class="hidden-signal" aria-hidden="true"><i id="meterNeedle" class="meter__needle"></i></div>
         </div>
       </div>
     </div>
-    <p class="radio-note"><span class="desktop-only">Tune the dial or use a preset. </span><strong>Only PLAY starts the music.</strong><span class="mobile-only"> Station, tuning, volume, PREV and NEXT stay silent until you press PLAY.</span></p>
+    <p class="radio-note"><strong>PLAY starts the music.</strong> Tune stations, change tracks, and set volume without surprise audio.</p>
   </section>
 </main>
 <audio id="audio" preload="none"></audio>
