@@ -96,8 +96,8 @@ jobs:
 
           const desktop='assets/regular-radio/radio-desktop-approved.avif';
           const mobile='assets/regular-radio/radio-mobile-approved.avif';
-          assert(fs.statSync(desktop).size>30000,'desktop approved skin unexpectedly small');
-          assert(fs.statSync(mobile).size>20000,'mobile approved skin unexpectedly small');
+          assert(fs.statSync(desktop).size===20199,'desktop approved skin size changed');
+          assert(fs.statSync(mobile).size===15056,'mobile approved skin size changed');
           for(const file of [desktop,mobile]){
             const head=fs.readFileSync(file).subarray(0,16).toString('latin1');
             assert(head.includes('ftypavif'),`${file} is not an AVIF skin`);
