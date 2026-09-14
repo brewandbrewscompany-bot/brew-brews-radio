@@ -1,0 +1,97 @@
+/* APPROVED REGULAR RADIO — PHOTOREAL SKIN
+   The rendered desktop/mobile radios are the locked visual source of truth.
+   HTML remains the interaction layer; this file must load last. */
+html,body{margin:0!important;min-height:100%!important;background:#050301!important}
+body{overflow-x:hidden!important}
+.page-shell{box-sizing:border-box!important;min-height:100svh!important;width:100%!important;padding:0!important;display:grid!important;place-items:center!important;overflow:hidden!important;background:radial-gradient(ellipse at 50% 50%,#2a1309 0,#0b0603 46%,#020101 100%)!important}
+.radio{position:relative!important;width:min(100vw,calc(100svh * 1.333333))!important;max-width:none!important;margin:0!important;padding:0!important}
+.radio__cabinet{position:relative!important;width:100%!important;aspect-ratio:4/3!important;overflow:hidden!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:url('assets/regular-radio/radio-desktop-approved.avif') center/100% 100% no-repeat!important}
+.radio__cabinet:before,.radio__cabinet:after,.radio__inner-edge:before,.radio__inner-edge:after,.radio__face:before,.radio__face:after{display:none!important}
+.radio__inner-edge,.radio__face{position:absolute!important;inset:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;overflow:visible!important}
+.brand-mark,.speaker,.hidden-signal,.radio-note{display:none!important}
+.brand-bar{position:absolute!important;inset:0!important;height:auto!important;margin:0!important;padding:0!important;display:block!important;pointer-events:none!important;z-index:30!important}
+.on-air{position:absolute!important;left:81.1%!important;top:12.75%!important;width:9.1%!important;height:4.25%!important;box-sizing:border-box!important;margin:0!important;padding:0!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:.45em!important;opacity:0!important;border:1px solid #b98942!important;border-radius:999px!important;background:rgba(8,9,7,.94)!important;color:#f5d18a!important;font-size:clamp(8px,.72vw,12px)!important;letter-spacing:.16em!important;box-shadow:0 0 14px #f2a12b42,inset 0 1px #ffe5a83a!important;transition:opacity .16s ease!important}
+.on-air i{width:.62em!important;height:.62em!important;border-radius:50%!important;background:#f5aa2d!important;box-shadow:0 0 9px #ff9b19!important}
+body.is-playing .on-air{opacity:1!important}
+.hifi-stage,.radio-core{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;margin:0!important;padding:0!important;display:block!important;background:none!important}
+.tuner{position:absolute!important;left:25.55%!important;top:18.6%!important;width:48.9%!important;height:22.9%!important;margin:0!important;padding:0!important;background:none!important;border:0!important}
+.tuner__outer-frame,.tuner__bevel,.tuner__cavity{position:absolute!important;inset:0!important;margin:0!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important}
+.tuner__glass{position:absolute!important;left:5.3%!important;right:5.3%!important;top:8%!important;bottom:18%!important;margin:0!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:visible!important}
+.tuner__reflection,.tuner__band-label,.tuner__scale,.tuner__ticks,.tuner__station-mark{display:none!important}
+.tuner__hit-area{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;opacity:0!important;cursor:ew-resize!important;touch-action:none!important;z-index:8!important}
+.tuner__needle{position:absolute!important;top:4%!important;height:91%!important;width:2px!important;margin-left:-1px!important;opacity:0!important;background:linear-gradient(180deg,#fff1a6 0,#ffc44e 12%,#f8951f 72%,#ffe6a1 100%)!important;box-shadow:0 0 5px #ffaf2e,0 0 12px #ff9a1c!important;z-index:7!important;transition:left .08s linear,opacity .12s ease!important}
+body.tuning-touched .tuner__needle{opacity:1!important}
+body.tuning-touched .tuner__glass:before{content:''!important;position:absolute!important;left:70.8%!important;top:-2%!important;width:4.4%!important;height:105%!important;z-index:5!important;pointer-events:none!important;background:linear-gradient(90deg,rgba(3,20,14,0),rgba(3,20,14,.93) 25%,rgba(3,20,14,.95) 72%,rgba(3,20,14,0))!important;box-shadow:0 0 8px rgba(3,20,14,.8)!important}
+.station-plate{position:absolute!important;left:20%!important;right:20%!important;bottom:-4%!important;opacity:0!important;pointer-events:none!important;background:rgba(14,14,11,.9)!important;border:1px solid #a87839!important;color:#f2d28f!important;box-shadow:0 5px 14px #000b!important;z-index:9!important}
+body.has-station-change .station-plate{opacity:1!important}
+.station-presets{position:absolute!important;left:25.5%!important;top:43.7%!important;width:48.9%!important;height:6.1%!important;margin:0!important;padding:0!important;display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:1.15%!important;z-index:25!important;background:none!important;border:0!important}
+.station-preset{position:relative!important;min-width:0!important;min-height:44px!important;padding:0!important;border:1px solid transparent!important;border-radius:4px!important;background:transparent!important;box-shadow:none!important;color:transparent!important;cursor:pointer!important;touch-action:manipulation!important;transition:background .12s ease,border-color .12s ease,box-shadow .12s ease,transform .08s ease!important}
+.station-preset span{opacity:0!important}
+.station-preset:focus-visible{outline:2px solid #ffd27b!important;outline-offset:2px!important}
+.station-preset.is-pressed{transform:translateY(2px)!important}
+body.has-station-change .station-preset{background:rgba(5,6,5,.56)!important;border-color:rgba(124,87,43,.72)!important}
+body.has-station-change .station-preset.is-active{background:rgba(54,31,12,.5)!important;border-color:#eeb35b!important;box-shadow:0 0 0 1px #f5c1714f,inset 0 0 18px #d37d173d,0 0 17px #e99b2e69!important}
+body.has-station-change .station-preset[data-station='regular']:not(.is-active){background:rgba(0,0,0,.63)!important;box-shadow:inset 0 0 14px #000!important}
+.now-brewing{position:absolute!important;left:25.4%!important;top:50.25%!important;width:49.2%!important;height:20.4%!important;margin:0!important;padding:0!important;z-index:20!important;background:none!important;border:0!important}
+.now-brewing__frame{position:absolute!important;inset:0!important;margin:0!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important}
+.now-brewing__screen{position:absolute!important;left:2.7%!important;right:2.7%!important;top:7%!important;bottom:7%!important;box-sizing:border-box!important;padding:3.2%!important;opacity:0!important;pointer-events:none!important;border:1px solid rgba(112,144,120,.55)!important;border-radius:5px!important;background:linear-gradient(155deg,rgba(2,18,12,.97),rgba(1,10,7,.97))!important;box-shadow:inset 0 10px 26px #000b,inset 0 -8px 18px #0009,0 0 14px #133e2a5c!important;color:#efe7cf!important;transition:opacity .13s ease!important}
+body.has-dynamic-screen .now-brewing__screen{opacity:1!important;pointer-events:auto!important}
+.now-brewing__label{font-size:clamp(7px,.65vw,11px)!important;letter-spacing:.2em!important;color:#d6a95b!important;margin-bottom:2%!important}
+.now-brewing__body{display:grid!important;grid-template-columns:29% 1fr!important;gap:4%!important;height:78%!important;align-items:stretch!important}
+.artwork-well{position:relative!important;min-width:0!important;height:100%!important;border:1px solid #a77836!important;border-radius:3px!important;overflow:hidden!important;background:#120b07!important;box-shadow:inset 0 0 14px #000,0 0 8px #b66b1a38!important}
+.artwork-well>span{display:none!important}
+.now-brewing__art{display:block!important;width:100%!important;height:100%!important;object-fit:cover!important}
+.now-brewing__copy{display:flex!important;min-width:0!important;flex-direction:column!important;justify-content:center!important;gap:5%!important}
+.now-brewing__title{font-family:Georgia,'Times New Roman',serif!important;font-size:clamp(13px,1.75vw,24px)!important;line-height:1.04!important;color:#f4dfad!important;text-shadow:0 2px 2px #000!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.now-brewing__meta{display:flex!important;justify-content:space-between!important;gap:8px!important;font-size:clamp(7px,.66vw,11px)!important;color:#c7cbbd!important}
+.progress{width:100%!important;height:14px!important;margin:0!important;accent-color:#e49a2f!important}
+.station-hint{font-size:clamp(6px,.52vw,9px)!important;line-height:1.25!important;letter-spacing:.08em!important;color:#8d9d8f!important;max-height:2.6em!important;overflow:hidden!important}
+.control-deck{position:absolute!important;inset:0!important;margin:0!important;padding:0!important;display:block!important;background:none!important;border:0!important;z-index:35!important;pointer-events:none!important}
+.knob-control{position:absolute!important;display:block!important;margin:0!important;padding:0!important;pointer-events:auto!important;touch-action:none!important;background:none!important}
+.knob-control--volume{left:27.6%!important;top:71.5%!important;width:8.9%!important;height:14%!important}
+.knob-control--tune{left:63.5%!important;top:71.5%!important;width:8.9%!important;height:14%!important}
+.knob-label{display:none!important}
+.knob{position:absolute!important;left:6%!important;top:4%!important;width:88%!important;height:70%!important;aspect-ratio:1!important;border:0!important;border-radius:50%!important;background:transparent!important;box-shadow:none!important;cursor:ns-resize!important}
+.knob:before,.knob:after{display:none!important}
+.knob i{position:absolute!important;left:50%!important;top:10%!important;width:2px!important;height:39%!important;margin-left:-1px!important;opacity:0!important;transform-origin:50% 100%!important;transform:rotate(var(--angle))!important;background:#ffd073!important;box-shadow:0 0 5px #ffac32!important;transition:opacity .12s ease!important}
+body.volume-touched .knob-control--volume .knob i,body.tuning-touched .knob-control--tune .knob i{opacity:1!important}
+.knob-control input{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;opacity:0!important;cursor:ns-resize!important;z-index:8!important}
+.knob-control output{position:absolute!important;left:50%!important;bottom:0!important;transform:translateX(-50%)!important;display:none!important;min-width:70%!important;padding:1px 5px!important;border-radius:3px!important;background:rgba(4,5,4,.78)!important;color:#f2c56f!important;font-size:clamp(7px,.62vw,10px)!important;line-height:1.4!important;text-align:center!important;white-space:nowrap!important;box-shadow:0 0 8px #000!important}
+body.volume-touched .knob-control--volume output,body.tuning-touched .knob-control--tune output{display:block!important}
+.transport{position:absolute!important;inset:0!important;margin:0!important;padding:0!important;pointer-events:none!important;background:none!important}
+.hardware-button{position:absolute!important;margin:0!important;padding:0!important;min-width:44px!important;min-height:44px!important;border:0!important;border-radius:50%!important;background:transparent!important;box-shadow:none!important;color:transparent!important;opacity:.01!important;cursor:pointer!important;pointer-events:auto!important;touch-action:manipulation!important;transition:transform .08s ease,opacity .12s ease!important}
+.hardware-button span,.hardware-button b{opacity:0!important}
+#prevBtn{left:37.6%!important;top:73.3%!important;width:7.1%!important;height:10.9%!important}
+#playBtn{left:45.35%!important;top:71.8%!important;width:9.4%!important;height:13.2%!important}
+#nextBtn{left:55.35%!important;top:73.3%!important;width:7.1%!important;height:10.9%!important}
+.hardware-button.is-pressed{transform:translateY(2px) scale(.97)!important;opacity:.18!important;background:#ffd78f!important}
+.hardware-button--play.is-playing{opacity:1!important;background:radial-gradient(circle at 36% 30%,rgba(89,61,31,.96),rgba(20,17,12,.96) 62%,rgba(6,6,5,.98))!important;border:1px solid #d7a457!important;box-shadow:0 0 0 2px #332214,0 0 18px #f2a32c61,inset 0 1px #ffe1a765!important;color:#ffe0a0!important}
+.hardware-button--play.is-playing span,.hardware-button--play.is-playing b{opacity:1!important;color:#ffe0a0!important;text-shadow:0 0 7px #f4a431!important}
+.hardware-button--play.is-playing span{font-size:clamp(6px,.5vw,8px)!important;letter-spacing:.08em!important}
+.hardware-button--play.is-playing b{font-size:clamp(15px,1.5vw,23px)!important}
+@media(max-width:700px){
+  .page-shell{align-items:center!important}
+  .radio{width:calc(100vw + 42px)!important;max-width:none!important;margin-left:-21px!important;margin-right:-21px!important}
+  .radio__cabinet{aspect-ratio:500/888!important;background-image:url('assets/regular-radio/radio-mobile-approved.avif')!important;background-size:100% 100%!important}
+  .on-air{left:68.3%!important;top:8.65%!important;width:17.2%!important;height:4.2%!important;font-size:clamp(7px,1.75vw,10px)!important}
+  .tuner{left:13.2%!important;top:14.15%!important;width:73.4%!important;height:18.2%!important}
+  .tuner__glass{left:5%!important;right:5%!important;top:8%!important;bottom:17%!important}
+  .station-presets{left:13.35%!important;top:33.65%!important;width:73.3%!important;height:6.1%!important;gap:1.15%!important}
+  .station-preset{min-height:42px!important}
+  .now-brewing{left:13.2%!important;top:40.25%!important;width:73.4%!important;height:18.55%!important}
+  .now-brewing__screen{left:3%!important;right:3%!important;top:7%!important;bottom:7%!important;padding:3.2%!important}
+  .now-brewing__title{font-size:clamp(13px,4.2vw,19px)!important}
+  .now-brewing__label{font-size:clamp(7px,1.75vw,9px)!important}
+  .now-brewing__meta{font-size:clamp(7px,1.65vw,9px)!important}
+  .station-hint{font-size:clamp(6px,1.42vw,8px)!important}
+  #prevBtn{left:17.5%!important;top:61.1%!important;width:17.1%!important;height:10.4%!important}
+  #playBtn{left:39.5%!important;top:59.9%!important;width:21%!important;height:12.8%!important}
+  #nextBtn{left:65.5%!important;top:61.1%!important;width:17.1%!important;height:10.4%!important}
+  .knob-control--volume{left:19.8%!important;top:74.7%!important;width:19.6%!important;height:12.6%!important}
+  .knob-control--tune{left:60.9%!important;top:74.7%!important;width:19.6%!important;height:12.6%!important}
+  .knob{left:4%!important;top:0!important;width:92%!important;height:78%!important}
+  .knob-control output{font-size:clamp(7px,1.7vw,10px)!important}
+  body.tuning-touched .tuner__glass:before{left:70.6%!important;width:4.8%!important}
+}
+@media(max-width:390px){.radio{width:calc(100vw + 32px)!important;margin-left:-16px!important;margin-right:-16px!important}}
+@media(prefers-reduced-motion:reduce){.tuner__needle,.on-air,.now-brewing__screen,.hardware-button,.station-preset{transition:none!important}}
