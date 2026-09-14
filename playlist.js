@@ -20,7 +20,7 @@ window.BB_PLAYLIST = [
     id: "heres-to-the-regulars",
     title: "Here's to the Regulars",
     artist: "Brew & Brews Radio",
-    genre: "Jazz-Fushion",
+    genre: "Jazz-Fusion",
     audio: "heres-to-the-regulars.mp3",
     cover: "heres-to-the-regulars.png"
   },
@@ -36,7 +36,7 @@ window.BB_PLAYLIST = [
     id: "brazilian-hangover",
     title: "Brazilian Hangover",
     artist: "Brew & Brews Radio",
-    genre: "Accoustic-Folk",
+    genre: "Acoustic-Folk",
     audio: "brazilian-hangover.mp3",
     cover: "brazilian-hangover.png"
   },
