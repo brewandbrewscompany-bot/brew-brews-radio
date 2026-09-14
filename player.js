@@ -45,11 +45,15 @@
   function updateControls(){
     e.fullShuffle.classList.toggle("active-control",shuffle);
     e.fullRepeat.classList.toggle("active-control",repeat);
+    e.fullShuffle.setAttribute("aria-pressed",String(shuffle));
+    e.fullRepeat.setAttribute("aria-pressed",String(repeat));
 
     const isFavorite = favorites.has(tracks[current].id);
 
     e.miniFavorite.textContent = isFavorite ? "♥" : "♡";
     e.fullFavorite.textContent = isFavorite ? "♥ Favorited" : "♡ Favorite";
+    e.miniFavorite.setAttribute("aria-pressed",String(isFavorite));
+    e.fullFavorite.setAttribute("aria-pressed",String(isFavorite));
   }
 
   function renderGenres(){
@@ -125,7 +129,8 @@
         if (index === current) {
           togglePlayback();
         } else {
-          loadTrack(index,0,true);
+          const wasPlaying = !audio.paused;
+          loadTrack(index,0,wasPlaying);
         }
       };
 
@@ -177,6 +182,7 @@
     current = index;
 
     localStorage.setItem("bbCurrentTrack",String(current));
+    localStorage.setItem("bbPosition",String(startAt));
 
     restore = startAt;
     audio.src = tracks[current].audio;
@@ -203,7 +209,7 @@
     audio.paused ? playAudio() : pauseAudio();
   }
 
-  function nextTrack(){
+  function nextTrack(autoplay = !audio.paused){
     let nextIndex;
 
     if (shuffle && tracks.length > 1) {
@@ -214,19 +220,20 @@
       nextIndex = (current + 1) % tracks.length;
     }
 
-    loadTrack(nextIndex,0,true);
+    loadTrack(nextIndex,0,autoplay);
   }
 
-  function previousTrack(){
+  function previousTrack(autoplay = !audio.paused){
     if (audio.currentTime > 4) {
       audio.currentTime = 0;
+      localStorage.setItem("bbPosition","0");
       return;
     }
 
     const previousIndex =
       (current - 1 + tracks.length) % tracks.length;
 
-    loadTrack(previousIndex,0,true);
+    loadTrack(previousIndex,0,autoplay);
   }
 
   function toggleFavorite(){
@@ -291,12 +298,10 @@
     togglePlayback;
 
   e.prevBtn.onclick =
-    e.fullPrev.onclick =
-    previousTrack;
+    e.fullPrev.onclick = () => previousTrack(!audio.paused);
 
   e.nextBtn.onclick =
-    e.fullNext.onclick =
-    nextTrack;
+    e.fullNext.onclick = () => nextTrack(!audio.paused);
 
   e.fullShuffle.onclick = toggleShuffle;
   e.fullRepeat.onclick = toggleRepeat;
@@ -386,14 +391,14 @@
   audio.onended = () => {
     localStorage.setItem("bbPosition","0");
 
-    if (!repeat) nextTrack();
+    if (!repeat) nextTrack(true);
   };
 
   if ("mediaSession" in navigator) {
     navigator.mediaSession.setActionHandler("play",playAudio);
     navigator.mediaSession.setActionHandler("pause",pauseAudio);
-    navigator.mediaSession.setActionHandler("previoustrack",previousTrack);
-    navigator.mediaSession.setActionHandler("nexttrack",nextTrack);
+    navigator.mediaSession.setActionHandler("previoustrack",() => previousTrack(!audio.paused));
+    navigator.mediaSession.setActionHandler("nexttrack",() => nextTrack(!audio.paused));
   }
 
   if ("serviceWorker" in navigator) {
