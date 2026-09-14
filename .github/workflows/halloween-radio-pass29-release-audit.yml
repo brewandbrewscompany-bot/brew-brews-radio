@@ -106,14 +106,14 @@ jobs:
         run: |
           grep -q 'manifest.webmanifest' halloween-radio/index.html
           grep -q 'app-shell.js' halloween-radio/index.html
-          grep -q 'shuffle-stations.js' halloween-radio/index.html
+          grep -q 'shuffle-across-stations.js' halloween-radio/index.html
           grep -q 'games/witch-ride-3d/' halloween-radio/assets/js/witch-ride-launcher.js
           grep -q 'pass23-traffic-spacing.js' halloween-radio/games/witch-ride-3d/index.html
           test -f halloween-radio/sw.js
           test -f halloween-radio/offline.html
           test -f halloween-radio/data/final-upload-audit.json
           node --check halloween-radio/sw.js
-          node --check halloween-radio/assets/js/shuffle-stations.js
+          node --check halloween-radio/assets/js/shuffle-across-stations.js
           node --check halloween-radio/assets/js/witch-ride-launcher.js
 
       - name: Upload Pass 29 audit proof
