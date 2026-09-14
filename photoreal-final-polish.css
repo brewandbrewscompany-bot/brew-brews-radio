@@ -1,0 +1,128 @@
+/* FINAL PHOTOREAL POLISH
+   Keeps the approved rendered cabinet as the visual source of truth.
+   Dynamic regions are opaque only after interaction so baked placeholder
+   content never ghosts through live HTML. Knobs rotate photographed pixels
+   from the approved skin instead of drawing a second CSS indicator. */
+
+/* Dynamic screen: fully replace the baked placeholder only after interaction. */
+body.has-dynamic-screen .now-brewing__screen{
+  opacity:1!important;
+  background:
+    radial-gradient(ellipse at 38% 34%,#08251a 0,#041a12 34%,#02110c 70%,#010a07 100%)!important;
+  border-color:#5d735f!important;
+  box-shadow:
+    inset 0 10px 28px #000,
+    inset 0 -10px 22px #000,
+    inset 0 0 0 1px #152d20,
+    0 0 12px #0e37255e!important;
+}
+body.has-dynamic-screen .artwork-well{background:#0a0704!important}
+body.has-dynamic-screen .now-brewing__copy{background:transparent!important}
+
+/* A selected station gets one clean physical plate instead of translucent text
+   layered over the photographed 103.1 plate. */
+body.has-station-change .station-plate{
+  left:18%!important;
+  right:18%!important;
+  bottom:-1.5%!important;
+  height:14%!important;
+  min-height:0!important;
+  box-sizing:border-box!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:.75em!important;
+  padding:0 4%!important;
+  opacity:1!important;
+  border:1px solid #5b3518!important;
+  border-radius:3px!important;
+  background:linear-gradient(180deg,#e2b66d 0,#a86f31 16%,#d19a4d 47%,#8a5525 70%,#5c3518 100%)!important;
+  color:#160b05!important;
+  text-shadow:0 1px #f0c67a66!important;
+  box-shadow:inset 0 1px #ffe5a0a6,inset 0 -2px #3d1d0ab8,0 3px 8px #000b!important;
+  font-size:clamp(7px,.65vw,11px)!important;
+  letter-spacing:.1em!important;
+  white-space:nowrap!important;
+}
+body.has-station-change .station-plate strong,
+body.has-station-change .station-plate span{color:#160b05!important;font:inherit!important;font-weight:800!important}
+
+/* Preserve the photographed preset faces. Only the selection halo changes. */
+body.has-station-change .station-preset{
+  background:rgba(0,0,0,.08)!important;
+  border-color:rgba(164,111,49,.22)!important;
+  box-shadow:inset 0 0 8px #0002!important;
+}
+body.has-station-change .station-preset.is-active{
+  background:rgba(83,43,12,.16)!important;
+  border-color:#f2b65c!important;
+  box-shadow:0 0 0 1px #ffd08455,inset 0 0 18px #e38a1c35,0 0 15px #efa63a70!important;
+}
+body.has-station-change .station-preset[data-station='regular']:not(.is-active){
+  background:rgba(0,0,0,.45)!important;
+  border-color:rgba(55,38,22,.45)!important;
+  box-shadow:inset 0 0 16px #000b!important;
+}
+
+/* ON AIR cover is opaque so READY never ghosts through it. */
+body.is-playing .on-air{background:#080907!important;opacity:1!important}
+
+/* PHOTOGRAPHIC ROTARIES — the existing <i> becomes an exact crop of the
+   approved full-size render. Rotating the knob therefore rotates the real
+   machined metal, highlight and marker together. */
+.knob-control--volume{
+  left:27.3481%!important;top:72.9282%!important;width:8.2873%!important;height:11.0497%!important;
+}
+.knob-control--tune{
+  left:64.0884%!important;top:72.9282%!important;width:8.2873%!important;height:11.0497%!important;
+}
+.knob{
+  left:0!important;top:0!important;width:100%!important;height:100%!important;
+  aspect-ratio:1!important;overflow:hidden!important;border-radius:50%!important;
+  transform-origin:50% 50%!important;background:transparent!important;
+  box-shadow:none!important;will-change:transform!important;
+}
+.knob:before,.knob:after{display:none!important}
+.knob i{
+  display:block!important;position:absolute!important;
+  width:1206.6667%!important;height:905%!important;
+  top:-660%!important;margin:0!important;
+  opacity:1!important;border:0!important;border-radius:0!important;
+  background:url('assets/regular-radio/radio-desktop-approved.avif') 0 0/100% 100% no-repeat!important;
+  box-shadow:none!important;transform:none!important;transform-origin:0 0!important;
+  pointer-events:none!important;
+}
+.knob-control--volume .knob i{left:-330%!important}
+.knob-control--tune .knob i{left:-773.3333%!important}
+.knob-control--volume .knob{transform:rotate(calc(var(--angle) + 45.9deg))!important}
+.knob-control--tune .knob{transform:rotate(calc(var(--angle) - 68.85deg))!important}
+body.volume-touched .knob-control--volume .knob i,
+body.tuning-touched .knob-control--tune .knob i{opacity:1!important}
+.knob-control input{inset:-5%!important;width:110%!important;height:110%!important}
+.knob-control output{
+  bottom:-21%!important;background:#080706e8!important;color:#f3c56d!important;
+  border:1px solid #6b4724!important;box-shadow:0 2px 7px #000!important;
+}
+
+/* Keep the baked tuner needle until tuning begins; once it does, the existing
+   glass patch hides that baked needle and the one live HTML needle takes over. */
+body.tuning-touched .tuner__needle{opacity:1!important}
+
+@media(max-width:700px){
+  .knob-control--volume{
+    left:17.8533%!important;top:74.0431%!important;width:20.1913%!important;height:11.3636%!important;
+  }
+  .knob-control--tune{
+    left:61.4240%!important;top:74.0431%!important;width:20.1913%!important;height:11.3636%!important;
+  }
+  .knob i{
+    width:495.2632%!important;height:880%!important;top:-651.5789%!important;
+    background-image:url('assets/regular-radio/radio-mobile-approved.avif')!important;
+  }
+  .knob-control--volume .knob i{left:-88.4211%!important}
+  .knob-control--tune .knob i{left:-304.2105%!important}
+  .knob-control output{bottom:-19%!important}
+  body.has-station-change .station-plate{font-size:clamp(7px,1.55vw,10px)!important}
+}
+
+@media(prefers-reduced-motion:reduce){.knob{will-change:auto!important;transition:none!important}}
