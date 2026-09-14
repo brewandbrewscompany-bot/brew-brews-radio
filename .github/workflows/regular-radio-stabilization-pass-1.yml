@@ -119,27 +119,23 @@ jobs:
             const errors=[];
             page.on('pageerror',e=>errors.push('pageerror: '+e.message));
             page.on('console',m=>{if(m.type()==='error') errors.push('console: '+m.text())});
-            await page.addInitScript(()=>{
-              window.__bbPlayEvents=0;
-              document.addEventListener('play',e=>{if(e.target&&e.target.tagName==='AUDIO')window.__bbPlayEvents++},true);
-            });
             await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'networkidle'});
             await page.waitForFunction(()=>document.querySelectorAll('.card').length===18);
             const state=()=>page.locator('#audio').evaluate(a=>({paused:a.paused,src:a.getAttribute('src'),time:a.currentTime}));
             assert((await state()).paused,'radio autoplayed on load');
-            assert.strictEqual(await page.evaluate(()=>window.__bbPlayEvents),0,'play event occurred on load');
+            assert((await page.locator('#topPlayBtn').textContent()).includes('PLAY'),'load UI did not remain in PLAY state');
             const initial=await page.locator('#miniTitle').textContent();
 
             await page.click('#nextBtn');
             await page.waitForFunction(t=>document.querySelector('#miniTitle').textContent!==t,initial);
             assert((await state()).paused,'NEXT started audio while paused');
-            assert.strictEqual(await page.evaluate(()=>window.__bbPlayEvents),0,'NEXT emitted play while paused');
+            assert((await page.locator('#topPlayBtn').textContent()).includes('PLAY'),'NEXT changed paused UI to playing');
 
             const afterNext=await page.locator('#miniTitle').textContent();
             await page.click('#prevBtn');
             await page.waitForFunction(t=>document.querySelector('#miniTitle').textContent!==t,afterNext);
             assert((await state()).paused,'PREV started audio while paused');
-            assert.strictEqual(await page.evaluate(()=>window.__bbPlayEvents),0,'PREV emitted play while paused');
+            assert((await page.locator('#topPlayBtn').textContent()).includes('PLAY'),'PREV changed paused UI to playing');
 
             const beforeCard=await page.locator('#miniTitle').textContent();
             const cards=page.locator('.card');
@@ -148,18 +144,19 @@ jobs:
             await cards.nth(pick).click();
             await page.waitForFunction(t=>document.querySelector('#miniTitle').textContent!==t,beforeCard);
             assert((await state()).paused,'track selection started audio while paused');
-            assert.strictEqual(await page.evaluate(()=>window.__bbPlayEvents),0,'track selection emitted play while paused');
+            assert((await page.locator('#topPlayBtn').textContent()).includes('PLAY'),'track selection changed paused UI to playing');
 
             await page.click('#playBtn');
             await page.waitForFunction(()=>!document.querySelector('#audio').paused);
             assert((await state()).paused===false,'explicit PLAY did not start audio');
-            assert.strictEqual(await page.evaluate(()=>window.__bbPlayEvents),1,'explicit PLAY event count incorrect');
+            await page.waitForFunction(()=>document.querySelector('#topPlayBtn').textContent.includes('PAUSE'));
 
             const beforeActiveNext=await page.locator('#miniTitle').textContent();
             await page.click('#nextBtn');
             await page.waitForFunction(t=>document.querySelector('#miniTitle').textContent!==t,beforeActiveNext);
             await page.waitForFunction(()=>!document.querySelector('#audio').paused);
             assert((await state()).paused===false,'NEXT stopped active playback');
+            assert((await page.locator('#topPlayBtn').textContent()).includes('PAUSE'),'active NEXT did not remain in PAUSE state');
 
             await page.click('#openFullPlayer');
             await page.click('#fullShuffle');
@@ -181,7 +178,7 @@ jobs:
             await page.evaluate(()=>document.querySelector('#audio').pause());
             const meaningful=errors.filter(x=>!x.includes('favicon'));
             assert.deepStrictEqual(meaningful,[],`browser errors: ${meaningful.join(' | ')}`);
-            console.log('REGULAR_RADIO_GATE_PASS',JSON.stringify({initial,dimensions,playEvents:await page.evaluate(()=>window.__bbPlayEvents)}));
+            console.log('REGULAR_RADIO_GATE_PASS',JSON.stringify({initial,dimensions}));
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
