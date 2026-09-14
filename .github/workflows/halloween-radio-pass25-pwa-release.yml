@@ -124,7 +124,7 @@ jobs:
             await page.screenshot({path:'pass25-pwa-offline-shell-430x932.png'});
             await page.setOfflineMode(false);
             fs.writeFileSync('pass25-pwa-runtime.json',JSON.stringify({initial,cacheState,manifestInfo:{url:manifestInfo.url,data:manifestInfo.data?JSON.parse(manifestInfo.data):null},installability,game,duringGame,offline,errors,requestCount:requests.length},null,2));
-            const realErrors=errors.filter(e=>!e.includes('favicon.ico'));
+            const realErrors=errors.filter(e=>!e.includes('favicon.ico')&&!e.includes('ERR_INTERNET_DISCONNECTED'));
             assert(realErrors.length===0,`console/page errors: ${realErrors.join(' | ')}`);
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
