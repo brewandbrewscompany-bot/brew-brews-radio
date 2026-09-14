@@ -1,0 +1,110 @@
+name: Halloween Radio Pass 28 Android Store Package
+
+on:
+  push:
+    branches: [halloween-radio-android-store-pass-28]
+    paths:
+      - 'android-store/**'
+      - '.github/workflows/halloween-radio-pass28-android-store.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  android-store-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify production radio remains locked
+        shell: bash
+        run: |
+          git fetch origin main halloween-radio-android-store-pass-28
+          MAIN=c58032f16d9fff7f28875b8c41ee6fbcd60b95da
+          test "$(git rev-parse origin/main)" = "$MAIN"
+          test "$(git rev-parse origin/halloween-radio-android-store-pass-28)" = "$GITHUB_SHA"
+          CHANGED="$(git diff --name-only "$MAIN" HEAD)"
+          echo "$CHANGED"
+          test -z "$(printf '%s\n' "$CHANGED" | grep -Ev '^(android-store/|.github/workflows/halloween-radio-pass28-android-store.yml$)' || true)"
+          ! printf '%s\n' "$CHANGED" | grep -q '^halloween-radio/'
+          ! printf '%s\n' "$CHANGED" | grep -q '^louisburg-local/'
+          ! printf '%s\n' "$CHANGED" | grep -q '^christmas-radio/'
+          bash -n android-store/generate-project.sh
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 9.6
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.6.0'
+
+      - name: Ensure Android API 36 toolchain
+        shell: bash
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-36' 'build-tools;36.0.0'
+
+      - name: Generate Android TWA project
+        shell: bash
+        run: |
+          chmod +x android-store/generate-project.sh
+          ./android-store/generate-project.sh
+          grep -q "compileSdk 36" android-store/generated/app/build.gradle
+          grep -q "targetSdk 36" android-store/generated/app/build.gradle
+          grep -q "androidbrowserhelper:2.7.3" android-store/generated/app/build.gradle
+          grep -q "com.brewandbrews.halloweenradio" android-store/generated/app/build.gradle
+          grep -q "radio.brewandbrewsco.com" android-store/generated/app/src/main/AndroidManifest.xml
+
+      - name: Build debug APK and release AAB
+        working-directory: android-store/generated
+        shell: bash
+        run: |
+          gradle --no-daemon --stacktrace :app:assembleDebug :app:bundleRelease :app:lintDebug
+
+      - name: Validate Android package
+        shell: bash
+        run: |
+          APK=android-store/generated/app/build/outputs/apk/debug/app-debug.apk
+          AAB=android-store/generated/app/build/outputs/bundle/release/app-release.aab
+          test -s "$APK"
+          test -s "$AAB"
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
+          "$AAPT" dump badging "$APK" | tee android-store/android-package-report.txt
+          grep -q "package: name='com.brewandbrews.halloweenradio'" android-store/android-package-report.txt
+          grep -q "targetSdkVersion:'36'" android-store/android-package-report.txt
+          grep -q "launchable-activity: name='com.google.androidbrowserhelper.trusted.LauncherActivity'" android-store/android-package-report.txt
+          unzip -l "$AAB" | tee android-store/android-aab-contents.txt
+          grep -q 'base/manifest/AndroidManifest.xml' android-store/android-aab-contents.txt
+          sha256sum "$APK" "$AAB" | tee android-store/android-package-sha256.txt
+
+      - name: Package generated Android source
+        shell: bash
+        run: |
+          tar -czf android-store/halloween-radio-android-source.tgz -C android-store generated assetlinks.template.json store-config.json
+
+      - name: Upload Android store package proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: halloween-radio-pass28-android-store-package
+          if-no-files-found: error
+          path: |
+            android-store/generated/app/build/outputs/apk/debug/app-debug.apk
+            android-store/generated/app/build/outputs/bundle/release/app-release.aab
+            android-store/generated/app/build/reports/lint-results-debug.html
+            android-store/android-package-report.txt
+            android-store/android-aab-contents.txt
+            android-store/android-package-sha256.txt
+            android-store/halloween-radio-android-source.tgz
+            android-store/assetlinks.template.json
+            android-store/store-config.json
