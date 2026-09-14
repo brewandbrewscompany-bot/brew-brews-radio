@@ -139,13 +139,13 @@
     return {indexes,position};
   }
 
-  function stepTrack(delta){
+  function stepTrack(delta,{continueIfIntent=false}={}){
     const station=currentStation();
     const {indexes,position}=stationTrackPosition(station,state.trackIndex);
     if(!indexes.length) return;
     const currentPosition=position>=0?position:0;
     const nextPosition=(currentPosition+delta+indexes.length)%indexes.length;
-    const shouldContinue=state.playbackIntent&&!audio.paused;
+    const shouldContinue=state.playbackIntent&&(continueIfIntent||!audio.paused);
     loadTrack(indexes[nextPosition],{continuePlayback:shouldContinue});
   }
 
@@ -160,7 +160,7 @@
     if(indexes.length&&position<0) loadTrack(indexes[0],{continuePlayback:shouldContinue});
     else renderTrack();
     renderPresets();
-    if(els.hint&&!state.playing) els.hint.textContent=fromTuner?`${station.name} selected. Press PLAY to listen.`:`${station.name} selected. Press PLAY to listen.`;
+    if(els.hint&&!state.playing) els.hint.textContent=`${station.name} selected. Press PLAY to listen.`;
   }
 
   function explicitPlayToggle(){
@@ -251,7 +251,7 @@
       renderPlayback();
       return;
     }
-    stepTrack(1);
+    stepTrack(1,{continueIfIntent:true});
   });
   audio.addEventListener('loadedmetadata',()=>{
     els.time.textContent=`${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
