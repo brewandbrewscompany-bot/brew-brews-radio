@@ -89,7 +89,7 @@ jobs:
             // Enable Shuffle from the actual phone face control.
             await page.click('#phoneStage [data-mode-button="shuffle"]');
             await page.waitForFunction(()=>BBRadio.snapshot().shuffle===true);
-            assert(await page.evaluate(()=>/jumping across all 6 stations/i.test(document.getElementById('toast').innerText)),'new shuffle behavior message missing');
+            await page.waitForFunction(()=>/jumping across all 6 stations/i.test(document.getElementById('toast')?.innerText||''),{timeout:5000});
 
             // Paused NEXT must jump stations but must not start audio.
             const pausedHops=[];
