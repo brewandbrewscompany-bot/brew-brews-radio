@@ -8,11 +8,16 @@ on:
       - 'style.css'
       - 'radio-experience.css'
       - 'materials-polish.css'
+      - 'photoreal-skin.css'
+      - 'photoreal-final-polish.css'
+      - 'photoreal-interaction.js'
       - 'player.js'
       - 'playlist.js'
       - 'manifest.json'
       - 'service-worker.js'
+      - 'assets/regular-radio/*.avif'
       - '*.mp3'
+      - '*.png'
       - '.github/workflows/regular-radio-final-release.yml'
   workflow_dispatch:
 
@@ -42,6 +47,7 @@ jobs:
         run: |
           node --check player.js
           node --check playlist.js
+          node --check photoreal-interaction.js
           node --check service-worker.js
           node <<'NODE'
           const fs=require('fs'),vm=require('vm');
@@ -58,13 +64,19 @@ jobs:
           }
           const rootMp3=fs.readdirSync('.').filter(x=>x.toLowerCase().endsWith('.mp3')).sort();
           const listed=[...files].sort();assert(JSON.stringify(rootMp3)===JSON.stringify(listed),`unexplained/missing root MP3s\nroot=${rootMp3}\nplaylist=${listed}`);
+
           const html=fs.readFileSync('index.html','utf8');
           const js=fs.readFileSync('player.js','utf8');
           const sw=fs.readFileSync('service-worker.js','utf8');
-          assert(fs.existsSync('radio-experience.css'),'radio experience stylesheet missing');
-          assert(fs.existsSync('materials-polish.css'),'locked materials stylesheet missing');
-          assert(html.includes('radio-experience.css'),'radio experience stylesheet not linked');
-          assert(html.includes('materials-polish.css'),'locked materials stylesheet not linked');
+          const requiredFiles=[
+            'radio-experience.css','materials-polish.css','photoreal-skin.css','photoreal-final-polish.css',
+            'photoreal-interaction.js','assets/regular-radio/radio-desktop-approved.avif','assets/regular-radio/radio-mobile-approved.avif'
+          ];
+          requiredFiles.forEach(file=>assert(fs.existsSync(file),`required production file missing: ${file}`));
+          ['radio-experience.css','materials-polish.css','photoreal-skin.css','photoreal-final-polish.css'].forEach(file=>{
+            assert(html.includes(file),`${file} not linked`);
+          });
+          assert(html.includes('photoreal-interaction.js'),'photoreal interaction layer not linked');
           assert((html.match(/class="tuner__needle"/g)||[]).length===1,'must have exactly one tuner needle');
           assert((html.match(/class="station-preset(?:\s|")/g)||[]).length===4,'must have exactly four station presets');
           assert(!/baked-needle|hotspot|Witching Hour|Dead Air|Graveyard/i.test(html+js),'seasonal/hotspot regression detected');
@@ -80,8 +92,21 @@ jobs:
           assert(js.includes('continueIfIntent:true'),'continuous radio transition guard missing');
           assert(js.includes("trackIndexById.get('midnight-in-the-cafe')"),'approved default track missing');
           assert(js.includes('wireRotary('),'rotary interaction wiring missing');
-          assert(sw.includes('radio-experience.css'),'responsive stylesheet missing from app shell cache');
-          assert(sw.includes('materials-polish.css'),'locked materials stylesheet missing from app shell cache');
+
+          const desktop='assets/regular-radio/radio-desktop-approved.avif';
+          const mobile='assets/regular-radio/radio-mobile-approved.avif';
+          assert(fs.statSync(desktop).size>30000,'desktop approved skin unexpectedly small');
+          assert(fs.statSync(mobile).size>20000,'mobile approved skin unexpectedly small');
+          for(const file of [desktop,mobile]){
+            const head=fs.readFileSync(file).subarray(0,16).toString('latin1');
+            assert(head.includes('ftypavif'),`${file} is not an AVIF skin`);
+          }
+
+          [
+            'radio-experience.css','materials-polish.css','photoreal-skin.css','photoreal-final-polish.css',
+            'photoreal-interaction.js','assets/regular-radio/radio-desktop-approved.avif','assets/regular-radio/radio-mobile-approved.avif'
+          ].forEach(file=>assert(sw.includes(file),`${file} missing from service-worker shell`));
+          assert(!/\.mp3['"]/i.test(sw),'audio files must not be precached');
           NODE
 
       - name: Full audio integrity audit
@@ -138,6 +163,7 @@ jobs:
             assert.strictEqual(await page.locator('#audio').getAttribute('preload'),'none','audio preload');
             assert((await page.locator('#audio').evaluate(a=>a.paused)),'autoplayed');
             assert.strictEqual(await page.evaluate(()=>window.__BB_RADIO__.state.playbackIntent),false,'playback intent created on load');
+            assert.strictEqual(await page.evaluate(()=>document.documentElement.dataset.radioSkin),'approved-photoreal','photoreal interaction layer missing');
             await page.waitForFunction(()=>{const a=document.querySelector('#trackArtwork');return a&&!a.hidden&&a.getAttribute('src')&&a.complete&&a.naturalWidth>0});
             assert(await page.locator('#trackArtwork').isVisible(),'current cover art not visible on radio face');
             assert((await page.locator('#trackTitle').textContent()).toLowerCase().includes('midnight in the cafe'),'approved default track not loaded');
