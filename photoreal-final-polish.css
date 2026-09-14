@@ -148,6 +148,40 @@ body.tuning-touched .tuner__needle{opacity:1!important}
   .knob-control--tune .knob i{left:-304.2105%!important}
   .knob-control output{bottom:-9px!important;min-width:72%!important;height:13px!important}
   body.has-station-change .station-plate{font-size:clamp(7px,1.55vw,10px)!important}
+
+  /* The approved mobile render contains image-generated microcopy in this
+     narrow strip. Cover only that strip and render the real rule as HTML. */
+  .radio-note{
+    display:block!important;
+    position:absolute!important;
+    left:14%!important;
+    right:14%!important;
+    top:90.2%!important;
+    height:5.6%!important;
+    margin:0!important;
+    padding:7px 10px 0!important;
+    overflow:hidden!important;
+    border:0!important;
+    border-top:1px solid #69512c!important;
+    border-radius:0!important;
+    background:linear-gradient(180deg,#13100c 0,#0e0c09 58%,#0b0907 100%)!important;
+    color:#bda373!important;
+    box-shadow:0 0 11px 7px #0e0c09!important;
+    font:600 clamp(6px,1.5vw,8px)/1.25 Arial,sans-serif!important;
+    letter-spacing:.055em!important;
+    text-align:center!important;
+    text-shadow:0 1px 2px #000!important;
+    z-index:40!important;
+    pointer-events:none!important;
+  }
+  .radio-note strong{
+    display:block!important;
+    margin:0 0 3px!important;
+    color:#edc36c!important;
+    font-weight:800!important;
+    letter-spacing:.13em!important;
+    text-transform:uppercase!important;
+  }
 }
 
 @media(prefers-reduced-motion:reduce){.knob{will-change:auto!important;transition:none!important}}
