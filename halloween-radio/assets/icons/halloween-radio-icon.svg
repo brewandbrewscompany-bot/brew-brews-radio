@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Brew and Brews Halloween Radio">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="72%"><stop offset="0" stop-color="#2a1209"/><stop offset="0.58" stop-color="#0b0705"/><stop offset="1" stop-color="#020202"/></radialGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffd08a"/><stop offset="0.42" stop-color="#f39a35"/><stop offset="1" stop-color="#8f390f"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="184" fill="none" stroke="#4a2512" stroke-width="18"/>
+  <circle cx="256" cy="256" r="168" fill="#080604" stroke="url(#amber)" stroke-width="7"/>
+  <path d="M147 216h218v131c0 21-17 38-38 38H185c-21 0-38-17-38-38z" fill="#130c08" stroke="#8d4a20" stroke-width="8"/>
+  <rect x="171" y="243" width="170" height="54" rx="15" fill="#030302" stroke="#5f351e" stroke-width="6"/>
+  <path d="M190 271h132" stroke="#f29a35" stroke-width="6" stroke-linecap="round" filter="url(#glow)"/>
+  <circle cx="197" cy="332" r="25" fill="#090604" stroke="#d37b29" stroke-width="7"/>
+  <circle cx="315" cy="332" r="25" fill="#090604" stroke="#d37b29" stroke-width="7"/>
+  <path d="M165 205c26-63 60-94 91-94s65 31 91 94" fill="none" stroke="#d9832f" stroke-width="14" stroke-linecap="round"/>
+  <path d="M205 169c16-26 34-39 51-39 18 0 36 13 52 39" fill="none" stroke="#f4a64d" stroke-width="7" opacity=".7"/>
+  <text x="256" y="286" text-anchor="middle" fill="#f2bb73" font-size="35" font-family="Georgia,serif" font-weight="700" letter-spacing="3">B&amp;B</text>
+  <text x="256" y="429" text-anchor="middle" fill="#d67e2d" font-size="24" font-family="Georgia,serif" font-weight="700" letter-spacing="4">HALLOWEEN</text>
+  <path d="M102 122c31-18 55-16 73 6-27-4-43 7-50 31-9-15-17-27-23-37z" fill="#f19a37" opacity=".9"/>
+  <path d="M410 122c-31-18-55-16-73 6 27-4 43 7 50 31 9-15 17-27 23-37z" fill="#f19a37" opacity=".9"/>
+</svg>
