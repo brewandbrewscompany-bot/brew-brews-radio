@@ -1,0 +1,1 @@
+HQ radio skin transfer staging only. Binary reconstruction is hash-verified before use.
