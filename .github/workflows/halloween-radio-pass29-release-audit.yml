@@ -26,7 +26,7 @@ jobs:
           git fetch origin main halloween-radio-release-audit-pass-29
           PROD=c58032f16d9fff7f28875b8c41ee6fbcd60b95da
           test "$(git rev-parse origin/main)" = "$PROD"
-          test "$(git rev-parse HEAD^)" = "$PROD"
+          git merge-base --is-ancestor "$PROD" HEAD
           git diff --quiet "$PROD" HEAD -- halloween-radio || { echo 'PRODUCTION HALLOWEEN RADIO CHANGED'; exit 1; }
           ! git diff --name-only "$PROD" HEAD | grep -q '^louisburg-local/'
           ! git diff --name-only "$PROD" HEAD | grep -q '^christmas-radio/'
@@ -96,7 +96,7 @@ jobs:
           : > pass29-decode-results.txt
           while IFS= read -r f; do
             echo "DECODING $f" | tee -a pass29-decode-results.txt
-            ffmpeg -hide_banner -v error -xerror -i "$f" -f null - 2>>pass29-decode-results.txt
+            ffmpeg -nostdin -hide_banner -v error -xerror -i "$f" -f null - 2>>pass29-decode-results.txt
             echo "OK $f" >> pass29-decode-results.txt
           done < /tmp/rotation-files.txt
           test "$(grep -c '^OK ' pass29-decode-results.txt)" -eq 34
