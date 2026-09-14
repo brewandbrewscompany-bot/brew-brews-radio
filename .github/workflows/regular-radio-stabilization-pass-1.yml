@@ -1,0 +1,197 @@
+name: Regular Radio Stabilization Pass 1
+
+on:
+  push:
+    branches: [regular-radio-stabilization-pass-1]
+    paths:
+      - 'index.html'
+      - 'style.css'
+      - 'player.js'
+      - 'playlist.js'
+      - 'manifest.json'
+      - 'service-worker.js'
+      - '*.mp3'
+      - '*.png'
+      - '.github/workflows/regular-radio-stabilization-pass-1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  regular-radio-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify source lock and isolation
+        shell: bash
+        run: |
+          git fetch origin main regular-radio-stabilization-pass-1
+          BASE=c58032f16d9fff7f28875b8c41ee6fbcd60b95da
+          test "$(git rev-parse origin/main)" = "$BASE"
+          git merge-base --is-ancestor "$BASE" HEAD
+          ! git diff --name-only "$BASE" HEAD | grep -q '^halloween-radio/'
+          ! git diff --name-only "$BASE" HEAD | grep -q '^louisburg-local/'
+          ! git diff --name-only "$BASE" HEAD | grep -q '^christmas-radio/'
+          git diff --name-only "$BASE" HEAD
+
+      - name: Validate code and 18-track library
+        shell: bash
+        run: |
+          node --check player.js
+          node --check playlist.js
+          node --check service-worker.js
+          node <<'NODE'
+          const fs=require('fs'),vm=require('vm');
+          const sandbox={window:{}};
+          vm.createContext(sandbox);
+          vm.runInContext(fs.readFileSync('playlist.js','utf8'),sandbox);
+          const tracks=sandbox.window.BB_PLAYLIST;
+          const assert=(v,m)=>{if(!v)throw new Error(m)};
+          assert(Array.isArray(tracks),'playlist missing');
+          assert(tracks.length===18,`expected 18 tracks, found ${tracks.length}`);
+          const ids=new Set(),audio=new Set(),covers=new Set();
+          for(const t of tracks){
+            assert(t.id&&t.title&&t.artist&&t.genre&&t.audio&&t.cover,`incomplete track ${JSON.stringify(t)}`);
+            assert(!ids.has(t.id),`duplicate id ${t.id}`); ids.add(t.id);
+            assert(!audio.has(t.audio),`duplicate audio ${t.audio}`); audio.add(t.audio);
+            assert(!covers.has(t.cover),`duplicate cover ${t.cover}`); covers.add(t.cover);
+            assert(fs.existsSync(t.audio),`missing audio ${t.audio}`);
+            assert(fs.statSync(t.audio).size>100000,`audio suspiciously small ${t.audio}`);
+            assert(fs.existsSync(t.cover),`missing cover ${t.cover}`);
+            assert(fs.statSync(t.cover).size>10000,`cover suspiciously small ${t.cover}`);
+          }
+          const manifest=JSON.parse(fs.readFileSync('manifest.json','utf8'));
+          assert(manifest.name||manifest.short_name,'manifest missing app name');
+          assert(manifest.start_url,'manifest missing start_url');
+          assert(manifest.display,'manifest missing display');
+          assert(fs.readFileSync('index.html','utf8').includes('Your roastery soundtrack'),'roastery copy missing');
+          assert(fs.readFileSync('service-worker.js','utf8').includes('brew-brews-radio-v5.3.0'),'cache version not refreshed');
+          console.log('Library validated:',tracks.length,'tracks');
+          NODE
+
+      - name: Full-decode all regular-radio MP3s
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg >/dev/null
+          node <<'NODE' > /tmp/regular-radio-audio.txt
+          const fs=require('fs'),vm=require('vm');
+          const sandbox={window:{}};vm.createContext(sandbox);
+          vm.runInContext(fs.readFileSync('playlist.js','utf8'),sandbox);
+          for(const t of sandbox.window.BB_PLAYLIST) console.log(t.audio);
+          NODE
+          : > regular-radio-decode-proof.txt
+          while IFS= read -r f; do
+            echo "DECODING $f" | tee -a regular-radio-decode-proof.txt
+            ffmpeg -nostdin -hide_banner -v error -xerror -i "$f" -f null - 2>>regular-radio-decode-proof.txt
+            echo "OK $f" >> regular-radio-decode-proof.txt
+          done < /tmp/regular-radio-audio.txt
+          test "$(grep -c '^OK ' regular-radio-decode-proof.txt)" -eq 18
+
+      - name: Install browser gate
+        shell: bash
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0 >/dev/null
+          npx playwright install --with-deps chromium >/dev/null
+
+      - name: Run 430x932 playback-intent gate
+        shell: bash
+        run: |
+          mkdir -p regular-radio-proof
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/regular-radio-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/index.html >/dev/null && break; sleep 1; done
+          node <<'NODE'
+          const {chromium}=require('playwright');
+          const assert=require('assert');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--mute-audio']});
+            const page=await browser.newPage({viewport:{width:430,height:932},deviceScaleFactor:1});
+            const errors=[];
+            page.on('pageerror',e=>errors.push('pageerror: '+e.message));
+            page.on('console',m=>{if(m.type()==='error') errors.push('console: '+m.text())});
+            await page.addInitScript(()=>{
+              window.__bbPlayEvents=0;
+              document.addEventListener('play',e=>{if(e.target&&e.target.tagName==='AUDIO')window.__bbPlayEvents++},true);
+            });
+            await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'networkidle'});
+            await page.waitForFunction(()=>document.querySelectorAll('.card').length===18);
+            const state=()=>page.locator('#audio').evaluate(a=>({paused:a.paused,src:a.getAttribute('src'),time:a.currentTime}));
+            assert((await state()).paused,'radio autoplayed on load');
+            assert.strictEqual(await page.evaluate(()=>window.__bbPlayEvents),0,'play event occurred on load');
+            const initial=await page.locator('#miniTitle').textContent();
+
+            await page.click('#nextBtn');
+            await page.waitForFunction(t=>document.querySelector('#miniTitle').textContent!==t,initial);
+            assert((await state()).paused,'NEXT started audio while paused');
+            assert.strictEqual(await page.evaluate(()=>window.__bbPlayEvents),0,'NEXT emitted play while paused');
+
+            const afterNext=await page.locator('#miniTitle').textContent();
+            await page.click('#prevBtn');
+            await page.waitForFunction(t=>document.querySelector('#miniTitle').textContent!==t,afterNext);
+            assert((await state()).paused,'PREV started audio while paused');
+            assert.strictEqual(await page.evaluate(()=>window.__bbPlayEvents),0,'PREV emitted play while paused');
+
+            const beforeCard=await page.locator('#miniTitle').textContent();
+            const cards=page.locator('.card');
+            let pick=1;
+            if((await cards.nth(pick).locator('h3').textContent())===beforeCard) pick=2;
+            await cards.nth(pick).click();
+            await page.waitForFunction(t=>document.querySelector('#miniTitle').textContent!==t,beforeCard);
+            assert((await state()).paused,'track selection started audio while paused');
+            assert.strictEqual(await page.evaluate(()=>window.__bbPlayEvents),0,'track selection emitted play while paused');
+
+            await page.click('#playBtn');
+            await page.waitForFunction(()=>!document.querySelector('#audio').paused);
+            assert((await state()).paused===false,'explicit PLAY did not start audio');
+            assert.strictEqual(await page.evaluate(()=>window.__bbPlayEvents),1,'explicit PLAY event count incorrect');
+
+            const beforeActiveNext=await page.locator('#miniTitle').textContent();
+            await page.click('#nextBtn');
+            await page.waitForFunction(t=>document.querySelector('#miniTitle').textContent!==t,beforeActiveNext);
+            await page.waitForFunction(()=>!document.querySelector('#audio').paused);
+            assert((await state()).paused===false,'NEXT stopped active playback');
+
+            await page.click('#openFullPlayer');
+            await page.click('#fullShuffle');
+            assert.strictEqual(await page.locator('#fullShuffle').getAttribute('aria-pressed'),'true','shuffle state not exposed');
+            await page.click('#fullRepeat');
+            assert.strictEqual(await page.locator('#fullRepeat').getAttribute('aria-pressed'),'true','repeat state not exposed');
+            const repeatedTitle=await page.locator('#miniTitle').textContent();
+            await page.locator('#audio').evaluate(a=>a.dispatchEvent(new Event('ended')));
+            await page.waitForTimeout(200);
+            assert.strictEqual(await page.locator('#miniTitle').textContent(),repeatedTitle,'repeat did not hold current track');
+            await page.click('#fullRepeat');
+            await page.locator('#audio').evaluate(a=>a.dispatchEvent(new Event('ended')));
+            await page.waitForFunction(t=>document.querySelector('#miniTitle').textContent!==t,repeatedTitle);
+            await page.waitForFunction(()=>!document.querySelector('#audio').paused);
+
+            const dimensions=await page.evaluate(()=>({w:innerWidth,scroll:document.documentElement.scrollWidth}));
+            assert(dimensions.scroll<=dimensions.w+2,`horizontal overflow ${dimensions.scroll}>${dimensions.w}`);
+            await page.screenshot({path:'regular-radio-proof/mobile-430x932.png',fullPage:true});
+            await page.evaluate(()=>document.querySelector('#audio').pause());
+            const meaningful=errors.filter(x=>!x.includes('favicon'));
+            assert.deepStrictEqual(meaningful,[],`browser errors: ${meaningful.join(' | ')}`);
+            console.log('REGULAR_RADIO_GATE_PASS',JSON.stringify({initial,dimensions,playEvents:await page.evaluate(()=>window.__bbPlayEvents)}));
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+
+      - name: Upload regular radio proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regular-radio-stabilization-pass-1-proof
+          if-no-files-found: warn
+          path: |
+            regular-radio-proof/
+            regular-radio-decode-proof.txt
