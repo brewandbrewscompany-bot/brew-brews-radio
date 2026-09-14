@@ -1,10 +1,10 @@
-const VERSION='halloween-radio-pwa-v1';
+const VERSION='halloween-radio-pwa-v2';
 const CORE=`${VERSION}-core`;
 const RUNTIME=`${VERSION}-runtime`;
 const CORE_ASSETS=[
   './','./index.html','./manifest.webmanifest','./offline.html',
   './assets/css/skin-radio.css','./assets/css/mode-controls.css','./assets/css/library-panels.css',
-  './assets/js/skin-radio.js','./assets/js/radio-enhancements.js','./assets/js/mode-controls.js','./assets/js/library-panels.js','./assets/js/witch-ride-launcher.js','./assets/js/app-shell.js',
+  './assets/js/skin-radio.js','./assets/js/radio-enhancements.js','./assets/js/mode-controls.js','./assets/js/library-panels.js','./assets/js/witch-ride-launcher.js','./assets/js/app-shell.js','./assets/js/shuffle-across-stations.js',
   './artwork/desktop-skin.webp','./artwork/phone-skin.webp',
   './data/tracks.json','./data/broadcasts.json',
   './assets/icons/halloween-radio-icon.svg'
