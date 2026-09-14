@@ -1,0 +1,196 @@
+name: Halloween Radio Pass 26 Cross-Station Shuffle
+
+on:
+  push:
+    branches: [halloween-radio-shuffle-across-stations-pass-26]
+    paths:
+      - 'halloween-radio/index.html'
+      - 'halloween-radio/sw.js'
+      - 'halloween-radio/assets/js/shuffle-across-stations.js'
+      - '.github/workflows/halloween-radio-pass26-shuffle-stations.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  shuffle-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify Pass 25 foundation remains locked
+        shell: bash
+        run: |
+          git fetch origin main halloween-radio-pwa-app-release-pass-25 halloween-radio-shuffle-across-stations-pass-26
+          MAIN=1fc25e52dfbf257a13c22d1a46f399878701309b
+          SOURCE=c9577e3eab1cbb034d6fb4002cd62312df317fa7
+          test "$(git rev-parse origin/main)" = "$MAIN"
+          test "$(git rev-parse origin/halloween-radio-pwa-app-release-pass-25)" = "$SOURCE"
+          test "$(git rev-parse origin/halloween-radio-shuffle-across-stations-pass-26)" = "$GITHUB_SHA"
+
+          for path in \
+            halloween-radio/assets/js/skin-radio.js \
+            halloween-radio/assets/js/radio-enhancements.js \
+            halloween-radio/assets/js/mode-controls.js \
+            halloween-radio/assets/js/library-panels.js \
+            halloween-radio/assets/js/witch-ride-launcher.js \
+            halloween-radio/assets/js/app-shell.js \
+            halloween-radio/manifest.webmanifest \
+            halloween-radio/offline.html \
+            halloween-radio/games/witch-ride-3d; do
+            git diff --quiet "$SOURCE" HEAD -- "$path" || { echo "LOCKED PASS 25 SOURCE CHANGED: $path"; exit 1; }
+          done
+
+          CHANGED="$(git diff --name-only "$SOURCE" HEAD)"
+          echo "$CHANGED"
+          test -z "$(printf '%s\n' "$CHANGED" | grep -Ev '^(halloween-radio/index.html|halloween-radio/sw.js|halloween-radio/assets/js/shuffle-across-stations.js|.github/workflows/halloween-radio-pass26-shuffle-stations.yml)$' || true)"
+          ! printf '%s\n' "$CHANGED" | grep -q '^louisburg-local/'
+          ! printf '%s\n' "$CHANGED" | grep -q '^christmas-radio/'
+
+          node --check halloween-radio/assets/js/shuffle-across-stations.js
+          node --check halloween-radio/sw.js
+          grep -q 'shuffle-across-stations.js' halloween-radio/index.html
+          grep -q 'shuffle-across-stations.js' halloween-radio/sw.js
+          grep -q "halloween-radio-pwa-v2" halloween-radio/sw.js
+
+      - name: Real 430x932 shuffle behavior and installed-app gate
+        shell: bash
+        run: |
+          npm install --no-save puppeteer-core@24.16.0
+          python3 -m http.server 8026 --directory . >/tmp/pass26.log 2>&1 & PID=$!
+          trap 'kill $PID || true' EXIT
+          sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_BIN"
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const fs=require('fs'),puppeteer=require('puppeteer-core');
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          const assert=(v,m)=>{if(!v)throw new Error(m)};
+          const changed=(a,b)=>Math.abs(Number(a)-Number(b))>.01;
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--disable-background-timer-throttling','--disable-renderer-backgrounding','--disable-backgrounding-occluded-windows']});
+            const page=await browser.newPage();page.setDefaultTimeout(90000);
+            await page.setViewport({width:430,height:932,deviceScaleFactor:1,isMobile:true,hasTouch:true});
+            const errors=[];page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+            const url='http://127.0.0.1:8026/halloween-radio/';
+            await page.goto(url,{waitUntil:'domcontentloaded'});
+            await page.waitForFunction(()=>window.BBRadio&&window.BBShuffleAcrossStations?.active===true&&window.__HalloweenRadioPWA?.version==='pass25-pwa-v1');
+            await page.evaluate(()=>window.BBRadio.setAutoTune(false));
+
+            const initial=await page.evaluate(()=>({radio:BBRadio.snapshot(),shuffleVersion:BBShuffleAcrossStations.version,audioPaused:document.getElementById('radioAudio').paused}));
+            assert(initial.radio.playbackIntent===false&&initial.audioPaused===true,'radio did not start silent');
+            assert(initial.radio.shuffle===false,'shuffle unexpectedly enabled on load');
+
+            // Enable Shuffle from the actual phone face control.
+            await page.click('#phoneStage [data-mode-button="shuffle"]');
+            await page.waitForFunction(()=>BBRadio.snapshot().shuffle===true);
+            await page.waitForFunction(()=>/jumping across all 6 stations/i.test(document.getElementById('toast')?.innerText||''),{timeout:5000});
+
+            // Paused NEXT must jump stations but must not start audio.
+            const pausedHops=[];
+            for(let i=0;i<6;i++){
+              const before=await page.evaluate(()=>({s:BBRadio.snapshot(),count:BBShuffleAcrossStations.hopCount}));
+              await page.click('#phoneStage [data-hit="next"]');
+              await page.waitForFunction(count=>BBShuffleAcrossStations.hopCount>count&&!BBShuffleAcrossStations.inFlight,{timeout:10000},before.count);
+              const after=await page.evaluate(()=>({s:BBRadio.snapshot(),hop:BBShuffleAcrossStations.lastHop,audioPaused:document.getElementById('radioAudio').paused}));
+              assert(changed(before.s.currentFreq,after.s.currentFreq),'shuffle NEXT stayed on the same station');
+              assert(before.s.trackId!==after.s.trackId,'shuffle NEXT repeated the same song');
+              assert(after.s.playbackIntent===false&&after.audioPaused===true,'paused shuffle NEXT started audio');
+              assert(after.s.trackId!=='the-town-goes-quiet','shuffle selected the final signoff as a random destination');
+              pausedHops.push(after.hop);
+            }
+            const distinct=new Set(pausedHops.map(h=>String(h.toFreq))).size;
+            assert(distinct>=3,'shuffle station selection is not varying enough');
+            await page.screenshot({path:'pass26-shuffle-paused-430x932.png'});
+
+            // Shuffle OFF restores normal same-station NEXT behavior.
+            await page.click('#phoneStage [data-mode-button="shuffle"]');
+            await page.waitForFunction(()=>BBRadio.snapshot().shuffle===false);
+            const normalBefore=await page.evaluate(()=>({s:BBRadio.snapshot(),count:BBShuffleAcrossStations.hopCount}));
+            await page.click('#phoneStage [data-hit="next"]');await sleep(180);
+            const normalAfter=await page.evaluate(()=>({s:BBRadio.snapshot(),count:BBShuffleAcrossStations.hopCount}));
+            assert(!changed(normalBefore.s.currentFreq,normalAfter.s.currentFreq),'normal NEXT changed stations with shuffle off');
+            assert(normalBefore.s.trackId!==normalAfter.s.trackId,'normal NEXT did not advance the song');
+            assert(normalAfter.count===normalBefore.count,'shuffle controller handled NEXT while shuffle was off');
+
+            // Re-enable shuffle and prove an active broadcast resumes after a station hop.
+            await page.click('#phoneStage [data-mode-button="shuffle"]');
+            await page.waitForFunction(()=>BBRadio.snapshot().shuffle===true);
+            await page.click('#phoneStage [data-hit="play"]');
+            await page.waitForFunction(()=>BBRadio.snapshot().playbackIntent===true);
+            const playingBefore=await page.evaluate(()=>({s:BBRadio.snapshot(),count:BBShuffleAcrossStations.hopCount,staticCount:BBShuffleAcrossStations.staticCount}));
+            await page.click('#phoneStage [data-hit="next"]');
+            await page.waitForFunction(count=>BBShuffleAcrossStations.hopCount>count&&!BBShuffleAcrossStations.inFlight,{timeout:15000},playingBefore.count);
+            const playingAfter=await page.evaluate(()=>({s:BBRadio.snapshot(),hop:BBShuffleAcrossStations.lastHop,staticCount:BBShuffleAcrossStations.staticCount}));
+            assert(changed(playingBefore.s.currentFreq,playingAfter.s.currentFreq),'playing shuffle NEXT stayed on same station');
+            assert(playingAfter.s.playbackIntent===true,'playing shuffle NEXT lost playback intent');
+            assert(playingAfter.staticCount>playingBefore.staticCount,'playing shuffle NEXT did not run tuning/static transition');
+            assert(playingAfter.hop.wasPlaying===true,'playing shuffle hop was not recorded as playing');
+
+            // Natural track end must also jump to a different station while Shuffle is on.
+            const endedBefore=await page.evaluate(()=>({s:BBRadio.snapshot(),count:BBShuffleAcrossStations.hopCount}));
+            await page.evaluate(()=>document.getElementById('radioAudio').dispatchEvent(new Event('ended')));
+            await page.waitForFunction(count=>BBShuffleAcrossStations.hopCount>count&&!BBShuffleAcrossStations.inFlight,{timeout:15000},endedBefore.count);
+            const endedAfter=await page.evaluate(()=>({s:BBRadio.snapshot(),hop:BBShuffleAcrossStations.lastHop}));
+            assert(changed(endedBefore.s.currentFreq,endedAfter.s.currentFreq),'natural ended event did not shuffle to another station');
+            assert(endedAfter.hop.reason==='ended','natural ended event did not use shuffle-ended path');
+            assert(endedAfter.s.playbackIntent===true,'natural shuffle hop lost playback intent');
+
+            // Repeat keeps priority over Shuffle on natural end.
+            await page.evaluate(()=>BBRadio.setRepeat(true));
+            const repeatBefore=await page.evaluate(()=>({s:BBRadio.snapshot(),count:BBShuffleAcrossStations.hopCount}));
+            await page.evaluate(()=>document.getElementById('radioAudio').dispatchEvent(new Event('ended')));await sleep(250);
+            const repeatAfter=await page.evaluate(()=>({s:BBRadio.snapshot(),count:BBShuffleAcrossStations.hopCount}));
+            assert(repeatAfter.count===repeatBefore.count,'repeat natural end incorrectly triggered station shuffle');
+            assert(!changed(repeatBefore.s.currentFreq,repeatAfter.s.currentFreq)&&repeatBefore.s.trackId===repeatAfter.s.trackId,'repeat did not stay on same station/song');
+            await page.evaluate(()=>BBRadio.setRepeat(false));
+
+            // The intentional B&B final signoff must still end instead of jumping away.
+            await page.evaluate(()=>{const s=BBRadio.snapshot();BBRadio.restore({...s,currentFreq:103.1,trackId:'the-town-goes-quiet',shuffle:true,repeat:false});});
+            const signoffBefore=await page.evaluate(()=>({s:BBRadio.snapshot(),count:BBShuffleAcrossStations.hopCount}));
+            assert(signoffBefore.s.trackId==='the-town-goes-quiet','could not stage final signoff');
+            await page.evaluate(()=>document.getElementById('radioAudio').dispatchEvent(new Event('ended')));await sleep(180);
+            const signoffAfter=await page.evaluate(()=>({s:BBRadio.snapshot(),count:BBShuffleAcrossStations.hopCount}));
+            assert(signoffAfter.count===signoffBefore.count,'final signoff incorrectly shuffled stations');
+            assert(signoffAfter.s.playbackIntent===false,'final signoff did not end transmission');
+
+            // Installed-app cache must contain the fix, but still no music or Witch Ride pre-cache.
+            await page.waitForFunction(async()=>!!(await navigator.serviceWorker.ready).active,{timeout:30000});
+            await page.reload({waitUntil:'domcontentloaded'});
+            await page.waitForFunction(()=>navigator.serviceWorker.controller&&window.BBShuffleAcrossStations?.active===true,{timeout:30000});
+            const cacheState=await page.evaluate(async()=>{const names=await caches.keys(),urls=[];for(const n of names){const c=await caches.open(n);for(const r of await c.keys())urls.push(r.url)}return{names,urls}});
+            assert(cacheState.names.some(n=>n.includes('halloween-radio-pwa-v2-core')),'Pass 26 PWA cache version missing');
+            assert(cacheState.urls.some(u=>u.includes('/assets/js/shuffle-across-stations.js')),'shuffle fix missing from installed app cache');
+            assert(!cacheState.urls.some(u=>u.includes('/audio/')),'music was cached by Pass 26');
+            assert(!cacheState.urls.some(u=>u.includes('/games/witch-ride-3d/')),'Witch Ride was pre-cached by Pass 26');
+
+            await page.setOfflineMode(true);
+            await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForFunction(()=>window.BBRadio&&window.BBShuffleAcrossStations?.active===true);
+            const offline=await page.evaluate(()=>({shuffleVersion:BBShuffleAcrossStations.version,paused:document.getElementById('radioAudio').paused,playbackIntent:BBRadio.snapshot().playbackIntent,controller:!!navigator.serviceWorker.controller}));
+            assert(offline.shuffleVersion==='pass26-shuffle-across-stations-v1'&&offline.paused===true&&offline.playbackIntent===false&&offline.controller,'offline installed app did not load fixed Shuffle safely');
+            await page.screenshot({path:'pass26-shuffle-offline-430x932.png'});
+            await page.setOfflineMode(false);
+
+            const realErrors=errors.filter(e=>!e.includes('favicon.ico')&&!e.includes('ERR_INTERNET_DISCONNECTED'));
+            fs.writeFileSync('pass26-shuffle-runtime.json',JSON.stringify({initial,pausedHops,normalBefore,normalAfter,playingBefore,playingAfter,endedBefore,endedAfter,repeatBefore,repeatAfter,signoffBefore,signoffAfter,cacheState,offline,errors,realErrors},null,2));
+            assert(realErrors.length===0,`console/page errors: ${realErrors.join(' | ')}`);
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+
+      - name: Upload Pass 26 shuffle proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: halloween-radio-pass26-shuffle-proof
+          if-no-files-found: warn
+          path: |
+            pass26-shuffle-paused-430x932.png
+            pass26-shuffle-offline-430x932.png
+            pass26-shuffle-runtime.json

@@ -1,0 +1,141 @@
+name: Halloween Radio Witch Ride 3D Integration
+
+on:
+  push:
+    branches: [halloween-radio-witch-ride-3d-integration-pass-24]
+    paths:
+      - 'halloween-radio/games/witch-ride-3d/**'
+      - 'halloween-radio/assets/js/witch-ride-launcher.js'
+      - '.github/workflows/halloween-radio-witch-ride-3d-integration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  integration-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify integration scope and radio playback source lock
+        shell: bash
+        run: |
+          git fetch origin main witch-ride-3d-traffic-spacing-pass-23 halloween-radio-witch-ride-3d-integration-pass-24
+          BASE=1fc25e52dfbf257a13c22d1a46f399878701309b
+          SOURCE=ee406bd783d0701b5ae2d4fc9c3fcbc4eefafde6
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse origin/witch-ride-3d-traffic-spacing-pass-23)" = "$SOURCE"
+          test "$(git rev-parse origin/halloween-radio-witch-ride-3d-integration-pass-24)" = "$GITHUB_SHA"
+
+          test "$(git rev-parse HEAD:halloween-radio/games/witch-ride-3d)" = "$(git rev-parse origin/witch-ride-3d-traffic-spacing-pass-23:halloween-radio/games/witch-ride-3d)"
+
+          for path in \
+            halloween-radio/assets/js/skin-radio.js \
+            halloween-radio/assets/js/radio-enhancements.js \
+            halloween-radio/assets/js/mode-controls.js \
+            halloween-radio/assets/js/library-panels.js; do
+            git diff --quiet "$BASE" HEAD -- "$path" || { echo "RADIO PLAYBACK SOURCE CHANGED: $path"; exit 1; }
+          done
+
+          CHANGED="$(git diff --name-only "$BASE" HEAD)"
+          echo "$CHANGED"
+          test -z "$(printf '%s\n' "$CHANGED" | grep -Ev '^(halloween-radio/games/witch-ride-3d/|halloween-radio/assets/js/witch-ride-launcher.js$|.github/workflows/halloween-radio-witch-ride-3d-integration.yml$)' || true)"
+          ! printf '%s\n' "$CHANGED" | grep -q '^louisburg-local/'
+          ! printf '%s\n' "$CHANGED" | grep -q '^christmas-radio/'
+
+          node --check halloween-radio/assets/js/witch-ride-launcher.js
+          grep -q "games/witch-ride-3d/" halloween-radio/assets/js/witch-ride-launcher.js
+          grep -q "3D haunted broom run" halloween-radio/assets/js/witch-ride-launcher.js
+          ! grep -q "games/witch-ride/'" halloween-radio/assets/js/witch-ride-launcher.js
+          ! grep -q "2.5D" halloween-radio/assets/js/witch-ride-launcher.js
+
+      - name: Real 430x932 radio-to-game integration gate
+        shell: bash
+        run: |
+          npm install --no-save puppeteer-core@24.16.0
+          python3 -m http.server 8024 --directory . >/tmp/radio-integration.log 2>&1 & PID=$!
+          trap 'kill $PID || true' EXIT
+          sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_BIN"
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const fs=require('fs'),puppeteer=require('puppeteer-core');
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          const assert=(v,m)=>{if(!v)throw new Error(m)};
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--disable-background-timer-throttling','--disable-renderer-backgrounding','--disable-backgrounding-occluded-windows']});
+            const page=await browser.newPage();
+            page.setDefaultTimeout(90000);
+            await page.setViewport({width:430,height:932,deviceScaleFactor:1,isMobile:true,hasTouch:true});
+            const errors=[],failedResources=[],ignoredResources=[];
+            page.on('pageerror',e=>errors.push(String(e)));
+            page.on('console',m=>{const text=m.text();if(m.type()==='error'&&!/Failed to load resource/.test(text))errors.push(text)});
+            page.on('response',r=>{
+              if(r.status()<400)return;
+              const url=r.url(),entry=`${r.status()} ${url}`;
+              if(/\/favicon\.ico(?:\?|$)/.test(url))ignoredResources.push(entry);else failedResources.push(entry);
+            });
+
+            await page.evaluateOnNewDocument(()=>{
+              window.__integrationPlayEvents=0;
+              document.addEventListener('play',()=>window.__integrationPlayEvents++,true);
+            });
+            await page.goto('http://127.0.0.1:8024/halloween-radio/',{waitUntil:'domcontentloaded'});
+            await page.waitForSelector('.witch-ride-launch');
+            await sleep(1200);
+
+            const before=await page.evaluate(()=>{
+              const a=document.querySelector('audio');
+              return {audioPresent:!!a,audioPaused:a?a.paused:null,playEvents:window.__integrationPlayEvents,launcherText:document.querySelector('.witch-ride-launch')?.innerText||''};
+            });
+            assert(before.audioPresent,'Halloween Radio audio element missing');
+            assert(before.audioPaused===true,'radio was not silent on page load');
+            assert(before.playEvents===0,'radio attempted playback on page load');
+            assert(/3D haunted broom run/.test(before.launcherText),'3D launcher label missing');
+
+            await page.evaluate(()=>document.querySelector('.witch-ride-launch').click());
+            await page.waitForFunction(()=>document.getElementById('witchRideLauncher')?.classList.contains('open'));
+            const src=await page.evaluate(()=>document.getElementById('witchRideFrame').src);
+            assert(src.includes('/halloween-radio/games/witch-ride-3d/'),'radio launcher did not target Witch Ride 3D');
+
+            let gameFrame=null;
+            for(let i=0;i<180;i++){
+              gameFrame=page.frames().find(f=>f.url().includes('/halloween-radio/games/witch-ride-3d/'))||null;
+              if(gameFrame)break;
+              await sleep(250);
+            }
+            assert(gameFrame,'Witch Ride 3D iframe did not load');
+            await gameFrame.waitForFunction(()=>window.WitchRide3D?.ready===true&&window.WitchRidePass23TrafficSpacing?.active===true,{timeout:90000});
+            const game=await gameFrame.evaluate(()=>({ready:window.WitchRide3D?.ready===true,pass23:window.WitchRidePass23TrafficSpacing?.active===true,version:window.WitchRidePass23TrafficSpacing?.version||null}));
+            assert(game.ready&&game.pass23,'latest Pass 23 game did not initialize in radio iframe');
+
+            const during=await page.evaluate(()=>{const a=document.querySelector('audio');return {audioPaused:a.paused,playEvents:window.__integrationPlayEvents,launcherOpen:document.getElementById('witchRideLauncher').classList.contains('open')};});
+            assert(during.audioPaused===true&&during.playEvents===0,'opening Witch Ride changed radio playback intent');
+            await page.screenshot({path:'halloween-radio-pass23-integration-430x932.png'});
+
+            await page.click('#witchRideClose');
+            await page.waitForFunction(()=>!document.getElementById('witchRideLauncher')?.classList.contains('open'));
+            const after=await page.evaluate(()=>{const a=document.querySelector('audio');return {audioPaused:a.paused,playEvents:window.__integrationPlayEvents,launcherOpen:document.getElementById('witchRideLauncher').classList.contains('open')};});
+            assert(after.audioPaused===true&&after.playEvents===0&&!after.launcherOpen,'closing Witch Ride changed radio playback or failed to close');
+
+            fs.writeFileSync('halloween-radio-pass23-integration-runtime.json',JSON.stringify({before,src,game,during,after,errors,failedResources,ignoredResources},null,2));
+            assert(failedResources.length===0,`missing required resources: ${failedResources.join(' | ')}`);
+            assert(errors.length===0,`console/page errors: ${errors.join(' | ')}`);
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+
+      - name: Upload integration proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: halloween-radio-pass23-witch-ride-integration-proof
+          if-no-files-found: warn
+          path: |
+            halloween-radio-pass23-integration-430x932.png
+            halloween-radio-pass23-integration-runtime.json

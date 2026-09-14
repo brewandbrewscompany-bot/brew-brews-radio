@@ -1,0 +1,38 @@
+{
+  "id": "./",
+  "name": "Brew & Brews Halloween Radio",
+  "short_name": "B&B Halloween",
+  "description": "Brew & Brews Halloween Radio — six haunted stations, original Halloween music, and Witch Ride 3D.",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#030302",
+  "theme_color": "#120906",
+  "categories": ["music", "entertainment", "games"],
+  "lang": "en-US",
+  "icons": [
+    {
+      "src": "assets/icons/halloween-radio-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Halloween Radio",
+      "short_name": "Radio",
+      "description": "Open Brew & Brews Halloween Radio",
+      "url": "./?source=shortcut-radio",
+      "icons": [{"src": "assets/icons/halloween-radio-icon.svg", "sizes": "any", "type": "image/svg+xml"}]
+    },
+    {
+      "name": "Witch Ride 3D",
+      "short_name": "Witch Ride",
+      "description": "Jump directly into Witch Ride 3D",
+      "url": "./games/witch-ride-3d/",
+      "icons": [{"src": "assets/icons/halloween-radio-icon.svg", "sizes": "any", "type": "image/svg+xml"}]
+    }
+  ]
+}
