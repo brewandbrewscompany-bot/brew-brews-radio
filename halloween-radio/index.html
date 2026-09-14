@@ -2,8 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#120906">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="B&B Halloween">
+<meta name="application-name" content="Brew & Brews Halloween Radio">
+<meta name="description" content="Brew & Brews Halloween Radio — six haunted stations, original Halloween music, and Witch Ride 3D.">
 <title>Brew & Brews Halloween Radio</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/halloween-radio-icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icons/halloween-radio-icon.svg">
 <link rel="stylesheet" href="assets/css/skin-radio.css">
 <link rel="stylesheet" href="assets/css/mode-controls.css">
 <link rel="stylesheet" href="assets/css/library-panels.css">
@@ -11,123 +21,25 @@
 <body>
 <div class="app-shell">
   <section class="skin-stage desktop" id="desktopStage" aria-label="Brew and Brews Halloween Radio">
-    <div class="overlay tuner-glow"></div>
-    <div class="overlay tuner-needle" data-needle></div>
-    <div class="overlay station-layer" data-stations></div>
-    <div class="overlay live-lamp"></div>
-    <div class="overlay tube-glow"></div>
-    <div class="overlay steam"><i></i><i></i><i></i></div>
-    <div class="overlay now-live" data-now>
-      <div class="track-title" data-title>IRONCLAD</div>
-      <div class="track-meta" data-meta>B&amp;B Radio · 103.1</div>
-      <div class="track-extra"><span data-position>1 / 6</span><span data-time>0:00 / 2:45</span></div>
-      <div class="progress"><div class="progress-fill" data-progress></div></div>
-    </div>
-    <div class="overlay mode-controls" aria-label="Playback modes">
-      <button type="button" class="mode-button" data-mode-button="shuffle" aria-pressed="false" aria-label="Toggle shuffle">SHF</button>
-      <button type="button" class="mode-button" data-mode-button="repeat" aria-pressed="false" aria-label="Toggle repeat">RPT</button>
-    </div>
-    <div class="overlay meter-wrap"><div class="meter-needle" data-meter></div></div>
-    <div class="overlay play-halo"></div>
-    <div class="overlay play-symbol"><div class="triangle"></div><div class="bars"><b></b><b></b></div></div>
-    <div class="overlay knob-marker volume-marker" data-volume-marker></div>
-    <div class="overlay knob-marker tune-marker" data-tune-marker></div>
-    <div class="overlay ghost" data-ghost>👻</div>
-
-    <button class="hit drag" data-hit="tuner" aria-label="Tune radio"></button>
-    <button class="hit" data-hit="mug" aria-label="Haunted coffee mug"></button>
-    <button class="hit" data-hit="tube" aria-label="Vacuum tube"></button>
-    <button class="hit" data-hit="display" aria-label="Now Brewing display"></button>
-    <button class="hit" data-hit="meter" aria-label="Signal meter"></button>
-    <button class="hit drag" data-hit="volume" aria-label="Volume control"></button>
-    <button class="hit" data-hit="prev" aria-label="Previous song"></button>
-    <button class="hit" data-hit="play" aria-label="Play"></button>
-    <button class="hit" data-hit="next" aria-label="Next song"></button>
-    <button class="hit drag" data-hit="tune" aria-label="Tune control"></button>
-    <button class="hit" data-hit="witch" aria-label="Witching Hour"></button>
-    <button class="hit" data-hit="brand" aria-label="Brew and Brews"></button>
-    <button class="hit" data-hit="home" aria-label="Home"></button>
-    <button class="hit" data-hit="schedule" aria-label="Schedule"></button>
-    <button class="hit" data-hit="shows" aria-label="Shows"></button>
-    <button class="hit" data-hit="merch" aria-label="Merch"></button>
-    <button class="hit" data-hit="contact" aria-label="Contact"></button>
-    <button class="hit" data-hit="menu" aria-label="Menu"></button>
+    <div class="overlay tuner-glow"></div><div class="overlay tuner-needle" data-needle></div><div class="overlay station-layer" data-stations></div><div class="overlay live-lamp"></div><div class="overlay tube-glow"></div><div class="overlay steam"><i></i><i></i><i></i></div>
+    <div class="overlay now-live" data-now><div class="track-title" data-title>IRONCLAD</div><div class="track-meta" data-meta>B&amp;B Radio · 103.1</div><div class="track-extra"><span data-position>1 / 6</span><span data-time>0:00 / 2:45</span></div><div class="progress"><div class="progress-fill" data-progress></div></div></div>
+    <div class="overlay mode-controls" aria-label="Playback modes"><button type="button" class="mode-button" data-mode-button="shuffle" aria-pressed="false" aria-label="Toggle shuffle">SHF</button><button type="button" class="mode-button" data-mode-button="repeat" aria-pressed="false" aria-label="Toggle repeat">RPT</button></div>
+    <div class="overlay meter-wrap"><div class="meter-needle" data-meter></div></div><div class="overlay play-halo"></div><div class="overlay play-symbol"><div class="triangle"></div><div class="bars"><b></b><b></b></div></div><div class="overlay knob-marker volume-marker" data-volume-marker></div><div class="overlay knob-marker tune-marker" data-tune-marker></div><div class="overlay ghost" data-ghost>👻</div>
+    <button class="hit drag" data-hit="tuner" aria-label="Tune radio"></button><button class="hit" data-hit="mug" aria-label="Haunted coffee mug"></button><button class="hit" data-hit="tube" aria-label="Vacuum tube"></button><button class="hit" data-hit="display" aria-label="Now Brewing display"></button><button class="hit" data-hit="meter" aria-label="Signal meter"></button><button class="hit drag" data-hit="volume" aria-label="Volume control"></button><button class="hit" data-hit="prev" aria-label="Previous song"></button><button class="hit" data-hit="play" aria-label="Play"></button><button class="hit" data-hit="next" aria-label="Next song"></button><button class="hit drag" data-hit="tune" aria-label="Tune control"></button><button class="hit" data-hit="witch" aria-label="Witching Hour"></button><button class="hit" data-hit="brand" aria-label="Brew and Brews"></button><button class="hit" data-hit="home" aria-label="Home"></button><button class="hit" data-hit="schedule" aria-label="Schedule"></button><button class="hit" data-hit="shows" aria-label="Shows"></button><button class="hit" data-hit="merch" aria-label="Merch"></button><button class="hit" data-hit="contact" aria-label="Contact"></button><button class="hit" data-hit="menu" aria-label="Menu"></button>
   </section>
-
   <section class="skin-stage phone" id="phoneStage" aria-label="Brew and Brews Halloween Radio mobile">
-    <div class="overlay tuner-glow"></div>
-    <div class="overlay tuner-needle" data-needle></div>
-    <div class="overlay station-layer" data-stations></div>
-    <div class="overlay live-lamp"></div>
-    <div class="overlay now-live" data-now>
-      <div class="track-title" data-title>IRONCLAD</div>
-      <div class="track-meta" data-meta>B&amp;B Radio · 103.1</div>
-      <div class="track-extra"><span data-position>1 / 6</span><span data-time>0:00 / 2:45</span></div>
-      <div class="progress"><div class="progress-fill" data-progress></div></div>
-    </div>
-    <div class="overlay mode-controls" aria-label="Playback modes">
-      <button type="button" class="mode-button" data-mode-button="shuffle" aria-pressed="false" aria-label="Toggle shuffle">SHF</button>
-      <button type="button" class="mode-button" data-mode-button="repeat" aria-pressed="false" aria-label="Toggle repeat">RPT</button>
-    </div>
-    <div class="overlay play-halo"></div>
-    <div class="overlay play-symbol"><div class="triangle"></div><div class="bars"><b></b><b></b></div></div>
-    <div class="overlay knob-marker volume-marker" data-volume-marker></div>
-    <div class="overlay knob-marker tune-marker" data-tune-marker></div>
-    <div class="overlay ghost" data-ghost>👻</div>
-
-    <button class="hit drag" data-hit="tuner" aria-label="Tune radio"></button>
-    <button class="hit" data-hit="display" aria-label="Now Brewing display"></button>
-    <button class="hit" data-hit="prev" aria-label="Previous song"></button>
-    <button class="hit" data-hit="play" aria-label="Play"></button>
-    <button class="hit" data-hit="next" aria-label="Next song"></button>
-    <button class="hit drag" data-hit="volume" aria-label="Volume control"></button>
-    <button class="hit drag" data-hit="tune" aria-label="Tune control"></button>
-    <button class="hit" data-hit="witch" aria-label="Witching Hour"></button>
-    <button class="hit" data-hit="brand" aria-label="Brew and Brews"></button>
-    <button class="hit" data-hit="home" aria-label="Home"></button>
-    <button class="hit" data-hit="schedule" aria-label="Schedule"></button>
-    <button class="hit" data-hit="shows" aria-label="Shows"></button>
-    <button class="hit" data-hit="menu" aria-label="Menu"></button>
+    <div class="overlay tuner-glow"></div><div class="overlay tuner-needle" data-needle></div><div class="overlay station-layer" data-stations></div><div class="overlay live-lamp"></div>
+    <div class="overlay now-live" data-now><div class="track-title" data-title>IRONCLAD</div><div class="track-meta" data-meta>B&amp;B Radio · 103.1</div><div class="track-extra"><span data-position>1 / 6</span><span data-time>0:00 / 2:45</span></div><div class="progress"><div class="progress-fill" data-progress></div></div></div>
+    <div class="overlay mode-controls" aria-label="Playback modes"><button type="button" class="mode-button" data-mode-button="shuffle" aria-pressed="false" aria-label="Toggle shuffle">SHF</button><button type="button" class="mode-button" data-mode-button="repeat" aria-pressed="false" aria-label="Toggle repeat">RPT</button></div>
+    <div class="overlay play-halo"></div><div class="overlay play-symbol"><div class="triangle"></div><div class="bars"><b></b><b></b></div></div><div class="overlay knob-marker volume-marker" data-volume-marker></div><div class="overlay knob-marker tune-marker" data-tune-marker></div><div class="overlay ghost" data-ghost>👻</div>
+    <button class="hit drag" data-hit="tuner" aria-label="Tune radio"></button><button class="hit" data-hit="display" aria-label="Now Brewing display"></button><button class="hit" data-hit="prev" aria-label="Previous song"></button><button class="hit" data-hit="play" aria-label="Play"></button><button class="hit" data-hit="next" aria-label="Next song"></button><button class="hit drag" data-hit="volume" aria-label="Volume control"></button><button class="hit drag" data-hit="tune" aria-label="Tune control"></button><button class="hit" data-hit="witch" aria-label="Witching Hour"></button><button class="hit" data-hit="brand" aria-label="Brew and Brews"></button><button class="hit" data-hit="home" aria-label="Home"></button><button class="hit" data-hit="schedule" aria-label="Schedule"></button><button class="hit" data-hit="shows" aria-label="Shows"></button><button class="hit" data-hit="menu" aria-label="Menu"></button>
   </section>
 </div>
-
-<aside class="drawer" id="drawer" aria-hidden="true">
-  <h2>Receiver Controls</h2>
-  <div class="drawer-row"><span>Haunted Auto Tune</span><button class="switch on" id="autoSwitch" aria-pressed="true" aria-label="Toggle Haunted Auto Tune"><i></i></button></div>
-  <div class="drawer-row"><span>Shuffle Songs</span><button class="switch" id="shuffleSwitch" aria-pressed="false" aria-label="Toggle Shuffle Songs"><i></i></button></div>
-  <div class="drawer-row"><span>Repeat Song</span><button class="switch" id="repeatSwitch" aria-pressed="false" aria-label="Toggle Repeat Song"><i></i></button></div>
-  <div class="drawer-row"><span>Frequency</span><strong id="drawerFreq">103.1 FM</strong></div>
-  <div class="drawer-row"><span>Station</span><strong id="drawerStation">B&amp;B Radio</strong></div>
-  <div class="drawer-row"><span>Haunts Found</span><strong id="hauntCount">0 / 9</strong></div>
-  <button class="close-drawer" id="closeDrawer">Close Panel</button>
-</aside>
-
+<aside class="drawer" id="drawer" aria-hidden="true"><h2>Receiver Controls</h2><div class="drawer-row"><span>Haunted Auto Tune</span><button class="switch on" id="autoSwitch" aria-pressed="true" aria-label="Toggle Haunted Auto Tune"><i></i></button></div><div class="drawer-row"><span>Shuffle Songs</span><button class="switch" id="shuffleSwitch" aria-pressed="false" aria-label="Toggle Shuffle Songs"><i></i></button></div><div class="drawer-row"><span>Repeat Song</span><button class="switch" id="repeatSwitch" aria-pressed="false" aria-label="Toggle Repeat Song"><i></i></button></div><div class="drawer-row"><span>Frequency</span><strong id="drawerFreq">103.1 FM</strong></div><div class="drawer-row"><span>Station</span><strong id="drawerStation">B&amp;B Radio</strong></div><div class="drawer-row"><span>Haunts Found</span><strong id="hauntCount">0 / 9</strong></div><button class="close-drawer" id="closeDrawer">Close Panel</button></aside>
 <div class="radio-library-backdrop" id="radioLibraryBackdrop" aria-hidden="true"></div>
-
-<section class="radio-library-panel" id="schedulePanel" aria-hidden="true" aria-label="Station schedule and song list">
-  <header class="library-head">
-    <div><p class="library-kicker">Station Schedule</p><h2>Choose Your Signal</h2><p class="library-sub">See every song on every frequency and choose exactly where the broadcast should start.</p></div>
-    <button class="library-close" type="button" data-library-close aria-label="Close schedule">×</button>
-  </header>
-  <div class="library-body" id="scheduleBody"><div class="library-loading">Loading the haunted frequencies…</div></div>
-</section>
-
-<section class="radio-library-panel" id="showsPanel" aria-hidden="true" aria-label="Now playing shows and favorites">
-  <header class="library-head">
-    <div><p class="library-kicker">Shows</p><h2>Now Playing</h2><p class="library-sub">Stay here while the radio plays, jump to another song, or save favorites with 💕 for next time.</p></div>
-    <button class="library-close" type="button" data-library-close aria-label="Close shows">×</button>
-  </header>
-  <div class="library-body" id="showsBody"><div class="library-loading">Opening the broadcast console…</div></div>
-</section>
-
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
-<div class="sr" id="sr" aria-live="polite"></div>
-<audio id="radioAudio" preload="metadata"></audio>
-
-<script src="assets/js/skin-radio.js" defer></script>
-<script src="assets/js/radio-enhancements.js" defer></script>
-<script src="assets/js/mode-controls.js" defer></script>
-<script src="assets/js/library-panels.js" defer></script>
-<script src="assets/js/witch-ride-launcher.js" defer></script>
+<section class="radio-library-panel" id="schedulePanel" aria-hidden="true" aria-label="Station schedule and song list"><header class="library-head"><div><p class="library-kicker">Station Schedule</p><h2>Choose Your Signal</h2><p class="library-sub">See every song on every frequency and choose exactly where the broadcast should start.</p></div><button class="library-close" type="button" data-library-close aria-label="Close schedule">×</button></header><div class="library-body" id="scheduleBody"><div class="library-loading">Loading the haunted frequencies…</div></div></section>
+<section class="radio-library-panel" id="showsPanel" aria-hidden="true" aria-label="Now playing shows and favorites"><header class="library-head"><div><p class="library-kicker">Shows</p><h2>Now Playing</h2><p class="library-sub">Stay here while the radio plays, jump to another song, or save favorites with 💕 for next time.</p></div><button class="library-close" type="button" data-library-close aria-label="Close shows">×</button></header><div class="library-body" id="showsBody"><div class="library-loading">Opening the broadcast console…</div></div></section>
+<div class="toast" id="toast" role="status" aria-live="polite"></div><div class="sr" id="sr" aria-live="polite"></div><audio id="radioAudio" preload="metadata"></audio>
+<script src="assets/js/skin-radio.js" defer></script><script src="assets/js/radio-enhancements.js" defer></script><script src="assets/js/mode-controls.js" defer></script><script src="assets/js/library-panels.js" defer></script><script src="assets/js/witch-ride-launcher.js" defer></script><script src="assets/js/app-shell.js" defer></script>
 </body>
 </html>
