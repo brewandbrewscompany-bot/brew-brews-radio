@@ -1,0 +1,127 @@
+name: Halloween Radio Pass 29 Release Audit
+
+on:
+  push:
+    branches: [halloween-radio-release-audit-pass-29]
+    paths:
+      - '.github/workflows/halloween-radio-pass29-release-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  release-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify production source lock
+        shell: bash
+        run: |
+          git fetch origin main halloween-radio-release-audit-pass-29
+          PROD=c58032f16d9fff7f28875b8c41ee6fbcd60b95da
+          test "$(git rev-parse origin/main)" = "$PROD"
+          test "$(git rev-parse HEAD^)" = "$PROD"
+          git diff --quiet "$PROD" HEAD -- halloween-radio || { echo 'PRODUCTION HALLOWEEN RADIO CHANGED'; exit 1; }
+          ! git diff --name-only "$PROD" HEAD | grep -q '^louisburg-local/'
+          ! git diff --name-only "$PROD" HEAD | grep -q '^christmas-radio/'
+
+      - name: Install audio validation tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+
+      - name: Validate rotation manifest and every audio file
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),path=require('path'),cp=require('child_process');
+          const root='halloween-radio';
+          const m=JSON.parse(fs.readFileSync(path.join(root,'data/tracks.json'),'utf8'));
+          const assert=(v,msg)=>{if(!v)throw new Error(msg)};
+          assert(m.expectedTrackCount===34,'expectedTrackCount is not 34');
+          assert(m.uploadedTrackCount===34,'uploadedTrackCount is not 34');
+          assert(m.plannedTrackCount===0,'plannedTrackCount is not 0');
+          assert(m.tracks.length===34,`manifest has ${m.tracks.length} tracks`);
+          assert(m.stations.length===6,`manifest has ${m.stations.length} stations`);
+          const expectedFreq=[88.3,91.7,95.9,99.5,103.1,106.7];
+          assert(JSON.stringify(m.stations.map(s=>s.frequency))===JSON.stringify(expectedFreq),'station frequencies changed');
+          const ids=new Set(),files=new Set();
+          const counts={};
+          let total=0;
+          const rows=[];
+          for(const t of m.tracks){
+            assert(!ids.has(t.id),`duplicate id ${t.id}`); ids.add(t.id);
+            assert(!files.has(t.file),`duplicate file ${t.file}`); files.add(t.file);
+            assert(expectedFreq.includes(t.station),`unknown station ${t.station} for ${t.id}`);
+            assert(['uploaded','current-default'].includes(t.status),`bad status ${t.status} for ${t.id}`);
+            const p=path.join(root,t.file);
+            assert(fs.existsSync(p),`missing ${t.file}`);
+            const st=fs.statSync(p); assert(st.size>100000,`suspiciously small ${t.file}: ${st.size}`);
+            const probe=JSON.parse(cp.execFileSync('ffprobe',['-v','error','-show_entries','format=duration:stream=codec_name,codec_type,sample_rate,channels','-of','json',p],{encoding:'utf8'}));
+            const dur=Number(probe.format?.duration||0);
+            const a=probe.streams?.find(s=>s.codec_type==='audio');
+            assert(a,`no audio stream ${t.file}`);
+            assert(a.codec_name==='mp3',`unexpected codec ${a.codec_name} in ${t.file}`);
+            assert(dur>20,`duration too short ${t.file}: ${dur}`);
+            assert(Math.abs(dur-Number(t.durationSec))<=1.5,`duration mismatch ${t.file}: manifest=${t.durationSec}, actual=${dur.toFixed(2)}`);
+            counts[t.station]=(counts[t.station]||0)+1;
+            total+=dur;
+            rows.push({id:t.id,title:t.title,station:t.station,file:t.file,sizeBytes:st.size,durationManifest:t.durationSec,durationActual:+dur.toFixed(2),codec:a.codec_name,sampleRate:+a.sample_rate,channels:a.channels});
+          }
+          const expectedCounts={'88.3':6,'91.7':5,'95.9':6,'99.5':6,'103.1':6,'106.7':5};
+          assert(JSON.stringify(counts)===JSON.stringify(expectedCounts),`station track counts changed: ${JSON.stringify(counts)}`);
+          assert(Math.abs(total-m.rotationDurationSec)<=10,`rotation total mismatch ${total}`);
+          for(const s of m.stations){
+            const orders=m.tracks.filter(t=>t.station===s.frequency).map(t=>t.order).sort((a,b)=>a-b);
+            assert(orders.every((v,i)=>v===i+1),`non-contiguous order at ${s.frequency}: ${orders}`);
+          }
+          const mp3s=fs.readdirSync(path.join(root,'audio')).filter(x=>x.endsWith('.mp3')).sort();
+          const used=[...files].map(x=>path.basename(x)).sort();
+          const orphan=mp3s.filter(x=>!used.includes(x));
+          assert(orphan.length===1&&orphan[0]==='black-cat-boogie-alt.mp3',`unexpected orphan/alternate files: ${orphan.join(', ')}`);
+          fs.writeFileSync('pass29-audio-inventory.json',JSON.stringify({trackCount:m.tracks.length,stationCount:m.stations.length,rotationSeconds:+total.toFixed(2),rotationMinutes:+(total/60).toFixed(2),stationCounts:counts,intentionalAlternate:orphan[0],tracks:rows},null,2));
+          console.log(`Validated ${m.tracks.length} rotation tracks across ${m.stations.length} stations; ${(total/60).toFixed(1)} minutes.`);
+          NODE
+
+      - name: Full-decode all 34 rotation MP3s
+        shell: bash
+        run: |
+          node -e "const m=require('./halloween-radio/data/tracks.json'); for(const t of m.tracks) console.log('halloween-radio/'+t.file)" > /tmp/rotation-files.txt
+          : > pass29-decode-results.txt
+          while IFS= read -r f; do
+            echo "DECODING $f" | tee -a pass29-decode-results.txt
+            ffmpeg -hide_banner -v error -xerror -i "$f" -f null - 2>>pass29-decode-results.txt
+            echo "OK $f" >> pass29-decode-results.txt
+          done < /tmp/rotation-files.txt
+          test "$(grep -c '^OK ' pass29-decode-results.txt)" -eq 34
+
+      - name: Validate actual radio references and release essentials
+        shell: bash
+        run: |
+          grep -q 'manifest.webmanifest' halloween-radio/index.html
+          grep -q 'app-shell.js' halloween-radio/index.html
+          grep -q 'shuffle-stations.js' halloween-radio/index.html
+          grep -q 'games/witch-ride-3d/' halloween-radio/assets/js/witch-ride-launcher.js
+          grep -q 'pass23-traffic-spacing.js' halloween-radio/games/witch-ride-3d/index.html
+          test -f halloween-radio/sw.js
+          test -f halloween-radio/offline.html
+          test -f halloween-radio/data/final-upload-audit.json
+          node --check halloween-radio/sw.js
+          node --check halloween-radio/assets/js/shuffle-stations.js
+          node --check halloween-radio/assets/js/witch-ride-launcher.js
+
+      - name: Upload Pass 29 audit proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: halloween-radio-pass29-release-audit
+          if-no-files-found: warn
+          path: |
+            pass29-audio-inventory.json
+            pass29-decode-results.txt
