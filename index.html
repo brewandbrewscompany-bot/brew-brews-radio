@@ -1,158 +1,106 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0d0a08">
-  <meta name="description" content="Brew & Brews Radio — original music from the Brew & Brews coffee roastery in Louisburg, Kansas.">
-  <title>Brew & Brews Radio</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#17100b">
+<title>Brew & Brews Radio · 103.1</title>
+<meta name="description" content="Brew & Brews Radio from the Brew And Brews Co LLC coffee roastery in Louisburg, Kansas.">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
+<main class="page-shell">
+  <section class="radio" aria-label="Brew & Brews Radio physical console">
+    <div class="radio__cabinet">
+      <div class="radio__inner-edge">
+        <div class="radio__face">
+          <header class="brand-bar">
+            <div class="brand-mark" aria-label="Brew and Brews Radio">
+              <span class="brand-main">BREW &amp; BREWS</span>
+              <span class="brand-sub">RADIO · LOUISBURG, KANSAS</span>
+            </div>
+            <div class="on-air" id="onAir" aria-live="polite"><i aria-hidden="true"></i><span>READY</span></div>
+          </header>
 
-  <header class="sticky-top">
-    <button id="topBrandOpen" class="top-brand" type="button" aria-label="Open current song">
-      <img id="topCover" src="love-in-every-brew.png" alt="">
-      <span>
-        <strong>Brew & Brews Radio</strong>
-        <small id="topSongTitle">Love in Every Brew</small>
-      </span>
-    </button>
+          <section class="tuner" aria-label="FM tuner">
+            <div class="tuner__outer-frame">
+              <div class="tuner__bevel">
+                <div class="tuner__cavity">
+                  <div class="tuner__glass" id="tunerGlass">
+                    <div class="tuner__reflection" aria-hidden="true"></div>
+                    <div class="tuner__band-label">FM</div>
+                    <div class="tuner__scale" aria-hidden="true">
+                      <span style="--p:0%">88</span><span style="--p:20%">92</span><span style="--p:40%">96</span>
+                      <span style="--p:60%">100</span><span style="--p:80%">104</span><span style="--p:100%">108</span>
+                    </div>
+                    <div class="tuner__ticks" aria-hidden="true"></div>
+                    <div class="tuner__station-mark" style="--p:75.5%"><b>B&amp;B</b><small>103.1</small></div>
+                    <div class="tuner__needle" id="tunerNeedle" data-testid="tuner-needle" aria-hidden="true"></div>
+                    <input id="tunerRange" class="tuner__hit-area" type="range" min="88" max="108" step="0.1" value="103.1" aria-label="FM tuning, 103.1 megahertz">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="station-plate" aria-live="polite">
+              <strong id="stationName">B&amp;B 103.1</strong>
+              <span id="stationLocation">LOUISBURG, KS</span>
+            </div>
+          </section>
 
-    <div class="top-actions">
-      <button id="topPlayBtn" class="top-play" type="button">▶ PLAY</button>
+          <div class="console-grid">
+            <section class="speaker" aria-label="Radio speaker"><div class="speaker__grille"></div><span>ROASTERY RADIO</span></section>
 
-      <a
-        class="top-shop"
-        href="https://brewandbrewsco.com/all-products-1"
-        target="_blank"
-        rel="noopener"
-      >
-        ☕ SHOP
-      </a>
-    </div>
-  </header>
+            <section class="now-brewing" aria-label="Now brewing">
+              <div class="now-brewing__frame">
+                <div class="now-brewing__screen">
+                  <div class="now-brewing__label">NOW BREWING</div>
+                  <div class="now-brewing__title" id="trackTitle">Love in Every Brew</div>
+                  <div class="now-brewing__meta"><span id="stationMeta">Brew &amp; Brews Radio · 103.1</span><span id="timeText">0:00 / 0:00</span></div>
+                  <input id="progress" class="progress" type="range" min="0" max="1000" value="0" aria-label="Playback position">
+                </div>
+              </div>
+            </section>
 
-  <main class="app-shell">
+            <section class="meter-cluster" aria-label="Signal meter and vacuum tube">
+              <div class="meter">
+                <span class="meter__label">SIGNAL</span>
+                <div class="meter__scale" aria-hidden="true">1&nbsp;&nbsp;2&nbsp;&nbsp;3&nbsp;&nbsp;4&nbsp;&nbsp;5</div>
+                <i id="meterNeedle" class="meter__needle" aria-hidden="true"></i>
+              </div>
+              <div class="tube" aria-hidden="true"><i class="tube__glass"></i><i class="tube__filament"></i><i class="tube__base"></i></div>
+            </section>
+          </div>
 
-    <section class="hero">
-      <div class="hero-copy">
-        <div class="eyebrow">Brew & Brews Radio</div>
-        <h1>Your roastery soundtrack</h1>
-        <p>Original music for every roast, pour, and late-night cup.</p>
-      </div>
-    </section>
+          <section class="transport" aria-label="Playback controls">
+            <button id="prevBtn" class="hardware-button hardware-button--side" type="button" aria-label="Previous track"><span>PREV</span><b>◀</b></button>
+            <button id="playBtn" class="hardware-button hardware-button--play" type="button" aria-label="Play" aria-pressed="false"><span id="playLabel">PLAY</span><b id="playIcon">▶</b></button>
+            <button id="nextBtn" class="hardware-button hardware-button--side" type="button" aria-label="Next track"><span>NEXT</span><b>▶</b></button>
+          </section>
 
-    <section class="library">
-
-      <div class="library-head">
-        <div>
-          <div class="library-kicker">BROWSE THE STATION</div>
-          <h2>Pick your next pour</h2>
+          <section class="knob-row" aria-label="Radio knobs">
+            <label class="knob-control">
+              <span class="knob-label">VOLUME</span>
+              <span class="knob" id="volumeKnob" style="--angle:36deg"><i></i></span>
+              <input id="volumeRange" type="range" min="0" max="1" step="0.01" value="0.72" aria-label="Volume">
+              <output id="volumeValue">72%</output>
+            </label>
+            <div class="center-badge"><b>BREW SOMETHING BOLD.</b><span>BREW AND BREWS CO LLC · COFFEE ROASTERY</span></div>
+            <label class="knob-control">
+              <span class="knob-label">TUNING</span>
+              <span class="knob" id="tuneKnob" style="--angle:79deg"><i></i></span>
+              <input id="tuneRange" type="range" min="88" max="108" step="0.1" value="103.1" aria-label="Tuning frequency">
+              <output id="frequencyValue">103.1 FM</output>
+            </label>
+          </section>
         </div>
-
-        <div class="library-count">
-          <strong id="songCount">0</strong>
-          <span>songs</span>
-        </div>
       </div>
-
-      <div class="search-wrap">
-        <span>⌕</span>
-        <input
-          id="searchInput"
-          type="search"
-          placeholder="Search songs or moods"
-          autocomplete="off"
-        >
-      </div>
-
-      <div id="genreFilters" class="filters"></div>
-      <div id="trackGrid" class="track-list"></div>
-
-    </section>
-
-  </main>
-
-  <section id="miniPlayer" class="mini-player" aria-label="Now playing">
-
-    <button
-      id="openFullPlayer"
-      class="mini-info"
-      type="button"
-      aria-label="Open full player"
-    >
-      <img id="miniCover" src="love-in-every-brew.png" alt="">
-
-      <span class="mini-copy">
-        <strong id="miniTitle">Love in Every Brew</strong>
-        <small id="miniArtist">Brew & Brews Radio</small>
-      </span>
-    </button>
-
-    <div class="mini-controls">
-      <button id="prevBtn" type="button" aria-label="Previous">◀</button>
-      <button id="playBtn" class="mini-main-play" type="button" aria-label="Play">▶</button>
-      <button id="nextBtn" type="button" aria-label="Next">▶</button>
     </div>
-
-    <button id="miniFavorite" class="mini-favorite" type="button" aria-label="Favorite">♡</button>
-
-    <div class="mini-progress-row">
-      <span id="miniCurrent">0:00</span>
-      <input id="miniProgress" type="range" min="0" max="100" value="0">
-      <span id="miniDuration">0:00</span>
-    </div>
-
+    <p class="radio-note">Original Brew &amp; Brews Radio · streamed from our coffee roastery in Louisburg, Kansas</p>
   </section>
-
-  <section id="fullPlayer" class="full-player" hidden>
-    <div id="fullBackdrop" class="full-backdrop"></div>
-
-    <button id="closeFullPlayer" class="full-close" type="button" aria-label="Close full player">⌄</button>
-
-    <div class="full-inner">
-      <div class="full-label">NOW PLAYING</div>
-
-      <img id="fullCover" class="full-cover" src="love-in-every-brew.png" alt="Current album artwork">
-
-      <h2 id="fullTitle">Love in Every Brew</h2>
-      <p id="fullArtist">Brew & Brews Radio</p>
-
-      <input id="fullProgress" type="range" min="0" max="100" value="0">
-
-      <div class="full-times">
-        <span id="fullCurrent">0:00</span>
-        <span id="fullDuration">0:00</span>
-      </div>
-
-      <div class="full-controls">
-        <button id="fullShuffle" type="button" aria-label="Shuffle" aria-pressed="false">⤨</button>
-        <button id="fullPrev" type="button" aria-label="Previous">◀</button>
-        <button id="fullPlay" class="full-main-play" type="button" aria-label="Play">▶</button>
-        <button id="fullNext" type="button" aria-label="Next">▶</button>
-        <button id="fullRepeat" type="button" aria-label="Repeat" aria-pressed="false">↻</button>
-      </div>
-
-      <button id="fullFavorite" class="full-favorite" type="button" aria-pressed="false">♡ Favorite</button>
-
-      <a
-        class="full-shop"
-        href="https://brewandbrewsco.com/all-products-1"
-        target="_blank"
-        rel="noopener"
-      >
-        ☕ SHOP BREW & BREWS COFFEE
-      </a>
-
-      <p class="phone-volume-note">Use your phone’s volume buttons to adjust sound.</p>
-    </div>
-  </section>
-
-  <audio id="audio" preload="metadata"></audio>
-
-  <script src="playlist.js"></script>
-  <script src="player.js"></script>
+</main>
+<audio id="audio" preload="none"></audio>
+<script src="playlist.js"></script>
+<script src="player.js"></script>
 </body>
 </html>
