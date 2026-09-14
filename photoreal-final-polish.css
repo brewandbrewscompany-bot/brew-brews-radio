@@ -100,21 +100,34 @@ body.volume-touched .knob-control--volume .knob i,
 body.tuning-touched .knob-control--tune .knob i{opacity:1!important}
 .knob-control input{inset:-5%!important;width:110%!important;height:110%!important}
 
-/* Live numeric values cover the baked resting value but read as engraved
-   face text, not a floating web-form badge. */
+/* At rest, the approved photograph supplies the 33% / 103.1 FM engravings.
+   Once a rotary is touched, one compact opaque live readout sits directly over
+   that baked resting value so there is never doubled text. */
 .knob-control output{
-  bottom:-20%!important;
-  min-width:64%!important;
+  position:absolute!important;
+  left:50%!important;
+  bottom:-11px!important;
+  transform:translateX(-50%)!important;
+  min-width:76%!important;
+  height:14px!important;
   padding:0 7px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
   border:0!important;
   border-radius:2px!important;
   background:#100d09!important;
   color:#efbe63!important;
   font-weight:700!important;
+  line-height:1!important;
   letter-spacing:.05em!important;
   text-shadow:0 1px 2px #000!important;
-  box-shadow:0 0 7px 4px #100d09!important;
+  box-shadow:0 0 8px 5px #100d09!important;
+  opacity:0!important;
+  pointer-events:none!important;
 }
+body.volume-touched .knob-control--volume output,
+body.tuning-touched .knob-control--tune output{opacity:1!important}
 
 /* Keep the baked tuner needle until tuning begins; once it does, the existing
    glass patch hides that baked needle and the one live HTML needle takes over. */
@@ -133,7 +146,7 @@ body.tuning-touched .tuner__needle{opacity:1!important}
   }
   .knob-control--volume .knob i{left:-88.4211%!important}
   .knob-control--tune .knob i{left:-304.2105%!important}
-  .knob-control output{bottom:-18%!important}
+  .knob-control output{bottom:-9px!important;min-width:72%!important;height:13px!important}
   body.has-station-change .station-plate{font-size:clamp(7px,1.55vw,10px)!important}
 }
 
