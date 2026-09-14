@@ -1,0 +1,177 @@
+name: Halloween Radio Pass 27 Final App Release Candidate
+
+on:
+  push:
+    branches: [halloween-radio-app-release-candidate-pass-27]
+    paths:
+      - '.github/workflows/halloween-radio-pass27-release-candidate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  final-release-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify accepted Pass 26 is unchanged
+        shell: bash
+        run: |
+          git fetch origin main halloween-radio-shuffle-across-stations-pass-26 halloween-radio-app-release-candidate-pass-27
+          MAIN=1fc25e52dfbf257a13c22d1a46f399878701309b
+          SOURCE=7f7007b4b02b7edd253123b0e7ba1c9b2f4f0ed0
+          test "$(git rev-parse origin/main)" = "$MAIN"
+          test "$(git rev-parse origin/halloween-radio-shuffle-across-stations-pass-26)" = "$SOURCE"
+          test "$(git rev-parse origin/halloween-radio-app-release-candidate-pass-27)" = "$GITHUB_SHA"
+          CHANGED="$(git diff --name-only "$SOURCE" HEAD)"
+          echo "$CHANGED"
+          test "$CHANGED" = '.github/workflows/halloween-radio-pass27-release-candidate.yml'
+          ! printf '%s\n' "$CHANGED" | grep -q '^louisburg-local/'
+          ! printf '%s\n' "$CHANGED" | grep -q '^christmas-radio/'
+          node --check halloween-radio/assets/js/skin-radio.js
+          node --check halloween-radio/assets/js/shuffle-across-stations.js
+          node --check halloween-radio/assets/js/app-shell.js
+          node --check halloween-radio/sw.js
+          node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('halloween-radio/manifest.webmanifest','utf8'));if(m.display!=='standalone'||!m.icons?.some(i=>String(i.purpose||'').includes('maskable')))process.exit(1)"
+          grep -q 'shuffle-across-stations.js' halloween-radio/index.html
+          grep -q 'witch-ride-launcher.js' halloween-radio/index.html
+          grep -q 'halloween-radio-pwa-v2' halloween-radio/sw.js
+
+      - name: Consolidated 430x932 radio, shuffle, game, PWA and offline gate
+        shell: bash
+        run: |
+          npm install --no-save puppeteer-core@24.16.0
+          python3 -m http.server 8027 --directory . >/tmp/pass27.log 2>&1 & PID=$!
+          trap 'kill $PID || true' EXIT
+          sleep 2
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_BIN"
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const fs=require('fs'),puppeteer=require('puppeteer-core');
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          const assert=(v,m)=>{if(!v)throw new Error(m)};
+          const changed=(a,b)=>Math.abs(Number(a)-Number(b))>.01;
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--disable-background-timer-throttling','--disable-renderer-backgrounding','--disable-backgrounding-occluded-windows']});
+            const page=await browser.newPage();page.setDefaultTimeout(90000);
+            await page.setViewport({width:430,height:932,deviceScaleFactor:1,isMobile:true,hasTouch:true});
+            const requests=[],errors=[];
+            page.on('request',r=>requests.push(r.url()));
+            page.on('pageerror',e=>errors.push(String(e)));
+            page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+            await page.evaluateOnNewDocument(()=>{window.__pass27PlayEvents=0;document.addEventListener('play',()=>window.__pass27PlayEvents++,true)});
+            const url='http://127.0.0.1:8027/halloween-radio/';
+            await page.goto(url,{waitUntil:'domcontentloaded'});
+            await page.waitForFunction(()=>window.BBRadio&&window.BBShuffleAcrossStations?.active===true&&window.__HalloweenRadioPWA?.version==='pass25-pwa-v1');
+            await page.evaluate(()=>BBRadio.setAutoTune(false));
+
+            const initial=await page.evaluate(async()=>{const a=document.getElementById('radioAudio'),manifest=await fetch('manifest.webmanifest').then(r=>r.json());return{radio:BBRadio.snapshot(),paused:a.paused,playEvents:window.__pass27PlayEvents,manifest,installText:window.__HalloweenRadioPWA.installButton?.innerText||'',launcher:!!document.querySelector('.witch-ride-launch'),shuffleVersion:BBShuffleAcrossStations.version}});
+            assert(initial.radio.playbackIntent===false&&initial.paused===true&&initial.playEvents===0,'radio did not start silent');
+            assert(initial.radio.shuffle===false,'shuffle unexpectedly enabled at launch');
+            assert(initial.manifest.display==='standalone'&&initial.manifest.start_url.startsWith('./'),'manifest launch settings invalid');
+            assert(initial.manifest.icons.some(i=>String(i.purpose||'').includes('maskable')),'maskable icon missing');
+            assert(/INSTALL HALLOWEEN RADIO/.test(initial.installText),'install control missing');
+            assert(initial.launcher,'Witch Ride launcher missing');
+            assert(!requests.some(u=>u.includes('/games/witch-ride-3d/')),'Witch Ride loaded before user opened it');
+
+            // Cross-station Shuffle from the real phone control.
+            await page.click('#phoneStage [data-mode-button="shuffle"]');
+            await page.waitForFunction(()=>BBRadio.snapshot().shuffle===true);
+            const hops=[];
+            for(let i=0;i<4;i++){
+              const before=await page.evaluate(()=>({s:BBRadio.snapshot(),count:BBShuffleAcrossStations.hopCount}));
+              await page.click('#phoneStage [data-hit="next"]');
+              await page.waitForFunction(count=>BBShuffleAcrossStations.hopCount>count&&!BBShuffleAcrossStations.inFlight,{timeout:10000},before.count);
+              const after=await page.evaluate(()=>({s:BBRadio.snapshot(),hop:BBShuffleAcrossStations.lastHop,paused:document.getElementById('radioAudio').paused}));
+              assert(changed(before.s.currentFreq,after.s.currentFreq),'shuffle stayed on same station');
+              assert(before.s.trackId!==after.s.trackId,'shuffle repeated same song');
+              assert(after.paused&&after.s.playbackIntent===false,'paused Shuffle started audio');
+              hops.push(after.hop);
+            }
+            assert(new Set(hops.map(h=>String(h.toFreq))).size>=2,'shuffle lacks station variation');
+
+            // Shuffle off returns to same-station NEXT.
+            await page.click('#phoneStage [data-mode-button="shuffle"]');
+            await page.waitForFunction(()=>BBRadio.snapshot().shuffle===false);
+            const normalBefore=await page.evaluate(()=>BBRadio.snapshot());
+            await page.click('#phoneStage [data-hit="next"]');await sleep(180);
+            const normalAfter=await page.evaluate(()=>BBRadio.snapshot());
+            assert(!changed(normalBefore.currentFreq,normalAfter.currentFreq),'normal NEXT changed station');
+            assert(normalBefore.trackId!==normalAfter.trackId,'normal NEXT did not advance');
+
+            // Active Shuffle keeps playback intent and uses tuning transition.
+            await page.click('#phoneStage [data-mode-button="shuffle"]');
+            await page.waitForFunction(()=>BBRadio.snapshot().shuffle===true);
+            await page.click('#phoneStage [data-hit="play"]');
+            await page.waitForFunction(()=>BBRadio.snapshot().playbackIntent===true);
+            const playBefore=await page.evaluate(()=>({s:BBRadio.snapshot(),count:BBShuffleAcrossStations.hopCount,staticCount:BBShuffleAcrossStations.staticCount}));
+            await page.click('#phoneStage [data-hit="next"]');
+            await page.waitForFunction(count=>BBShuffleAcrossStations.hopCount>count&&!BBShuffleAcrossStations.inFlight,{timeout:15000},playBefore.count);
+            const playAfter=await page.evaluate(()=>({s:BBRadio.snapshot(),staticCount:BBShuffleAcrossStations.staticCount}));
+            assert(changed(playBefore.s.currentFreq,playAfter.s.currentFreq),'playing Shuffle stayed on same station');
+            assert(playAfter.s.playbackIntent===true,'playing Shuffle lost playback intent');
+            assert(playAfter.staticCount>playBefore.staticCount,'tuning/static transition missing');
+            await page.click('#phoneStage [data-hit="play"]');
+            await page.waitForFunction(()=>BBRadio.snapshot().playbackIntent===false);
+
+            // PWA installability and cache policy.
+            await page.waitForFunction(async()=>!!(await navigator.serviceWorker.ready).active,{timeout:30000});
+            await page.reload({waitUntil:'domcontentloaded'});
+            await page.waitForFunction(()=>navigator.serviceWorker.controller&&window.BBShuffleAcrossStations?.active===true,{timeout:30000});
+            const client=await page.target().createCDPSession();await client.send('Page.enable');
+            const manifestInfo=await client.send('Page.getAppManifest');
+            assert(!manifestInfo.errors?.length,`manifest parser errors: ${JSON.stringify(manifestInfo.errors)}`);
+            let installability=[];try{installability=(await client.send('Page.getInstallabilityErrors')).installabilityErrors||[]}catch(e){installability=[{errorId:'cdp-installability-check-unavailable'}]}
+            const fatal=installability.filter(e=>e.errorId!=='cdp-installability-check-unavailable');
+            assert(fatal.length===0,`PWA installability errors: ${JSON.stringify(fatal)}`);
+            const cacheState=await page.evaluate(async()=>{const names=await caches.keys(),urls=[];for(const n of names){const c=await caches.open(n);for(const r of await c.keys())urls.push(r.url)}return{names,urls}});
+            assert(cacheState.names.some(n=>n.includes('halloween-radio-pwa-v2-core')),'v2 core cache missing');
+            assert(cacheState.urls.some(u=>u.includes('/assets/js/shuffle-across-stations.js')),'Shuffle fix missing from app cache');
+            assert(!cacheState.urls.some(u=>u.includes('/audio/')),'music was cached');
+            assert(!cacheState.urls.some(u=>u.includes('/games/witch-ride-3d/')),'Witch Ride was pre-cached');
+
+            // Accepted Witch Ride must lazy-load inside app shell without starting radio.
+            await page.evaluate(()=>document.querySelector('.witch-ride-launch').click());
+            await page.waitForFunction(()=>document.getElementById('witchRideLauncher')?.classList.contains('open'));
+            let gameFrame=null;for(let i=0;i<180;i++){gameFrame=page.frames().find(f=>f.url().includes('/halloween-radio/games/witch-ride-3d/'))||null;if(gameFrame)break;await sleep(250)}
+            assert(gameFrame,'Witch Ride iframe did not lazy-load');
+            await gameFrame.waitForFunction(()=>window.WitchRide3D?.ready===true&&window.WitchRidePass23TrafficSpacing?.active===true,{timeout:90000});
+            const game=await gameFrame.evaluate(()=>({ready:WitchRide3D.ready,pass23:WitchRidePass23TrafficSpacing.active,pass21:!!window.WitchRidePass21Gameplay?.active}));
+            assert(game.ready&&game.pass23,'accepted Witch Ride failed in app shell');
+            const duringGame=await page.evaluate(()=>({paused:document.getElementById('radioAudio').paused,playbackIntent:BBRadio.snapshot().playbackIntent}));
+            assert(duringGame.paused&&duringGame.playbackIntent===false,'opening Witch Ride started radio');
+            await page.screenshot({path:'pass27-final-app-430x932.png'});
+            await page.click('#witchRideClose');await sleep(200);
+
+            // Offline installed shell must still load silent with Shuffle fix present.
+            await page.setOfflineMode(true);
+            await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForFunction(()=>window.BBRadio&&window.BBShuffleAcrossStations?.active===true);
+            const offline=await page.evaluate(()=>({paused:document.getElementById('radioAudio').paused,playbackIntent:BBRadio.snapshot().playbackIntent,shuffleVersion:BBShuffleAcrossStations.version,controller:!!navigator.serviceWorker.controller}));
+            assert(offline.paused&&offline.playbackIntent===false&&offline.shuffleVersion==='pass26-shuffle-across-stations-v1'&&offline.controller,'offline installed app failed');
+            await page.screenshot({path:'pass27-final-offline-430x932.png'});
+            await page.setOfflineMode(false);
+
+            const realErrors=errors.filter(e=>!e.includes('favicon.ico')&&!e.includes('ERR_INTERNET_DISCONNECTED')&&!e.includes('net::ERR_FAILED'));
+            fs.writeFileSync('pass27-final-runtime.json',JSON.stringify({initial,hops,normalBefore,normalAfter,playBefore,playAfter,installability,cacheState,game,duringGame,offline,errors,realErrors},null,2));
+            assert(realErrors.length===0,`console/page errors: ${realErrors.join(' | ')}`);
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+
+      - name: Upload Pass 27 final proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: halloween-radio-pass27-final-release-proof
+          if-no-files-found: warn
+          path: |
+            pass27-final-app-430x932.png
+            pass27-final-offline-430x932.png
+            pass27-final-runtime.json
