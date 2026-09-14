@@ -34,7 +34,8 @@
   const stationById=new Map(STATIONS.map(station=>[station.id,station]));
   const trackIndexById=new Map(tracks.map((track,index)=>[track.id,index]));
   const stationIndexes=station=>station.trackIds.map(id=>trackIndexById.get(id)).filter(index=>Number.isInteger(index));
-  const state={playbackIntent:false,playing:false,trackIndex:0,stationId:'regular',frequency:103.1,volume:.72,hasUserStarted:false};
+  const initialTrackIndex=trackIndexById.get('midnight-in-the-cafe')??0;
+  const state={playbackIntent:false,playing:false,trackIndex:initialTrackIndex,stationId:'regular',frequency:103.1,volume:.72,hasUserStarted:false};
 
   const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
   const formatTime=seconds=>{
@@ -84,7 +85,7 @@
   function renderArtwork(){
     if(!els.artwork) return;
     const track=tracks[state.trackIndex];
-    if(!state.hasUserStarted||!track?.cover){
+    if(!track?.cover){
       els.artwork.hidden=true;
       els.artwork.removeAttribute('src');
       els.artwork.alt='';
@@ -106,7 +107,7 @@
     if('mediaSession' in navigator){
       try{
         const metadata={title:track.title,artist:track.artist||'Brew & Brews Radio',album:`${station.shortName} · ${station.frequency.toFixed(1)} FM`};
-        if(state.hasUserStarted&&track.cover) metadata.artwork=[{src:encodeURI(track.cover)}];
+        if(track.cover) metadata.artwork=[{src:encodeURI(track.cover)}];
         navigator.mediaSession.metadata=new MediaMetadata(metadata);
       }catch(_){ }
     }
@@ -225,6 +226,47 @@
     audio.currentTime=(Number(els.progress.value)/1000)*audio.duration;
   }
 
+  function wireRotary(control,{min,max,step,getValue,onMove,onCommit}){
+    if(!control) return;
+    let activePointer=null;
+    let startX=0;
+    let startY=0;
+    let startValue=0;
+    let lastValue=0;
+    const span=max-min;
+    const sensitivity=span/190;
+    const quantize=value=>{
+      const stepped=Math.round((value-min)/step)*step+min;
+      return clamp(Number(stepped.toFixed(4)),min,max);
+    };
+    control.addEventListener('pointerdown',event=>{
+      if(event.pointerType==='mouse'&&event.button!==0) return;
+      activePointer=event.pointerId;
+      startX=event.clientX;
+      startY=event.clientY;
+      startValue=getValue();
+      lastValue=startValue;
+      control.setPointerCapture?.(event.pointerId);
+      event.preventDefault();
+    });
+    control.addEventListener('pointermove',event=>{
+      if(activePointer!==event.pointerId) return;
+      const travel=(event.clientX-startX)-(event.clientY-startY);
+      lastValue=quantize(startValue+travel*sensitivity);
+      onMove(lastValue);
+      event.preventDefault();
+    });
+    const finish=event=>{
+      if(activePointer!==event.pointerId) return;
+      onCommit?.(lastValue);
+      try{control.releasePointerCapture?.(event.pointerId)}catch(_){ }
+      activePointer=null;
+      event.preventDefault();
+    };
+    control.addEventListener('pointerup',finish);
+    control.addEventListener('pointercancel',finish);
+  }
+
   els.play.addEventListener('click',explicitPlayToggle);
   els.prev.addEventListener('click',()=>{setPressed(els.prev);stepTrack(-1)});
   els.next.addEventListener('click',()=>{setPressed(els.next);stepTrack(1)});
@@ -237,6 +279,9 @@
   document.querySelectorAll('.station-preset').forEach(button=>{
     button.addEventListener('click',()=>setStation(button.dataset.station,{pressButton:button}));
   });
+
+  wireRotary(els.volume,{min:0,max:1,step:.01,getValue:()=>state.volume,onMove:setVolume,onCommit:setVolume});
+  wireRotary(els.tune,{min:88,max:108,step:.1,getValue:()=>state.frequency,onMove:value=>setFrequency(value,{commit:false}),onCommit:value=>setFrequency(value,{commit:true})});
 
   audio.addEventListener('play',()=>{
     if(!state.playbackIntent){
@@ -299,7 +344,7 @@
 
   setVolume(state.volume);
   setFrequency(state.frequency,{commit:false});
-  loadTrack(0);
+  loadTrack(initialTrackIndex);
   setStation('regular');
   state.playbackIntent=false;
   renderPlayback();
