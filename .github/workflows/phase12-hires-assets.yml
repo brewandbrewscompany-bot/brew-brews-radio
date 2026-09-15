@@ -18,8 +18,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Guard current branch and locked Phase 11 application
+      - name: Guard locked Phase 11 application
         shell: bash
         run: |
           set -euo pipefail
@@ -29,139 +28,76 @@ jobs:
           git fetch origin main "$TARGET" --quiet
           MAIN_START="$(git rev-parse origin/main)"
           test "$TARGET_START" = "$(git rev-parse origin/$TARGET)"
-          printf '%s\n' "$TARGET_START" > /tmp/target-start
-          printf '%s\n' "$MAIN_START" > /tmp/main-start
-          test "$(git hash-object christmas-radio/artwork/christmas-radio-approved-skin.avif)" = "d0d57688dfd0264c78b8a3cc161734b39790bcd3"
-          git diff --exit-code "$BASE" -- \
-            christmas-radio/index.html \
-            christmas-radio/manifest.webmanifest \
-            christmas-radio/favicon.svg \
-            christmas-radio/assets/css/christmas-radio.css \
-            christmas-radio/assets/css/art-skin.css \
-            christmas-radio/assets/css/stations.css \
-            christmas-radio/assets/js/christmas-radio.js \
-            christmas-radio/assets/js/audio-engine.js \
-            christmas-radio/artwork/christmas-radio-approved-skin.avif \
-            christmas-radio/data/stations.json \
-            christmas-radio/data/tracks.json
-
-      - name: Download exact approved high-resolution station package
+          printf '%s\n' "$TARGET_START" >/tmp/target-start
+          printf '%s\n' "$MAIN_START" >/tmp/main-start
+          test "$(git hash-object christmas-radio/artwork/christmas-radio-approved-skin.avif)" = d0d57688dfd0264c78b8a3cc161734b39790bcd3
+          git diff --exit-code "$BASE" -- christmas-radio/index.html christmas-radio/manifest.webmanifest christmas-radio/favicon.svg christmas-radio/assets/css/christmas-radio.css christmas-radio/assets/css/art-skin.css christmas-radio/assets/css/stations.css christmas-radio/assets/js/christmas-radio.js christmas-radio/assets/js/audio-engine.js christmas-radio/artwork/christmas-radio-approved-skin.avif christmas-radio/data/stations.json christmas-radio/data/tracks.json
+      - name: Download approved package
         shell: bash
         env:
-          ASSET_URL: "https://sdmntpreastus2.oaiusercontent.com/files/00000000-d4c8-81f6-8b8c-25ab67ae6c73/raw?se=2026-09-15T00%3A56%3A22Z&sp=r&sv=2026-02-06&sr=b&scid=e2d7a674-1ec3-58b6-a7e7-349112d42543&skoid=c36a4874-d531-4a8d-99fc-7da0d9143d9c&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-14T20%3A25%3A46Z&ske=2026-09-15T20%3A25%3A46Z&sks=b&skv=2026-02-06&sig=9Vbkz/IbrSQcaStaZNYC1WjBje%2BIPvjnnyI%2ByFNeE3E%3D"
+          ASSET_URL: "https://sdmntpreastus2.oaiusercontent.com/files/00000000-bb78-81f6-b19e-8028acb7ed09/raw?se=2026-09-15T00%3A59%3A52Z&sp=r&sv=2026-02-06&sr=b&scid=284436fc-680b-5d7f-864a-e8d2d4f8d8de&skoid=c36a4874-d531-4a8d-99fc-7da0d9143d9c&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-14T20%3A13%3A02Z&ske=2026-09-15T20%3A13%3A02Z&sks=b&skv=2026-02-06&sig=L6tDDbUQVYhIavjC0C0qfYATaFOaPLxoKumkwKxdTvk%3D"
         run: |
           set -euo pipefail
-          curl -fL --retry 3 --retry-delay 2 "$ASSET_URL" -o /tmp/phase12-assets.tar.gz
-          echo "1d7b080b14b2117d4fc3ec7a4b1fcdd22c37f36c773e9b9a837a40a0e107e87b  /tmp/phase12-assets.tar.gz" | sha256sum -c -
-          rm -rf /tmp/phase12-assets && mkdir -p /tmp/phase12-assets
-          tar -xzf /tmp/phase12-assets.tar.gz -C /tmp/phase12-assets
-
-      - name: Verify and install exact AVIF assets
+          curl -fL --retry 3 --retry-delay 2 "$ASSET_URL" -o /tmp/p12.tar.gz
+          echo "1d7b080b14b2117d4fc3ec7a4b1fcdd22c37f36c773e9b9a837a40a0e107e87b  /tmp/p12.tar.gz" | sha256sum -c -
+          rm -rf /tmp/p12 && mkdir /tmp/p12
+          tar -xzf /tmp/p12.tar.gz -C /tmp/p12
+      - name: Verify and install AVIF assets
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import hashlib, struct, shutil
-          src=Path('/tmp/phase12-assets')
-          dst=Path('christmas-radio/artwork/stations')
+          import hashlib,struct,shutil
           expected={
-            'candlelight.avif':('56efecea9ed309c1bb2b06de9c800e01309b06d3711dad4f42b8a26ae13d5962',71905),
-            'fireside.avif':('2dde83f8053d464699c2640d2697618c9e63774b63bf71a10d0be298b24d7e35',88415),
-            'north-pole-after-hours.avif':('3b2682d4585ccc692114c29b8e47e75a2fe71dbf3e82d3a69f0b91e461539fb1',84303),
-            'sleigh-bell-rock.avif':('33072b2db66d6fb9e645b42537e2703f2a81b69b5a5bad5ef523916ac459c761',86465),
-            'snowfall-am.avif':('aa8241e349bd9d1619bacd7fc0bc33f503cc7b7c7caf5a26a7932bf2b92c8e66',80706),
-          }
-          dst.mkdir(parents=True,exist_ok=True)
+          'candlelight.avif':('56efecea9ed309c1bb2b06de9c800e01309b06d3711dad4f42b8a26ae13d5962',71905),
+          'fireside.avif':('2dde83f8053d464699c2640d2697618c9e63774b63bf71a10d0be298b24d7e35',88415),
+          'north-pole-after-hours.avif':('3b2682d4585ccc692114c29b8e47e75a2fe71dbf3e82d3a69f0b91e461539fb1',84303),
+          'sleigh-bell-rock.avif':('33072b2db66d6fb9e645b42537e2703f2a81b69b5a5bad5ef523916ac459c761',86465),
+          'snowfall-am.avif':('aa8241e349bd9d1619bacd7fc0bc33f503cc7b7c7caf5a26a7932bf2b92c8e66',80706)}
+          dst=Path('christmas-radio/artwork/stations'); dst.mkdir(parents=True,exist_ok=True)
           for name,(sha,size) in expected.items():
-              p=src/name
-              b=p.read_bytes()
-              actual=hashlib.sha256(b).hexdigest()
-              assert actual==sha,(name,actual,sha)
-              assert len(b)==size,(name,len(b),size)
-              assert 60000 <= len(b) <= 170000,(name,len(b))
-              assert b[4:8]==b'ftyp' and b'avif' in b[8:32],name
-              i=b.find(b'ispe')
-              assert i>=0,name
-              w,h=struct.unpack('>II',b[i+8:i+16])
-              assert (w,h)==(852,1846),(name,w,h)
+              p=Path('/tmp/p12')/name; b=p.read_bytes()
+              assert hashlib.sha256(b).hexdigest()==sha
+              assert len(b)==size and 60000<=len(b)<=170000
+              i=b.find(b'ispe'); assert i>=0
+              assert struct.unpack('>II',b[i+8:i+16])==(852,1846)
               shutil.copyfile(p,dst/name)
-              print(name,len(b),w,h,actual)
           PY
-
-      - name: Bump shell cache and repair Phase 12 gate
+      - name: Bump cache and remove staging
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          p=Path('christmas-radio/sw.js')
-          s=p.read_text()
-          old="const CACHE_NAME=`${CACHE_PREFIX}phase10-2-v3`;"
-          new="const CACHE_NAME=`${CACHE_PREFIX}phase12-hires-v1`;"
-          if old not in s:
-              raise SystemExit('expected Phase 11 cache token not found')
+          p=Path('christmas-radio/sw.js'); s=p.read_text()
+          old="const CACHE_NAME=`${CACHE_PREFIX}phase10-2-v3`;"; new="const CACHE_NAME=`${CACHE_PREFIX}phase12-hires-v1`;"
+          assert old in s
           p.write_text(s.replace(old,new,1))
-
-          p=Path('.github/workflows/phase12-hires-scenes.yml')
-          s=p.read_text()
-          s=s.replace('import subprocess','import struct')
-          s=s.replace('assert 70000 <= len(b) <= 170000, (name,len(b))','assert 60000 <= len(b) <= 170000, (name,len(b))')
-          old="""              probe=subprocess.check_output(['ffprobe','-v','error','-select_streams','v:0','-show_entries','stream=width,height','-of','csv=s=x:p=0',str(p)],text=True).strip()\n              assert probe=='852x1846',(name,probe)\n              print(name,len(b),probe)"""
-          new="""              i=b.find(b'ispe')\n              assert i >= 0, name\n              w,h=struct.unpack('>II',b[i+8:i+16])\n              assert (w,h)==(852,1846),(name,w,h)\n              print(name,len(b),f'{w}x{h}')"""
-          if old not in s:
-              raise SystemExit('expected ffprobe block not found')
-          s=s.replace(old,new,1)
-          s=s.replace('assert "phase12-v1" in sw','assert "phase12-hires-v1" in sw')
-          s=s.replace("k==='bb-christmas-radio-shell-phase12-v1'","k==='bb-christmas-radio-shell-phase12-hires-v1'")
-          p.write_text(s)
           PY
-
-      - name: Remove temporary Phase 12 staging and installer
-        shell: bash
-        run: |
-          set -euo pipefail
           git rm -rf --ignore-unmatch .phase12-hires .phase12-transfer .phase12-transfer-v2
-          git rm .github/workflows/phase12-hires-assets.yml
-
       - name: Final scope and concurrency guard
         shell: bash
         run: |
           set -euo pipefail
           TARGET=christmas-radio-phase-12-hires-station-scenes
           BASE=184647c049bba266f8d9c5475dba832c25e66b21
-          MAIN_START="$(cat /tmp/main-start)"
-          TARGET_START="$(cat /tmp/target-start)"
           git fetch origin main "$TARGET" --quiet
-          test "$(git rev-parse origin/main)" = "$MAIN_START" || { echo 'main moved during installer; stop'; exit 1; }
-          test "$(git rev-parse origin/$TARGET)" = "$TARGET_START" || { echo 'target moved during installer; stop'; exit 1; }
-          test "$(git hash-object christmas-radio/artwork/christmas-radio-approved-skin.avif)" = "d0d57688dfd0264c78b8a3cc161734b39790bcd3"
+          test "$(git rev-parse origin/main)" = "$(cat /tmp/main-start)"
+          test "$(git rev-parse origin/$TARGET)" = "$(cat /tmp/target-start)"
+          test "$(git hash-object christmas-radio/artwork/christmas-radio-approved-skin.avif)" = d0d57688dfd0264c78b8a3cc161734b39790bcd3
           python3 - <<'PY'
           import subprocess
-          base='184647c049bba266f8d9c5475dba832c25e66b21'
-          changed=set(subprocess.check_output(['git','diff','--name-only',base],text=True).splitlines())
-          allowed={
-            '.github/workflows/phase12-hires-scenes.yml',
-            'christmas-radio/sw.js',
-            'christmas-radio/artwork/stations/snowfall-am.avif',
-            'christmas-radio/artwork/stations/fireside.avif',
-            'christmas-radio/artwork/stations/sleigh-bell-rock.avif',
-            'christmas-radio/artwork/stations/candlelight.avif',
-            'christmas-radio/artwork/stations/north-pole-after-hours.avif',
-          }
-          extra=changed-allowed
-          assert not extra,sorted(extra)
-          assert changed==allowed,sorted(allowed-changed)
-          print('Final scope PASS',sorted(changed))
+          changed=set(subprocess.check_output(['git','diff','--name-only','184647c049bba266f8d9c5475dba832c25e66b21'],text=True).splitlines())
+          allowed={'.github/workflows/phase12-hires-assets.yml','christmas-radio/sw.js','christmas-radio/artwork/stations/snowfall-am.avif','christmas-radio/artwork/stations/fireside.avif','christmas-radio/artwork/stations/sleigh-bell-rock.avif','christmas-radio/artwork/stations/candlelight.avif','christmas-radio/artwork/stations/north-pole-after-hours.avif'}
+          assert changed==allowed,(sorted(changed),sorted(allowed))
           PY
-
-      - name: Commit exact Phase 12 candidate
+      - name: Commit candidate assets
         shell: bash
         run: |
           set -euo pipefail
-          git config user.name 'brewandbrewscompany-bot'
-          git config user.email 'brewandbrewscompany@gmail.com'
-          git add .github/workflows/phase12-hires-scenes.yml christmas-radio/sw.js christmas-radio/artwork/stations/*.avif
-          git status --short
-          git commit -m 'Install approved Phase 12 high-resolution station scenes'
+          git config user.name brewandbrewscompany-bot
+          git config user.email brewandbrewscompany@gmail.com
+          git add christmas-radio/sw.js christmas-radio/artwork/stations/*.avif
+          git commit -m 'Install approved Phase 12 high-resolution station assets'
           git push origin HEAD:christmas-radio-phase-12-hires-station-scenes
