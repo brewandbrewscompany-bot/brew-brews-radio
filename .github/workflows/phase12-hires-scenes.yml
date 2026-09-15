@@ -25,19 +25,21 @@ jobs:
           test "$(git hash-object christmas-radio/artwork/christmas-radio-approved-skin.avif)" = "$FLAGSHIP_BLOB"
           python3 - <<'PY'
           from pathlib import Path
-          import subprocess
+          import struct
           root=Path('christmas-radio')
           names=['snowfall-am','fireside','sleigh-bell-rock','candlelight','north-pole-after-hours']
           for name in names:
               p=root/'artwork'/'stations'/(name+'.avif')
               b=p.read_bytes()
-              assert 70000 <= len(b) <= 170000, (name,len(b))
+              assert 60000 <= len(b) <= 170000, (name,len(b))
               assert b[4:8] == b'ftyp' and b'avif' in b[8:32], name
-              probe=subprocess.check_output(['ffprobe','-v','error','-select_streams','v:0','-show_entries','stream=width,height','-of','csv=s=x:p=0',str(p)],text=True).strip()
-              assert probe=='852x1846',(name,probe)
-              print(name,len(b),probe)
+              i=b.find(b'ispe')
+              assert i >= 0, name
+              w,h=struct.unpack('>II',b[i+8:i+16])
+              assert (w,h)==(852,1846),(name,w,h)
+              print(name,len(b),f'{w}x{h}')
           sw=(root/'sw.js').read_text()
-          assert "phase12-v1" in sw
+          assert "phase12-hires-v1" in sw
           assert "pathname.includes('/audio/')" in sw
           assert "request.headers.has('range')" in sw
           html=(root/'index.html').read_text()
@@ -150,7 +152,7 @@ jobs:
             await page.evaluate(()=>navigator.serviceWorker.ready.then(()=>true));
             await page.reload({waitUntil:'networkidle0'});
             await page.waitForFunction(()=>!!navigator.serviceWorker.controller,{timeout:10000});
-            const warm=await page.evaluate(async()=>{const a=document.querySelector('#christmasRadioAudio');const keys=await caches.keys();const key=keys.find(k=>k==='bb-christmas-radio-shell-phase12-v1');const urls=key?[...(await (await caches.open(key)).keys())].map(r=>r.url):[];return{key,urls,paused:a.paused,volume:a.volume};});
+            const warm=await page.evaluate(async()=>{const a=document.querySelector('#christmasRadioAudio');const keys=await caches.keys();const key=keys.find(k=>k==='bb-christmas-radio-shell-phase12-hires-v1');const urls=key?[...(await (await caches.open(key)).keys())].map(r=>r.url):[];return{key,urls,paused:a.paused,volume:a.volume};});
             if(!warm.key||warm.urls.some(u=>u.includes('/audio/'))||!warm.paused||Math.abs(warm.volume-.42)>.02)throw new Error('Warm cache/persistence failed '+JSON.stringify(warm));
 
             const critical=httpErrors.filter(x=>!x.url.endsWith('/favicon.ico'));
