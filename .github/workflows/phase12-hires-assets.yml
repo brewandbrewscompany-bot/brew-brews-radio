@@ -66,11 +66,11 @@ jobs:
           src=Path('/tmp/phase12-assets')
           dst=Path('christmas-radio/artwork/stations')
           expected={
-            'candlelight.avif':('54a3260a695a61f6d5f2844dd666fccfd0f27d3fce417785914e1c1883533951',88181),
-            'fireside.avif':('51ec0514c12ef808954a4df781abc2304929115a3532f25142a8602394bb1ea9',81489),
-            'north-pole-after-hours.avif':('8beb6c782ad9d50c7fab5ec075a35a5c62a41e7bc37fc79cb9829b4eedb53e13',83521),
-            'sleigh-bell-rock.avif':('d6425596fa3f14f63c87c719393e6d672819fe0ce12b5ec956b0546b881fa6ba',72657),
-            'snowfall-am.avif':('52953950bcbc51122278aff70593201119eee9ad700af60eba5132abf373f5ef',84840),
+            'candlelight.avif':('56efecea9ed309c1bb2b06de9c800e01309b06d3711dad4f42b8a26ae13d5962',71905),
+            'fireside.avif':('2dde83f8053d464699c2640d2697618c9e63774b63bf71a10d0be298b24d7e35',88415),
+            'north-pole-after-hours.avif':('3b2682d4585ccc692114c29b8e47e75a2fe71dbf3e82d3a69f0b91e461539fb1',84303),
+            'sleigh-bell-rock.avif':('33072b2db66d6fb9e645b42537e2703f2a81b69b5a5bad5ef523916ac459c761',86465),
+            'snowfall-am.avif':('aa8241e349bd9d1619bacd7fc0bc33f503cc7b7c7caf5a26a7932bf2b92c8e66',80706),
           }
           dst.mkdir(parents=True,exist_ok=True)
           for name,(sha,size) in expected.items():
@@ -116,8 +116,6 @@ jobs:
           s=s.replace("k==='bb-christmas-radio-shell-phase12-v1'","k==='bb-christmas-radio-shell-phase12-hires-v1'")
           p.write_text(s)
           PY
-          git diff -- christmas-radio/sw.js
-          git diff -- .github/workflows/phase12-hires-scenes.yml
 
       - name: Remove temporary Phase 12 staging and installer
         shell: bash
