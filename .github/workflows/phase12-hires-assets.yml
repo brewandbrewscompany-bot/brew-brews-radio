@@ -35,7 +35,7 @@ jobs:
       - name: Download approved package
         shell: bash
         env:
-          ASSET_URL: "https://sdmntpreastus2.oaiusercontent.com/files/00000000-bb78-81f6-b19e-8028acb7ed09/raw?se=2026-09-15T00%3A59%3A52Z&sp=r&sv=2026-02-06&sr=b&scid=284436fc-680b-5d7f-864a-e8d2d4f8d8de&skoid=c36a4874-d531-4a8d-99fc-7da0d9143d9c&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-14T20%3A13%3A02Z&ske=2026-09-15T20%3A13%3A02Z&sks=b&skv=2026-02-06&sig=L6tDDbUQVYhIavjC0C0qfYATaFOaPLxoKumkwKxdTvk%3D"
+          ASSET_URL: "https://sdmntpreastus2.oaiusercontent.com/files/00000000-ec7c-81f6-aa82-4eba1259987a/raw?se=2026-09-15T01%3A00%3A58Z&sp=r&sv=2026-02-06&sr=b&scid=8fca4a60-30dc-57b6-82f7-2eefa633f5f8&skoid=c36a4874-d531-4a8d-99fc-7da0d9143d9c&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-14T20%3A23%3A04Z&ske=2026-09-15T20%3A23%3A04Z&sks=b&skv=2026-02-06&sig=7fx6ZOX2sslIaVbf7Alt3p7X2bH41ievI%2BlWXBmIKiY%3D"
         run: |
           set -euo pipefail
           curl -fL --retry 3 --retry-delay 2 "$ASSET_URL" -o /tmp/p12.tar.gz
@@ -81,7 +81,6 @@ jobs:
         run: |
           set -euo pipefail
           TARGET=christmas-radio-phase-12-hires-station-scenes
-          BASE=184647c049bba266f8d9c5475dba832c25e66b21
           git fetch origin main "$TARGET" --quiet
           test "$(git rev-parse origin/main)" = "$(cat /tmp/main-start)"
           test "$(git rev-parse origin/$TARGET)" = "$(cat /tmp/target-start)"
@@ -89,7 +88,7 @@ jobs:
           python3 - <<'PY'
           import subprocess
           changed=set(subprocess.check_output(['git','diff','--name-only','184647c049bba266f8d9c5475dba832c25e66b21'],text=True).splitlines())
-          allowed={'.github/workflows/phase12-hires-assets.yml','christmas-radio/sw.js','christmas-radio/artwork/stations/snowfall-am.avif','christmas-radio/artwork/stations/fireside.avif','christmas-radio/artwork/stations/sleigh-bell-rock.avif','christmas-radio/artwork/stations/candlelight.avif','christmas-radio/artwork/stations/north-pole-after-hours.avif'}
+          allowed={'.github/workflows/phase12-hires-assets.yml','.github/workflows/phase12-hires-scenes.yml','christmas-radio/sw.js','christmas-radio/artwork/stations/snowfall-am.avif','christmas-radio/artwork/stations/fireside.avif','christmas-radio/artwork/stations/sleigh-bell-rock.avif','christmas-radio/artwork/stations/candlelight.avif','christmas-radio/artwork/stations/north-pole-after-hours.avif'}
           assert changed==allowed,(sorted(changed),sorted(allowed))
           PY
       - name: Commit candidate assets
