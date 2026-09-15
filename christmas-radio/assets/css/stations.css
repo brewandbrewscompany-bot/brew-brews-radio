@@ -25,20 +25,13 @@
 .station-readout .now-line{display:none!important}
 .radio-location{display:none!important}
 
-/* Station environments. 103.1 intentionally has no override and retains the locked flagship skin. */
+/* Station environments. 103.1 intentionally has no override and retains the locked flagship skin.
+   Alternate station artwork is shown intact. Do not splice the flagship header over these scenes. */
 body[data-station="snowfall-am"] .scene::before{background-image:url("../../artwork/stations/snowfall-am.avif")}
 body[data-station="fireside"] .scene::before{background-image:url("../../artwork/stations/fireside.avif")}
 body[data-station="sleigh-bell-rock"] .scene::before{background-image:url("../../artwork/stations/sleigh-bell-rock.avif")}
 body[data-station="candlelight"] .scene::before{background-image:url("../../artwork/stations/candlelight.avif")}
 body[data-station="north-pole-after-hours"] .scene::before{background-image:url("../../artwork/stations/north-pole-after-hours.avif")}
-
-/* Alternate-scene cleanup: reuse the approved flagship's clean top 13% as a branded header mask.
-   This removes generator seams/duplicate header text without touching the station room below it. */
-body[data-station="snowfall-am"] .scene::after,
-body[data-station="fireside"] .scene::after,
-body[data-station="sleigh-bell-rock"] .scene::after,
-body[data-station="candlelight"] .scene::after,
-body[data-station="north-pole-after-hours"] .scene::after{top:0!important;right:0!important;bottom:auto!important;left:0!important;height:13%!important;background:url("../../artwork/christmas-radio-approved-skin.avif") center top/100% auto no-repeat!important;pointer-events:none!important}
 
 /* The flagship artwork has its five bottom navigation buttons baked into the image. The alternate
    station artwork does not, so reveal the real nav only while an alternate station is tuned. */
