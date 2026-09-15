@@ -33,6 +33,42 @@ body[data-station="sleigh-bell-rock"] .scene::before{background-image:url("../..
 body[data-station="candlelight"] .scene::before{background-image:url("../../artwork/stations/candlelight.avif")}
 body[data-station="north-pole-after-hours"] .scene::before{background-image:url("../../artwork/stations/north-pole-after-hours.avif")}
 
+/* Phase 16 visual cleanup.
+   Keep the native wood/button art visible and cover only the baked center glyph. The live glyph is
+   therefore the only play/pause symbol, without redrawing the entire physical button. */
+body[data-station] .play-button::before{
+  content:""!important;display:block!important;position:absolute!important;z-index:1!important;
+  inset:29%!important;border:0!important;border-radius:50%!important;pointer-events:none!important;
+  background:radial-gradient(circle at 44% 34%,rgb(69,39,20) 0%,rgb(42,24,15) 67%,rgb(32,17,11) 100%)!important;
+  box-shadow:none!important;
+}
+body[data-station] .play-button .play-icon{
+  z-index:2!important;color:#fff0b8!important;text-shadow:0 0 10px rgba(255,174,53,.82),0 2px 4px #000!important;
+}
+body[data-station] .play-button[aria-pressed="false"] .play-icon{font-size:1.68rem!important;padding-left:.12em!important}
+body[data-station] .play-button[aria-pressed="true"] .play-icon{font-size:1.48rem!important;padding-left:0!important}
+
+/* The metal plate on several source images contains baked "Tap Play to begin" copy. Cover only the
+   center of that plate, preserving its screws/edges, and make the wording live on every station. */
+body[data-station] .play-button::after{
+  content:"Tap Play to begin"!important;display:flex!important;position:absolute!important;z-index:3!important;
+  left:50%!important;top:116%!important;transform:translateX(-50%)!important;
+  width:158%!important;height:27%!important;box-sizing:border-box!important;
+  align-items:center!important;justify-content:center!important;pointer-events:none!important;
+  border:0!important;border-radius:2px!important;
+  background:
+    linear-gradient(180deg,rgba(255,235,181,.28) 0%,rgba(255,225,148,.08) 24%,rgba(94,43,12,.10) 76%,rgba(72,31,9,.24) 100%),
+    linear-gradient(90deg,rgb(166,91,31) 0%,rgb(214,142,56) 19%,rgb(239,188,92) 50%,rgb(207,127,44) 81%,rgb(143,69,24) 100%)!important;
+  box-shadow:inset 0 1px rgba(255,239,191,.38),inset 0 -1px rgba(72,31,8,.34)!important;
+  color:#3b1d0b!important;font:700 .55rem/1 Georgia,serif!important;letter-spacing:.01em!important;
+  text-shadow:0 1px rgba(255,226,157,.48)!important;white-space:nowrap!important;
+}
+body[data-station] .play-button[aria-pressed="true"]::after{content:"Now Playing"!important;display:flex!important}
+
+/* Touching the invisible tuning range previously left a rectangular cream focus box over the radio. */
+body[data-station] .knob-control:focus-within,
+body[data-station] .tuner-control:focus-visible{outline:none!important;outline-offset:0!important}
+
 /* The flagship artwork has its five bottom navigation buttons baked into the image. The alternate
    station artwork does not, so reveal the real nav only while an alternate station is tuned. */
 body:not([data-station="bb-christmas-radio"]) .bottom-nav{
