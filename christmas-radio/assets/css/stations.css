@@ -40,5 +40,24 @@ body[data-station="sleigh-bell-rock"] .scene::after,
 body[data-station="candlelight"] .scene::after,
 body[data-station="north-pole-after-hours"] .scene::after{top:0!important;right:0!important;bottom:auto!important;left:0!important;height:13%!important;background:url("../../artwork/christmas-radio-approved-skin.avif") center top/100% auto no-repeat!important;pointer-events:none!important}
 
+/* The flagship artwork has its five bottom navigation buttons baked into the image. The alternate
+   station artwork does not, so reveal the real nav only while an alternate station is tuned. */
+body:not([data-station="bb-christmas-radio"]) .bottom-nav{
+  background:linear-gradient(180deg,rgba(18,12,9,.93),rgba(7,5,4,.985))!important;
+  border-top:1px solid rgba(220,166,79,.32)!important;
+  box-shadow:0 -10px 28px rgba(0,0,0,.48)!important;
+}
+body:not([data-station="bb-christmas-radio"]) .bottom-nav button{
+  display:grid!important;place-items:center;align-content:center;gap:5px;
+  color:#ead6ae!important;border-right:1px solid rgba(220,166,79,.12)!important;
+}
+body:not([data-station="bb-christmas-radio"]) .bottom-nav button:last-child{border-right:0!important}
+body:not([data-station="bb-christmas-radio"]) .bottom-nav .nav-icon,
+body:not([data-station="bb-christmas-radio"]) .bottom-nav b{opacity:1!important;color:#ead6ae!important;pointer-events:none!important}
+body:not([data-station="bb-christmas-radio"]) .bottom-nav .nav-icon{font:700 1.28rem/1 system-ui,sans-serif;text-shadow:0 1px 5px #000}
+body:not([data-station="bb-christmas-radio"]) .bottom-nav b{font:800 .61rem/1 system-ui,sans-serif;letter-spacing:.015em;text-shadow:0 1px 4px #000}
+body:not([data-station="bb-christmas-radio"]) .bottom-nav button:active{background:rgba(255,226,164,.08)!important}
+body:not([data-station="bb-christmas-radio"]) .bottom-nav button[aria-current="page"]{background:rgba(255,241,198,.08)!important;box-shadow:inset 0 3px rgba(255,218,139,.7)!important}
+
 @media(max-height:760px){#stationsPanel .station-card{padding:10px 12px!important}#stationsPanel .station-description{display:none}#stationsPanel .station-meta{margin-top:7px;padding-top:6px}.station-readout{top:51.25%!important;width:42%!important;height:78px!important;min-height:78px!important;padding:5px 8px!important}.station-readout::before{font-size:.39rem;margin-bottom:2px}.station-readout>strong{font-size:1.08rem!important}.station-readout h2{font-size:.64rem!important}.station-readout>p{font-size:.43rem!important;margin-top:3px!important}}
 @media(prefers-reduced-motion:reduce){#stationsPanel .station-card:active{transform:none}}
