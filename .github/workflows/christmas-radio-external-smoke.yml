@@ -1,0 +1,63 @@
+name: Christmas Radio External Preview Smoke
+
+on:
+  push:
+    branches: [christmas-radio-external-smoke]
+    paths:
+      - '.github/workflows/christmas-radio-external-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  external-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Verify immutable and test-preview routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROD='https://rawcdn.githack.com/brewandbrewscompany-bot/brew-brews-radio/4beeea3a3f87c0d3565685c69510dfc9e961d7a3/christmas-radio'
+          DEV='https://raw.githack.com/brewandbrewscompany-bot/brew-brews-radio/christmas-radio-test-preview/christmas-radio'
+
+          check_base() {
+            label="$1"
+            base="$2"
+            echo "Checking $label: $base"
+
+            curl -fsSL --retry 3 --retry-delay 2 --max-time 30 -D "/tmp/${label}-html.headers" "$base/index.html" -o "/tmp/${label}-index.html"
+            grep -qi '^content-type: text/html' "/tmp/${label}-html.headers"
+            grep -q 'id="christmasRadioApp"' "/tmp/${label}-index.html"
+            grep -q 'id="christmasRadioAudio" preload="none"' "/tmp/${label}-index.html"
+            grep -q 'assets/js/christmas-radio.js' "/tmp/${label}-index.html"
+            grep -q 'artwork/christmas-radio-approved-skin.avif' "/tmp/${label}-index.html"
+
+            for path in \
+              'assets/css/christmas-radio.css' \
+              'assets/css/art-skin.css' \
+              'assets/css/stations.css' \
+              'assets/js/christmas-radio.js' \
+              'assets/js/audio-engine.js' \
+              'artwork/christmas-radio-approved-skin.avif' \
+              'artwork/stations/snowfall-am.avif' \
+              'artwork/stations/fireside.avif' \
+              'artwork/stations/sleigh-bell-rock.avif' \
+              'artwork/stations/candlelight.avif' \
+              'artwork/stations/north-pole-after-hours.avif' \
+              'data/stations.json' \
+              'data/tracks.json' \
+              'sw.js'; do
+              echo "  $path"
+              curl -fsSL --retry 3 --retry-delay 2 --max-time 30 "$base/$path" -o /tmp/p12-live-asset
+              test -s /tmp/p12-live-asset
+            done
+
+            curl -fsSL --retry 3 --retry-delay 2 --max-time 30 -r 0-1023 "$base/audio/bbxmas-m18-christmas-49.mp3" -o "/tmp/${label}-audio.bin"
+            test "$(wc -c < "/tmp/${label}-audio.bin" | tr -d ' ')" -ge 1024
+          }
+
+          check_base prod "$PROD"
+          check_base dev "$DEV"
+          echo 'Christmas Radio external preview smoke PASS'
