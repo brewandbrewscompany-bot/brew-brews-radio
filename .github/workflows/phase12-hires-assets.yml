@@ -1,4 +1,4 @@
-name: Phase 12 High-Resolution Asset Builder
+name: Phase 12 High-Resolution Asset Installer
 
 on:
   workflow_dispatch:
@@ -11,68 +11,159 @@ permissions:
   contents: write
 
 jobs:
-  build-assets:
+  install-approved-assets:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Verify branch state and install renderer
+
+      - name: Guard current branch and locked Phase 11 application
+        shell: bash
         run: |
           set -euo pipefail
-          git fetch origin main --quiet
-          test "$(git rev-parse origin/main)" = "c58032f16d9fff7f28875b8c41ee6fbcd60b95da" || { echo "main moved; stop"; exit 1; }
-          python -m pip install --disable-pip-version-check pillow numpy >/dev/null
-      - name: Render five high-resolution station scenes
+          TARGET=christmas-radio-phase-12-hires-station-scenes
+          BASE=184647c049bba266f8d9c5475dba832c25e66b21
+          TARGET_START="$(git rev-parse HEAD)"
+          git fetch origin main "$TARGET" --quiet
+          MAIN_START="$(git rev-parse origin/main)"
+          test "$TARGET_START" = "$(git rev-parse origin/$TARGET)"
+          printf '%s\n' "$TARGET_START" > /tmp/target-start
+          printf '%s\n' "$MAIN_START" > /tmp/main-start
+          test "$(git hash-object christmas-radio/artwork/christmas-radio-approved-skin.avif)" = "d0d57688dfd0264c78b8a3cc161734b39790bcd3"
+          git diff --exit-code "$BASE" -- \
+            christmas-radio/index.html \
+            christmas-radio/manifest.webmanifest \
+            christmas-radio/favicon.svg \
+            christmas-radio/assets/css/christmas-radio.css \
+            christmas-radio/assets/css/art-skin.css \
+            christmas-radio/assets/css/stations.css \
+            christmas-radio/assets/js/christmas-radio.js \
+            christmas-radio/assets/js/audio-engine.js \
+            christmas-radio/artwork/christmas-radio-approved-skin.avif \
+            christmas-radio/data/stations.json \
+            christmas-radio/data/tracks.json
+
+      - name: Download exact approved high-resolution station package
+        shell: bash
         env:
-          RENDERER_GZ_B64: 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
+          ASSET_URL: "https://sdmntpreastus2.oaiusercontent.com/files/00000000-d4c8-81f6-8b8c-25ab67ae6c73/raw?se=2026-09-15T00%3A56%3A22Z&sp=r&sv=2026-02-06&sr=b&scid=e2d7a674-1ec3-58b6-a7e7-349112d42543&skoid=c36a4874-d531-4a8d-99fc-7da0d9143d9c&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-14T20%3A25%3A46Z&ske=2026-09-15T20%3A25%3A46Z&sks=b&skv=2026-02-06&sig=9Vbkz/IbrSQcaStaZNYC1WjBje%2BIPvjnnyI%2ByFNeE3E%3D"
         run: |
           set -euo pipefail
-          printf '%s' "$RENDERER_GZ_B64" | base64 -d | gzip -d > /tmp/phase12-render.py
-          python /tmp/phase12-render.py
-          for f in christmas-radio/artwork/stations/*.png; do
-            out="${f%.png}.avif"
-            ffmpeg -loglevel error -y -i "$f" -c:v libaom-av1 -still-picture 1 -crf 9 -cpu-used 5 -pix_fmt yuv444p "$out"
-            rm "$f"
-          done
+          curl -fL --retry 3 --retry-delay 2 "$ASSET_URL" -o /tmp/phase12-assets.tar.gz
+          echo "1d7b080b14b2117d4fc3ec7a4b1fcdd22c37f36c773e9b9a837a40a0e107e87b  /tmp/phase12-assets.tar.gz" | sha256sum -c -
+          rm -rf /tmp/phase12-assets && mkdir -p /tmp/phase12-assets
+          tar -xzf /tmp/phase12-assets.tar.gz -C /tmp/phase12-assets
+
+      - name: Verify and install exact AVIF assets
+        shell: bash
+        run: |
+          set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import subprocess
-          names=['snowfall-am','fireside','sleigh-bell-rock','candlelight','north-pole-after-hours']
-          for name in names:
-              p=Path('christmas-radio/artwork/stations')/(name+'.avif')
-              size=p.stat().st_size
-              dims=subprocess.check_output(['ffprobe','-v','error','-select_streams','v:0','-show_entries','stream=width,height','-of','csv=s=x:p=0',str(p)],text=True).strip()
-              assert dims=='852x1846',(name,dims)
-              assert 70000 <= size <= 170000,(name,size)
-              print(name,size,dims)
+          import hashlib, struct, shutil
+          src=Path('/tmp/phase12-assets')
+          dst=Path('christmas-radio/artwork/stations')
+          expected={
+            'candlelight.avif':('54a3260a695a61f6d5f2844dd666fccfd0f27d3fce417785914e1c1883533951',88181),
+            'fireside.avif':('51ec0514c12ef808954a4df781abc2304929115a3532f25142a8602394bb1ea9',81489),
+            'north-pole-after-hours.avif':('8beb6c782ad9d50c7fab5ec075a35a5c62a41e7bc37fc79cb9829b4eedb53e13',83521),
+            'sleigh-bell-rock.avif':('d6425596fa3f14f63c87c719393e6d672819fe0ce12b5ec956b0546b881fa6ba',72657),
+            'snowfall-am.avif':('52953950bcbc51122278aff70593201119eee9ad700af60eba5132abf373f5ef',84840),
+          }
+          dst.mkdir(parents=True,exist_ok=True)
+          for name,(sha,size) in expected.items():
+              p=src/name
+              b=p.read_bytes()
+              actual=hashlib.sha256(b).hexdigest()
+              assert actual==sha,(name,actual,sha)
+              assert len(b)==size,(name,len(b),size)
+              assert 60000 <= len(b) <= 170000,(name,len(b))
+              assert b[4:8]==b'ftyp' and b'avif' in b[8:32],name
+              i=b.find(b'ispe')
+              assert i>=0,name
+              w,h=struct.unpack('>II',b[i+8:i+16])
+              assert (w,h)==(852,1846),(name,w,h)
+              shutil.copyfile(p,dst/name)
+              print(name,len(b),w,h,actual)
           PY
-      - name: Bump shell cache and clean staging
+
+      - name: Bump shell cache and repair Phase 12 gate
+        shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
           p=Path('christmas-radio/sw.js')
           s=p.read_text()
-          old="`${CACHE_PREFIX}phase10-2-v3`"
-          new="`${CACHE_PREFIX}phase12-v1`"
-          assert old in s and new not in s
-          p.write_text(s.replace(old,new))
+          old="const CACHE_NAME=`${CACHE_PREFIX}phase10-2-v3`;"
+          new="const CACHE_NAME=`${CACHE_PREFIX}phase12-hires-v1`;"
+          if old not in s:
+              raise SystemExit('expected Phase 11 cache token not found')
+          p.write_text(s.replace(old,new,1))
+
+          p=Path('.github/workflows/phase12-hires-scenes.yml')
+          s=p.read_text()
+          s=s.replace('import subprocess','import struct')
+          s=s.replace('assert 70000 <= len(b) <= 170000, (name,len(b))','assert 60000 <= len(b) <= 170000, (name,len(b))')
+          old="""              probe=subprocess.check_output(['ffprobe','-v','error','-select_streams','v:0','-show_entries','stream=width,height','-of','csv=s=x:p=0',str(p)],text=True).strip()\n              assert probe=='852x1846',(name,probe)\n              print(name,len(b),probe)"""
+          new="""              i=b.find(b'ispe')\n              assert i >= 0, name\n              w,h=struct.unpack('>II',b[i+8:i+16])\n              assert (w,h)==(852,1846),(name,w,h)\n              print(name,len(b),f'{w}x{h}')"""
+          if old not in s:
+              raise SystemExit('expected ffprobe block not found')
+          s=s.replace(old,new,1)
+          s=s.replace('assert "phase12-v1" in sw','assert "phase12-hires-v1" in sw')
+          s=s.replace("k==='bb-christmas-radio-shell-phase12-v1'","k==='bb-christmas-radio-shell-phase12-hires-v1'")
+          p.write_text(s)
           PY
-          rm -rf .phase12-hires
-          rm -f .github/workflows/phase12-hires-assets.yml
-      - name: Verify locked scope before commit
+          git diff -- christmas-radio/sw.js
+          git diff -- .github/workflows/phase12-hires-scenes.yml
+
+      - name: Remove temporary Phase 12 staging and installer
+        shell: bash
         run: |
           set -euo pipefail
+          git rm -rf --ignore-unmatch .phase12-hires .phase12-transfer .phase12-transfer-v2
+          git rm .github/workflows/phase12-hires-assets.yml
+
+      - name: Final scope and concurrency guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          TARGET=christmas-radio-phase-12-hires-station-scenes
+          BASE=184647c049bba266f8d9c5475dba832c25e66b21
+          MAIN_START="$(cat /tmp/main-start)"
+          TARGET_START="$(cat /tmp/target-start)"
+          git fetch origin main "$TARGET" --quiet
+          test "$(git rev-parse origin/main)" = "$MAIN_START" || { echo 'main moved during installer; stop'; exit 1; }
+          test "$(git rev-parse origin/$TARGET)" = "$TARGET_START" || { echo 'target moved during installer; stop'; exit 1; }
           test "$(git hash-object christmas-radio/artwork/christmas-radio-approved-skin.avif)" = "d0d57688dfd0264c78b8a3cc161734b39790bcd3"
-          test -z "$(git diff --name-only | grep '^louisburg-local/' || true)"
-          git status --short
-      - name: Commit rebuilt assets
+          python3 - <<'PY'
+          import subprocess
+          base='184647c049bba266f8d9c5475dba832c25e66b21'
+          changed=set(subprocess.check_output(['git','diff','--name-only',base],text=True).splitlines())
+          allowed={
+            '.github/workflows/phase12-hires-scenes.yml',
+            'christmas-radio/sw.js',
+            'christmas-radio/artwork/stations/snowfall-am.avif',
+            'christmas-radio/artwork/stations/fireside.avif',
+            'christmas-radio/artwork/stations/sleigh-bell-rock.avif',
+            'christmas-radio/artwork/stations/candlelight.avif',
+            'christmas-radio/artwork/stations/north-pole-after-hours.avif',
+          }
+          extra=changed-allowed
+          assert not extra,sorted(extra)
+          assert changed==allowed,sorted(allowed-changed)
+          print('Final scope PASS',sorted(changed))
+          PY
+
+      - name: Commit exact Phase 12 candidate
+        shell: bash
         run: |
           set -euo pipefail
-          git config user.name "brewandbrewscompany-bot"
-          git config user.email "brewandbrewscompany@gmail.com"
-          git add -A
-          git commit -m "Rebuild five Christmas station scenes at high resolution"
+          git config user.name 'brewandbrewscompany-bot'
+          git config user.email 'brewandbrewscompany@gmail.com'
+          git add .github/workflows/phase12-hires-scenes.yml christmas-radio/sw.js christmas-radio/artwork/stations/*.avif
+          git status --short
+          git commit -m 'Install approved Phase 12 high-resolution station scenes'
           git push origin HEAD:christmas-radio-phase-12-hires-station-scenes
