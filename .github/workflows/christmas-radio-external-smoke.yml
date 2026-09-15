@@ -21,6 +21,7 @@ jobs:
           set -euo pipefail
           PROD='https://rawcdn.githack.com/brewandbrewscompany-bot/brew-brews-radio/4beeea3a3f87c0d3565685c69510dfc9e961d7a3/christmas-radio'
           DEV='https://raw.githack.com/brewandbrewscompany-bot/brew-brews-radio/christmas-radio-test-preview/christmas-radio'
+          FIXED='https://raw.githack.com/brewandbrewscompany-bot/brew-brews-radio/e9ec1dabb98fce864f4f1d9af29059b4c55a71cb/christmas-radio'
 
           check_base() {
             label="$1"
@@ -60,12 +61,13 @@ jobs:
 
           check_base prod "$PROD"
           check_base dev "$DEV"
+          check_base fixed "$FIXED"
           echo 'Christmas Radio external route smoke PASS'
 
       - name: Install browser helper
         run: npm install --no-save puppeteer-core@24.16.0
 
-      - name: Verify test-preview in a phone browser
+      - name: Verify fixed preview in a phone browser
         shell: bash
         run: |
           set -euo pipefail
@@ -73,7 +75,7 @@ jobs:
           test -n "$CHROME_BIN"
           CHROME_BIN="$CHROME_BIN" node <<'NODE'
           const puppeteer=require('puppeteer-core');
-          const target='https://raw.githack.com/brewandbrewscompany-bot/brew-brews-radio/christmas-radio-test-preview/christmas-radio/index.html';
+          const target='https://raw.githack.com/brewandbrewscompany-bot/brew-brews-radio/e9ec1dabb98fce864f4f1d9af29059b4c55a71cb/christmas-radio/index.html';
           const sleep=ms=>new Promise(r=>setTimeout(r,ms));
           (async()=>{
             const browser=await puppeteer.launch({
@@ -133,7 +135,7 @@ jobs:
               throw new Error('External playback regression '+JSON.stringify({playing,mp3}));
             }
             if(pageErrors.length||httpErrors.length)throw new Error('External browser errors '+JSON.stringify({pageErrors,httpErrors}));
-            console.log('Christmas Radio external phone-browser PASS',JSON.stringify({boot,playing,mp3Requests:mp3.length,alternateNav:'visible'}));
+            console.log('Christmas Radio fixed phone-browser PASS',JSON.stringify({boot,playing,mp3Requests:mp3.length,alternateNav:'visible'}));
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
