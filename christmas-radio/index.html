@@ -54,26 +54,26 @@
     .tuner-control.is-turning{cursor:grabbing}
     .tuner-control:focus-visible{outline:2px solid #ffe0a0;outline-offset:4px;border-radius:50%}
 
-    /* One fully live evergreen navigation bar across all six stations. This intentionally covers
-       any baked station-specific nav treatment so the interactive state is never different by station. */
-    .bottom-nav{
+    /* One fully live evergreen navigation bar across all six stations. The body-qualified selectors
+       intentionally outrank the legacy alternate-station fallback so the nav never switches to black. */
+    body[data-station] .bottom-nav{
       grid-template-columns:repeat(6,minmax(0,1fr))!important;
       background:linear-gradient(180deg,rgba(9,77,55,.97),rgba(4,48,37,.997))!important;
       border-top:1px solid rgba(255,218,139,.34)!important;
       box-shadow:0 -8px 24px rgba(0,0,0,.38)!important;
       backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
     }
-    .bottom-nav button{
+    body[data-station] .bottom-nav button{
       display:grid!important;place-items:center;align-content:center;gap:4px;
       color:#f2dfb8!important;border-right:1px solid rgba(255,218,139,.09)!important;background:transparent!important;
     }
-    .bottom-nav button:last-child{border-right:0!important}
-    .bottom-nav .nav-icon,.bottom-nav b{opacity:1!important;color:#f2dfb8!important;pointer-events:none!important}
-    .bottom-nav .nav-icon{font:700 1.12rem/1 system-ui,sans-serif!important;text-shadow:0 1px 5px #000}
-    .bottom-nav b{font:800 .54rem/1.05 system-ui,sans-serif!important;letter-spacing:.005em;text-shadow:0 1px 4px #000}
-    .bottom-nav button:active{background:rgba(255,226,164,.08)!important}
-    .bottom-nav button[aria-current="page"]{background:rgba(255,241,198,.09)!important;box-shadow:inset 0 3px rgba(255,218,139,.72)!important}
-    @media(max-width:390px){.bottom-nav b{font-size:.49rem!important}.bottom-nav .nav-icon{font-size:1.02rem!important}}
+    body[data-station] .bottom-nav button:last-child{border-right:0!important}
+    body[data-station] .bottom-nav .nav-icon,body[data-station] .bottom-nav b{opacity:1!important;color:#f2dfb8!important;pointer-events:none!important}
+    body[data-station] .bottom-nav .nav-icon{font:700 1.12rem/1 system-ui,sans-serif!important;text-shadow:0 1px 5px #000}
+    body[data-station] .bottom-nav b{font:800 .54rem/1.05 system-ui,sans-serif!important;letter-spacing:.005em;text-shadow:0 1px 4px #000}
+    body[data-station] .bottom-nav button:active{background:rgba(255,226,164,.08)!important}
+    body[data-station] .bottom-nav button[aria-current="page"]{background:rgba(255,241,198,.09)!important;box-shadow:inset 0 3px rgba(255,218,139,.72)!important}
+    @media(max-width:390px){body[data-station] .bottom-nav b{font-size:.49rem!important}body[data-station] .bottom-nav .nav-icon{font-size:1.02rem!important}}
   </style>
   <script type="module" src="assets/js/christmas-radio.js"></script>
 </head>
