@@ -106,6 +106,22 @@ jobs:
             if(boot.station!=='bb-christmas-radio'||boot.frequency!=='103.1'||!boot.paused||boot.src||boot.width>430||mp3.length){
               throw new Error('External boot regression '+JSON.stringify({boot,mp3}));
             }
+
+            const alternates=[0,1,2,3,5];
+            for(const index of alternates){
+              await page.$eval('#tuningKnob',(el,i)=>{el.value=String(i);el.dispatchEvent(new Event('input',{bubbles:true}))},index);
+              await page.waitForFunction(i=>Number(document.querySelector('#tuningKnob')?.value)===i&&document.body.dataset.station!=='bb-christmas-radio',{timeout:5000},index);
+              const nav=await page.evaluate(()=>({
+                labels:[...document.querySelectorAll('.bottom-nav button b')].map(el=>({text:el.textContent.trim(),opacity:getComputedStyle(el).opacity,color:getComputedStyle(el).color})),
+                bar:getComputedStyle(document.querySelector('.bottom-nav')).backgroundImage,
+                play:{display:getComputedStyle(document.querySelector('#playButton')).display,visibility:getComputedStyle(document.querySelector('#playButton')).visibility,opacity:getComputedStyle(document.querySelector('#playButton')).opacity}
+              }));
+              if(nav.labels.length!==5||nav.labels.some(x=>x.opacity==='0')||!nav.labels.every(x=>x.text))throw new Error('Alternate nav hidden '+JSON.stringify({index,nav}));
+              if(nav.play.display==='none'||nav.play.visibility==='hidden'||nav.play.opacity==='0')throw new Error('Play hidden '+JSON.stringify({index,nav}));
+            }
+
+            await page.$eval('#tuningKnob',el=>{el.value='4';el.dispatchEvent(new Event('input',{bubbles:true}))});
+            await page.waitForFunction(()=>document.body.dataset.station==='bb-christmas-radio',{timeout:5000});
             await page.click('#playButton');
             await page.waitForFunction(()=>{
               const a=document.querySelector('#christmasRadioAudio');
@@ -117,7 +133,7 @@ jobs:
               throw new Error('External playback regression '+JSON.stringify({playing,mp3}));
             }
             if(pageErrors.length||httpErrors.length)throw new Error('External browser errors '+JSON.stringify({pageErrors,httpErrors}));
-            console.log('Christmas Radio external phone-browser PASS',JSON.stringify({boot,playing,mp3Requests:mp3.length}));
+            console.log('Christmas Radio external phone-browser PASS',JSON.stringify({boot,playing,mp3Requests:mp3.length,alternateNav:'visible'}));
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
