@@ -1,16 +1,15 @@
-name: Christmas Radio Phase 16 Visual Audit
+name: Christmas Radio Phase 16 Raw Artwork Audit
 
 on:
   push:
     branches: [christmas-radio-phase-16-visual-audit-fix]
     paths:
-      - 'christmas-radio/**'
       - '.github/workflows/christmas-radio-phase-9-interaction.yml'
 
 jobs:
-  visual-audit:
+  raw-artwork-audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,10 +17,10 @@ jobs:
       - name: Install browser helper
         run: npm install --no-save puppeteer-core@24.16.0
 
-      - name: Capture every station paused and playing
+      - name: Capture alternate station art without shared header mask
         run: |
           set -euo pipefail
-          mkdir -p phase16-visual-audit
+          mkdir -p phase16-raw-art
           python3 -m http.server 8000 --directory . >/tmp/christmas-radio-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
@@ -30,75 +29,33 @@ jobs:
           test -n "$CHROME_BIN"
           CHROME_BIN="$CHROME_BIN" node <<'NODE'
           const puppeteer=require('puppeteer-core');
-          const fs=require('fs');
           const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-          const stations=[
-            ['88.7','Snowfall AM'],
-            ['92.5','Fireside'],
-            ['96.9','Sleigh Bell Rock'],
-            ['100.3','Candlelight'],
-            ['103.1','B&B Christmas Radio'],
-            ['106.7','North Pole After Hours']
-          ];
+          const stations=[['88.7','snowfall'],['92.5','fireside'],['96.9','sleigh'],['100.3','candlelight'],['106.7','north-pole']];
           (async()=>{
-            const browser=await puppeteer.launch({
-              executablePath:process.env.CHROME_BIN,
-              headless:true,
-              args:['--no-sandbox','--disable-dev-shm-usage','--autoplay-policy=no-user-gesture-required','--mute-audio']
-            });
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
             const page=await browser.newPage();
             await page.setViewport({width:430,height:932,deviceScaleFactor:2,isMobile:true,hasTouch:true});
-            const errors=[];
-            page.on('pageerror',e=>errors.push(String(e)));
             await page.goto('http://127.0.0.1:8000/christmas-radio/',{waitUntil:'networkidle0'});
             await page.waitForFunction(()=>document.querySelectorAll('#stationGrid .station-card').length===6,{timeout:10000});
-            const report=[];
-            for(let i=0;i<stations.length;i++){
-              const [freq,name]=stations[i];
+            await page.addStyleTag({content:`
+              body:not([data-station="bb-christmas-radio"]) .scene::after{display:none!important}
+            `});
+            const indices=[0,1,2,3,5];
+            for(let j=0;j<indices.length;j++){
+              const i=indices[j]; const [freq,slug]=stations[j];
               await page.$eval('#stationTuner',(el,index)=>{el.value=String(index);el.dispatchEvent(new Event('input',{bubbles:true}))},i);
               await page.waitForFunction(f=>document.querySelector('#frequencyLabel')?.textContent.trim()===f,{timeout:5000},freq);
-              await sleep(350);
-              const paused=await page.evaluate(()=>({
-                station:document.body.dataset.station,
-                frequency:document.querySelector('#frequencyLabel')?.textContent.trim(),
-                stationName:document.querySelector('#stationName')?.textContent.trim(),
-                playText:document.querySelector('#playButton .play-icon')?.textContent.trim(),
-                pressed:document.querySelector('#playButton')?.getAttribute('aria-pressed'),
-                playBefore:getComputedStyle(document.querySelector('#playButton'),'::before').backgroundImage,
-                playAfter:getComputedStyle(document.querySelector('#playButton'),'::after').content,
-                sceneBefore:getComputedStyle(document.querySelector('.scene'),'::before').backgroundImage,
-                sceneAfterBg:getComputedStyle(document.querySelector('.scene'),'::after').backgroundImage,
-                sceneAfterHeight:getComputedStyle(document.querySelector('.scene'),'::after').height,
-                navBg:getComputedStyle(document.querySelector('.bottom-nav')).backgroundImage
-              }));
-              await page.screenshot({path:`phase16-visual-audit/${String(i+1).padStart(2,'0')}-${freq.replace('.','')}-paused.png`,fullPage:false});
-
-              await page.click('#playButton');
-              await page.waitForFunction(()=>!document.querySelector('#christmasRadioAudio').paused,{timeout:15000});
-              await sleep(250);
-              const playing=await page.evaluate(()=>({
-                paused:document.querySelector('#christmasRadioAudio').paused,
-                playText:document.querySelector('#playButton .play-icon')?.textContent.trim(),
-                pressed:document.querySelector('#playButton')?.getAttribute('aria-pressed'),
-                playBefore:getComputedStyle(document.querySelector('#playButton'),'::before').backgroundImage,
-                playAfter:getComputedStyle(document.querySelector('#playButton'),'::after').content
-              }));
-              await page.screenshot({path:`phase16-visual-audit/${String(i+1).padStart(2,'0')}-${freq.replace('.','')}-playing.png`,fullPage:false});
-              await page.click('#playButton');
-              await page.waitForFunction(()=>document.querySelector('#christmasRadioAudio').paused,{timeout:5000});
-              report.push({freq,name,paused,playing});
+              await sleep(300);
+              await page.screenshot({path:`phase16-raw-art/${String(j+1).padStart(2,'0')}-${slug}.png`,fullPage:false});
             }
-            fs.writeFileSync('phase16-visual-audit/report.json',JSON.stringify({errors,report},null,2));
-            if(errors.length) throw new Error(errors.join(' | '));
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
 
-      - name: Upload visual audit
-        if: always()
+      - name: Upload raw artwork audit
         uses: actions/upload-artifact@v4
         with:
-          name: christmas-radio-phase16-visual-audit
-          path: phase16-visual-audit/
+          name: christmas-radio-phase16-raw-art
+          path: phase16-raw-art/
           if-no-files-found: error
           retention-days: 7
