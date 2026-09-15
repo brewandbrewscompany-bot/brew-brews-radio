@@ -1,0 +1,81 @@
+name: Regular Radio HQ Asset Promote
+
+on:
+  push:
+    branches: [regular-radio-hq-transfer-final3]
+
+permissions:
+  contents: write
+
+jobs:
+  promote-hq-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install AVIF validation tools
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg >/dev/null
+
+      - name: Reconstruct and verify exact HQ assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          BEFORE='${{ github.event.before }}'
+          mkdir -p /tmp/hqchunks /tmp/hqout
+          git rev-list --reverse "${BEFORE}..${GITHUB_SHA}" > /tmp/hq-commits.txt
+          while IFS= read -r c; do
+            msg="$(git show -s --format=%B "$c")"
+            tag="$(printf '%s\n' "$msg" | head -n1 | tr -d '\r')"
+            case "$tag" in
+              HQ4D00|HQ4D01|HQ4D02|HQ5M00|HQ5M01|HQ5M02|HQ5M03|HQ5M04|HQ5M05|HQ5M06|HQ5M07|HQ5M08|HQ5M09|HQ5M10|HQ5M11|HQ5M12|HQ5M13|HQ5M14|HQ5M15)
+                printf '%s\n' "$msg" | tail -n +2 | tr -d '\r\n' > "/tmp/hqchunks/${tag}.b64"
+                ;;
+            esac
+          done < /tmp/hq-commits.txt
+          test "$(find /tmp/hqchunks -maxdepth 1 -name 'HQ4D*.b64' | wc -l)" -eq 3
+          test "$(find /tmp/hqchunks -maxdepth 1 -name 'HQ5M*.b64' | wc -l)" -eq 16
+          cat /tmp/hqchunks/HQ4D00.b64 /tmp/hqchunks/HQ4D01.b64 /tmp/hqchunks/HQ4D02.b64 | base64 -d > /tmp/hqout/radio-desktop-approved.avif
+          for i in $(seq -w 0 15); do cat "/tmp/hqchunks/HQ5M${i}.b64"; done | base64 -d > /tmp/hqout/radio-mobile-approved.avif
+          echo '7cf986b7313e4ca7416b8ea631847651f5ae9281c39859cb6baaba51da18f731  /tmp/hqout/radio-desktop-approved.avif' | sha256sum -c -
+          echo '0f1fee823508c4908c4fdd20b56d7e3cefff40ad62d67f1e79c50e616e0e3610  /tmp/hqout/radio-mobile-approved.avif' | sha256sum -c -
+          test "$(stat -c%s /tmp/hqout/radio-desktop-approved.avif)" -eq 230189
+          test "$(stat -c%s /tmp/hqout/radio-mobile-approved.avif)" -eq 171875
+          test "$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 /tmp/hqout/radio-desktop-approved.avif)" = '1536x1152'
+          test "$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 /tmp/hqout/radio-mobile-approved.avif)" = '864x1536'
+          ffmpeg -nostdin -hide_banner -v error -xerror -i /tmp/hqout/radio-desktop-approved.avif -f null -
+          ffmpeg -nostdin -hide_banner -v error -xerror -i /tmp/hqout/radio-mobile-approved.avif -f null -
+
+      - name: Promote only the two verified Regular Radio assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          FINAL='regular-radio-final-website-ready-pass'
+          TRANSFER='regular-radio-hq-transfer-final3'
+          git fetch origin main "$FINAL" "$TRANSFER"
+          echo "main=$(git rev-parse origin/main)"
+          echo "final=$(git rev-parse origin/$FINAL)"
+          echo "transfer=$(git rev-parse origin/$TRANSFER)"
+          git checkout -B hq-promote "origin/$FINAL"
+          base="$(git rev-parse HEAD)"
+          cp /tmp/hqout/radio-desktop-approved.avif assets/regular-radio/radio-desktop-approved.avif
+          cp /tmp/hqout/radio-mobile-approved.avif assets/regular-radio/radio-mobile-approved.avif
+          mapfile -t changed < <(git diff --name-only)
+          test "${#changed[@]}" -eq 2
+          printf '%s\n' "${changed[@]}" | grep -Fx 'assets/regular-radio/radio-desktop-approved.avif'
+          printf '%s\n' "${changed[@]}" | grep -Fx 'assets/regular-radio/radio-mobile-approved.avif'
+          ! printf '%s\n' "${changed[@]}" | grep -Eq '^(halloween-radio|christmas-radio|louisburg-local)/'
+          git fetch origin "$FINAL" main "$TRANSFER"
+          test "$(git rev-parse origin/$FINAL)" = "$base"
+          git config user.name 'brewandbrewscompany-bot'
+          git config user.email 'brewandbrewscompany@gmail.com'
+          git add assets/regular-radio/radio-desktop-approved.avif assets/regular-radio/radio-mobile-approved.avif
+          git commit -m 'Promote approved HQ Regular Radio artwork'
+          git fetch origin "$FINAL" main "$TRANSFER"
+          test "$(git rev-parse origin/$FINAL)" = "$base"
+          git push origin HEAD:"$FINAL"
