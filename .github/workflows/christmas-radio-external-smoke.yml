@@ -13,7 +13,7 @@ permissions:
 jobs:
   external-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - name: Verify immutable and test-preview routes
         shell: bash
@@ -60,4 +60,64 @@ jobs:
 
           check_base prod "$PROD"
           check_base dev "$DEV"
-          echo 'Christmas Radio external preview smoke PASS'
+          echo 'Christmas Radio external route smoke PASS'
+
+      - name: Install browser helper
+        run: npm install --no-save puppeteer-core@24.16.0
+
+      - name: Verify test-preview in a phone browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_BIN"
+          CHROME_BIN="$CHROME_BIN" node <<'NODE'
+          const puppeteer=require('puppeteer-core');
+          const target='https://raw.githack.com/brewandbrewscompany-bot/brew-brews-radio/christmas-radio-test-preview/christmas-radio/index.html';
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          (async()=>{
+            const browser=await puppeteer.launch({
+              executablePath:process.env.CHROME_BIN,
+              headless:true,
+              args:['--no-sandbox','--disable-dev-shm-usage','--autoplay-policy=no-user-gesture-required','--mute-audio']
+            });
+            const page=await browser.newPage();
+            await page.setViewport({width:430,height:932,deviceScaleFactor:3});
+            const cdp=await page.createCDPSession();
+            await cdp.send('Network.enable');
+            await cdp.send('Network.setCookie',{name:'__Http-phish',value:'1',url:'https://raw.githack.com/',secure:true,httpOnly:true});
+            const pageErrors=[],httpErrors=[],mp3=[];
+            page.on('pageerror',e=>pageErrors.push(String(e)));
+            page.on('response',r=>{if(r.status()>=400)httpErrors.push({status:r.status(),url:r.url()})});
+            page.on('request',r=>{if(/\.mp3(?:\?|$)/i.test(r.url()))mp3.push(r.url())});
+            await page.goto(target,{waitUntil:'networkidle2',timeout:60000});
+            await page.waitForFunction(()=>document.querySelectorAll('#stationGrid .station-card').length===6,{timeout:20000});
+            const boot=await page.evaluate(()=>{
+              const a=document.querySelector('#christmasRadioAudio');
+              return {
+                title:document.title,
+                station:document.body.dataset.station,
+                frequency:document.querySelector('#frequencyLabel')?.textContent.trim(),
+                paused:a.paused,
+                src:a.getAttribute('src'),
+                width:document.documentElement.scrollWidth
+              };
+            });
+            if(boot.station!=='bb-christmas-radio'||boot.frequency!=='103.1'||!boot.paused||boot.src||boot.width>430||mp3.length){
+              throw new Error('External boot regression '+JSON.stringify({boot,mp3}));
+            }
+            await page.click('#playButton');
+            await page.waitForFunction(()=>{
+              const a=document.querySelector('#christmasRadioAudio');
+              return !a.paused&&a.currentSrc.includes('.mp3')&&a.readyState>=2;
+            },{timeout:30000});
+            await sleep(1200);
+            const playing=await page.$eval('#christmasRadioAudio',a=>({paused:a.paused,currentTime:a.currentTime,duration:a.duration,src:a.currentSrc}));
+            if(playing.paused||playing.currentTime<=0||!Number.isFinite(playing.duration)||playing.duration<30||!mp3.length){
+              throw new Error('External playback regression '+JSON.stringify({playing,mp3}));
+            }
+            if(pageErrors.length||httpErrors.length)throw new Error('External browser errors '+JSON.stringify({pageErrors,httpErrors}));
+            console.log('Christmas Radio external phone-browser PASS',JSON.stringify({boot,playing,mp3Requests:mp3.length}));
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
