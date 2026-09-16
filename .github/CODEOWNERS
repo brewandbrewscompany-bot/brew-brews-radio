@@ -1,0 +1,8 @@
+# Default owner for repository changes
+* @brewandbrewscompany-bot
+
+# Higher-risk operational areas
+/.github/workflows/ @brewandbrewscompany-bot
+/louisburg-local/collector-v1/ @brewandbrewscompany-bot
+/louisburg-local/social-browser-worker/ @brewandbrewscompany-bot
+/louisburg-local/wildcats-schedule-worker/ @brewandbrewscompany-bot
