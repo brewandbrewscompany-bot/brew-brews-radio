@@ -17,7 +17,7 @@ function doPost(e) {
     if (action === 'social_intake') {
       if (typeof recordSocialIntakeWebhook_ !== 'function') throw new Error('Social intake bridge unavailable');
       const result = recordSocialIntakeWebhook_(body);
-      return jsonOutput_({ok:true,received:true,duplicate:!!result.duplicate,fingerprint:result.fingerprint||''});
+      return jsonOutput_({ok:true,received:true,duplicate:!!result.duplicate,retried:!!result.retried,fingerprint:result.fingerprint||'',immediateProcess:result.immediateProcess||''});
     }
     if (action === 'social_worker_manifest') {
       if (typeof getSocialWorkerManifest_ !== 'function') throw new Error('Social worker manifest unavailable');

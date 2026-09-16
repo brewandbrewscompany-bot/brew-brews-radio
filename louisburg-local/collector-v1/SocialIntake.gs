@@ -221,47 +221,66 @@ function processSocialPostIntakeUnlocked_(targetFingerprint) {
 
 function recordSocialIntakeWebhook_(body) {
   requireSocialIngestKey_(body);
-  const ss=SpreadsheetApp.openById(LL_CONFIG.SPREADSHEET_ID),sheet=ss.getSheetByName('Social Post Intake');
-  if(!sheet)throw new Error('Social Post Intake sheet missing.');
 
-  const platform=String(body.platform||'').trim().toUpperCase();
-  const postUrl=String(body.postUrl||'').trim(),profileUrl=String(body.profileUrl||'').trim(),text=String(body.postText||body.text||'').trim();
-  const org=String(body.organization||body.business||'').trim();
-  if(!org||!postUrl||!text||!/^https?:\/\//i.test(postUrl))throw new Error('Missing social post fields.');
+  // Serialize the fingerprint check/write only. This prevents two collectors
+  // from appending the same post simultaneously. Release before processing so
+  // the processor can acquire its own ScriptLock without deadlocking.
+  const ingestLock=LockService.getScriptLock();
+  if(!ingestLock.tryLock(4000))throw new Error('Social intake is busy; retry delivery.');
 
-  const payload={organization:org,platform:platform,profileUrl:profileUrl,postUrl:postUrl,postId:String(body.postId||'').trim(),postDate:String(body.postDate||'').trim(),capturedAt:fmt_(new Date()),text:text,mediaUrl:String(body.mediaUrl||'').trim(),mediaType:String(body.mediaType||'').trim(),activityType:String(body.activityType||'').trim(),louisburgMatch:String(body.louisburgMatch||'').trim()};
-  const fingerprint=socialFingerprint_(payload);
-  const existing=socialFindFingerprintRecord_(sheet,fingerprint);
+  let result=null;
+  let fingerprint='';
+  try {
+    const ss=SpreadsheetApp.openById(LL_CONFIG.SPREADSHEET_ID),sheet=ss.getSheetByName('Social Post Intake');
+    if(!sheet)throw new Error('Social Post Intake sheet missing.');
 
-  if(existing){
-    const current=String(existing.workerResult||'').toUpperCase();
-    const retryable=/^(PENDING|PENDING - RETRY|ERROR - RETRY PENDING|REJECTED - NO ACTIONABLE ACTIVITY)/.test(current);
-    if(retryable){
-      const ix=existing.ix,row=existing.row;
-      if(payload.activityType)setSocialValue_(sheet,row,ix,'Activity Type',payload.activityType);
-      if(payload.louisburgMatch)setSocialValue_(sheet,row,ix,'Louisburg Match',payload.louisburgMatch);
-      if(payload.mediaUrl)setSocialValue_(sheet,row,ix,'Media URL',payload.mediaUrl);
-      if(payload.mediaType)setSocialValue_(sheet,row,ix,'Media Type',payload.mediaType);
-      if(payload.postDate)setSocialValue_(sheet,row,ix,'Post Date / Time',payload.postDate);
-      setSocialValue_(sheet,row,ix,'Post Text',payload.text);
-      setSocialValue_(sheet,row,ix,'Captured At',payload.capturedAt);
-      setSocialValue_(sheet,row,ix,'Worker Result','PENDING - RETRY');
-      setSocialValue_(sheet,row,ix,'Verification Status','');
-      setSocialValue_(sheet,row,ix,'Hub Eligibility','');
-      setSocialValue_(sheet,row,ix,'Notes','Rediscovered public activity; immediate retry requested.');
+    const platform=String(body.platform||'').trim().toUpperCase();
+    const postUrl=String(body.postUrl||'').trim(),profileUrl=String(body.profileUrl||'').trim(),text=String(body.postText||body.text||'').trim();
+    const org=String(body.organization||body.business||'').trim();
+    if(!org||!postUrl||!text||!/^https?:\/\//i.test(postUrl))throw new Error('Missing social post fields.');
+
+    const payload={organization:org,platform:platform,profileUrl:profileUrl,postUrl:postUrl,postId:String(body.postId||'').trim(),postDate:String(body.postDate||'').trim(),capturedAt:fmt_(new Date()),text:text,mediaUrl:String(body.mediaUrl||'').trim(),mediaType:String(body.mediaType||'').trim(),activityType:String(body.activityType||'').trim(),louisburgMatch:String(body.louisburgMatch||'').trim()};
+    fingerprint=socialFingerprint_(payload);
+    const existing=socialFindFingerprintRecord_(sheet,fingerprint);
+
+    if(existing){
+      const current=String(existing.workerResult||'').toUpperCase();
+      const retryable=/^(PENDING|PENDING - RETRY|ERROR - RETRY PENDING|REJECTED - NO ACTIONABLE ACTIVITY)/.test(current);
+      if(retryable){
+        const ix=existing.ix,row=existing.row;
+        if(payload.activityType)setSocialValue_(sheet,row,ix,'Activity Type',payload.activityType);
+        if(payload.louisburgMatch)setSocialValue_(sheet,row,ix,'Louisburg Match',payload.louisburgMatch);
+        if(payload.mediaUrl)setSocialValue_(sheet,row,ix,'Media URL',payload.mediaUrl);
+        if(payload.mediaType)setSocialValue_(sheet,row,ix,'Media Type',payload.mediaType);
+        if(payload.postDate)setSocialValue_(sheet,row,ix,'Post Date / Time',payload.postDate);
+        setSocialValue_(sheet,row,ix,'Post Text',payload.text);
+        setSocialValue_(sheet,row,ix,'Captured At',payload.capturedAt);
+        setSocialValue_(sheet,row,ix,'Worker Result','PENDING - RETRY');
+        setSocialValue_(sheet,row,ix,'Verification Status','');
+        setSocialValue_(sheet,row,ix,'Hub Eligibility','');
+        setSocialValue_(sheet,row,ix,'Notes','Rediscovered public activity; immediate retry requested.');
+        SpreadsheetApp.flush();
+        result={ok:true,duplicate:true,retried:true,fingerprint:fingerprint};
+      }else{
+        result={ok:true,duplicate:true,retried:false,fingerprint:fingerprint};
+      }
+    }else{
+      sheet.appendRow([Utilities.getUuid(),String(body.queueId||''),org,platform,profileUrl,postUrl,payload.postId,payload.postDate,payload.capturedAt,text,payload.mediaUrl,payload.mediaType,payload.activityType,payload.louisburgMatch,fingerprint,'PENDING','','','','Webhook intake; immediate processing requested; scheduled processor remains the recovery watchdog.']);
       SpreadsheetApp.flush();
-      const immediate=attemptImmediateSocialProcess_(fingerprint);
-      return {ok:true,duplicate:true,retried:true,fingerprint:fingerprint,immediateProcess:immediate.status,immediateSummary:immediate.summary||null};
+      result={ok:true,duplicate:false,retried:false,fingerprint:fingerprint};
     }
-
-    return {ok:true,duplicate:true,retried:false,fingerprint:fingerprint,immediateProcess:'DUPLICATE_SKIPPED'};
+  } finally {
+    ingestLock.releaseLock();
   }
 
-  sheet.appendRow([Utilities.getUuid(),String(body.queueId||''),org,platform,profileUrl,postUrl,payload.postId,payload.postDate,payload.capturedAt,text,payload.mediaUrl,payload.mediaType,payload.activityType,payload.louisburgMatch,fingerprint,'PENDING','','','','Webhook intake; immediate processing requested; scheduled processor remains the recovery watchdog.']);
-  SpreadsheetApp.flush();
-
-  const immediate=attemptImmediateSocialProcess_(fingerprint);
-  return {ok:true,duplicate:false,retried:false,fingerprint:fingerprint,immediateProcess:immediate.status,immediateSummary:immediate.summary||null};
+  if(result&&!result.duplicate || result&&result.retried){
+    const immediate=attemptImmediateSocialProcess_(fingerprint);
+    result.immediateProcess=immediate.status;
+    result.immediateSummary=immediate.summary||null;
+  }else if(result){
+    result.immediateProcess='DUPLICATE_SKIPPED';
+  }
+  return result;
 }
 
 function attemptImmediateSocialProcess_(fingerprint){
