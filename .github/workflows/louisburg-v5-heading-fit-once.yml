@@ -64,21 +64,17 @@ jobs:
           PY
           node --check /tmp/v5.js
 
-      - name: Update V5 index
+      - name: Commit V5 with sparse git
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          python - <<'PY'
-          import base64,json,os,urllib.request
-          repo='brewandbrewscompany-bot/brew-brews-radio'
-          path='louisburg-local/web-v5/index.html'
-          token=os.environ['GH_TOKEN']
-          headers={'Authorization':f'Bearer {token}','Accept':'application/vnd.github+json'}
-          url=f'https://api.github.com/repos/{repo}/contents/{path}'
-          req=urllib.request.Request(url,headers=headers)
-          with urllib.request.urlopen(req) as r: current=json.load(r)
-          data=open('/tmp/v5.html','rb').read()
-          payload=json.dumps({'message':'Dynamically fit V5 mobile home heading','content':base64.b64encode(data).decode(),'sha':current['sha']}).encode()
-          req=urllib.request.Request(url,data=payload,method='PUT',headers={**headers,'Content-Type':'application/json'})
-          with urllib.request.urlopen(req) as r: print(json.load(r)['commit']['sha'])
-          PY
+          set -e
+          git clone --depth=1 --filter=blob:none --sparse "https://x-access-token:${GH_TOKEN}@github.com/brewandbrewscompany-bot/brew-brews-radio.git" /tmp/repo
+          cd /tmp/repo
+          git sparse-checkout set louisburg-local/web-v5/index.html
+          cp /tmp/v5.html louisburg-local/web-v5/index.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add louisburg-local/web-v5/index.html
+          git commit -m "Dynamically fit V5 mobile home heading"
+          git push origin HEAD:main
