@@ -24,28 +24,12 @@ jobs:
           from pathlib import Path
           p=Path('louisburg-local/web-v5/index.html')
           s=p.read_text()
-          old="""  h.style.setProperty('min-width','0','important');
-  h.style.setProperty('flex','1 1 auto','important');
-  const max=25,min=14;h.style.setProperty('font-size',max+'px','important');"""
-          new="""  h.style.setProperty('min-width','0','important');
-  h.style.setProperty('flex','0 1 auto','important');
-  bar.style.setProperty('justify-content','flex-start','important');
-  bar.style.setProperty('gap','6px','important');
-  status.style.setProperty('margin-left','0','important');
-  status.style.setProperty('margin-right','auto','important');
-  status.style.setProperty('text-align','left','important');
-  status.style.setProperty('flex','0 0 auto','important');
-  const max=25,min=14;h.style.setProperty('font-size',max+'px','important');"""
-          if old not in s:
-              raise SystemExit('fitHomeHeading marker missing')
+          old="  h.style.setProperty('min-width','0','important');\n  h.style.setProperty('flex','1 1 auto','important');\n  const max=25,min=14;h.style.setProperty('font-size',max+'px','important');"
+          new="  h.style.setProperty('min-width','0','important');\n  h.style.setProperty('flex','0 1 auto','important');\n  bar.style.setProperty('justify-content','flex-start','important');\n  bar.style.setProperty('gap','6px','important');\n  status.style.setProperty('margin-left','0','important');\n  status.style.setProperty('margin-right','auto','important');\n  status.style.setProperty('text-align','left','important');\n  status.style.setProperty('flex','0 0 auto','important');\n  const max=25,min=14;h.style.setProperty('font-size',max+'px','important');"
+          if old not in s: raise SystemExit('fitHomeHeading marker missing')
           s=s.replace(old,new,1)
-          for marker in [
-              "h.style.setProperty('flex','0 1 auto','important')",
-              "bar.style.setProperty('justify-content','flex-start','important')",
-              "status.style.setProperty('text-align','left','important')"
-          ]:
-              if marker not in s:
-                  raise SystemExit('missing '+marker)
+          for marker in ["h.style.setProperty('flex','0 1 auto','important')","bar.style.setProperty('justify-content','flex-start','important')","status.style.setProperty('text-align','left','important')"]:
+              if marker not in s: raise SystemExit('missing '+marker)
           p.write_text(s)
           PY
 
