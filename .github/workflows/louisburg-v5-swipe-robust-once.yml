@@ -16,41 +16,20 @@ jobs:
       - name: Fetch current V5
         run: |
           curl -fsSL https://raw.githubusercontent.com/brewandbrewscompany-bot/brew-brews-radio/main/louisburg-local/web-v5/index.html -o /tmp/v5.html
-
       - name: Replace phone swipe handler
         run: |
           python - <<'PY'
           from pathlib import Path
-          import re
+          import re,base64
           p=Path('/tmp/v5.html')
           s=p.read_text()
+          encoded='ZnVuY3Rpb24gYXR0YWNoTWFpbih4KXsKICBpZih4LmRvY3VtZW50RWxlbWVudC5kYXRhc2V0LnY1R2VzdHVyZXMpcmV0dXJuOwogIHguZG9jdW1lbnRFbGVtZW50LmRhdGFzZXQudjVHZXN0dXJlcz0nMic7CiAgbGV0IHN4PTAsc3k9MCxsYXN0WD0wLGxhc3RZPTAsb249ZmFsc2UsbGFzdD0wLHBpZD1udWxsOwogIGNvbnN0IGVkaXQ9dD0+dCYmdC5jbG9zZXN0JiZ0LmNsb3Nlc3QoJ2lucHV0LHRleHRhcmVhLHNlbGVjdCxbY29udGVudGVkaXRhYmxlPSJ0cnVlIl0sYnV0dG9uLGEnKTsKICBjb25zdCBiZWdpbj0ocHgscHksaWQsdGFyZ2V0KT0+e2lmKGVkaXQodGFyZ2V0KSl7b249ZmFsc2U7cmV0dXJufXN4PWxhc3RYPXB4O3N5PWxhc3RZPXB5O3BpZD1pZDtvbj10cnVlfTsKICBjb25zdCBtb3ZlPShweCxweSk9PntpZighb24pcmV0dXJuO2xhc3RYPXB4O2xhc3RZPXB5fTsKICBjb25zdCBmaW5pc2g9KHB4LHB5KT0+e2lmKCFvbilyZXR1cm47b249ZmFsc2U7Y29uc3QgZHg9cHgtc3gsZHk9cHktc3k7aWYoTWF0aC5hYnMoZHgpPDM2fHxNYXRoLmFicyhkeCk8TWF0aC5hYnMoZHkpKjEuMDV8fE1hdGguYWJzKGR5KT4xNTApcmV0dXJuO2xhc3Q9RGF0ZS5ub3coKTtkeD4wP29wZW5EcmF3ZXIoJ2xlZnQnKTpvcGVuRHJhd2VyKCdyaWdodCcpfTsKICBpZih3aW5kb3cuUG9pbnRlckV2ZW50KXsKICAgIHguYWRkRXZlbnRMaXN0ZW5lcigncG9pbnRlcmRvd24nLGU9PntpZihlLnBvaW50ZXJUeXBlIT09J3RvdWNoJylyZXR1cm47YmVnaW4oZS5jbGllbnRYLGUuY2xpZW50WSxlLnBvaW50ZXJJZCxlLnRhcmdldCl9LHtwYXNzaXZlOnRydWUsY2FwdHVyZTp0cnVlfSk7CiAgICB4LmFkZEV2ZW50TGlzdGVuZXIoJ3BvaW50ZXJtb3ZlJyxlPT57aWYoIW9ufHxlLnBvaW50ZXJJZCE9PXBpZClyZXR1cm47bW92ZShlLmNsaWVudFgsZS5jbGllbnRZKX0se3Bhc3NpdmU6dHJ1ZSxjYXB0dXJlOnRydWV9KTsKICAgIHguYWRkRXZlbnRMaXN0ZW5lcigncG9pbnRlcnVwJyxlPT57aWYoIW9ufHxlLnBvaW50ZXJJZCE9PXBpZClyZXR1cm47ZmluaXNoKGUuY2xpZW50WCxlLmNsaWVudFkpfSx7cGFzc2l2ZTp0cnVlLGNhcHR1cmU6dHJ1ZX0pOwogICAgeC5hZGRFdmVudExpc3RlbmVyKCdwb2ludGVyY2FuY2VsJyxlPT57aWYoIW9ufHxlLnBvaW50ZXJJZCE9PXBpZClyZXR1cm47ZmluaXNoKGxhc3RYLGxhc3RZKX0se3Bhc3NpdmU6dHJ1ZSxjYXB0dXJlOnRydWV9KTsKICB9CiAgeC5hZGRFdmVudExpc3RlbmVyKCd0b3VjaHN0YXJ0JyxlPT57aWYoIWUudG91Y2hlc3x8ZS50b3VjaGVzLmxlbmd0aCE9PTEpcmV0dXJuO2NvbnN0IHQ9ZS50b3VjaGVzWzBdO2JlZ2luKHQuY2xpZW50WCx0LmNsaWVudFksJ3RvdWNoJyxlLnRhcmdldCl9LHtwYXNzaXZlOnRydWUsY2FwdHVyZTp0cnVlfSk7CiAgeC5hZGRFdmVudExpc3RlbmVyKCd0b3VjaG1vdmUnLGU9PntpZighb258fCFlLnRvdWNoZXN8fCFlLnRvdWNoZXMubGVuZ3RoKXJldHVybjtjb25zdCB0PWUudG91Y2hlc1swXTttb3ZlKHQuY2xpZW50WCx0LmNsaWVudFkpfSx7cGFzc2l2ZTp0cnVlLGNhcHR1cmU6dHJ1ZX0pOwogIHguYWRkRXZlbnRMaXN0ZW5lcigndG91Y2hlbmQnLGU9PntpZighb24pcmV0dXJuO2NvbnN0IHQ9ZS5jaGFuZ2VkVG91Y2hlcyYmZS5jaGFuZ2VkVG91Y2hlc1swXTtmaW5pc2godD90LmNsaWVudFg6bGFzdFgsdD90LmNsaWVudFk6bGFzdFkpfSx7cGFzc2l2ZTp0cnVlLGNhcHR1cmU6dHJ1ZX0pOwogIHguYWRkRXZlbnRMaXN0ZW5lcigndG91Y2hjYW5jZWwnLCgpPT57ZmluaXNoKGxhc3RYLGxhc3RZKX0se3Bhc3NpdmU6dHJ1ZSxjYXB0dXJlOnRydWV9KTsKICB4LmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJyxlPT57aWYoRGF0ZS5ub3coKS1sYXN0PDQ1MCl7ZS5wcmV2ZW50RGVmYXVsdCgpO2Uuc3RvcEltbWVkaWF0ZVByb3BhZ2F0aW9uKCl9fSx0cnVlKQp9'
+          replacement=base64.b64decode(encoded).decode()+"\nfunction drawerGestures()"
           pattern=r"function attachMain\(x\)\{.*?\}\nfunction drawerGestures\(\)"
-          replacement=r'''function attachMain(x){
-  if(x.documentElement.dataset.v5Gestures)return;
-  x.documentElement.dataset.v5Gestures='2';
-  let sx=0,sy=0,lastX=0,lastY=0,on=false,last=0,pid=null;
-  const edit=t=>t&&t.closest&&t.closest('input,textarea,select,[contenteditable="true"],button,a');
-  const begin=(px,py,id,target)=>{if(edit(target)){on=false;return}sx=lastX=px;sy=lastY=py;pid=id;on=true};
-  const move=(px,py)=>{if(!on)return;lastX=px;lastY=py};
-  const finish=(px,py)=>{if(!on)return;on=false;const dx=px-sx,dy=py-sy;if(Math.abs(dx)<36||Math.abs(dx)<Math.abs(dy)*1.05||Math.abs(dy)>150)return;last=Date.now();dx>0?openDrawer('left'):openDrawer('right')};
-  if(window.PointerEvent){
-    x.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch')return;begin(e.clientX,e.clientY,e.pointerId,e.target)},{passive:true,capture:true});
-    x.addEventListener('pointermove',e=>{if(!on||e.pointerId!==pid)return;move(e.clientX,e.clientY)},{passive:true,capture:true});
-    x.addEventListener('pointerup',e=>{if(!on||e.pointerId!==pid)return;finish(e.clientX,e.clientY)},{passive:true,capture:true});
-    x.addEventListener('pointercancel',e=>{if(!on||e.pointerId!==pid)return;finish(lastX,lastY)},{passive:true,capture:true});
-  }
-  x.addEventListener('touchstart',e=>{if(!e.touches||e.touches.length!==1)return;const t=e.touches[0];begin(t.clientX,t.clientY,'touch',e.target)},{passive:true,capture:true});
-  x.addEventListener('touchmove',e=>{if(!on||!e.touches||!e.touches.length)return;const t=e.touches[0];move(t.clientX,t.clientY)},{passive:true,capture:true});
-  x.addEventListener('touchend',e=>{if(!on)return;const t=e.changedTouches&&e.changedTouches[0];finish(t?t.clientX:lastX,t?t.clientY:lastY)},{passive:true,capture:true});
-  x.addEventListener('touchcancel',()=>{finish(lastX,lastY)},{passive:true,capture:true});
-  x.addEventListener('click',e=>{if(Date.now()-last<450){e.preventDefault();e.stopImmediatePropagation()}},true)
-}
-function drawerGestures()'''
           ns,n=re.subn(pattern,replacement,s,count=1,flags=re.S)
-          if n!=1: raise SystemExit(f'attachMain replacement count={n}')
+          if n!=1: raise SystemExit('attachMain replacement failed')
           p.write_text(ns)
           PY
-
       - name: Validate JavaScript syntax
         run: |
           python - <<'PY'
@@ -58,12 +37,11 @@ function drawerGestures()'''
           import re
           s=Path('/tmp/v5.html').read_text()
           assert "dataset.v5Gestures='2'" in s
-          assert "pointercancel" in s
+          assert 'pointercancel' in s
           blocks=re.findall(r'<script>(.*?)</script>',s,re.S)
           Path('/tmp/v5.js').write_text('\n'.join(blocks))
           PY
           node --check /tmp/v5.js
-
       - name: Update V5 index only
         env:
           GH_TOKEN: ${{ github.token }}
