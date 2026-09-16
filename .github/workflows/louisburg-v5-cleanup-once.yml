@@ -12,15 +12,17 @@ permissions:
 jobs:
   refresh-v5:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
+      - name: Fetch only V5 and patch script
+        shell: bash
+        run: |
+          mkdir -p louisburg-local/web-v5
+          curl -fsSL https://raw.githubusercontent.com/brewandbrewscompany-bot/brew-brews-radio/main/louisburg-local/web-v5/index.html -o louisburg-local/web-v5/index.html
+          curl -fsSL https://raw.githubusercontent.com/brewandbrewscompany-bot/brew-brews-radio/main/.github/scripts/louisburg_v5_cleanup.py -o /tmp/v5_cleanup.py
 
       - name: Apply V5 cleanup patch
-        run: python .github/scripts/louisburg_v5_cleanup.py
+        run: python /tmp/v5_cleanup.py
 
       - name: Validate V5 script syntax
         shell: bash
@@ -39,11 +41,14 @@ jobs:
           PY
           node --check /tmp/v5.js
 
-      - name: Commit V5 website cleanup
+      - name: Update only V5 index on main
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          git config user.name "brewandbrewscompany-bot"
-          git config user.email "brewandbrewscompany@gmail.com"
-          git add louisburg-local/web-v5/index.html
-          git commit -m "Clean up Louisburg Local V5 website UX" || exit 0
-          git push origin HEAD:main
+          sha=$(gh api repos/${{ github.repository }}/contents/louisburg-local/web-v5/index.html --jq .sha)
+          content=$(base64 -w0 louisburg-local/web-v5/index.html)
+          gh api --method PUT repos/${{ github.repository }}/contents/louisburg-local/web-v5/index.html \
+            -f message='Clean up Louisburg Local V5 website UX' \
+            -f content="$content" \
+            -f sha="$sha" >/dev/null
