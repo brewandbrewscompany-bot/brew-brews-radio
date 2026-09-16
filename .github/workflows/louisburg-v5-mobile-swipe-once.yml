@@ -1,0 +1,65 @@
+name: Louisburg V5 mobile swipe once
+
+on:
+  push:
+    paths:
+      - .github/workflows/louisburg-v5-mobile-swipe-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch current V5
+        shell: bash
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/brewandbrewscompany-bot/brew-brews-radio/main/louisburg-local/web-v5/index.html -o /tmp/v5.html
+
+      - name: Restore phone-only swipe gestures
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/v5.html')
+          s=p.read_text()
+          old="installSearch(x);installObserver();installRefresh(x);setTimeout(applyDomFilters,0)"
+          new="installSearch(x);installObserver();installRefresh(x);if(window.matchMedia('(max-width:899px)').matches)attachMain(x);setTimeout(applyDomFilters,0)"
+          if old not in s:
+              raise SystemExit('mobile swipe inject marker missing')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+
+      - name: Validate JavaScript syntax
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('/tmp/v5.html').read_text()
+          assert "matchMedia('(max-width:899px)').matches)attachMain(x)" in s
+          blocks=re.findall(r'<script>(.*?)</script>',s,re.S)
+          Path('/tmp/v5.js').write_text('\n'.join(blocks))
+          PY
+          node --check /tmp/v5.js
+
+      - name: Update V5 index only
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import base64,json,os,subprocess,urllib.request
+          repo='brewandbrewscompany-bot/brew-brews-radio'
+          path='louisburg-local/web-v5/index.html'
+          token=os.environ['GH_TOKEN']
+          req=urllib.request.Request(f'https://api.github.com/repos/{repo}/contents/{path}',headers={'Authorization':f'Bearer {token}','Accept':'application/vnd.github+json'})
+          with urllib.request.urlopen(req) as r: current=json.load(r)
+          content=open('/tmp/v5.html','rb').read()
+          payload=json.dumps({'message':'Restore phone-only swipe gestures in Louisburg Local V5','content':base64.b64encode(content).decode(),'sha':current['sha']}).encode()
+          req=urllib.request.Request(f'https://api.github.com/repos/{repo}/contents/{path}',data=payload,method='PUT',headers={'Authorization':f'Bearer {token}','Accept':'application/vnd.github+json','Content-Type':'application/json'})
+          with urllib.request.urlopen(req) as r: print(json.load(r)['commit']['sha'])
+          PY
