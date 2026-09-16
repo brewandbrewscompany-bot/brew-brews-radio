@@ -17,52 +17,38 @@ jobs:
         run: |
           curl -fsSL https://raw.githubusercontent.com/brewandbrewscompany-bot/brew-brews-radio/main/louisburg-local/web-v5/index.html -o /tmp/v5.html
 
-      - name: Patch dynamic mobile heading fit and preserve history link
+      - name: Patch heading fit and history route
         run: |
           python - <<'PY'
           from pathlib import Path
           p=Path('/tmp/v5.html')
           s=p.read_text()
-
           s=s.replace("document.getElementById('historyLink').onclick=()=>location.href='../web-v4/history.html'","document.getElementById('historyLink').onclick=()=>location.href='../web-v4/history.html?from=v5'",1)
-
           marker='function installRefresh(x){'
           if 'function fitHomeHeading(x){' not in s:
-              fn=r'''function fitHomeHeading(x){
-  if(!x)return;
-  const bar=x.querySelector('#homeScreen .bar'),h=bar&&bar.querySelector('h2'),status=bar&&bar.querySelector('#feedStatus');
-  if(!bar||!h||!status)return;
-  const mobile=window.matchMedia('(max-width:899px)').matches;
-  if(!mobile){h.style.removeProperty('font-size');return}
-  h.style.setProperty('white-space','nowrap','important');
-  h.style.setProperty('line-height','1','important');
-  h.style.setProperty('min-width','0','important');
-  h.style.setProperty('flex','1 1 auto','important');
-  const max=25,min=14;
-  h.style.setProperty('font-size',max+'px','important');
-  const avail=Math.max(0,bar.clientWidth-status.getBoundingClientRect().width-12);
-  let size=max;
-  while(size>min&&h.scrollWidth>avail){size-=0.5;h.style.setProperty('font-size',size+'px','important')}
-  if(!bar.dataset.v5FitWatch){
-    bar.dataset.v5FitWatch='1';
-    const rerun=()=>requestAnimationFrame(()=>fitHomeHeading(x));
-    if(window.ResizeObserver)new ResizeObserver(rerun).observe(bar);
-    if(window.MutationObserver)new MutationObserver(rerun).observe(status,{childList:true,subtree:true,characterData:true});
-    const win=x.defaultView;if(win)win.addEventListener('resize',rerun,{passive:true});
-  }
-}
-'''
+              fn=("function fitHomeHeading(x){\n"
+                  "  if(!x)return;\n"
+                  "  const bar=x.querySelector('#homeScreen .bar'),h=bar&&bar.querySelector('h2'),status=bar&&bar.querySelector('#feedStatus');\n"
+                  "  if(!bar||!h||!status)return;\n"
+                  "  const mobile=window.matchMedia('(max-width:899px)').matches;\n"
+                  "  if(!mobile){h.style.removeProperty('font-size');return}\n"
+                  "  h.style.setProperty('white-space','nowrap','important');\n"
+                  "  h.style.setProperty('line-height','1','important');\n"
+                  "  h.style.setProperty('min-width','0','important');\n"
+                  "  h.style.setProperty('flex','1 1 auto','important');\n"
+                  "  const max=25,min=14;h.style.setProperty('font-size',max+'px','important');\n"
+                  "  const avail=Math.max(0,bar.clientWidth-status.getBoundingClientRect().width-12);let size=max;\n"
+                  "  while(size>min&&h.scrollWidth>avail){size-=0.5;h.style.setProperty('font-size',size+'px','important')}\n"
+                  "  if(!bar.dataset.v5FitWatch){bar.dataset.v5FitWatch='1';const rerun=()=>requestAnimationFrame(()=>fitHomeHeading(x));if(window.ResizeObserver)new ResizeObserver(rerun).observe(bar);if(window.MutationObserver)new MutationObserver(rerun).observe(status,{childList:true,subtree:true,characterData:true});const win=x.defaultView;if(win)win.addEventListener('resize',rerun,{passive:true})}\n"
+                  "}\n")
               if marker not in s: raise SystemExit('installRefresh marker missing')
               s=s.replace(marker,fn+marker,1)
-
           old="const h=x.querySelector('#homeScreen .bar h2');if(h)h.textContent='Happening in Louisburg';const dhead=x.querySelector('#directoryScreen .directoryHeader h1');"
           new="const h=x.querySelector('#homeScreen .bar h2');if(h){h.textContent='Happening in Louisburg';setTimeout(()=>fitHomeHeading(x),0)}const dhead=x.querySelector('#directoryScreen .directoryHeader h1');"
           if old not in s: raise SystemExit('heading assignment marker missing')
           s=s.replace(old,new,1)
-
-          if "history.html?from=v5" not in s: raise SystemExit('history marker missing')
-          if 'function fitHomeHeading(x){' not in s: raise SystemExit('fit function missing')
-          if 'setTimeout(()=>fitHomeHeading(x),0)' not in s: raise SystemExit('fit call missing')
+          for m in ['function fitHomeHeading(x){','setTimeout(()=>fitHomeHeading(x),0)','history.html?from=v5']:
+              if m not in s: raise SystemExit('missing '+m)
           p.write_text(s)
           PY
 
