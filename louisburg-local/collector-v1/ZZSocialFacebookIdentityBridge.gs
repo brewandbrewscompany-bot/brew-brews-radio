@@ -131,28 +131,71 @@ function socialRequeueResolvedOwnerMismatch_(sheet,match,payload){
 
 function recordSocialIntakeWebhookAliasAware_(body){
   requireSocialIngestKey_(body);
-  const ss=SpreadsheetApp.openById(LL_CONFIG.SPREADSHEET_ID),sheet=ss.getSheetByName('Social Post Intake');
-  if(!sheet)throw new Error('Social Post Intake sheet missing.');
-  const platform=String(body.platform||'').trim().toUpperCase();
-  const postUrl=String(body.postUrl||'').trim(),profileUrl=String(body.profileUrl||'').trim(),text=String(body.postText||body.text||'').trim();
-  const org=String(body.organization||body.business||'').trim();
-  if(!org||!postUrl||!text||!/^https?:\/\//i.test(postUrl))throw new Error('Missing social post fields.');
-  const payload={organization:org,platform:platform,profileUrl:profileUrl,postUrl:postUrl,postId:String(body.postId||'').trim(),postDate:String(body.postDate||'').trim(),capturedAt:fmt_(new Date()),text:text,mediaUrl:String(body.mediaUrl||'').trim(),mediaType:String(body.mediaType||'').trim(),activityType:String(body.activityType||'').trim(),louisburgMatch:String(body.louisburgMatch||'').trim()};
-  const fingerprint=socialFingerprint_(payload),existing=socialFingerprintRow_(sheet,fingerprint);
-  if(existing){
-    const requeued=platform==='FACEBOOK'&&socialRequeueResolvedOwnerMismatch_(sheet,existing,payload);
-    if(requeued){
-      let processed=false;
-      const lock=LockService.getScriptLock();
-      if(lock.tryLock(3000)){
-        try{processSocialPostIntake();processed=true;}finally{lock.releaseLock();}
+
+  // Keep the verified Facebook identity/alias repair behavior, but use
+  // the same serialized ingest + immediate processing guarantees as
+  // the hardened SocialIntake implementation.
+  const ingestLock=LockService.getScriptLock();
+  if(!ingestLock.tryLock(4000))throw new Error('Social intake is busy; retry delivery.');
+
+  let result=null;
+  let fingerprint='';
+  try{
+    const ss=SpreadsheetApp.openById(LL_CONFIG.SPREADSHEET_ID),sheet=ss.getSheetByName('Social Post Intake');
+    if(!sheet)throw new Error('Social Post Intake sheet missing.');
+    const platform=String(body.platform||'').trim().toUpperCase();
+    const postUrl=String(body.postUrl||'').trim(),profileUrl=String(body.profileUrl||'').trim(),text=String(body.postText||body.text||'').trim();
+    const org=String(body.organization||body.business||'').trim();
+    if(!org||!postUrl||!text||!/^https?:\/\//i.test(postUrl))throw new Error('Missing social post fields.');
+
+    const payload={organization:org,platform:platform,profileUrl:profileUrl,postUrl:postUrl,postId:String(body.postId||'').trim(),postDate:String(body.postDate||'').trim(),capturedAt:fmt_(new Date()),text:text,mediaUrl:String(body.mediaUrl||'').trim(),mediaType:String(body.mediaType||'').trim(),activityType:String(body.activityType||'').trim(),louisburgMatch:String(body.louisburgMatch||'').trim()};
+    fingerprint=socialFingerprint_(payload);
+    const existing=socialFingerprintRow_(sheet,fingerprint);
+
+    if(existing){
+      const ownerRequeued=platform==='FACEBOOK'&&socialRequeueResolvedOwnerMismatch_(sheet,existing,payload);
+      if(ownerRequeued){
+        SpreadsheetApp.flush();
+        result={ok:true,duplicate:true,retried:true,requeued:true,fingerprint:fingerprint};
+      }else{
+        const current=cell_(existing.data,existing.ix,'Worker Result').toUpperCase();
+        const retryable=/^(PENDING|PENDING - RETRY|ERROR - RETRY PENDING|REJECTED - NO ACTIONABLE ACTIVITY)/.test(current);
+        if(retryable){
+          const ix=existing.ix,row=existing.row;
+          if(payload.activityType)setSocialValue_(sheet,row,ix,'Activity Type',payload.activityType);
+          if(payload.louisburgMatch)setSocialValue_(sheet,row,ix,'Louisburg Match',payload.louisburgMatch);
+          if(payload.mediaUrl)setSocialValue_(sheet,row,ix,'Media URL',payload.mediaUrl);
+          if(payload.mediaType)setSocialValue_(sheet,row,ix,'Media Type',payload.mediaType);
+          if(payload.postDate)setSocialValue_(sheet,row,ix,'Post Date / Time',payload.postDate);
+          setSocialValue_(sheet,row,ix,'Post Text',payload.text);
+          setSocialValue_(sheet,row,ix,'Captured At',payload.capturedAt);
+          setSocialValue_(sheet,row,ix,'Worker Result','PENDING - RETRY');
+          setSocialValue_(sheet,row,ix,'Verification Status','');
+          setSocialValue_(sheet,row,ix,'Hub Eligibility','');
+          setSocialValue_(sheet,row,ix,'Notes','Rediscovered public activity; alias-aware immediate retry requested.');
+          SpreadsheetApp.flush();
+          result={ok:true,duplicate:true,retried:true,fingerprint:fingerprint};
+        }else{
+          result={ok:true,duplicate:true,retried:false,fingerprint:fingerprint};
+        }
       }
-      return {ok:true,duplicate:true,requeued:true,processed:processed,fingerprint:fingerprint};
+    }else{
+      sheet.appendRow([Utilities.getUuid(),String(body.queueId||''),org,platform,profileUrl,postUrl,payload.postId,payload.postDate,payload.capturedAt,text,payload.mediaUrl,payload.mediaType,payload.activityType,payload.louisburgMatch,fingerprint,'PENDING','','','','Webhook intake; verified Facebook identity/alias protections plus immediate processing; scheduled processor remains the recovery watchdog.']);
+      SpreadsheetApp.flush();
+      result={ok:true,duplicate:false,retried:false,fingerprint:fingerprint};
     }
-    return {ok:true,duplicate:true,fingerprint:fingerprint};
+  }finally{
+    ingestLock.releaseLock();
   }
-  sheet.appendRow([Utilities.getUuid(),String(body.queueId||''),org,platform,profileUrl,postUrl,payload.postId,payload.postDate,payload.capturedAt,text,payload.mediaUrl,payload.mediaType,payload.activityType,payload.louisburgMatch,fingerprint,'PENDING','','','','Webhook intake; verified Facebook sources auto-publish when normal safeguards pass.']);
-  return {ok:true,duplicate:false,fingerprint:fingerprint};
+
+  if(result&&(!result.duplicate||result.retried)){
+    const immediate=attemptImmediateSocialProcess_(fingerprint);
+    result.immediateProcess=immediate.status;
+    result.immediateSummary=immediate.summary||null;
+  }else if(result){
+    result.immediateProcess='DUPLICATE_SKIPPED';
+  }
+  return result;
 }
 
 function repairVerifiedFacebookOwnerMismatchIntake(){
