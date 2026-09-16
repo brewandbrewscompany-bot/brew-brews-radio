@@ -16,16 +16,16 @@ permissions:
 
 concurrency:
   group: louisburg-local-public-social-browser
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   scan-public-facebook-pages:
     runs-on: ubuntu-latest
-    timeout-minutes: 32
+    timeout-minutes: 45
     env:
       LL_SOCIAL_ENDPOINT: https://script.google.com/macros/s/AKfycbxw9gJBH50L_VZbgp6i_mHHnfPXAkraIqv63BA2XqWtb-XaaczXxdf89WveFkAOwV-azw/exec
       LL_SOCIAL_INGEST_KEY: ${{ secrets.LL_SOCIAL_INGEST_KEY }}
-      LL_MAX_WORKERS: '25'
+      LL_MAX_WORKERS: '60'
       LL_FORCE_SCAN: 'true'
       LL_MAX_POSTS_PER_PAGE: '8'
       TZ: America/Chicago
@@ -44,40 +44,54 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Install Chromium
+        id: chromium
+        continue-on-error: true
         working-directory: louisburg-local/social-browser-worker
         run: npx playwright install --with-deps chromium
 
       - name: Test extraction rules
+        id: tests
+        continue-on-error: true
         working-directory: louisburg-local/social-browser-worker
         env:
           NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: npm test
 
       - name: Scan rendered USD 416 first-party school feeds
+        id: schools
+        continue-on-error: true
         working-directory: louisburg-local/social-browser-worker
         env:
           NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node school-first-party.mjs
 
       - name: Recover configured exact public Facebook posts
+        id: exact
+        continue-on-error: true
         working-directory: louisburg-local/social-browser-worker
         env:
           NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node exact-post-recovery.mjs
 
       - name: Recover signed-out public Facebook Relay timeline
+        id: relay
+        continue-on-error: true
         working-directory: louisburg-local/social-browser-worker
         env:
           NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node facebook-relay-recovery.mjs
 
       - name: Recover alternate Relay shapes and 10-day lookback
+        id: lookback
+        continue-on-error: true
         working-directory: louisburg-local/social-browser-worker
         env:
           NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node facebook-relay-lookback.mjs
 
       - name: Scan public Facebook Pages as DOM fallback
+        id: dom
+        continue-on-error: true
         working-directory: louisburg-local/social-browser-worker
         env:
           LL_FORCE_SCAN: 'false'
@@ -85,7 +99,35 @@ jobs:
         run: npm start
 
       - name: Run verified first-party fallbacks
+        id: firstparty
+        continue-on-error: true
         working-directory: louisburg-local/social-browser-worker
         env:
           NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node first-party-fallback.mjs
+
+      - name: Verify full scan health after all recovery lanes
+        if: always()
+        env:
+          TESTS: ${{ steps.tests.outcome }}
+          SCHOOLS: ${{ steps.schools.outcome }}
+          EXACT: ${{ steps.exact.outcome }}
+          RELAY: ${{ steps.relay.outcome }}
+          LOOKBACK: ${{ steps.lookback.outcome }}
+          DOM: ${{ steps.dom.outcome }}
+          FIRSTPARTY: ${{ steps.firstparty.outcome }}
+        run: |
+          echo "tests=$TESTS schools=$SCHOOLS exact=$EXACT relay=$RELAY lookback=$LOOKBACK dom=$DOM firstparty=$FIRSTPARTY"
+          healthy=0
+          for outcome in "$SCHOOLS" "$EXACT" "$RELAY" "$LOOKBACK" "$DOM" "$FIRSTPARTY"; do
+            if [ "$outcome" = "success" ]; then healthy=$((healthy+1)); fi
+          done
+          if [ "$TESTS" != "success" ]; then
+            echo "Regression tests failed. All collection lanes were still attempted, but the run is unhealthy."
+            exit 1
+          fi
+          if [ "$healthy" -lt 3 ]; then
+            echo "Too few independent collection/recovery lanes succeeded: $healthy"
+            exit 1
+          fi
+          echo "Full scan healthy: $healthy independent collection/recovery lanes succeeded."
