@@ -11,9 +11,9 @@ on:
       - '.github/workflows/louisburg-social-fast-pass.yml'
   workflow_dispatch:
   schedule:
-    # Full public-browser scan runs at :27. These two lightweight passes fill
-    # the gaps, giving the system a recovery/discovery attempt about every
-    # 20 minutes without waiting for the heavier browser fallback.
+    # Full public-browser scan runs at :27. These two recovery passes fill
+    # the gaps, giving the system another discovery attempt about every
+    # 20 minutes instead of relying on one hourly job.
     - cron: '7,47 * * * *'
 
 permissions:
@@ -26,7 +26,7 @@ concurrency:
 jobs:
   fast-public-source-pass:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     env:
       LL_SOCIAL_ENDPOINT: https://script.google.com/macros/s/AKfycbxw9gJBH50L_VZbgp6i_mHHnfPXAkraIqv63BA2XqWtb-XaaczXxdf89WveFkAOwV-azw/exec
       LL_SOCIAL_INGEST_KEY: ${{ secrets.LL_SOCIAL_INGEST_KEY }}
@@ -48,6 +48,10 @@ jobs:
       - name: Install worker dependencies
         working-directory: louisburg-local/social-browser-worker
         run: npm ci --no-audit --no-fund
+
+      - name: Install Chromium
+        working-directory: louisburg-local/social-browser-worker
+        run: npx playwright install --with-deps chromium
 
       - name: Fast reliability classifier smoke test
         working-directory: louisburg-local/social-browser-worker
