@@ -34,7 +34,6 @@ jobs:
       LL_FORCE_SCAN: 'true'
       LL_MAX_POSTS_PER_PAGE: '8'
       TZ: America/Chicago
-      NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
 
     steps:
       - name: Check out project
@@ -56,20 +55,30 @@ jobs:
 
       - name: Recover configured exact public Facebook posts
         working-directory: louisburg-local/social-browser-worker
+        env:
+          NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node exact-post-recovery.mjs
 
       - name: Recover signed-out public Facebook Relay timeline
         working-directory: louisburg-local/social-browser-worker
+        env:
+          NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node facebook-relay-recovery.mjs
 
       - name: Recover alternate Relay shapes and lookback
         working-directory: louisburg-local/social-browser-worker
+        env:
+          NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node facebook-relay-lookback.mjs
 
       - name: Scan rendered USD 416 first-party school feeds
         working-directory: louisburg-local/social-browser-worker
+        env:
+          NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node school-first-party.mjs
 
       - name: Run verified first-party business fallbacks
         working-directory: louisburg-local/social-browser-worker
+        env:
+          NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node first-party-fallback.mjs
