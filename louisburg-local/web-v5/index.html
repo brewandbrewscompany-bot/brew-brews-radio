@@ -31,7 +31,7 @@ function fitHomeHeading(x){
   status.style.setProperty('margin-right','auto','important');
   status.style.setProperty('text-align','left','important');
   status.style.setProperty('flex','0 0 auto','important');
-  const max=25,min=14;h.style.setProperty('font-size',max+'px','important');
+  const max=29,min=18;h.style.setProperty('font-size',max+'px','important');
   const avail=Math.max(0,bar.clientWidth-status.getBoundingClientRect().width-12);let size=max;
   while(size>min&&h.scrollWidth>avail){size-=0.5;h.style.setProperty('font-size',size+'px','important')}
   if(!bar.dataset.v5FitWatch){bar.dataset.v5FitWatch='1';const rerun=()=>requestAnimationFrame(()=>fitHomeHeading(x));if(window.ResizeObserver)new ResizeObserver(rerun).observe(bar);if(window.MutationObserver)new MutationObserver(rerun).observe(status,{childList:true,subtree:true,characterData:true});const win=x.defaultView;if(win)win.addEventListener('resize',rerun,{passive:true})}
