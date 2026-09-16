@@ -1,6 +1,11 @@
 name: Louisburg Local social rescue
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/louisburg-social-rescue.yml'
   workflow_run:
     workflows:
       - Louisburg Local public social browser
@@ -18,7 +23,7 @@ concurrency:
 
 jobs:
   rescue-public-sources:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion != 'success' }}
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion != 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
