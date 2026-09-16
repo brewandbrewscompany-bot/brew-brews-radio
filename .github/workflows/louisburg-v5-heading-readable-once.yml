@@ -1,0 +1,56 @@
+name: Louisburg V5 heading readable once
+
+on:
+  push:
+    paths:
+      - '.github/workflows/louisburg-v5-heading-readable-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Increase mobile home heading readability
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('louisburg-local/web-v5/index.html')
+          s=p.read_text()
+          old="const max=25,min=14;h.style.setProperty('font-size',max+'px','important');"
+          new="const max=29,min=18;h.style.setProperty('font-size',max+'px','important');"
+          if old not in s:
+              raise SystemExit('heading size marker missing')
+          s=s.replace(old,new,1)
+          if "const max=29,min=18" not in s:
+              raise SystemExit('heading size update missing')
+          p.write_text(s)
+          PY
+
+      - name: Validate JavaScript
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('louisburg-local/web-v5/index.html').read_text()
+          blocks=re.findall(r'<script>(.*?)</script>',s,re.S)
+          Path('/tmp/v5.js').write_text('\n'.join(blocks))
+          PY
+          node --check /tmp/v5.js
+
+      - name: Commit V5
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add louisburg-local/web-v5/index.html
+          git commit -m "Increase V5 home heading readability" || exit 0
+          git push
