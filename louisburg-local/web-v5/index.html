@@ -29,11 +29,11 @@ button{font:inherit}.stage{position:fixed;inset:0;background:var(--cream)}
 </style>
 </head>
 <body>
-<div class="stage"><iframe id="v4frame" title="Louisburg Local V5 prototype" src="../web-v4/?v5=swipe"></iframe></div>
+<div class="stage"><iframe id="v4frame" title="Louisburg Local V5 prototype" src="../web-v4/?v5=swipe-anywhere"></iframe></div>
 <div class="testBadge">V5 SWIPE TEST</div>
 <button class="edgeButton left" id="leftHandle" aria-label="Open navigation">☰</button>
 <button class="edgeButton right" id="rightHandle" aria-label="Open filters">☷</button>
-<div class="swipeHint" id="swipeHint">Swipe right for menu · left for filters</div>
+<div class="swipeHint" id="swipeHint">Swipe anywhere → menu · ← filters</div>
 <div class="scrim" id="scrim"></div>
 
 <aside class="drawer left" id="leftDrawer" aria-label="Navigation menu">
@@ -125,7 +125,7 @@ function injectPrototypeLayer(){
   let doc,w;try{doc=frame.contentDocument;w=frame.contentWindow;if(!doc||!w)return}catch(e){return}
   if(!doc.getElementById('v5-prototype-css')){
     const style=doc.createElement('style');style.id='v5-prototype-css';
-    style.textContent=`#menuBtn,#focusSearch{opacity:0!important;pointer-events:none!important}.snapshot,#sectionTabs{display:none!important}.main{padding-top:10px!important}.brand small{font-size:9px!important}.quick{padding-top:1px!important}.bar{margin-top:1px!important}`;
+    style.textContent=`html,body{touch-action:pan-y!important;overscroll-behavior-x:none!important}#menuBtn,#focusSearch{opacity:0!important;pointer-events:none!important}.snapshot,#sectionTabs{display:none!important}.main{padding-top:10px!important}.brand small{font-size:9px!important}.quick{padding-top:1px!important}.bar{margin-top:1px!important}`;
     doc.head.appendChild(style);
   }
   const sub=doc.querySelector('.brand small');if(sub)sub.textContent='Louisburg, Kansas · V5 interaction test';
@@ -133,11 +133,22 @@ function injectPrototypeLayer(){
 }
 
 function attachGestures(doc){
-  if(doc.documentElement.dataset.v5Gestures==='1')return;doc.documentElement.dataset.v5Gestures='1';
-  let sx=0,sy=0,started=false;
-  const blocked=t=>t&&t.closest&&t.closest('input,textarea,select,a,button,.quick,.chips,.eventQuick,.actions');
-  doc.addEventListener('touchstart',e=>{if(e.touches.length!==1||blocked(e.target)){started=false;return}const t=e.touches[0];sx=t.clientX;sy=t.clientY;started=true},{passive:true});
-  doc.addEventListener('touchend',e=>{if(!started||!e.changedTouches.length)return;started=false;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)<90||Math.abs(dx)<Math.abs(dy)*1.45||Math.abs(dy)>85)return;if(dx>0)openDrawer('left');else openDrawer('right')},{passive:true});
+  if(doc.documentElement.dataset.v5Gestures==='2')return;
+  doc.documentElement.dataset.v5Gestures='2';
+  let sx=0,sy=0,started=false,swipedAt=0;
+  const editable=t=>t&&t.closest&&t.closest('input,textarea,select,[contenteditable="true"]');
+  function begin(x,y,target){if(editable(target)){started=false;return}sx=x;sy=y;started=true}
+  function finish(x,y){
+    if(!started)return;started=false;
+    const dx=x-sx,dy=y-sy,ax=Math.abs(dx),ay=Math.abs(dy);
+    if(ax<52||ax<ay*1.12||ay>125)return;
+    swipedAt=Date.now();
+    if(dx>0)openDrawer('left');else openDrawer('right');
+  }
+  doc.addEventListener('touchstart',e=>{if(e.touches.length!==1){started=false;return}const t=e.touches[0];begin(t.clientX,t.clientY,e.target)},{passive:true,capture:true});
+  doc.addEventListener('touchend',e=>{if(!e.changedTouches.length){started=false;return}const t=e.changedTouches[0];finish(t.clientX,t.clientY)},{passive:true,capture:true});
+  doc.addEventListener('touchcancel',()=>{started=false},{passive:true,capture:true});
+  doc.addEventListener('click',e=>{if(Date.now()-swipedAt<500){e.preventDefault();e.stopImmediatePropagation()}},true);
 }
 
 frame.addEventListener('load',()=>{injectPrototypeLayer();setTimeout(injectPrototypeLayer,600)});
