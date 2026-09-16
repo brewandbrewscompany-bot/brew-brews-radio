@@ -24,7 +24,13 @@ function fitHomeHeading(x){
   h.style.setProperty('white-space','nowrap','important');
   h.style.setProperty('line-height','1','important');
   h.style.setProperty('min-width','0','important');
-  h.style.setProperty('flex','1 1 auto','important');
+  h.style.setProperty('flex','0 1 auto','important');
+  bar.style.setProperty('justify-content','flex-start','important');
+  bar.style.setProperty('gap','6px','important');
+  status.style.setProperty('margin-left','0','important');
+  status.style.setProperty('margin-right','auto','important');
+  status.style.setProperty('text-align','left','important');
+  status.style.setProperty('flex','0 0 auto','important');
   const max=25,min=14;h.style.setProperty('font-size',max+'px','important');
   const avail=Math.max(0,bar.clientWidth-status.getBoundingClientRect().width-12);let size=max;
   while(size>min&&h.scrollWidth>avail){size-=0.5;h.style.setProperty('font-size',size+'px','important')}
