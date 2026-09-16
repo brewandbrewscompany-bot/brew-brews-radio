@@ -1,0 +1,64 @@
+name: Louisburg V5 mobile heading once
+
+on:
+  push:
+    paths:
+      - .github/workflows/louisburg-v5-mobile-heading-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch current V5
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/brewandbrewscompany-bot/brew-brews-radio/main/louisburg-local/web-v5/index.html -o /tmp/v5.html
+
+      - name: Keep Happening in Louisburg on one line
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/v5.html')
+          s=p.read_text()
+          old='.bar{margin:2px 2px 12px!important;align-items:center!important}.bar h2{font-size:25px!important}'
+          new='.bar{margin:2px 2px 12px!important;align-items:center!important;gap:8px!important}.bar h2{font-size:clamp(19px,6vw,25px)!important;line-height:1!important;white-space:nowrap!important;letter-spacing:-.35px!important;min-width:0!important}'
+          if old not in s:
+              raise SystemExit('heading marker not found')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+
+      - name: Validate JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('/tmp/v5.html').read_text()
+          assert 'white-space:nowrap!important' in s
+          assert 'font-size:clamp(19px,6vw,25px)!important' in s
+          blocks=re.findall(r'<script>(.*?)</script>',s,re.S)
+          Path('/tmp/v5.js').write_text('\n'.join(blocks))
+          PY
+          node --check /tmp/v5.js
+
+      - name: Update V5 index
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import base64,json,os,urllib.request
+          repo='brewandbrewscompany-bot/brew-brews-radio'
+          path='louisburg-local/web-v5/index.html'
+          token=os.environ['GH_TOKEN']
+          headers={'Authorization':f'Bearer {token}','Accept':'application/vnd.github+json'}
+          url=f'https://api.github.com/repos/{repo}/contents/{path}'
+          req=urllib.request.Request(url,headers=headers)
+          with urllib.request.urlopen(req) as r: current=json.load(r)
+          data=open('/tmp/v5.html','rb').read()
+          payload=json.dumps({'message':'Keep V5 mobile Happening heading on one line','content':base64.b64encode(data).decode(),'sha':current['sha']}).encode()
+          req=urllib.request.Request(url,data=payload,method='PUT',headers={**headers,'Content-Type':'application/json'})
+          with urllib.request.urlopen(req) as r: print(json.load(r)['commit']['sha'])
+          PY
