@@ -23,7 +23,7 @@ export function classifyLouisburgActivityType(value){
   const t=normalizeText(value);
   if(!t)return '';
 
-  if(/closed today|closing early|\bclosure\b|cancelled|canceled|postponed|rescheduled|delayed|sold out|hours? changed|change(?:d)? (?:our )?hours|phone (?:line|lines) (?:is|are) (?:down|out)|temporarily closed/.test(t))return 'Operational Update';
+  if(/closed today|closing early|\bclosure\b|cancelled|canceled|postponed|rescheduled|delayed|sold out|hours? changed|change(?:d)? (?:our )?hours|phone (?:line|lines) (?:is|are) (?:currently )?(?:down|out)|temporarily closed/.test(t))return 'Operational Update';
   if(/now hiring|\bhiring\b|apply today|job opening|employment|applications? (?:close|closing|due)|join our team/.test(t))return 'Hiring';
   if(/daily special|special today|today only|\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+special|\bspecials?\b|\bdeal\b|discount|coupon|promo(?:tion)? code|\b\d{1,3}\s*%\s*off\b|\bsave\s+\d{1,3}\s*%\b|promotion|on sale|sale ends|buy one|get one|\bbogo\b|\bfree\b|complimentary|giveaway/.test(t))return 'Deal / Special';
   if(/live music|concert|festival|workshop|fundraiser|open house|\bevent\b|tickets|register now|registration open|open enrollment|sign up|signup|\bclass(?:es)?\b|game this|game today|meeting today|meeting tonight/.test(t))return 'Event / Activity';
