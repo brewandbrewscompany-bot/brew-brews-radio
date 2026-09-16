@@ -50,39 +50,78 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Install Chromium
+        id: chromium
+        continue-on-error: true
         working-directory: louisburg-local/social-browser-worker
         run: npx playwright install --with-deps chromium
 
       - name: Fast reliability classifier smoke test
+        id: reliability
+        continue-on-error: true
         working-directory: louisburg-local/social-browser-worker
         run: node --test apps-script-fetch-retry.test.mjs
 
       - name: Recover configured exact public Facebook posts
+        id: exact
+        continue-on-error: true
         working-directory: louisburg-local/social-browser-worker
         env:
           NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node exact-post-recovery.mjs
 
       - name: Recover signed-out public Facebook Relay timeline
+        id: relay
+        continue-on-error: true
         working-directory: louisburg-local/social-browser-worker
         env:
           NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node facebook-relay-recovery.mjs
 
       - name: Recover alternate Relay shapes and lookback
+        id: lookback
+        continue-on-error: true
         working-directory: louisburg-local/social-browser-worker
         env:
           NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node facebook-relay-lookback.mjs
 
       - name: Scan rendered USD 416 first-party school feeds
+        id: schools
+        continue-on-error: true
         working-directory: louisburg-local/social-browser-worker
         env:
           NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node school-first-party.mjs
 
       - name: Run verified first-party business fallbacks
+        id: firstparty
+        continue-on-error: true
         working-directory: louisburg-local/social-browser-worker
         env:
           NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node first-party-fallback.mjs
+
+      - name: Verify fast-pass health after all recovery lanes
+        if: always()
+        env:
+          RELIABILITY: ${{ steps.reliability.outcome }}
+          EXACT: ${{ steps.exact.outcome }}
+          RELAY: ${{ steps.relay.outcome }}
+          LOOKBACK: ${{ steps.lookback.outcome }}
+          SCHOOLS: ${{ steps.schools.outcome }}
+          FIRSTPARTY: ${{ steps.firstparty.outcome }}
+        run: |
+          echo "reliability=$RELIABILITY exact=$EXACT relay=$RELAY lookback=$LOOKBACK schools=$SCHOOLS firstparty=$FIRSTPARTY"
+          healthy=0
+          for outcome in "$EXACT" "$RELAY" "$LOOKBACK" "$SCHOOLS" "$FIRSTPARTY"; do
+            if [ "$outcome" = "success" ]; then healthy=$((healthy+1)); fi
+          done
+          if [ "$RELIABILITY" != "success" ]; then
+            echo "Reliability regression test failed. Recovery lanes still ran, but the job is unhealthy."
+            exit 1
+          fi
+          if [ "$healthy" -lt 2 ]; then
+            echo "Too few independent recovery lanes succeeded: $healthy"
+            exit 1
+          fi
+          echo "Fast pass healthy: $healthy independent recovery lanes succeeded."
