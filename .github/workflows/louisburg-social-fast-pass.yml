@@ -1,0 +1,67 @@
+name: Louisburg Local social fast pass
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Full public-browser scan runs at :27. These two lightweight passes fill
+    # the gaps, giving the system a recovery/discovery attempt about every
+    # 20 minutes without waiting for the heavier browser fallback.
+    - cron: '7,47 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louisburg-local-social-fast-pass
+  cancel-in-progress: false
+
+jobs:
+  fast-public-source-pass:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      LL_SOCIAL_ENDPOINT: https://script.google.com/macros/s/AKfycbxw9gJBH50L_VZbgp6i_mHHnfPXAkraIqv63BA2XqWtb-XaaczXxdf89WveFkAOwV-azw/exec
+      LL_SOCIAL_INGEST_KEY: ${{ secrets.LL_SOCIAL_INGEST_KEY }}
+      LL_MAX_WORKERS: '60'
+      LL_FORCE_SCAN: 'true'
+      LL_MAX_POSTS_PER_PAGE: '8'
+      TZ: America/Chicago
+      NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
+
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Install worker dependencies
+        working-directory: louisburg-local/social-browser-worker
+        run: npm ci --no-audit --no-fund
+
+      - name: Fast reliability classifier smoke test
+        working-directory: louisburg-local/social-browser-worker
+        run: node --test apps-script-fetch-retry.test.mjs
+
+      - name: Recover configured exact public Facebook posts
+        working-directory: louisburg-local/social-browser-worker
+        run: node exact-post-recovery.mjs
+
+      - name: Recover signed-out public Facebook Relay timeline
+        working-directory: louisburg-local/social-browser-worker
+        run: node facebook-relay-recovery.mjs
+
+      - name: Recover alternate Relay shapes and lookback
+        working-directory: louisburg-local/social-browser-worker
+        run: node facebook-relay-lookback.mjs
+
+      - name: Scan rendered USD 416 first-party school feeds
+        working-directory: louisburg-local/social-browser-worker
+        run: node school-first-party.mjs
+
+      - name: Run verified first-party business fallbacks
+        working-directory: louisburg-local/social-browser-worker
+        run: node first-party-fallback.mjs
