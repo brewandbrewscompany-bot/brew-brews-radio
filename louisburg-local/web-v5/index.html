@@ -7,8 +7,8 @@
 <title>Louisburg Local V5 Swipe Prototype</title>
 <style>
 :root{--purple:#4b216d;--deep:#321447;--paper:#fffdf8;--ink:#26202b;--line:#e3dbe6;--shadow:0 14px 36px rgba(25,10,35,.28)}
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f8f4ec;font-family:Arial,sans-serif;color:var(--ink)}
-button{font:inherit}.stage{position:fixed;inset:0}.stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#f8f4ec}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f8f4ec;font-family:Arial,sans-serif;color:var(--ink)}button{font:inherit}
+.stage{position:fixed;inset:0}.stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#f8f4ec}
 .scrim{position:fixed;inset:0;z-index:90;background:rgba(24,10,33,.48);opacity:0;pointer-events:none;transition:opacity .2s ease;backdrop-filter:blur(2px)}.scrim.open{opacity:1;pointer-events:auto}
 .drawer{position:fixed;top:0;bottom:0;z-index:100;width:min(86vw,380px);background:var(--paper);box-shadow:var(--shadow);transition:transform .24s cubic-bezier(.2,.8,.2,1);overflow:auto;overscroll-behavior:contain;touch-action:pan-y}
 .drawer.left{left:0;transform:translateX(-103%);background:linear-gradient(165deg,#251034,#3d1957 62%,#4b216d);color:#fff}.drawer.right{right:0;transform:translateX(103%)}.drawer.open{transform:translateX(0)}
@@ -17,107 +17,94 @@ button{font:inherit}.stage{position:fixed;inset:0}.stage iframe{position:absolut
 .navGroup{padding:5px 0}.navButton{width:100%;display:flex;align-items:center;gap:11px;border:0;background:transparent;color:inherit;padding:12px 7px;border-radius:12px;text-align:left;font-weight:800}.navButton:active{background:rgba(255,255,255,.12)}.navIcon{width:27px;text-align:center;font-size:18px}.navDivider{height:1px;background:rgba(255,255,255,.16);margin:6px 3px}.tagline{margin-top:14px;padding:11px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(255,255,255,.06);font:italic 16px Georgia,serif;line-height:1.3}
 .filterTitle{font:800 11px Arial,sans-serif;text-transform:uppercase;letter-spacing:.7px;color:#66576d;margin:15px 0 7px}.choices{display:grid;gap:7px}.choice{width:100%;border:1px solid #ddd2e2;border-radius:13px;background:#fff;color:var(--deep);padding:11px 12px;text-align:left;font-weight:800}.choice.active{background:#eee3f5;border-color:#bba1ca;box-shadow:inset 4px 0 0 var(--purple)}
 .autoApplyHint{margin-top:16px;padding:10px 12px;border-radius:13px;background:#f1e9f5;color:var(--deep);font-size:10px;font-weight:800;text-align:center;line-height:1.35}.autoApplyHint b{display:block;font-size:12px;margin-bottom:2px}
-.edgeButton{position:fixed;z-index:70;top:calc(60px + env(safe-area-inset-top));width:35px;height:48px;border:0;color:#fff;background:linear-gradient(145deg,var(--deep),var(--purple));box-shadow:0 5px 16px rgba(30,12,42,.22);font-size:18px;display:grid;place-items:center}.edgeButton.left{left:0;border-radius:0 13px 13px 0}.edgeButton.right{right:0;border-radius:13px 0 0 13px}
+.edgeButton{position:fixed;z-index:70;top:calc(118px + env(safe-area-inset-top));width:35px;height:48px;border:0;color:#fff;background:linear-gradient(145deg,var(--deep),var(--purple));box-shadow:0 5px 16px rgba(30,12,42,.22);font-size:18px;display:grid;place-items:center}.edgeButton.left{left:0;border-radius:0 13px 13px 0}.edgeButton.right{right:0;border-radius:13px 0 0 13px}
 .swipeHint{position:fixed;z-index:65;left:50%;bottom:calc(72px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(15px);background:#251034e8;color:#fff;border:1px solid #ffffff29;border-radius:999px;padding:7px 11px;font-size:9px;font-weight:800;white-space:nowrap;opacity:0;pointer-events:none;transition:.25s}.swipeHint.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.testBadge{position:fixed;z-index:66;right:7px;top:calc(7px + env(safe-area-inset-top));background:#fff9;color:var(--deep);border:1px solid #d8cbe0;border-radius:999px;padding:4px 7px;font-size:8px;font-weight:900;backdrop-filter:blur(8px);pointer-events:none}
-@media(min-width:900px){.drawer{width:360px}}
-@media(prefers-reduced-motion:reduce){.drawer,.scrim,.swipeHint{transition:none}}
+.testBadge{position:fixed;z-index:66;left:50%;top:calc(5px + env(safe-area-inset-top));transform:translateX(-50%);background:#fff9;color:var(--deep);border:1px solid #d8cbe0;border-radius:999px;padding:3px 6px;font-size:7px;font-weight:900;backdrop-filter:blur(8px);pointer-events:none}
+@media(min-width:900px){.drawer{width:360px}}@media(prefers-reduced-motion:reduce){.drawer,.scrim,.swipeHint{transition:none}}
 </style>
 </head>
 <body>
-<div class="stage"><iframe id="v4frame" title="Louisburg Local V5 prototype" src="../web-v4/?v5=compact-no-quick"></iframe></div>
+<div class="stage"><iframe id="v4frame" title="Louisburg Local V5 prototype" src="../web-v4/?v5=hero-search-compact"></iframe></div>
 <div class="testBadge">V5 TEST</div>
 <button class="edgeButton left" id="leftHandle" aria-label="Open navigation">☰</button>
 <button class="edgeButton right" id="rightHandle" aria-label="Open filters">☷</button>
 <div class="swipeHint" id="swipeHint">Swipe right for menu · left for filters</div>
 <div class="scrim" id="scrim"></div>
 
-<aside class="drawer left" id="leftDrawer" aria-label="Navigation menu">
-  <div class="drawerInner">
-    <div class="drawerHead"><h2>Louisburg Local</h2><button class="close" aria-label="Close">×</button></div>
-    <div class="brandBlock"><b>LOUISBURG LOCAL</b><small>Local people. Local business. A stronger Louisburg.</small></div>
-    <div class="navGroup">
-      <button class="navButton" data-screen="home"><span class="navIcon">⌂</span>Home</button>
-      <button class="navButton" data-screen="directory"><span class="navIcon">⌕</span>Directory</button>
-      <button class="navButton" data-screen="events"><span class="navIcon">▣</span>Events</button>
-      <button class="navButton" data-screen="deals"><span class="navIcon">◇</span>Deals &amp; Specials</button>
-    </div>
-    <div class="navDivider"></div>
-    <div class="navGroup">
-      <button class="navButton" id="historyLink"><span class="navIcon">◷</span>Louisburg History</button>
-      <button class="navButton" data-screen="more"><span class="navIcon">◎</span>Community Resources</button>
-      <button class="navButton" id="correctionLink"><span class="navIcon">✎</span>Submit / Correct Info</button>
-      <button class="navButton" data-screen="more"><span class="navIcon">ⓘ</span>About Louisburg Local</button>
-    </div>
-    <div class="tagline">Small town. Big community.</div>
-  </div>
-</aside>
+<aside class="drawer left" id="leftDrawer" aria-label="Navigation menu"><div class="drawerInner">
+<div class="drawerHead"><h2>Louisburg Local</h2><button class="close" aria-label="Close">×</button></div>
+<div class="brandBlock"><b>LOUISBURG LOCAL</b><small>Local people. Local business. A stronger Louisburg.</small></div>
+<div class="navGroup"><button class="navButton" data-screen="home"><span class="navIcon">⌂</span>Home</button><button class="navButton" data-screen="directory"><span class="navIcon">⌕</span>Directory</button><button class="navButton" data-screen="events"><span class="navIcon">▣</span>Events</button><button class="navButton" data-screen="deals"><span class="navIcon">◇</span>Deals &amp; Specials</button></div>
+<div class="navDivider"></div>
+<div class="navGroup"><button class="navButton" id="historyLink"><span class="navIcon">◷</span>Louisburg History</button><button class="navButton" data-screen="more"><span class="navIcon">◎</span>Community Resources</button><button class="navButton" id="correctionLink"><span class="navIcon">✎</span>Submit / Correct Info</button><button class="navButton" data-screen="more"><span class="navIcon">ⓘ</span>About Louisburg Local</button></div>
+<div class="tagline">Small town. Big community.</div></div></aside>
 
-<aside class="drawer right" id="rightDrawer" aria-label="Feed filters">
-  <div class="drawerInner">
-    <div class="drawerHead"><h2>Filter Posts</h2><button class="close" aria-label="Close and apply filters">×</button></div>
-    <div class="filterTitle">Category</div>
-    <div class="choices" id="categoryChoices">
-      <button class="choice active" data-filter-cat="ALL">All activity</button>
-      <button class="choice" data-filter-cat="DEALS">Deals &amp; specials</button>
-      <button class="choice" data-filter-cat="FOOD">Food &amp; drink</button>
-      <button class="choice" data-filter-cat="EVENTS">Events</button>
-      <button class="choice" data-filter-cat="FAMILY">Family</button>
-      <button class="choice" data-filter-cat="SPORTS">Sports</button>
-      <button class="choice" data-filter-cat="HIRING">Hiring</button>
-    </div>
-    <div class="filterTitle">Time</div>
-    <div class="choices" id="timeChoices">
-      <button class="choice active" data-filter-time="ALL">All current</button>
-      <button class="choice" data-filter-time="TODAY">Today</button>
-      <button class="choice" data-filter-time="COMING UP">Coming up</button>
-      <button class="choice" data-filter-time="WHAT'S NEXT">What’s next</button>
-    </div>
-    <div class="filterTitle">Source</div>
-    <div class="choices" id="sourceChoices">
-      <button class="choice active" data-filter-source="">All sources</button>
-      <button class="choice" data-filter-source="Facebook">Facebook</button>
-      <button class="choice" data-filter-source="Instagram">Instagram</button>
-      <button class="choice" data-filter-source="Website">Local websites</button>
-    </div>
-    <div class="autoApplyHint"><b>Auto-applies</b>Swipe right to close this panel and update the feed.</div>
-  </div>
-</aside>
+<aside class="drawer right" id="rightDrawer" aria-label="Feed filters"><div class="drawerInner">
+<div class="drawerHead"><h2>Filter Posts</h2><button class="close" aria-label="Close and apply filters">×</button></div>
+<div class="filterTitle">Category</div><div class="choices" id="categoryChoices"><button class="choice active" data-filter-cat="ALL">All activity</button><button class="choice" data-filter-cat="DEALS">Deals &amp; specials</button><button class="choice" data-filter-cat="FOOD">Food &amp; drink</button><button class="choice" data-filter-cat="EVENTS">Events</button><button class="choice" data-filter-cat="FAMILY">Family</button><button class="choice" data-filter-cat="SPORTS">Sports</button><button class="choice" data-filter-cat="HIRING">Hiring</button></div>
+<div class="filterTitle">Time</div><div class="choices" id="timeChoices"><button class="choice active" data-filter-time="ALL">All current</button><button class="choice" data-filter-time="TODAY">Today</button><button class="choice" data-filter-time="COMING UP">Coming up</button><button class="choice" data-filter-time="WHAT'S NEXT">What’s next</button></div>
+<div class="filterTitle">Source</div><div class="choices" id="sourceChoices"><button class="choice active" data-filter-source="">All sources</button><button class="choice" data-filter-source="Facebook">Facebook</button><button class="choice" data-filter-source="Instagram">Instagram</button><button class="choice" data-filter-source="Website">Local websites</button></div>
+<div class="autoApplyHint"><b>Auto-applies</b>Swipe right to close this panel and update the feed.</div></div></aside>
 
 <script>
-const frame=document.getElementById('v4frame');
-const leftDrawer=document.getElementById('leftDrawer');
-const rightDrawer=document.getElementById('rightDrawer');
-const scrim=document.getElementById('scrim');
-const hint=document.getElementById('swipeHint');
+const frame=document.getElementById('v4frame'),leftDrawer=document.getElementById('leftDrawer'),rightDrawer=document.getElementById('rightDrawer'),scrim=document.getElementById('scrim'),hint=document.getElementById('swipeHint');
 let chosenCat='ALL',chosenTime='ALL',chosenSource='';
 function app(){try{return frame.contentWindow}catch(e){return null}}
 function choose(group,button){group.querySelectorAll('.choice').forEach(x=>x.classList.toggle('active',x===button))}
 function setActive(group,selector,value){group.querySelectorAll(selector).forEach(b=>b.classList.toggle('active',(b.dataset.filterCat??b.dataset.filterTime??b.dataset.filterSource)===value))}
 function syncFilters(){const w=app();try{if(w&&w.state){chosenCat=String(w.state.cat||'ALL');chosenTime=String(w.state.section||'ALL');chosenSource=String(w.state.source||'');setActive(document.getElementById('categoryChoices'),'[data-filter-cat]',chosenCat);setActive(document.getElementById('timeChoices'),'[data-filter-time]',chosenTime);setActive(document.getElementById('sourceChoices'),'[data-filter-source]',chosenSource)}}catch(e){}}
 function applyFilters(){const w=app();try{if(w&&w.state){w.state.cat=chosenCat;w.state.section=chosenTime;w.state.source=chosenSource;if(typeof w.showScreen==='function')w.showScreen('home');if(typeof w.renderHome==='function')w.renderHome()}}catch(e){}}
-function closeDrawers(apply=true){const rightWasOpen=rightDrawer.classList.contains('open');if(rightWasOpen&&apply)applyFilters();leftDrawer.classList.remove('open');rightDrawer.classList.remove('open');scrim.classList.remove('open')}
+function closeDrawers(apply=true){const wasRight=rightDrawer.classList.contains('open');if(wasRight&&apply)applyFilters();leftDrawer.classList.remove('open');rightDrawer.classList.remove('open');scrim.classList.remove('open')}
 function openDrawer(which){if(which==='right')syncFilters();closeDrawers(true);(which==='left'?leftDrawer:rightDrawer).classList.add('open');scrim.classList.add('open')}
 function showScreen(name){const w=app();try{if(w&&typeof w.showScreen==='function')w.showScreen(name)}catch(e){}closeDrawers(true)}
+document.getElementById('leftHandle').onclick=()=>openDrawer('left');document.getElementById('rightHandle').onclick=()=>openDrawer('right');scrim.onclick=()=>closeDrawers(true);document.querySelectorAll('.close').forEach(b=>b.onclick=()=>closeDrawers(true));document.querySelectorAll('[data-screen]').forEach(b=>b.onclick=()=>showScreen(b.dataset.screen));document.getElementById('historyLink').onclick=()=>{location.href='../web-v4/history.html'};document.getElementById('correctionLink').onclick=()=>showScreen('more');
+document.getElementById('categoryChoices').onclick=e=>{const b=e.target.closest('[data-filter-cat]');if(!b)return;chosenCat=b.dataset.filterCat;choose(e.currentTarget,b)};document.getElementById('timeChoices').onclick=e=>{const b=e.target.closest('[data-filter-time]');if(!b)return;chosenTime=b.dataset.filterTime;choose(e.currentTarget,b)};document.getElementById('sourceChoices').onclick=e=>{const b=e.target.closest('[data-filter-source]');if(!b)return;chosenSource=b.dataset.filterSource;choose(e.currentTarget,b)};
 
-document.getElementById('leftHandle').onclick=()=>openDrawer('left');
-document.getElementById('rightHandle').onclick=()=>openDrawer('right');
-scrim.onclick=()=>closeDrawers(true);
-document.querySelectorAll('.close').forEach(b=>b.onclick=()=>closeDrawers(true));
-document.querySelectorAll('[data-screen]').forEach(b=>b.onclick=()=>showScreen(b.dataset.screen));
-document.getElementById('historyLink').onclick=()=>{location.href='../web-v4/history.html'};
-document.getElementById('correctionLink').onclick=()=>showScreen('more');
-document.getElementById('categoryChoices').onclick=e=>{const b=e.target.closest('[data-filter-cat]');if(!b)return;chosenCat=b.dataset.filterCat;choose(e.currentTarget,b)};
-document.getElementById('timeChoices').onclick=e=>{const b=e.target.closest('[data-filter-time]');if(!b)return;chosenTime=b.dataset.filterTime;choose(e.currentTarget,b)};
-document.getElementById('sourceChoices').onclick=e=>{const b=e.target.closest('[data-filter-source]');if(!b)return;chosenSource=b.dataset.filterSource;choose(e.currentTarget,b)};
-
-function injectV5(){let doc;try{doc=frame.contentDocument;if(!doc)return}catch(e){return}if(!doc.getElementById('v5-cleanup-css')){const style=doc.createElement('style');style.id='v5-cleanup-css';style.textContent=`html,body{touch-action:pan-y!important;overscroll-behavior-x:none!important}#menuBtn,#focusSearch{opacity:0!important;pointer-events:none!important}.quick,.snapshot,#sectionTabs{display:none!important}.topin{padding:calc(6px + env(safe-area-inset-top)) 12px 6px!important;gap:6px!important}.brand b{font-size:18px!important;line-height:1!important}.brand small{font-size:8px!important;margin-top:2px!important}.main{padding-top:8px!important}.searchbar{margin-bottom:7px!important}.bar{margin-top:1px!important}`;doc.head.appendChild(style)}const sub=doc.querySelector('.brand small');if(sub)sub.textContent='Louisburg, Kansas';attachMainGestures(doc)}
-function attachMainGestures(doc){if(doc.documentElement.dataset.v5Gestures==='4')return;doc.documentElement.dataset.v5Gestures='4';let sx=0,sy=0,started=false,swipedAt=0;const editable=t=>t&&t.closest&&t.closest('input,textarea,select,[contenteditable="true"]');doc.addEventListener('touchstart',e=>{if(e.touches.length!==1||editable(e.target)){started=false;return}const t=e.touches[0];sx=t.clientX;sy=t.clientY;started=true},{passive:true,capture:true});doc.addEventListener('touchend',e=>{if(!started||!e.changedTouches.length)return;started=false;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy,ax=Math.abs(dx),ay=Math.abs(dy);if(ax<52||ax<ay*1.12||ay>125)return;swipedAt=Date.now();dx>0?openDrawer('left'):openDrawer('right')},{passive:true,capture:true});doc.addEventListener('touchcancel',()=>{started=false},{passive:true,capture:true});doc.addEventListener('click',e=>{if(Date.now()-swipedAt<500){e.preventDefault();e.stopImmediatePropagation()}},true)}
+function findAboutHero(doc){
+  const all=[...doc.querySelectorAll('h1,h2,h3,h4,b,strong,div,section,article')];
+  const title=all.find(el=>el.textContent.trim()==='About Louisburg');
+  if(!title)return null;
+  let node=title;
+  for(let i=0;i<7&&node;i++,node=node.parentElement){const text=(node.textContent||'');if(/Explore the journey|Every town has a story|Louisburg Through Time/i.test(text))return node}
+  return title.parentElement;
+}
+function installSearch(doc,hero){
+  if(doc.getElementById('v5HeroSearch'))return;
+  const original=doc.getElementById('homeSearch');
+  const btn=doc.createElement('button');btn.id='v5HeroSearch';btn.type='button';btn.setAttribute('aria-label','Search Louisburg Local');btn.textContent='🔍';
+  const panel=doc.createElement('div');panel.id='v5SearchPanel';panel.innerHTML='<div class="v5SearchBox"><span>🔍</span><input id="v5SearchInput" type="search" placeholder="Search Louisburg Local…"><button id="v5SearchClose" type="button" aria-label="Close search">×</button></div>';
+  (hero||doc.body).appendChild(btn);doc.body.appendChild(panel);
+  const input=panel.querySelector('#v5SearchInput');
+  btn.onclick=e=>{e.preventDefault();e.stopPropagation();panel.classList.toggle('open');if(panel.classList.contains('open')){input.value=original?original.value:'';setTimeout(()=>input.focus(),30)}};
+  panel.querySelector('#v5SearchClose').onclick=()=>panel.classList.remove('open');
+  input.addEventListener('input',()=>{if(original){original.value=input.value;original.dispatchEvent(new Event('input',{bubbles:true}))}});
+  input.addEventListener('keydown',e=>{if(e.key==='Escape')panel.classList.remove('open')});
+}
+function compactAboutHero(doc){
+  const hero=findAboutHero(doc);if(!hero)return null;hero.classList.add('v5AboutHero');
+  [...hero.querySelectorAll('*')].forEach(el=>{const t=(el.textContent||'').trim();if(t==='Every town has a story. This one is ours.'||/^Louisburg Through Time/i.test(t))el.classList.add('v5HeroCompactHide')});
+  return hero;
+}
+function injectV5(){
+  let doc;try{doc=frame.contentDocument;if(!doc)return}catch(e){return}
+  if(!doc.getElementById('v5-cleanup-css')){
+    const style=doc.createElement('style');style.id='v5-cleanup-css';style.textContent=`
+html,body{touch-action:pan-y!important;overscroll-behavior-x:none!important}
+#menuBtn,#focusSearch{display:none!important}.quick,.snapshot,#sectionTabs,.searchbar,.homeSearchStatic{display:none!important}
+.topin{padding:calc(5px + env(safe-area-inset-top)) 10px 5px!important;gap:5px!important}.brand b{font-size:17px!important;line-height:1!important}.brand small{font-size:8px!important;margin-top:2px!important}.main{padding-top:7px!important}.bar{margin-top:1px!important}
+.v5AboutHero{position:relative!important;min-height:92px!important;max-height:118px!important;height:108px!important;overflow:hidden!important;margin-bottom:7px!important;border-radius:15px!important}
+.v5AboutHero img{max-height:108px!important;height:108px!important;width:auto!important;object-fit:cover!important}.v5AboutHero .v5HeroCompactHide{display:none!important}
+.v5AboutHero h1,.v5AboutHero h2,.v5AboutHero h3{margin-top:3px!important;margin-bottom:2px!important;font-size:22px!important;line-height:1.02!important}.v5AboutHero p{margin:2px 0!important;font-size:10px!important;line-height:1.15!important}.v5AboutHero a,.v5AboutHero button:not(#v5HeroSearch){min-height:26px!important;padding:4px 8px!important;font-size:9px!important;border-radius:9px!important}
+#v5HeroSearch{position:absolute!important;z-index:20!important;right:9px!important;top:9px!important;width:39px!important;height:39px!important;border-radius:13px!important;border:1px solid rgba(255,255,255,.35)!important;background:rgba(31,12,45,.78)!important;color:#fff!important;display:grid!important;place-items:center!important;font-size:18px!important;box-shadow:0 4px 13px rgba(0,0,0,.18)!important;backdrop-filter:blur(5px)!important}
+#v5SearchPanel{position:fixed!important;z-index:210!important;top:calc(9px + env(safe-area-inset-top))!important;left:10px!important;right:10px!important;transform:translateY(-130%)!important;opacity:0!important;pointer-events:none!important;transition:.2s ease!important}#v5SearchPanel.open{transform:translateY(0)!important;opacity:1!important;pointer-events:auto!important}
+.v5SearchBox{display:grid!important;grid-template-columns:auto 1fr auto!important;align-items:center!important;gap:8px!important;background:#fff!important;border:1px solid #d9cce0!important;border-radius:15px!important;padding:7px 8px 7px 11px!important;box-shadow:0 12px 30px rgba(30,12,42,.24)!important}.v5SearchBox input{min-width:0!important;width:100%!important;border:0!important;outline:0!important;background:transparent!important;font-size:15px!important;padding:7px 0!important}.v5SearchBox button{width:34px!important;height:34px!important;border:0!important;border-radius:10px!important;background:#eee7f0!important;color:#321447!important;font-size:20px!important}
+`;doc.head.appendChild(style)}
+  const sub=doc.querySelector('.brand small');if(sub)sub.textContent='Louisburg, Kansas';
+  const hero=compactAboutHero(doc);installSearch(doc,hero);attachMainGestures(doc)
+}
+function attachMainGestures(doc){if(doc.documentElement.dataset.v5Gestures==='5')return;doc.documentElement.dataset.v5Gestures='5';let sx=0,sy=0,started=false,swipedAt=0;const editable=t=>t&&t.closest&&t.closest('input,textarea,select,[contenteditable="true"]');doc.addEventListener('touchstart',e=>{if(e.touches.length!==1||editable(e.target)){started=false;return}const t=e.touches[0];sx=t.clientX;sy=t.clientY;started=true},{passive:true,capture:true});doc.addEventListener('touchend',e=>{if(!started||!e.changedTouches.length)return;started=false;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy,ax=Math.abs(dx),ay=Math.abs(dy);if(ax<52||ax<ay*1.12||ay>125)return;swipedAt=Date.now();dx>0?openDrawer('left'):openDrawer('right')},{passive:true,capture:true});doc.addEventListener('touchcancel',()=>{started=false},{passive:true,capture:true});doc.addEventListener('click',e=>{if(Date.now()-swipedAt<500){e.preventDefault();e.stopImmediatePropagation()}},true)}
 function attachDrawerGestures(){let sx=0,sy=0,started=false;document.addEventListener('touchstart',e=>{if(!leftDrawer.classList.contains('open')&&!rightDrawer.classList.contains('open')){started=false;return}if(e.touches.length!==1){started=false;return}const t=e.touches[0];sx=t.clientX;sy=t.clientY;started=true},{passive:true,capture:true});document.addEventListener('touchend',e=>{if(!started||!e.changedTouches.length)return;started=false;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy,ax=Math.abs(dx),ay=Math.abs(dy);if(ax<45||ax<ay*1.08||ay>140)return;if(leftDrawer.classList.contains('open')&&dx<0)closeDrawers(false);if(rightDrawer.classList.contains('open')&&dx>0)closeDrawers(true)},{passive:true,capture:true});document.addEventListener('touchcancel',()=>{started=false},{passive:true,capture:true})}
-attachDrawerGestures();
-frame.addEventListener('load',()=>{injectV5();setTimeout(injectV5,500)});
-setTimeout(()=>{hint.classList.add('show');setTimeout(()=>hint.classList.remove('show'),3200)},700);
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawers(true)});
+attachDrawerGestures();frame.addEventListener('load',()=>{injectV5();setTimeout(injectV5,450);setTimeout(injectV5,1100)});setTimeout(()=>{hint.classList.add('show');setTimeout(()=>hint.classList.remove('show'),2800)},650);document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawers(true)});
 </script>
 </body>
 </html>
