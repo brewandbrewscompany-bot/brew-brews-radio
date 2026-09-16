@@ -1,0 +1,83 @@
+name: Louisburg V5 robust phone swipe once
+
+on:
+  push:
+    paths:
+      - .github/workflows/louisburg-v5-swipe-robust-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch current V5
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/brewandbrewscompany-bot/brew-brews-radio/main/louisburg-local/web-v5/index.html -o /tmp/v5.html
+
+      - name: Replace phone swipe handler
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('/tmp/v5.html')
+          s=p.read_text()
+          pattern=r"function attachMain\(x\)\{.*?\}\nfunction drawerGestures\(\)"
+          replacement=r'''function attachMain(x){
+  if(x.documentElement.dataset.v5Gestures)return;
+  x.documentElement.dataset.v5Gestures='2';
+  let sx=0,sy=0,lastX=0,lastY=0,on=false,last=0,pid=null;
+  const edit=t=>t&&t.closest&&t.closest('input,textarea,select,[contenteditable="true"],button,a');
+  const begin=(px,py,id,target)=>{if(edit(target)){on=false;return}sx=lastX=px;sy=lastY=py;pid=id;on=true};
+  const move=(px,py)=>{if(!on)return;lastX=px;lastY=py};
+  const finish=(px,py)=>{if(!on)return;on=false;const dx=px-sx,dy=py-sy;if(Math.abs(dx)<36||Math.abs(dx)<Math.abs(dy)*1.05||Math.abs(dy)>150)return;last=Date.now();dx>0?openDrawer('left'):openDrawer('right')};
+  if(window.PointerEvent){
+    x.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch')return;begin(e.clientX,e.clientY,e.pointerId,e.target)},{passive:true,capture:true});
+    x.addEventListener('pointermove',e=>{if(!on||e.pointerId!==pid)return;move(e.clientX,e.clientY)},{passive:true,capture:true});
+    x.addEventListener('pointerup',e=>{if(!on||e.pointerId!==pid)return;finish(e.clientX,e.clientY)},{passive:true,capture:true});
+    x.addEventListener('pointercancel',e=>{if(!on||e.pointerId!==pid)return;finish(lastX,lastY)},{passive:true,capture:true});
+  }
+  x.addEventListener('touchstart',e=>{if(!e.touches||e.touches.length!==1)return;const t=e.touches[0];begin(t.clientX,t.clientY,'touch',e.target)},{passive:true,capture:true});
+  x.addEventListener('touchmove',e=>{if(!on||!e.touches||!e.touches.length)return;const t=e.touches[0];move(t.clientX,t.clientY)},{passive:true,capture:true});
+  x.addEventListener('touchend',e=>{if(!on)return;const t=e.changedTouches&&e.changedTouches[0];finish(t?t.clientX:lastX,t?t.clientY:lastY)},{passive:true,capture:true});
+  x.addEventListener('touchcancel',()=>{finish(lastX,lastY)},{passive:true,capture:true});
+  x.addEventListener('click',e=>{if(Date.now()-last<450){e.preventDefault();e.stopImmediatePropagation()}},true)
+}
+function drawerGestures()'''
+          ns,n=re.subn(pattern,replacement,s,count=1,flags=re.S)
+          if n!=1: raise SystemExit(f'attachMain replacement count={n}')
+          p.write_text(ns)
+          PY
+
+      - name: Validate JavaScript syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('/tmp/v5.html').read_text()
+          assert "dataset.v5Gestures='2'" in s
+          assert "pointercancel" in s
+          blocks=re.findall(r'<script>(.*?)</script>',s,re.S)
+          Path('/tmp/v5.js').write_text('\n'.join(blocks))
+          PY
+          node --check /tmp/v5.js
+
+      - name: Update V5 index only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import base64,json,os,urllib.request
+          repo='brewandbrewscompany-bot/brew-brews-radio'
+          path='louisburg-local/web-v5/index.html'
+          token=os.environ['GH_TOKEN']
+          headers={'Authorization':f'Bearer {token}','Accept':'application/vnd.github+json'}
+          req=urllib.request.Request(f'https://api.github.com/repos/{repo}/contents/{path}',headers=headers)
+          with urllib.request.urlopen(req) as r: current=json.load(r)
+          content=open('/tmp/v5.html','rb').read()
+          payload=json.dumps({'message':'Make V5 phone swipe gestures reliable','content':base64.b64encode(content).decode(),'sha':current['sha']}).encode()
+          req=urllib.request.Request(f'https://api.github.com/repos/{repo}/contents/{path}',data=payload,method='PUT',headers={**headers,'Content-Type':'application/json'})
+          with urllib.request.urlopen(req) as r: print(json.load(r)['commit']['sha'])
+          PY
