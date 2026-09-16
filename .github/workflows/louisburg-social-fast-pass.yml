@@ -1,6 +1,14 @@
 name: Louisburg Local social fast pass
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs'
+      - 'louisburg-local/social-browser-worker/apps-script-fetch-retry.test.mjs'
+      - 'louisburg-local/social-browser-worker/package.json'
+      - '.github/workflows/louisburg-social-fast-pass.yml'
   workflow_dispatch:
   schedule:
     # Full public-browser scan runs at :27. These two lightweight passes fill
