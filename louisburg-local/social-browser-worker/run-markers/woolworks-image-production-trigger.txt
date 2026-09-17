@@ -1,1 +1,1 @@
-Controlled WoolWorks flyer publish retry using verified exact-post date fallback — 2026-09-17\n
+Controlled WoolWorks flyer publish retry using saved verified source timestamp — 2026-09-17\n
