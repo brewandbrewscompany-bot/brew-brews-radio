@@ -1,0 +1,71 @@
+name: Louisburg Publish Encrypted Ingest Bridge
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/run-markers/publish-ingest-bridge.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  encrypt:
+    runs-on: ubuntu-latest
+    env:
+      LL_SOCIAL_INGEST_KEY: ${{ secrets.LL_SOCIAL_INGEST_KEY }}
+      BRIDGE_PUBLIC_KEY_B64: 'iMRLunwYPH6bMXStInCZA+Ft//NibxuszzkKdrd1d3w='
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Encrypt ingest credential for private core
+        shell: bash
+        run: |
+          test -n "$LL_SOCIAL_INGEST_KEY"
+          mkdir -p /tmp/ll-bridge .github/secure
+          cd /tmp/ll-bridge
+          npm init -y >/dev/null 2>&1
+          npm install tweetnacl@1.0.3 --no-audit --no-fund >/dev/null 2>&1
+          cd "$GITHUB_WORKSPACE"
+          NODE_PATH=/tmp/ll-bridge/node_modules node <<'NODE'
+          const fs=require('fs');
+          const crypto=require('crypto');
+          const nacl=require('tweetnacl');
+          const recipient=Buffer.from(process.env.BRIDGE_PUBLIC_KEY_B64,'base64');
+          if(recipient.length!==32) throw new Error('Invalid bridge public key');
+          const ephemeral=nacl.box.keyPair();
+          const nonce=crypto.randomBytes(nacl.box.nonceLength);
+          const message=Buffer.from(String(process.env.LL_SOCIAL_INGEST_KEY||''),'utf8');
+          if(!message.length) throw new Error('LL_SOCIAL_INGEST_KEY missing');
+          const cipher=nacl.box(
+            new Uint8Array(message),
+            new Uint8Array(nonce),
+            new Uint8Array(recipient),
+            ephemeral.secretKey
+          );
+          const out={
+            version:1,
+            algorithm:'X25519-XSalsa20-Poly1305',
+            recipientKeySha256:crypto.createHash('sha256').update(recipient).digest('hex'),
+            ephemeralPublicKey:Buffer.from(ephemeral.publicKey).toString('base64'),
+            nonce:Buffer.from(nonce).toString('base64'),
+            ciphertext:Buffer.from(cipher).toString('base64')
+          };
+          fs.writeFileSync('.github/secure/louisburg-ingest.bridge.json',JSON.stringify(out,null,2)+'\n');
+          NODE
+      - name: Commit encrypted bridge
+        shell: bash
+        run: |
+          git config user.name "louisburg-local-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add .github/secure/louisburg-ingest.bridge.json
+          if git diff --cached --quiet; then
+            echo "Encrypted bridge unchanged."
+            exit 0
+          fi
+          git commit -m "Refresh encrypted Louisburg ingest bridge"
+          git push
