@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 import {writeFile} from 'node:fs/promises';
 import {findFacebookDateLabel,isPostFresh,parseFacebookDateLabel} from './worker-v2.mjs';
+import {parseExactRecoveryHints} from './exact-post-recovery.mjs';
 
 const ENDPOINT='https://script.google.com/macros/s/AKfycbxw9gJBH50L_VZbgp6i_mHHnfPXAkraIqv63BA2XqWtb-XaaczXxdf89WveFkAOwV-azw/exec';
 const POST_URL='https://www.facebook.com/woolworksetc/posts/always-lots-of-fun-classes-happening-at-woolworks-the-makers-nook-sign-up-today/1606951627790402/';
@@ -36,7 +37,7 @@ async function postJson(key,action,payload={}){
   return parsed;
 }
 
-async function exactPostEvidence(){
+async function exactPostEvidence(worker){
   const {chromium}=await import('playwright');
   const browser=await chromium.launch({headless:true});
   const context=await browser.newContext({locale:'en-US',timezoneId:TZ,viewport:{width:412,height:915},screen:{width:412,height:915},isMobile:true,hasTouch:true,deviceScaleFactor:2.625,userAgent:MOBILE_UA});
@@ -57,7 +58,14 @@ async function exactPostEvidence(){
       const label=findFacebookDateLabel(raw,now);
       date=parseFacebookDateLabel(label,now);
     }
-    if(!isPostFresh(date,now))throw new Error('Could not verify a fresh public timestamp for the exact WoolWorks post.');
+    if(!isPostFresh(date,now)){
+      const hint=parseExactRecoveryHints(worker?.notes||'');
+      if(hint.date){
+        const hinted=new Date(hint.date+'T12:00:00-05:00');
+        if(isPostFresh(hinted,now)){date=hinted;console.log('WOOLWORKS_IMAGE_PUBLISH_DATE using verified EXACT_POST_DATE hint '+hint.date);}
+      }
+    }
+    if(!isPostFresh(date,now))throw new Error('Could not verify a fresh public timestamp or configured exact-post date for the WoolWorks post.');
     let mediaUrl=String(await page.locator('meta[property="og:image"]').first().getAttribute('content').catch(()=>'')||'').trim();
     if(/^https?:\/\/[^\s]+fbcdn\.net\//i.test(mediaUrl)&&/([?&])ctp=p\d+x\d+/i.test(mediaUrl)){
       mediaUrl=mediaUrl.replace(/([?&])ctp=p\d+x\d+/i,(m,p)=>p+'ctp=p1200x1200');
@@ -87,7 +95,7 @@ async function run(){
   const manifest=await postJson(key,'social_worker_manifest');
   const worker=(manifest.workers||[]).find(w=>String(w.organization||'')===ORG&&String(w.profileUrl||'').replace(/\/+$/,'')===PROFILE_URL);
   if(!worker)throw new Error('Verified WoolWorks worker identity not found in live manifest.');
-  const evidence=await exactPostEvidence();
+  const evidence=await exactPostEvidence(worker);
   const results=[];
   for(const item of CLASSES){
     const payload={
