@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "algorithm": "X25519-XSalsa20-Poly1305",
+  "recipientKeySha256": "bdc76cab46aaad3aa79d943bcdcec6e2c6f6e4eeddfc4b3190db692235ab619b",
+  "ephemeralPublicKey": "erJT8QdtJ5YDaDMMjmpGk8wI6y06na/6snh5bAtnsXk=",
+  "nonce": "7F1QVoDbAvzYol3zeChFBzig0zxt2yyZ",
+  "ciphertext": "Sy/IjrMrRhDp16CYnMhu8pKttRSKO8bo69ZOCGBdXxOQM0KaGCulgfmBg03hFG32NpnPnyRlRjVv3cQ/a3myYFgvAfT0gSEqGsnVQwcoiVs="
+}
