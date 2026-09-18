@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
     paths:
+      - 'louisburg-local/index.html'
+      - 'louisburg-local/web-v4/**'
+      - 'louisburg-local/web-v5/**'
       - 'louisburg-local/social-browser-worker/release-v5-smoke.mjs'
       - '.github/workflows/louisburg-v5-release-smoke.yml'
   workflow_dispatch:
