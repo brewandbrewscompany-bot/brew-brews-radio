@@ -1,6 +1,6 @@
 import {chromium} from 'playwright';
 
-const ROOT='https://brewandbrewscompany-bot.github.io/brew-brews-radio/louisburg-local/';
+const ROOT='https://louisburglocalks.com/';
 const errors=[];
 function check(ok,msg){if(!ok)errors.push(msg);}
 
@@ -11,7 +11,7 @@ async function inspect(viewport,name){
   try{
     await page.goto(ROOT,{waitUntil:'domcontentloaded',timeout:45000});
     await page.waitForTimeout(1200);
-    check(/\/louisburg-local\/(?:web-v5\/)?(?:$|[?#])/.test(page.url()),name+': root did not land on V5 entry: '+page.url());
+    check(/^https:\/\/louisburglocalks\.com\/(?:web-v5\/)?(?:$|[?#])/.test(page.url()),name+': custom domain did not land on V5 entry: '+page.url());
     check((await page.title())==='Louisburg Local',name+': wrong document title: '+await page.title());
     check(await page.locator('#correctionLink').count()===0,name+': stale correctionLink returned');
     const frame=page.frameLocator('#v4frame');
@@ -70,6 +70,65 @@ async function inspect(viewport,name){
       : frame.locator('.bottom [data-nav="home"]');
     await homeButton.click(); await page.waitForTimeout(400);
 
+    // Quick filters must use the real feed state and show a solid purple selected pill.
+    const quickAll=frame.locator('#quickNav [data-cat="ALL"]');
+    const quickToday=frame.locator('#quickNav [data-cat="TODAY"]');
+    const quickDeals=frame.locator('#quickNav [data-cat="DEALS"]');
+    check(await quickAll.count()===1,name+': quick All missing');
+    check(await quickToday.count()===1,name+': quick Today missing');
+    check(await quickDeals.count()===1,name+': quick Deals missing');
+
+    if(await quickDeals.count()){
+      await quickDeals.click(); await page.waitForTimeout(300);
+      check(await quickDeals.getAttribute('aria-pressed')==='true',name+': quick Deals did not become selected');
+      const purple=await quickDeals.evaluate(el=>getComputedStyle(el).backgroundColor).catch(()=> '');
+      check(purple==='rgb(75, 33, 109)',name+': selected quick pill is not brand purple: '+purple);
+      const badDeals=await frame.locator('#feed .feedCard').evaluateAll(cards=>cards.filter(card=>{
+        const item=window.findItem&&window.findItem(card.dataset.id);
+        return !item||!window.catMatch||!window.catMatch(item,'DEALS');
+      }).map(card=>card.dataset.id));
+      check(badDeals.length===0,name+': quick Deals leaked non-deal cards: '+badDeals.join(','));
+    }
+
+    if(await quickToday.count()){
+      await quickToday.click(); await page.waitForTimeout(300);
+      check(await quickToday.getAttribute('aria-pressed')==='true',name+': quick Today did not become selected');
+      const badToday=await frame.locator('#feed .feedCard').evaluateAll(cards=>cards.filter(card=>{
+        const item=window.findItem&&window.findItem(card.dataset.id);
+        return !item||!window.sectionMatch||!window.sectionMatch(item,'TODAY')||String(item.date||'').slice(0,10)!==window.lbToday();
+      }).map(card=>card.dataset.id));
+      check(badToday.length===0,name+': quick Today leaked non-today cards: '+badToday.join(','));
+    }
+
+    // Drawer must call the same filter engine. Selecting Events + Today must only show matching cards.
+    const filterButton=frame.locator('#v5TopFilter');
+    check(await filterButton.count()===1,name+': V5 top filter missing');
+    if(await filterButton.count()){
+      await filterButton.click(); await page.waitForTimeout(120);
+      const eventChoice=page.locator('#categoryChoices [data-filter-cat="EVENTS"]');
+      const todayChoice=page.locator('#timeChoices [data-filter-time="TODAY"]');
+      const sourceAll=page.locator('#sourceChoices [data-filter-source=""]');
+      if(await eventChoice.count())await eventChoice.click();
+      if(await todayChoice.count())await todayChoice.click();
+      if(await sourceAll.count())await sourceAll.click();
+      await page.locator('#rightDrawer .close').click();
+      await page.waitForTimeout(350);
+      const badDrawer=await frame.locator('#feed .feedCard').evaluateAll(cards=>cards.filter(card=>{
+        const item=window.findItem&&window.findItem(card.dataset.id);
+        return !item||!window.catMatch||!window.sectionMatch||!window.catMatch(item,'EVENTS')||!window.sectionMatch(item,'TODAY')||String(item.date||'').slice(0,10)!==window.lbToday();
+      }).map(card=>card.dataset.id));
+      check(badDrawer.length===0,name+': drawer Events + Today leaked mismatched cards: '+badDrawer.join(','));
+    }
+
+    // Using a quick button after drawer filters must clear stale drawer selections.
+    if(await quickAll.count()){
+      await quickAll.click(); await page.waitForTimeout(200);
+      const activeCat=await page.locator('#categoryChoices .choice.active').getAttribute('data-filter-cat').catch(()=>null);
+      const activeTime=await page.locator('#timeChoices .choice.active').getAttribute('data-filter-time').catch(()=>null);
+      const activeSource=await page.locator('#sourceChoices .choice.active').getAttribute('data-filter-source').catch(()=>null);
+      check(activeCat==='ALL'&&activeTime==='ALL'&&activeSource==='',name+': quick All did not clear stale drawer selections');
+    }
+
     const topSearch=frame.locator('#v5TopSearch');
     check(await topSearch.count()===1,name+': V5 top search missing');
     if(await topSearch.count()){
@@ -80,23 +139,6 @@ async function inspect(viewport,name){
       const body=(await frame.locator('body').innerText()).toLowerCase();
       check(body.includes('woolworks'),name+': search did not surface WoolWorks');
       await frame.locator('#v5SearchClose').click().catch(()=>{});
-    }
-
-    if(name==='desktop'){
-      const filter=frame.locator('#v5TopFilter');
-      check(await filter.count()===1,name+': top filter button missing');
-      if(await filter.count()){
-        await filter.click(); await page.waitForTimeout(150);
-        const deals=page.locator('#categoryChoices [data-filter-cat="DEALS"]');
-        check(await deals.count()===1,name+': deals filter missing');
-        if(await deals.count()){
-          await deals.click();
-          await page.locator('#rightDrawer .close').click();
-          await page.waitForTimeout(500);
-          const status=(await frame.locator('#feedStatus').innerText().catch(()=>'' )).toLowerCase();
-          check(status.includes('matching')||status.includes('live'),name+': filter did not update feed status');
-        }
-      }
     }
 
     await page.goto(ROOT+'web-v5/',{waitUntil:'domcontentloaded',timeout:45000});
@@ -146,4 +188,4 @@ if(errors.length){
   for(const e of errors)console.error('- '+e);
   process.exit(1);
 }
-console.log('V5 RELEASE SMOKE PASSED: desktop + mobile production entry, sections, search, filters, history and layout checks.');
+console.log('V5 RELEASE SMOKE PASSED: custom-domain desktop + mobile entry, quick filters, drawer filters, strict Today dates, selected-state styling, sections, search, history and layout checks.');
