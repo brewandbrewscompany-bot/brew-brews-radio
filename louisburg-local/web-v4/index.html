@@ -69,7 +69,7 @@ function setHomeQuickFilter(key){
   const k=String(key||'ALL').toUpperCase();
   if(k==='TODAY'){state.cat='ALL';state.section='TODAY'}
   else{state.cat=k;state.section='ALL'}
-  $('#quickNav .qbtn').forEach(b=>b.classList.toggle('active',b.dataset.cat===state.cat));
+  $('#quickNav .qbtn').forEach(b=>b.classList.toggle('active',b.dataset.cat===k));
   $('#sectionTabs .pill').forEach(b=>b.classList.toggle('active',b.dataset.section===state.section));
   renderHome();
   return {cat:state.cat,section:state.section,count:filteredHome().length}
