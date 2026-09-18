@@ -48,8 +48,8 @@ function installRefresh(x){
       #v5PrimaryNav button{border:0;background:transparent;color:#eee5f4;border-radius:10px;padding:9px 11px;font-size:12px;font-weight:800;white-space:nowrap}
       #v5PrimaryNav button:hover,#v5PrimaryNav button.active{background:#ffffff18;color:#fff}
       #v5TopFilter,#v5TopSearch{flex:0 0 40px!important;width:40px!important;height:40px!important;border-radius:12px!important;border:1px solid #ffffff32!important;background:#ffffff12!important;color:#fff!important;font-size:17px!important;display:grid!important;place-items:center!important;padding:0!important}
-      #v5QuickStrip{display:flex;gap:7px;overflow:auto;padding:1px 1px 11px;scrollbar-width:none}#v5QuickStrip::-webkit-scrollbar{display:none}
-      #v5QuickStrip button{border:1px solid #d9cedd;background:#fff;color:#321447;border-radius:999px;padding:9px 13px;font-size:11px;font-weight:800;white-space:nowrap}
+      #v5QuickStrip{display:flex;gap:7px;overflow:auto;padding:1px 1px 11px;scrollbar-width:none;touch-action:pan-x pan-y!important;-webkit-overflow-scrolling:touch}#v5QuickStrip::-webkit-scrollbar{display:none}
+      #v5QuickStrip button{border:1px solid #d9cedd;background:#fff;color:#321447;border-radius:999px;padding:9px 13px;font-size:11px;font-weight:800;white-space:nowrap;touch-action:manipulation}
       #v5QuickStrip button.active{background:#321447;color:#fff;border-color:#321447;box-shadow:0 6px 14px rgba(50,20,71,.15)}
       .feed{align-items:stretch!important}.feedCard{height:100%;display:flex;flex-direction:column;border-radius:18px!important;box-shadow:0 8px 22px rgba(48,22,65,.08)!important}.feedCard .actions{margin-top:auto}
       .headline{font-size:20px!important;line-height:1.14!important}.cardBody{padding:14px 15px 11px!important}.summary{font-size:13px!important;-webkit-line-clamp:4!important}.media{aspect-ratio:16/9!important;max-height:none!important}
@@ -76,8 +76,14 @@ function installRefresh(x){
   }
   const home=x.getElementById('homeScreen'),bar=home&&home.querySelector('.bar');
   if(home&&bar&&!x.getElementById('v5QuickStrip')){
-    const q=x.createElement('div');q.id='v5QuickStrip';q.innerHTML='<button class="active" data-v5-quick="ALL">All</button><button data-v5-quick="TODAY">Today</button><button data-v5-quick="DEALS">Deals</button><button data-v5-quick="EVENTS">Events</button><button data-v5-quick="FOOD">Food & drink</button><button data-v5-quick="FAMILY">Family</button><button data-v5-quick="SPORTS">Sports</button><button data-v5-quick="HIRING">Hiring</button>';bar.parentNode.insertBefore(q,bar);
-    q.onclick=e=>{const b=e.target.closest('[data-v5-quick]');if(!b)return;chosenCat='ALL';chosenTime='ALL';chosenSource='';document.querySelectorAll('#categoryChoices .choice').forEach(c=>c.classList.toggle('active',c.dataset.filterCat==='ALL'));document.querySelectorAll('#timeChoices .choice').forEach(c=>c.classList.toggle('active',c.dataset.filterTime==='ALL'));document.querySelectorAll('#sourceChoices .choice').forEach(c=>c.classList.toggle('active',c.dataset.filterSource===''));resetBaseFeed();const k=b.dataset.v5Quick;if(k==='TODAY'){const t=x.querySelector('#sectionTabs [data-section="TODAY"]');if(t)t.click()}else if(k!=='ALL'){const c=x.querySelector(`#quickNav [data-cat="${k}"]`);if(c)c.click()}q.querySelectorAll('button').forEach(z=>z.classList.toggle('active',z===b));setTimeout(applyDomFilters,20)}
+    const q=x.createElement('div');q.id='v5QuickStrip';q.innerHTML='<button class="active" data-v5-quick="ALL">All</button><button data-v5-quick="TODAY">Today</button><button data-v5-quick="FAVORITES">Favorites</button><button data-v5-quick="DEALS">Deals</button><button data-v5-quick="EVENTS">Events</button><button data-v5-quick="FOOD">Food &amp; Drink</button><button data-v5-quick="FAMILY">Family</button><button data-v5-quick="SPORTS">Sports</button><button data-v5-quick="HIRING">Hiring</button>';bar.parentNode.insertBefore(q,bar);
+    const activateQuick=b=>{if(!b)return;chosenCat='ALL';chosenTime='ALL';chosenSource='';document.querySelectorAll('#categoryChoices .choice').forEach(c=>c.classList.toggle('active',c.dataset.filterCat==='ALL'));document.querySelectorAll('#timeChoices .choice').forEach(c=>c.classList.toggle('active',c.dataset.filterTime==='ALL'));document.querySelectorAll('#sourceChoices .choice').forEach(c=>c.classList.toggle('active',c.dataset.filterSource===''));resetBaseFeed();const k=b.dataset.v5Quick;if(k==='TODAY'){const t=x.querySelector('#sectionTabs [data-section="TODAY"]');if(t)t.click()}else if(k!=='ALL'){const c=x.querySelector(`#quickNav [data-cat="${k}"]`);if(c)c.click()}q.querySelectorAll('button').forEach(z=>z.classList.toggle('active',z===b));setTimeout(applyDomFilters,20)};
+    let quickPid=null,quickX=0,quickY=0,quickMoved=false,quickPointerAt=0;
+    q.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;const b=e.target.closest('[data-v5-quick]');if(!b)return;quickPid=e.pointerId;quickX=e.clientX;quickY=e.clientY;quickMoved=false},{passive:true});
+    q.addEventListener('pointermove',e=>{if(quickPid===null||e.pointerId!==quickPid)return;if(Math.abs(e.clientX-quickX)>9||Math.abs(e.clientY-quickY)>9)quickMoved=true},{passive:true});
+    q.addEventListener('pointerup',e=>{if(quickPid===null||e.pointerId!==quickPid)return;const b=e.target.closest('[data-v5-quick]');const moved=quickMoved;quickPid=null;quickMoved=false;if(!b||moved)return;quickPointerAt=Date.now();activateQuick(b)},{passive:true});
+    q.addEventListener('pointercancel',()=>{quickPid=null;quickMoved=false},{passive:true});
+    q.addEventListener('click',e=>{const b=e.target.closest('[data-v5-quick]');if(!b)return;if(Date.now()-quickPointerAt<500)return;activateQuick(b)});
   }
   const historyTarget='../web-v4/history.html?from=v5';[x.getElementById('historyTeaser'),x.getElementById('historyMoreItem')].filter(Boolean).forEach(el=>{el.href='history.html?from=v5';if(!el.dataset.v5HistoryBound){el.dataset.v5HistoryBound='1';el.addEventListener('click',e=>{e.preventDefault();location.href=historyTarget})}})
   const h=x.querySelector('#homeScreen .bar h2');if(h){h.textContent='Happening in Louisburg';setTimeout(()=>fitHomeHeading(x),0)}const dhead=x.querySelector('#directoryScreen .directoryHeader h1');if(dhead)dhead.textContent='Louisburg Directory';syncRefreshNav(x)
@@ -93,8 +99,9 @@ function attachMain(x,force=false){
   const ctrl=new AbortController();win.__v5GestureAbort=ctrl;
   const opt={passive:true,capture:true,signal:ctrl.signal};
   let sx=0,sy=0,lastX=0,lastY=0,on=false,lastSwipe=0,pid=null;
-  const edit=t=>t&&t.closest&&t.closest('input,textarea,select,[contenteditable="true"]');
-  const begin=(px,py,id,target)=>{if(edit(target)){on=false;return}sx=lastX=px;sy=lastY=py;pid=id;on=true};
+  const interactive=t=>t&&t.closest&&t.closest('button,a,input,textarea,select,label,[role="button"],[contenteditable="true"],#v5QuickStrip,.eventQuick,.chips,.actions,.bottom,.top');
+  const edgeStart=px=>{const width=Math.max(0,x.documentElement.clientWidth||win.innerWidth||0),edge=32;return px<=edge||px>=width-edge};
+  const begin=(px,py,id,target)=>{if(interactive(target)||!edgeStart(px)){on=false;return}sx=lastX=px;sy=lastY=py;pid=id;on=true};
   const move=(px,py)=>{if(!on)return;lastX=px;lastY=py};
   const finish=(px,py)=>{if(!on)return;on=false;const dx=px-sx,dy=py-sy;if(Math.abs(dx)<34||Math.abs(dx)<Math.abs(dy)*1.05||Math.abs(dy)>160)return;lastSwipe=Date.now();dx>0?openDrawer('left'):openDrawer('right')};
   if(win.PointerEvent){
