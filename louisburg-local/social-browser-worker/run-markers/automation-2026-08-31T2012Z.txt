@@ -1,1 +1,1 @@
-Coverage expansion verification — 7 newly verified Louisburg Facebook sources — 2026-09-17
+Post-coverage-audit full scan — load all newly verified workers — 2026-09-17
