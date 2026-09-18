@@ -10,14 +10,21 @@ async function inspect(viewport,name){
   const page=await context.newPage();
   try{
     await page.goto(ROOT,{waitUntil:'domcontentloaded',timeout:45000});
-    await page.waitForTimeout(2500);
+    await page.waitForTimeout(1200);
     check(/\/louisburg-local\/(?:web-v5\/)?(?:$|[?#])/.test(page.url()),name+': root did not land on V5 entry: '+page.url());
     check((await page.title())==='Louisburg Local',name+': wrong document title: '+await page.title());
     check(await page.locator('#correctionLink').count()===0,name+': stale correctionLink returned');
     const frame=page.frameLocator('#v4frame');
     await frame.locator('body').waitFor({state:'visible',timeout:30000});
+    let feedStatus='';
+    for(let i=0;i<40;i++){
+      feedStatus=await frame.locator('#feedStatus').innerText().catch(()=> '');
+      if(/^live\s*·/i.test(feedStatus)||/connection issue/i.test(feedStatus))break;
+      await page.waitForTimeout(500);
+    }
+    check(/^live\s*·/i.test(feedStatus),name+': feed did not reach live state: '+feedStatus);
     const homeCards=await frame.locator('#homeScreen .feedCard').count();
-    check(homeCards>0,name+': home feed empty');
+    check(homeCards>0,name+': home feed empty after live state');
 
     const screens=[
       ['directory','#directoryScreen','.directoryCard'],
@@ -25,17 +32,24 @@ async function inspect(viewport,name){
       ['deals','#dealsScreen','.dealCard']
     ];
     for(const [nav,screen,card] of screens){
-      const button=frame.locator('[data-nav="'+nav+'"]').first();
-      check(await button.count()===1,name+': '+nav+' nav missing');
+      const button=name==='desktop'
+        ? frame.locator('#v5PrimaryNav [data-v5-nav="'+nav+'"]')
+        : frame.locator('.bottom [data-nav="'+nav+'"]');
+      check(await button.count()===1,name+': visible '+nav+' nav missing');
       if(await button.count()){
         await button.click();
         await page.waitForTimeout(500);
         check(await frame.locator(screen).evaluate(el=>el.classList.contains('active')).catch(()=>false),name+': '+nav+' screen did not activate');
-        check(await frame.locator(screen+' '+card).count()>0,name+': '+nav+' screen has no cards');
+        const cards=await frame.locator(screen+' '+card).count();
+        const empty=await frame.locator(screen+' .empty').count();
+        check(cards>0||empty>0,name+': '+nav+' screen did not render cards or an empty state');
+        if(nav==='directory')check(cards>0,name+': directory rendered no listings');
       }
     }
 
-    const homeButton=frame.locator('[data-nav="home"]').first();
+    const homeButton=name==='desktop'
+      ? frame.locator('#v5PrimaryNav [data-v5-nav="home"]')
+      : frame.locator('.bottom [data-nav="home"]');
     await homeButton.click(); await page.waitForTimeout(400);
 
     const topSearch=frame.locator('#v5TopSearch');
@@ -68,19 +82,27 @@ async function inspect(viewport,name){
     }
 
     await page.goto(ROOT+'web-v5/',{waitUntil:'domcontentloaded',timeout:45000});
-    await page.waitForTimeout(1500);
-    await page.locator('#historyLink').click();
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1000);
-    check(/history\.html/.test(page.url()),name+': history link did not open history page');
-    const returnLink=page.locator('a[href*="web-v5"],button').filter({hasText:/back|return|local/i}).first();
-    if(await returnLink.count()){
-      await returnLink.click().catch(()=>{});
-      await page.waitForTimeout(1000);
-      check(/web-v5|louisburg-local\/$/.test(page.url()),name+': history return did not reach V5');
+    await page.waitForTimeout(1400);
+    const hf=page.frameLocator('#v4frame');
+    if(name==='desktop'){
+      const history=hf.locator('#v5PrimaryNav [data-v5-history]');
+      check(await history.count()===1,name+': desktop History control missing');
+      if(await history.count())await history.click();
     }else{
-      const html=(await page.locator('body').innerText()).toLowerCase();
-      check(html.includes('louisburg local'),name+': history page missing recognizable return/navigation context');
+      const teaser=hf.locator('#historyTeaser');
+      check(await teaser.count()===1,name+': mobile History teaser missing');
+      if(await teaser.count())await teaser.click();
+    }
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(900);
+    check(/history\.html/.test(page.url()),name+': History did not navigate the top-level page');
+    check(await page.locator('#v4frame').count()===0,name+': History opened inside/nested in V5 instead of top-level');
+    const returnLink=page.locator('a.back');
+    check(await returnLink.count()===1,name+': History return link missing');
+    if(await returnLink.count()){
+      await returnLink.click();
+      await page.waitForTimeout(900);
+      check(/web-v5/.test(page.url()),name+': History return did not reach V5');
     }
 
     if(name==='mobile'){
