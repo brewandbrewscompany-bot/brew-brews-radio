@@ -43,7 +43,19 @@ async function inspect(viewport,name){
         const cards=await frame.locator(screen+' '+card).count();
         const empty=await frame.locator(screen+' .empty').count();
         check(cards>0||empty>0,name+': '+nav+' screen did not render cards or an empty state');
-        if(nav==='directory')check(cards>0,name+': directory rendered no listings');
+        if(nav==='directory'){
+          for(let i=0;i<20;i++){
+            const t=await frame.locator('#directoryCount').innerText().catch(()=> '');
+            if(/^193\b/.test(t))break;
+            await page.waitForTimeout(250);
+          }
+          const countText=await frame.locator('#directoryCount').innerText().catch(()=> '');
+          check(/^193\b/.test(countText),name+': directory snapshot is not 193 verified entries: '+countText);
+          const dirText=(await frame.locator('#directoryList').innerText().catch(()=> '')).toLowerCase();
+          check(dirText.includes('brew & brews'),name+': Brew & Brews missing from directory');
+          check(dirText.includes('cowboy coffee post'),name+': Cowboy Coffee Post missing from directory');
+          check(dirText.includes('journey church of the nazarene'),name+': newly added Journey Church missing from directory');
+        }
       }
     }
 
