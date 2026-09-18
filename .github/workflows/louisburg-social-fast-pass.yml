@@ -11,9 +11,9 @@ on:
       - '.github/workflows/louisburg-social-fast-pass.yml'
   workflow_dispatch:
   schedule:
-    # Full public-browser scan runs at :27. These two recovery passes fill
-    # the gaps, giving the system another discovery attempt about every
-    # 20 minutes instead of relying on one hourly job.
+    # Full public-browser scan runs at :27. These recovery passes fill
+    # gaps between full scans and also provide a fast verification lane
+    # for newly approved exact-source workers.
     - cron: '7,47 * * * *'
 
 permissions:
