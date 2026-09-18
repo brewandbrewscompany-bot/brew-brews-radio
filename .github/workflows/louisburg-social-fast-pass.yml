@@ -13,7 +13,7 @@ on:
   schedule:
     # Full public-browser scan runs at :27. These recovery passes fill
     # gaps between full scans and also provide a fast verification lane
-    # for newly approved exact-source workers.
+    # for newly approved exact-source workers and post-deployment verification.
     - cron: '7,47 * * * *'
 
 permissions:
