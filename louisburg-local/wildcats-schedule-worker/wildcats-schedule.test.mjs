@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseArbiterAnchorText,parseArbiterEventsResponse} from './wildcats-schedule.mjs';
+import {parseArbiterAnchorText,parseArbiterEventsResponse,publicHubEvents} from './wildcats-schedule.mjs';
 
 function summary(start,gameId,teamId,label,time='07:00 PM'){
   return {
@@ -52,4 +52,14 @@ test('keeps a canceled game when there is no active duplicate',()=>{
   assert.equal(rows.length,1);
   assert.equal(rows[0].cancelled,true);
   assert.equal(rows[0].homeAway,'AWAY');
+});
+
+
+test('public Hub excludes away Wildcats games while keeping them in the schedule snapshot source data',()=>{
+  const events=[
+    {homeAway:'HOME',gameId:'home1'},
+    {homeAway:'AWAY',gameId:'away1'},
+    {homeAway:'',gameId:'unknown1'}
+  ];
+  assert.deepEqual(publicHubEvents(events).map(x=>x.gameId),['home1','unknown1']);
 });
