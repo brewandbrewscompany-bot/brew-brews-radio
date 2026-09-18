@@ -355,16 +355,45 @@ function recordSocialWorkerScan_(body) {
   for(let r=1;r<data.length;r++){
     if(cell_(data[r],ix,'Queue ID')!==queueId)continue;
     if(cell_(data[r],ix,'Platform').toUpperCase()!=='FACEBOOK'||cell_(data[r],ix,'Source Status').toUpperCase().indexOf('VERIFIED')!==0)throw new Error('Worker is not an approved Facebook source.');
-    setSocialValue_(sheet,r+1,ix,'Last Scan At',fmt_(new Date()));
-    setSocialValue_(sheet,r+1,ix,'Last Result',String(body.result||'SCAN COMPLETE').replace(/\s+/g,' ').trim().slice(0,300));
+    const now=new Date(),stamp=fmt_(now),resultText=String(body.result||'SCAN COMPLETE').replace(/\s+/g,' ').trim().slice(0,300);
+    setSocialValue_(sheet,r+1,ix,'Last Scan At',stamp);
+    setSocialValue_(sheet,r+1,ix,'Last Result',resultText);
     if(body.lastPostUrl)setSocialValue_(sheet,r+1,ix,'Last Post URL',String(body.lastPostUrl).slice(0,500));
     if(body.lastPostDate)setSocialValue_(sheet,r+1,ix,'Last Post Date',String(body.lastPostDate).slice(0,80));
     if(body.lastPostText)setSocialValue_(sheet,r+1,ix,'Last Post Text',String(body.lastPostText).replace(/\s+/g,' ').trim().slice(0,500));
     if(body.lastMediaUrl)setSocialValue_(sheet,r+1,ix,'Last Media URL',String(body.lastMediaUrl).slice(0,1000));
     if(body.activityFingerprint)setSocialValue_(sheet,r+1,ix,'Activity Fingerprint',String(body.activityFingerprint).slice(0,128));
+    syncSocialEndpointFreshness_(ss,cell_(data[r],ix,'Business / Organization'),cell_(data[r],ix,'Verified Profile URL'),stamp,resultText);
     return {ok:true,queueId:queueId,recorded:true};
   }
   throw new Error('Social worker queue item not found.');
+}
+
+function syncSocialEndpointFreshness_(ss,organization,profileUrl,stamp,resultText){
+  const endpoints=ss.getSheetByName(LL_CONFIG.SHEETS.ENDPOINTS);
+  if(!endpoints||endpoints.getLastRow()<2)return;
+  const data=endpoints.getDataRange().getDisplayValues(),ix=headerMap_(data[0]);
+  const target=socialNormalizeUrl_(profileUrl),org=socialNormalizeOrg_(organization),exact=[],fallback=[];
+  for(let r=1;r<data.length;r++){
+    if(!/^(YES|TRUE|ACTIVE)$/i.test(cell_(data[r],ix,'Active')))continue;
+    const sourceUrl=cell_(data[r],ix,'Source URL'),sourceType=cell_(data[r],ix,'Source Type').toUpperCase();
+    if(!sourceUrl)continue;
+    if(target&&socialNormalizeUrl_(sourceUrl)===target){exact.push(r+1);continue;}
+    if(org&&socialNormalizeOrg_(cell_(data[r],ix,'Business / Organization'))===org&&sourceType.indexOf('FACEBOOK')!==-1)fallback.push(r+1);
+  }
+  const rows=exact.length?exact:(fallback.length===1?fallback:[]);
+  if(!rows.length)return;
+  const blocked=/\b(ERROR|UNAVAILABLE|LOGIN ONLY|AGE-GATED|BLOCKED|ACCESS DENIED|FORBIDDEN)\b/i.test(String(resultText||''));
+  rows.forEach(function(row){
+    const checkedCol=ix['Last Checked'],successCol=ix['Last Successful Pull'],failureCol=ix['Failure / Block Reason'];
+    if(checkedCol!=null)endpoints.getRange(row,checkedCol+1).setValue(stamp);
+    if(blocked){
+      if(failureCol!=null)endpoints.getRange(row,failureCol+1).setValue(String(resultText||'Social scan failed').slice(0,500));
+    }else{
+      if(successCol!=null)endpoints.getRange(row,successCol+1).setValue(stamp);
+      if(failureCol!=null)endpoints.getRange(row,failureCol+1).clearContent();
+    }
+  });
 }
 
 function requireSocialIngestKey_(body) {
@@ -430,6 +459,8 @@ function runSocialAutoPromotionSelfTest(){
   if(!socialAutoVerificationDecision_(payload,'New Product / Offering',now,sources,registry).ok)failures.push('clean verified offering did not qualify');
   const visible=Object.assign({},payload,{postUrl:payload.profileUrl+'#ll-visible-abc123',postId:'VISIBLE-20260831-abc123',postDate:'2026-08-31T08:00:00-05:00',text:'Louisburg KS. New coffee blend available today.'});
   if(!socialAutoVerificationDecision_(visible,'New Product / Offering',now,sources,registry).ok)failures.push('verified visible Facebook card without permalink did not qualify');
+  const imagePostId='pfbid123-IMG-ABC123';
+  if(!/[-_]IMG[-_][A-Z0-9]+$/i.test(imagePostId))failures.push('multi-activity image post marker was not recognized');
   const brewSources={'SOC-TEST-FB':{organization:payload.organization,profileUrl:payload.profileUrl,sourceStatus:'VERIFIED - OWNER SUPPLIED',publishGate:'DO NOT USE BREW ACCOUNT'}};
   if(!socialAutoVerificationDecision_(payload,'New Product / Offering',now,brewSources,registry).ok)failures.push('public-only verified source policy did not qualify');
   if(socialAutoVerificationDecision_(Object.assign({},payload,{queueId:'UNKNOWN'}),'New Product / Offering',now,sources,registry).ok)failures.push('unverified source qualified');
@@ -441,7 +472,7 @@ function runSocialAutoPromotionSelfTest(){
   const wednesday=socialAutoVerificationDecision_(Object.assign({},payload,{postDate:'2026-08-31T08:00:00-05:00',text:'Louisburg KS. Wednesday catfish dinner special with sides.'}),'Deal / Special',now,sources,registry);
   if(!wednesday.ok||wednesday.relevantDate!=='2026-09-02')failures.push('Wednesday special did not resolve to next Wednesday');
   if(failures.length)throw new Error('Social auto-promotion self-test failed: '+failures.join(' | '));
-  Logger.log('Social auto-promotion self-test passed: 9/9');
+  Logger.log('Social auto-promotion self-test passed: image multi-activity URL dedupe exception included.');
 }
 
 function socialAutoVerificationDecision_(payload,activityType,now,sourceIndex,registryIndex,endpointIndex){
@@ -605,7 +636,8 @@ function socialHubIndex_(sheet){
 function socialPromoteToHub_(sheet,index,payload,activityType,fingerprint,auto,now){
   const plan=socialPromotionPlan_(payload,activityType,fingerprint,auto,now);
   const normalizedUrl=socialNormalizeUrl_(auto.visibleCard?payload.profileUrl:payload.postUrl);
-  const useUrlDedupe=auto.sourceType!=='FIRST_PARTY'&&!auto.visibleCard;
+  const multiActivityImage=/[-_]IMG[-_][A-Z0-9]+$/i.test(String(payload.postId||''));
+  const useUrlDedupe=auto.sourceType!=='FIRST_PARTY'&&!auto.visibleCard&&!multiActivityImage;
   const existing=index.byDedupe[plan.dedupeKey]||(useUrlDedupe?index.byUrl[normalizedUrl]:'')||'';
   if(existing)return {duplicate:true,itemId:existing};
   const target=sheet.getLastRow()+1;
