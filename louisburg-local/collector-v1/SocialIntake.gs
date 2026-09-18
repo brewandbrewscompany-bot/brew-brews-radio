@@ -471,6 +471,11 @@ function runSocialAutoPromotionSelfTest(){
   if(!monday.ok||monday.relevantDate!=='2026-08-31')failures.push('Monday special did not resolve to Monday/Today');
   const wednesday=socialAutoVerificationDecision_(Object.assign({},payload,{postDate:'2026-08-31T08:00:00-05:00',text:'Louisburg KS. Wednesday catfish dinner special with sides.'}),'Deal / Special',now,sources,registry);
   if(!wednesday.ok||wednesday.relevantDate!=='2026-09-02')failures.push('Wednesday special did not resolve to next Wednesday');
+  const schoolRegistry={};
+  schoolRegistry[socialNormalizeOrg_('Louisburg High School - USD 416')]={organization:'Louisburg High School - USD 416',address:'202 Aquatic Dr, Louisburg, KS 66053',category:'School',louisburgVerified:true,hubEligible:true,conflict:false};
+  const schoolPayload={organization:'Louisburg High School - USD 416',platform:'WEBSITE',profileUrl:'https://www.arbiterlive.com/School/Calendar/13250',postUrl:'https://www.arbiterlive.com/Teams/Game/test',postId:'school-away-test',postDate:'2026-08-31T08:00:00-05:00',text:'Louisburg Wildcats Varsity Boys Football game at Harrisonville High School on October 2, 2026 at 7:00 PM. Away event at Harrisonville High School.',louisburgMatch:'VERIFIED'};
+  const schoolEndpoints={'louisburg high school usd 416|https://www.arbiterlive.com/teams/game/test':true};
+  if(socialFirstPartyVerificationDecision_(schoolPayload,'Event / Activity',now,schoolRegistry,schoolEndpoints).ok)failures.push('away school event incorrectly qualified for first-party promotion');
   if(failures.length)throw new Error('Social auto-promotion self-test failed: '+failures.join(' | '));
   Logger.log('Social auto-promotion self-test passed: image multi-activity URL dedupe exception included.');
 }
@@ -520,6 +525,7 @@ function socialFirstPartyVerificationDecision_(payload,activityType,now,registry
   if(allowed.indexOf(activityType)===-1)return {ok:false,reason:'activity type is not eligible for automatic first-party promotion'};
   const text=String(payload.text||'').replace(/\s+/g,' ').trim(),lower=text.toLowerCase();
   if(text.length<20)return {ok:false,reason:'first-party activity text is too short'};
+  if(activityType==='Event / Activity'&&/\baway event at\b/.test(lower)&&!/\bhome event in louisburg\b/.test(lower))return {ok:false,reason:'event is outside Louisburg'};
   const dates=(typeof analyzeActivityDates_==='function')?analyzeActivityDates_(lower,now):{explicitPastOnly:false,pastOnly:false};
   if(dates.explicitPastOnly||dates.pastOnly)return {ok:false,reason:'first-party content contains only stale dates'};
   const relevantDate=socialRelevantDate_(payload,activityType,now,dates)||socialThroughMonthDate_(lower,now);
