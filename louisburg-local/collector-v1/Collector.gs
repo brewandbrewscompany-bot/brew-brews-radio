@@ -26,8 +26,20 @@ function runCollectorV22SelfTest() {
     const gate = activityQualityGate_(activity, normalized, 'Louisburg Test', now);
     if (gate.ok !== tc.want) failures.push(tc.name + ': expected ' + tc.want + ', got ' + gate.ok + ' (' + gate.label + ')');
   });
-  if (failures.length) throw new Error('Collector V2.2 self-test failed: ' + failures.join(' | '));
-  Logger.log('Collector V2.2 self-test passed: ' + cases.length + '/' + cases.length);
+  [
+    ['DIRECT','DIRECT'],
+    ['DIRECT / FIRST-PARTY','DIRECT'],
+    ['DIRECT / GOVERNMENT OFFICIAL','DIRECT'],
+    ['DIRECT / FIRST-PARTY PARTNER','DIRECT'],
+    ['SURFACE','SURFACE'],
+    ['SURFACE / VERIFIED HANDLE','SURFACE'],
+    ['LINK-ONLY','LINK-ONLY']
+  ].forEach(function(tc){
+    const got=collectorAccessClass_(tc[0]);
+    if(got!==tc[1])failures.push('access '+tc[0]+': expected '+tc[1]+', got '+got);
+  });
+  if (failures.length) throw new Error('Collector V2.4 self-test failed: ' + failures.join(' | '));
+  Logger.log('Collector V2.4 self-test passed: '+cases.length+' activity cases + access normalization cases');
 }
 
 function runCollector_(forceScan) {
@@ -47,8 +59,8 @@ function runCollector_(forceScan) {
     let directChecked=0, surfaceChecked=0, surfaceReadable=0, surfaceBlocked=0, cursor=startCursor, visited=0;
     while (visited < rows.length && considered < maxEndpoints) {
       if (cursor >= rows.length) cursor = 0;
-      const row = rows[cursor]; cursor++; visited++;
-      const sourceUrl=cell_(row,ix,'Source URL'), active=cell_(row,ix,'Active').toLowerCase(), access=cell_(row,ix,'Access Method').toUpperCase(), org=cell_(row,ix,'Business / Organization'), priority=cell_(row,ix,'Feed Priority').toUpperCase()||'MEDIUM';
+      const row = rows[cursor], endpointRow=cursor+2; cursor++; visited++;
+      const sourceUrl=cell_(row,ix,'Source URL'), active=cell_(row,ix,'Active').toLowerCase(), accessRaw=cell_(row,ix,'Access Method').toUpperCase(), access=collectorAccessClass_(accessRaw), org=cell_(row,ix,'Business / Organization'), priority=cell_(row,ix,'Feed Priority').toUpperCase()||'MEDIUM';
       if (!sourceUrl || !/^(yes|true|active)$/i.test(active) || allowed.indexOf(access) === -1) continue;
       const key=endpointKey_(org,sourceUrl), old=state[key]||{};
       if (!forceScan && !isDue_(old.nextCheck)) continue;
@@ -83,15 +95,18 @@ function runCollector_(forceScan) {
           }
         }
         upsertState_(stateSheet,old.row,[key,org,sourceUrl,access,activityFingerprint,activity.contentDate||'',didChange?fmt_(now):(old.lastChange||''),fmt_(now),fmt_(now),fmt_(nextCheck_(now,priority)),0,didChange&&candidateCount?fmt_(addDays_(now,LL_CONFIG.SOURCE_BOOST_DAYS)):(old.boostUntil||''),result.status,normalized.length,social.status+'; '+gate.label,'Yes']);
+        updateEndpointFreshness_(endpointSheet,endpointRow,ix,now,true,'');
       } catch (err) {
         failures++; if (access==='SURFACE') surfaceBlocked++;
         const now=new Date(), failCount=Number(old.failures||0)+1;
-        upsertState_(stateSheet,old.row,[key,org,sourceUrl,access,old.fingerprint||'',old.lastContentDate||'',old.lastChange||'',fmt_(now),old.lastSuccess||'',fmt_(failureNextCheck_(now,priority,failCount)),failCount,old.boostUntil||'','','',String(err).slice(0,500),'Yes']);
+        const failureText=String(err).replace(/\s+/g,' ').slice(0,500);
+        upsertState_(stateSheet,old.row,[key,org,sourceUrl,access,old.fingerprint||'',old.lastContentDate||'',old.lastChange||'',fmt_(now),old.lastSuccess||'',fmt_(failureNextCheck_(now,priority,failCount)),failCount,old.boostUntil||'','','',failureText,'Yes']);
+        updateEndpointFreshness_(endpointSheet,endpointRow,ix,now,false,failureText);
       }
     }
     if (!forceScan) props.setProperty('LL_COLLECTOR_CURSOR',String(cursor>=rows.length?0:cursor));
     const intakeSummary=(typeof processSocialPostIntake==='function')?processSocialPostIntake():null;
-    logSheet.appendRow([runId,fmt_(started),fmt_(new Date()),rows.length,checked,changed,candidates,failures,'Collector V2.3: '+(forceScan?'FORCE SCAN; DIRECT+SURFACE':'scheduled; DIRECT only')+'; direct='+directChecked+'; surface='+surfaceChecked+'; surface-readable='+surfaceReadable+'; surface-blocked='+surfaceBlocked+'; filtered-noise='+rejectedNoise+'; filtered-stale='+rejectedStale+'; filtered-context='+rejectedContext+'; filtered-weak='+rejectedWeak+'; batch='+considered+'/'+maxEndpoints+'; Sherlock rechecks='+sherlockChecks+'; clean DIRECT activity routes to automatic intake; exception review only; intake='+(intakeSummary?JSON.stringify(intakeSummary):'unavailable')+'.']);
+    logSheet.appendRow([runId,fmt_(started),fmt_(new Date()),rows.length,checked,changed,candidates,failures,'Collector V2.4: '+(forceScan?'FORCE SCAN; DIRECT+SURFACE':'scheduled; DIRECT only')+'; direct='+directChecked+'; surface='+surfaceChecked+'; surface-readable='+surfaceReadable+'; surface-blocked='+surfaceBlocked+'; filtered-noise='+rejectedNoise+'; filtered-stale='+rejectedStale+'; filtered-context='+rejectedContext+'; filtered-weak='+rejectedWeak+'; batch='+considered+'/'+maxEndpoints+'; Sherlock rechecks='+sherlockChecks+'; clean DIRECT activity routes to automatic intake; exception review only; intake='+(intakeSummary?JSON.stringify(intakeSummary):'unavailable')+'.']);
   } finally { lock.releaseLock(); }
 }
 
@@ -327,6 +342,26 @@ function verificationCandidateExists_(ss,org,url,fingerprint){
   }
   return false;
 }
+function collectorAccessClass_(value){
+  const access=String(value||'').trim().toUpperCase();
+  if(/^DIRECT(?:\s*\/|$)/.test(access))return 'DIRECT';
+  if(/^SURFACE(?:\s*\/|$)/.test(access))return 'SURFACE';
+  return access;
+}
+
+function updateEndpointFreshness_(sheet,row,ix,now,success,failureText){
+  if(!sheet||!row||!ix)return;
+  const checkedCol=ix['Last Checked'],successCol=ix['Last Successful Pull'],failureCol=ix['Failure / Block Reason'];
+  const stamp=fmt_(now);
+  if(checkedCol!=null)sheet.getRange(row,checkedCol+1).setValue(stamp);
+  if(success){
+    if(successCol!=null)sheet.getRange(row,successCol+1).setValue(stamp);
+    if(failureCol!=null)sheet.getRange(row,failureCol+1).clearContent();
+  }else if(failureCol!=null){
+    sheet.getRange(row,failureCol+1).setValue(String(failureText||'Collector fetch failed').slice(0,500));
+  }
+}
+
 function loadState_(sheet){
   const data=sheet.getDataRange().getDisplayValues(),out={};
   for(let r=1;r<data.length;r++){
