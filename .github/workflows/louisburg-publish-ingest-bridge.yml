@@ -18,7 +18,7 @@ jobs:
       BRIDGE_PUBLIC_KEY_B64: 'iMRLunwYPH6bMXStInCZA+Ft//NibxuszzkKdrd1d3w='
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
           package-manager-cache: false
