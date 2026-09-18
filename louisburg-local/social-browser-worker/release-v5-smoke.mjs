@@ -14,8 +14,22 @@ async function inspect(viewport,name){
     check(/^https:\/\/louisburglocalks\.com\/(?:web-v5\/)?(?:$|[?#])/.test(page.url()),name+': custom domain did not land on V5 entry: '+page.url());
     check((await page.title())==='Louisburg Local',name+': wrong document title: '+await page.title());
     check(await page.locator('#correctionLink').count()===0,name+': stale correctionLink returned');
-    const frame=page.frameLocator('#v4frame');
+    let frame=page.frameLocator('#v4frame');
     await frame.locator('body').waitFor({state:'visible',timeout:30000});
+
+    // A push can reach Actions before the custom domain finishes deploying.
+    // Wait up to 3 minutes for the new native Today quick control to appear.
+    let deployed=false;
+    for(let i=0;i<36;i++){
+      const nativeToday=await frame.locator('#quickNav [data-cat="TODAY"]').count().catch(()=>0);
+      if(nativeToday===1){deployed=true;break}
+      await page.waitForTimeout(5000);
+      await page.reload({waitUntil:'domcontentloaded',timeout:45000}).catch(()=>{});
+      frame=page.frameLocator('#v4frame');
+      await frame.locator('body').waitFor({state:'visible',timeout:30000}).catch(()=>{});
+    }
+    check(deployed,name+': custom domain never received the current V5 native quick-filter build');
+
     let feedStatus='';
     for(let i=0;i<80;i++){
       feedStatus=await frame.locator('#feedStatus').innerText().catch(()=> '');
