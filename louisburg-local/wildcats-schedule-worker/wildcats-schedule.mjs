@@ -79,6 +79,8 @@ function snapshotHeadline(event){
   return clean(s);
 }
 
+export function publicHubEvents(events){return (events||[]).filter(event=>String(event?.homeAway||'').toUpperCase()!=='AWAY');}
+
 function writeScheduleSnapshot(events,loaded){
   const items=events.map(event=>({
     id:event.postId,
@@ -132,12 +134,13 @@ export async function run(){
   const events=loaded.events.slice(0,80);console.log(`Official Arbiter Wildcats calendar: range=${loaded.rangeStart}..${loaded.rangeEnd}; gameLinks=${loaded.anchorCount}; currentFuture=${events.length}`);
   if(!events.length)throw new Error('Official Arbiter Wildcats calendar was readable but no current/future athletic events were extracted.');
   writeScheduleSnapshot(events,loaded);
+  const publishable=publicHubEvents(events),awaySkipped=events.length-publishable.length;
   let delivered=0,duplicates=0;
-  for(const event of events){
+  for(const event of publishable){
     const result=await postJson(endpoint,ingestKey,{queueId:'FIRSTPARTY-WILDCATS-ARBITER',organization:'Louisburg High School - USD 416',platform:'WEBSITE',profileUrl:CALENDAR_URL,postUrl:event.postUrl,postId:event.postId,postDate:new Date().toISOString(),postText:buildPostText(event),mediaUrl:'',mediaType:'',activityType:event.cancelled?'Operational Update':'Event / Activity',louisburgMatch:'VERIFIED'});
     delivered++;if(result.duplicate)duplicates++;console.log(`${event.date} ${event.time} ${event.teamLabel}${event.opponent?` ${event.homeAway==='HOME'?'vs.':'at'} ${event.opponent}`:''}${event.cancelled?' [CANCELLED]':''} -> ${result.duplicate?'duplicate':'submitted'}`);
   }
-  console.log(`Wildcats Arbiter scan complete: extracted=${events.length}; delivered=${delivered}; duplicates=${duplicates}`);
+  console.log(`Wildcats Arbiter scan complete: extracted=${events.length}; localPublishable=${publishable.length}; awaySkipped=${awaySkipped}; delivered=${delivered}; duplicates=${duplicates}`);
 }
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)run().catch(error=>{console.error(error);process.exitCode=1;});
