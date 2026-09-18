@@ -1,0 +1,36 @@
+name: Louisburg Local V5 release smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'louisburg-local/social-browser-worker/release-v5-smoke.mjs'
+      - '.github/workflows/louisburg-v5-release-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louisburg-v5-release-smoke
+  cancel-in-progress: true
+
+jobs:
+  production-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Install worker dependencies
+        working-directory: louisburg-local/social-browser-worker
+        run: npm ci --no-audit --no-fund
+      - name: Install Chromium
+        working-directory: louisburg-local/social-browser-worker
+        run: npx playwright install --with-deps chromium
+      - name: Smoke live V5 release candidate
+        working-directory: louisburg-local/social-browser-worker
+        run: node release-v5-smoke.mjs
