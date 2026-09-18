@@ -1,4 +1,5 @@
 name: Louisburg Local V5 release smoke
+# Final release-candidate verification after source and Wildcats cleanup.
 
 on:
   push:
