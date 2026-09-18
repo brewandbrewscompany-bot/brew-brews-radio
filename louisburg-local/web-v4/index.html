@@ -68,7 +68,24 @@ function filteredHome(){if(state.cat==='FAVORITES')return favoriteItems().filter
 function renderHome(){let items=filteredHome();if(state.cat==='EVENTS')items=items.slice().sort((a,b)=>eventSortKey(a)-eventSortKey(b)||String(a.organization||'').localeCompare(String(b.organization||'')));const empty=state.cat==='FAVORITES'?'<div class="empty"><b>No favorites saved yet.</b>Tap ♡ Save on anything you want to remember.</div>':'<div class="empty"><b>Nothing current matches this view.</b>Try another category or clear the search.</div>';$('#feed').innerHTML=items.length?items.map(card).join(''):empty;const current=state.items.filter(fresh),filtered=state.cat!=='ALL'||state.section!=='ALL'||!!state.homeSource;$('#feedStatus').textContent=state.cat==='FAVORITES'?`${items.length} saved`:filtered?`live · ${items.length} matching`:`live · ${current.length} current`;$('#snapEvents').textContent=current.filter(i=>catMatch(i,'EVENTS')&&sectionMatch(i,'TODAY')).length;$('#snapDeals').textContent=current.filter(i=>catMatch(i,'DEALS')).length;$('#snapNew').textContent=current.filter(i=>String(i.discoveryDate||'').slice(0,10)===lbToday()).length}
 function syncHomeQuickUi(key){
   const k=String(key||'').toUpperCase();
-  document.querySelectorAll('#quickNav .qbtn').forEach(b=>{const selected=b.dataset.cat===k;b.classList.toggle('active',selected);b.setAttribute('aria-pressed',selected?'true':'false')});
+  document.querySelectorAll('#quickNav .qbtn').forEach(b=>{
+    const selected=b.dataset.cat===k;
+    b.classList.toggle('active',selected);
+    b.setAttribute('aria-pressed',selected?'true':'false');
+    if(selected){
+      b.style.setProperty('background','#4b216d','important');
+      b.style.setProperty('background-color','#4b216d','important');
+      b.style.setProperty('color','#fff','important');
+      b.style.setProperty('border-color','#4b216d','important');
+      b.style.setProperty('box-shadow','0 6px 16px rgba(75,33,109,.24)','important');
+    }else{
+      b.style.removeProperty('background');
+      b.style.removeProperty('background-color');
+      b.style.removeProperty('color');
+      b.style.removeProperty('border-color');
+      b.style.removeProperty('box-shadow');
+    }
+  });
   document.querySelectorAll('#sectionTabs .pill').forEach(b=>b.classList.toggle('active',b.dataset.section===state.section))
 }
 function setHomeQuickFilter(key){
@@ -121,6 +138,6 @@ $$('[data-nav]').forEach(b=>b.onclick=()=>showScreen(b.dataset.nav));$('#menuBtn
 document.addEventListener('click',async e=>{const p=e.target.closest('[data-profile]');if(p){e.preventDefault();e.stopPropagation();openProfile(p.dataset.profile);return}const c=e.target.closest('[data-id]');const id=c&&c.dataset.id;const favBtn=e.target.closest('[data-favorite]');if(favBtn&&id){e.preventDefault();e.stopPropagation();const item=findItem(id)||favoriteItems().find(x=>String(x.id)===String(id));toggleFavorite(item);renderHome();if(state.screen==='events')renderEvents();if(state.screen==='deals')renderDeals();return}const sh=e.target.closest('[data-sherlock]');if(sh&&id){e.preventDefault();e.stopPropagation();openSherlock(id);return}if(e.target.closest('[data-detail]')){openDetail(findItem(id)||favoriteItems().find(x=>String(x.id)===String(id)));return}if(e.target.closest('.eventCard,.dealCard')&&id){openDetail(findItem(id));return}const pl=e.target.closest('[data-profile-link]');if(pl){e.preventDefault();closeOverlays();openProfile(pl.dataset.profileLink);return}const cp=e.target.closest('[data-copy]');if(cp){e.preventDefault();try{await navigator.clipboard.writeText(cp.dataset.copy)}catch(err){}return}});
 $('#sherlockType').onchange=syncSherlock;$('#sherlockCancel').onclick=closeSherlock;$('#sherlockClose').onclick=closeSherlock;$('#sherlockSubmit').onclick=submitSherlock;$('#sherlockOverlay').onclick=e=>{if(e.target===$('#sherlockOverlay'))closeSherlock()};document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#sherlockOverlay').classList.contains('open'))closeSherlock();else closeOverlays()}});load();
 </script>
-<script src="directory-enhance.js?v=unified-filters-20260918-r6"></script>
+<script src="directory-enhance.js?v=quick-purple-inline-20260918-r7"></script>
 </body>
 </html>
