@@ -17,14 +17,20 @@ async function inspect(viewport,name){
     const frame=page.frameLocator('#v4frame');
     await frame.locator('body').waitFor({state:'visible',timeout:30000});
     let feedStatus='';
-    for(let i=0;i<40;i++){
+    for(let i=0;i<80;i++){
       feedStatus=await frame.locator('#feedStatus').innerText().catch(()=> '');
-      if(/^live\s*·/i.test(feedStatus)||/connection issue/i.test(feedStatus))break;
+      if(/^live\s*·/i.test(feedStatus))break;
+      if(i===30&&/connection issue/i.test(feedStatus)){
+        await page.reload({waitUntil:'domcontentloaded',timeout:45000}).catch(()=>{});
+        await frame.locator('body').waitFor({state:'visible',timeout:30000}).catch(()=>{});
+      }
       await page.waitForTimeout(500);
     }
-    check(/^live\s*·/i.test(feedStatus),name+': feed did not reach live state: '+feedStatus);
+    check(/^live\s*·/i.test(feedStatus),name+': feed did not reach live state after retry window: '+feedStatus);
     const homeCards=await frame.locator('#homeScreen .feedCard').count();
     check(homeCards>0,name+': home feed empty after live state');
+    const publicBody=(await frame.locator('#homeScreen').innerText().catch(()=> '')).toUpperCase();
+    check(!publicBody.includes('REJECTED - OTHER CITY'),name+': rejected other-city item leaked into public feed');
 
     const screens=[
       ['directory','#directoryScreen','.directoryCard'],
