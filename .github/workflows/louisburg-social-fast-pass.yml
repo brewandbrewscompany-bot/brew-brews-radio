@@ -11,10 +11,10 @@ on:
       - '.github/workflows/louisburg-social-fast-pass.yml'
   workflow_dispatch:
   schedule:
-    # Full public-browser scan runs at :27. These recovery passes fill
-    # gaps between full scans and also provide a fast verification lane
-    # for newly approved exact-source workers and post-deployment verification.
-    - cron: '7,47 * * * *'
+    # HIGH-priority public social recovery runs every 10 minutes.
+    # The full public-browser scan remains hourly and covers the complete roster.
+    # Duplicate fingerprints prevent already-published posts from creating repeat cards.
+    - cron: '*/10 * * * *'
 
 permissions:
   contents: read
@@ -26,12 +26,13 @@ concurrency:
 jobs:
   fast-public-source-pass:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 15
     env:
       LL_SOCIAL_ENDPOINT: https://script.google.com/macros/s/AKfycbxw9gJBH50L_VZbgp6i_mHHnfPXAkraIqv63BA2XqWtb-XaaczXxdf89WveFkAOwV-azw/exec
       LL_SOCIAL_INGEST_KEY: ${{ secrets.LL_SOCIAL_INGEST_KEY }}
-      LL_MAX_WORKERS: '60'
+      LL_MAX_WORKERS: '30'
       LL_FORCE_SCAN: 'true'
+      LL_PRIORITY_FILTER: 'HIGH'
       LL_MAX_POSTS_PER_PAGE: '8'
       TZ: America/Chicago
 
@@ -61,13 +62,6 @@ jobs:
         working-directory: louisburg-local/social-browser-worker
         run: node --test apps-script-fetch-retry.test.mjs
 
-      - name: Recover configured exact public Facebook posts
-        id: exact
-        continue-on-error: true
-        working-directory: louisburg-local/social-browser-worker
-        env:
-          NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
-        run: node exact-post-recovery.mjs
 
       - name: Recover signed-out public Facebook Relay timeline
         id: relay
@@ -85,43 +79,26 @@ jobs:
           NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
         run: node facebook-relay-lookback.mjs
 
-      - name: Scan rendered USD 416 first-party school feeds
-        id: schools
-        continue-on-error: true
-        working-directory: louisburg-local/social-browser-worker
-        env:
-          NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
-        run: node school-first-party.mjs
 
-      - name: Run verified first-party business fallbacks
-        id: firstparty
-        continue-on-error: true
-        working-directory: louisburg-local/social-browser-worker
-        env:
-          NODE_OPTIONS: --import=${{ github.workspace }}/louisburg-local/social-browser-worker/apps-script-fetch-retry.mjs
-        run: node first-party-fallback.mjs
 
       - name: Verify fast-pass health after all recovery lanes
         if: always()
         env:
           RELIABILITY: ${{ steps.reliability.outcome }}
-          EXACT: ${{ steps.exact.outcome }}
           RELAY: ${{ steps.relay.outcome }}
           LOOKBACK: ${{ steps.lookback.outcome }}
-          SCHOOLS: ${{ steps.schools.outcome }}
-          FIRSTPARTY: ${{ steps.firstparty.outcome }}
         run: |
-          echo "reliability=$RELIABILITY exact=$EXACT relay=$RELAY lookback=$LOOKBACK schools=$SCHOOLS firstparty=$FIRSTPARTY"
+          echo "reliability=$RELIABILITY relay=$RELAY lookback=$LOOKBACK"
           healthy=0
-          for outcome in "$EXACT" "$RELAY" "$LOOKBACK" "$SCHOOLS" "$FIRSTPARTY"; do
+          for outcome in "$RELAY" "$LOOKBACK"; do
             if [ "$outcome" = "success" ]; then healthy=$((healthy+1)); fi
           done
           if [ "$RELIABILITY" != "success" ]; then
             echo "Reliability regression test failed. Recovery lanes still ran, but the job is unhealthy."
             exit 1
           fi
-          if [ "$healthy" -lt 2 ]; then
+          if [ "$healthy" -lt 1 ]; then
             echo "Too few independent recovery lanes succeeded: $healthy"
             exit 1
           fi
-          echo "Fast pass healthy: $healthy independent recovery lanes succeeded."
+          echo "High-priority fast pass healthy: $healthy social recovery lanes succeeded."
