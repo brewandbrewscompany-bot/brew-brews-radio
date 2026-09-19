@@ -246,7 +246,8 @@ export async function run(){
   const endpoint=process.env.LL_SOCIAL_ENDPOINT||DEFAULT_ENDPOINT,ingestKey=process.env.LL_SOCIAL_INGEST_KEY||'';if(!ingestKey)throw new Error('LL_SOCIAL_INGEST_KEY is required.');
   const maxWorkers=Math.max(1,Number(process.env.LL_MAX_WORKERS||25)),maxPosts=Math.max(1,Number(process.env.LL_MAX_POSTS_PER_PAGE||8)),force=/^(1|true|yes)$/i.test(process.env.LL_FORCE_SCAN||'');
   const manifest=await postJson(endpoint,ingestKey,'social_worker_manifest'),now=new Date();
-  const workers=(manifest.workers||[]).filter(w=>shouldScanWorker(w,now,force)).sort((a,b)=>priorityRank(b.priority)-priorityRank(a.priority)||a.organization.localeCompare(b.organization)).slice(0,maxWorkers);
+  const priorityFilter=new Set(String(process.env.LL_PRIORITY_FILTER||'').split(',').map(v=>v.trim().toUpperCase()).filter(Boolean));
+  const workers=(manifest.workers||[]).filter(w=>shouldScanWorker(w,now,force)&&(priorityFilter.size===0||priorityFilter.has(String(w.priority||'').toUpperCase()))).sort((a,b)=>priorityRank(b.priority)-priorityRank(a.priority)||a.organization.localeCompare(b.organization)).slice(0,maxWorkers);
   const {chromium}=await import('playwright');const browser=await chromium.launch({headless:true});const context=await browser.newContext({locale:'en-US',timezoneId:TZ,viewport:{width:1365,height:900},userAgent:DESKTOP_UA});
   let recoveredWorkers=0,delivered=0,duplicates=0;
   try{
