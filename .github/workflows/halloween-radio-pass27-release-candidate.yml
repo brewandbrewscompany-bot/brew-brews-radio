@@ -167,7 +167,7 @@ jobs:
 
       - name: Upload Pass 27 final proof
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: halloween-radio-pass27-final-release-proof
           if-no-files-found: warn
